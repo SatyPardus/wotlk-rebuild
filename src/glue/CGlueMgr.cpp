@@ -23,6 +23,8 @@
 #include "util/SysMessage.hpp"
 #include <cstdio>
 #include <common/MD5.hpp>
+#include <world/LoadingScreen.hpp>
+#include <db/StaticDb.hpp>
 
 unsigned char InterfaceKey[256] = {
     0xC3, 0x5B, 0x50, 0x84, 0xB9, 0x3E, 0x32, 0x42, 0x8C, 0xD0, 0xC7, 0x48, 0xFA, 0x0E, 0x5D, 0x54,
@@ -79,6 +81,9 @@ int32_t CGlueMgr::m_executedSurvey;
 int32_t CGlueMgr::m_surveyDownload;
 int32_t CGlueMgr::m_patchDownload;
 bool CGlueMgr::m_deleteLocalPatch;
+
+CVar* CGlueMgr::s_curGameTip = nullptr;
+CVar* CGlueMgr::s_showGameTips = nullptr;
 
 CHARACTER_INFO* CGlueMgr::m_characterInfo = nullptr;
 
@@ -505,6 +510,34 @@ void CGlueMgr::EnterWorld() {
     if (!m_characterInfo || !ClientServices::Connection()->IsConnected()) {
         return;
     }
+
+    if (!CGlueMgr::s_curGameTip)
+        CGlueMgr::s_curGameTip = CVar::Register("gameTip", nullptr, 0, "0", nullptr, 5, false, nullptr, false);
+    if (!CGlueMgr::s_showGameTips) {
+        CGlueMgr::s_showGameTips = CVar::Register("showGameTips", nullptr, 0, "1", nullptr, 5, false, nullptr, false);
+    }
+    if (!CGlueMgr::m_characterInfo->firstLogin && CGlueMgr::s_showGameTips->GetInt()) {
+        auto curGameTip = CGlueMgr::s_curGameTip->GetInt();
+        if (curGameTip < 0 || curGameTip >= g_gameTipsDB.GetNumRecords())
+            curGameTip = 0;
+        if (g_gameTipsDB.GetNumRecords() > 0) {
+            auto gameTipRec = g_gameTipsDB.GetRecordByIndex(curGameTip);
+            LoadingScreenSetTip(gameTipRec->m_text);
+            char buf[40] = { 0 };
+            SStrPrintf(buf, 40u, "%d", curGameTip + 1);
+            CGlueMgr::s_curGameTip->Set(buf, true, false, false, true);
+        }
+    }
+    //if (IsStreamingAndTrial()) {
+    //    v12 = sub_4215A0(CGlueMgr::m_characterInfo->raceId);
+    //    sub_420980(CGlueMgr::m_characterInfo->raceId);
+    //    sub_420950(2);
+    //    v13 = CGlueMgr::m_characterInfo;
+    //    LOBYTE(v13) = v12 == 0;
+    //    sub_407E40(v13, *(_DWORD*)&dword_B24180[4 * CGlueMgr::m_characterInfo->raceId]);
+    //}
+    LoadingScreenEnable(CGlueMgr::m_characterInfo->mapID, true);
+    //CVar::SaveAll();
 
     CGlueMgr::m_idleState = IDLE_ENTER_WORLD;
     CGlueMgr::m_showedDisconnect = 0;

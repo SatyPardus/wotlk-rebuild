@@ -5,6 +5,7 @@
 #include "net/Types.hpp"
 #include "gx/Texture.hpp"
 #include <cstdint>
+#include <console/CVar.hpp>
 
 
 float CalculateAspectRatio();
@@ -69,6 +70,9 @@ class CGlueMgr {
         static int32_t m_surveyDownload;
         static int32_t m_patchDownload;
         static bool m_deleteLocalPatch;
+
+        static CVar *s_curGameTip;
+        static CVar *s_showGameTips;
 
         static CHARACTER_INFO* m_characterInfo;
 

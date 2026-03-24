@@ -34,6 +34,7 @@
 #include <bc/os/Path.hpp>
 #include <bc/File.hpp>
 #include <cstdio>
+#include <world/LoadingScreen.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -421,6 +422,7 @@ bool TimingMethodCallback(CVar* h, const char* oldValue, const char* newValue, v
 
 #endif
 
+// OFFSET: 0x004067F0
 int32_t InitializeGlobal() {
     ProcessCommandLine();
 
@@ -632,6 +634,7 @@ void StormDestroy() {
     SRegDestroy();
 }
 
+// OFFSET: 0x00406C70
 void CommonMain() {
     StormInitialize();
 
@@ -704,7 +707,7 @@ void WowClientInit() {
 
     ClientDBInitialize();
 
-    // LoadingScreenInitialize();
+    LoadingScreenInitialize();
 
     FrameScript_Initialize(0);
 
@@ -782,19 +785,125 @@ void WowClientInit() {
     EventRegister(EVENT_ID_POLL, &PollNet);
 }
 
+// OFFSET: 0x405540
 void ClientInitializeGame(int32_t continentID, const C3Vector& position) {
-    // TODO
+    //if (IsStreamingAndTrial())
+    //    sub_41E4E0(0);
+    //(*(void(__thiscall**)(int, int, int))(*(_DWORD*)g_theGxDevicePtr + 204))(g_theGxDevicePtr, 1, 1);
+    //if (dword_CD7544)
+    //    sub_78D130((float*)dword_CD7544);
+    //sub_4C8610(-1);
+    //SelectedRealm = (unsigned __int8*)ClientServices::GetSelectedRealm();
+    //v5 = 0;
+    //if (g_Cfg_ConfigsDB.numRows) {
+    //    v6 = SelectedRealm[4];
+    //    FirstRow = g_Cfg_ConfigsDB.FirstRow;
+    //    while (1) {
+    //        v8 = v5 < 0 || v5 >= g_Cfg_ConfigsDB.numRows ? 0 : FirstRow;
+    //        if (v8[1] == v6)
+    //            break;
+    //        ++v5;
+    //        FirstRow += 5;
+    //        if ((unsigned int)v5 >= g_Cfg_ConfigsDB.numRows)
+    //            goto LABEL_15;
+    //    }
+    //    dword_B2F998 = v8[2] != 0;
+    //}
+//LABEL_15:
+    //AccountDataInitialize(0);
+    //ClntObjMgrInitializeShared();
+    //ClntObjMgrInitializeStd(zoneId);
+    //CGUnit_C::ClientInitialize();
+    //SI2::InitZoneSoundsHandler();
+    //SI2::InitZoneIntros();
+    //LootInitialize();
     CGGameUI::InitializeGame();
-
+    //ActiveCamera = (float*)CGWorldFrame::GetActiveCamera();
+    //ActiveCamera[2] = a2;
+    //ActiveCamera[3] = a3;
+    //ActiveCamera[4] = a4;
+    //WorldTextInitialize();
+    //PlayerNameInitialize();
+    //NOP();
+    //CGObject_C::Initialize();
+    //SpellTableInitialize();
+    //CGUnit_C::Initialize();
+    //CGGameObject_C::Initialize();
+    //ClientInitializeGame_0();
+    //CGPlayer_C::Initialize();
+    //CGItem_C::Initialize();
+    //NOP();
+    //AreaListInitialize();
+    //NOP();
+    //FriendList::Initialize();
+    //SmartScreenRectClearAllGrids();
+    //Trade_C::Initialize();
+    //MovementInit();
+    //EventRegister(EVENT_ON_IDLE, (DWORD)ClientIdle);
+    //ClientInitializeGameTime();
+    //v10 = StaticSingleton<CommandManager>::m_instance;
+    //if (!StaticSingleton<CommandManager>::m_instance) {
+    //    v10 = SMemAlloc(0x28, "new", -1, (char)StaticSingleton<CommandManager>::m_instance);
+    //    if (v10)
+    //        v10[8] = 0;
+    //    else
+    //        v10 = 0;
+    //    StaticSingleton<CommandManager>::m_instance = v10;
+    //}
+    //v10[9] = ClientServices::GetCurrent();
+    //v11 = SMemAlloc(4, ".\\Client.cpp", 5034, 0);
+    //if (v11) {
+    //    *v11 = off_9E225C;
+    //    v12 = (void(__thiscall***)(_DWORD))v11;
+    //} else {
+    //    v12 = 0;
+    //}
+    //v13 = StaticSingleton<CommandManager>::m_instance;
+    //if (!StaticSingleton<CommandManager>::m_instance) {
+    //    v14 = SMemAlloc(40, "new", -1, (char)StaticSingleton<CommandManager>::m_instance);
+    //    if (v14) {
+    //        v14[8] = 0;
+    //        v13 = v14;
+    //    } else {
+    //        v13 = 0;
+    //    }
+    //    StaticSingleton<CommandManager>::m_instance = v13;
+    //}
+    //v13[v13[8]++] = v12;
+    //(**v12)(v12);
+    //ClientServices::SetMessageHandler(SMSG_NOTIFICATION, (int)Packet_SMSG_NOTIFICATION, 0);
+    //ClientServices::SetMessageHandler(SMSG_PLAYED_TIME, (int)Packet_SMSG_PLAYED_TIME, 0);
     ClientServices::SetMessageHandler(SMSG_NEW_WORLD, &NewWorldHandler, nullptr);
+    //ClientServices::SetMessageHandler(SMSG_TRANSFER_PENDING, (int)Packet_SMSG_TRANSFER_PENDING, 0);
+    //ClientServices::SetMessageHandler(SMSG_TRANSFER_ABORTED, (int)Packet_SMSG_TRANSFER_ABORTED, 0);
     ClientServices::SetMessageHandler(SMSG_LOGIN_VERIFY_WORLD, &LoginVerifyWorldHandler, nullptr);
+    //ClientServices::SetMessageHandler(SMSG_KICK_REASON, (int)Packet_Group_0, 0);
 
+    // Is this correct? Compare with the one below
     auto record = g_mapDB.GetRecord(continentID);
     if (!record) {
         return;
     }
-
+    //if (zoneId < g_MapDB.minIndex || zoneId > g_MapDB.maxIndex) {
+    //    record = 0;
+    //} else {
+    //    record = g_MapDB.Rows[zoneId - g_MapDB.minIndex];
+    //    if (record)
+    //        goto LABEL_32;
+    //}
+    //NOP();
+//LABEL_32:
+    //sub_4B9930(0, 0);
+    //AsyncFile::ProgressCallback(LoadingScreenAsyncCallback, 0);
+    //World::SetLoadProgressCallback(LoadingScreenWorldCallback, 0);
+    //if (IsStreamingAndTrial())
+    //    sub_41E4E0(1);
     CWorld::LoadMap(record->m_directory, position, continentID);
-
-    // TODO
+    //AsyncFile::ProgressCallback(0, 0);
+    //World::SetLoadProgressCallback(0, 0);
+    //dword_B2F9E4 = OsGetAsyncTimeMs();
+    //dword_B2F9E8 = 1200;
+    //byte_B2F9E0 = 1;
+    //result = sub_53B3E0();
+    //dword_B2F9A0 = 1;
 }

@@ -105,22 +105,41 @@ void CMap::MapMemInitialize() {
     }
 }
 
+// OFFSET: 0x7BFCE0
 void CMap::Load(const char* mapName, int32_t zoneID) {
     // TODO
+    //byte_CE049C = 0;
     auto length = SStrCopy(CMap::mapPath, "World\\Maps\\", STORM_MAX_STR);
     SStrCopy(&CMap::mapPath[length], mapName, STORM_MAX_STR);
     SStrCopy(CMap::mapName, mapName, STORM_MAX_STR);
     SStrPrintf(CMap::wdtFilename, 0x100u, "%s\\%s.wdt", CMap::mapPath, CMap::mapName);
-
-    // TODO: create sunLight
-
-    // TODO
-
+    //dword_CE04A8 = sub_7D9BD0(1, 0);
+    //CM2Light::SetLightType((CM2Light*)(dword_CE04A8 + 88), 0);
+    //sub_7D9D50(dword_CE04A8);
+    //sub_7DA100(dword_CE04A8);
+    //sub_7C3730();
+    //sub_7B0040(1);
+    //sub_79FA10();
+    //s_mapId = mapid;
+    //dword_CF08F0 = 1;
+    //dword_CF08F4 = 0;
+    //dword_ADFBC8 = 1;
+    //IsStreamingMode = SFile::IsStreamingMode();
+    //dword_CE0494 = IsStreamingAndTrial() | IsStreamingMode;
+    //v4 = dword_CE0494 == 0;
+    //CMap::LoadWdl((int)&unk_CF0900, (char)byte_CE07D0, byte_CE06D0);
     CMap::LoadWdt();
     CMap::LoadTextureBlob();
     DayNight::LoadMap(zoneID);
-
-    // TODO
+    //sub_7B6B00((AsyncFile*)v4, 0);
+    //if (v4)
+    //    AsyncFileReadWaitAll();
+    //if (World::s_loadProgressCallback)
+    //    World::s_loadProgressCallback(1.0, World::s_loadProgressParam);
+    //dword_ADFBC8 = 0;
+    //World::s_loadProgressCallback = 0;
+    //LODWORD(qword_CD7678) = 1;
+    //NOP();
 }
 
 void CMap::LoadWdt() {
