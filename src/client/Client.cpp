@@ -296,25 +296,6 @@ bool UpdateInstallLocationForName(int32_t a1, size_t size, const char* filename,
     return true;
 }
 
-void SetPaths() {
-    // SFile::DisableSFileCheckDisk();
-    // SFile::EnableDirectAccess(0);
-
-    char buffer[STORM_MAX_PATH] = {0};
-
-    const char* datadir = CmdLineGetString(CMD_DATA_DIR);
-    if (*datadir == '\0') {
-        OsGetExePath(buffer, STORM_MAX_PATH);
-        datadir = buffer;
-    }
-
-    SLogSetDefaultDirectory(datadir);
-    SFile::SetBasePath(datadir);
-    SFile::SetDataPath("Data\\");
-
-    OsSetCurrentDirectory(datadir);
-}
-
 bool IsCommonMpqExists() {
     char path1[1024];
     SStrPrintf(path1, sizeof(path1), "%s%s", "Data\\", "common.MPQ");
@@ -442,7 +423,6 @@ bool TimingMethodCallback(CVar* h, const char* oldValue, const char* newValue, v
 
 int32_t InitializeGlobal() {
     ProcessCommandLine();
-    SetPaths();
 
     // TODO:
     // WowConfigureFileSystem::ReadBuildKeyFromFile("WoW.mfil");
@@ -670,7 +650,7 @@ void CommonMain() {
 
     OsSystemEnableCpuLog();
 
-    // SetPaths() moved into InitializeGlobal()
+    SFile::Initialize();
 
     uint32_t sendErrorLogs = 1;
     if (!SRegLoadValue("World of Warcraft\\Client", "SendErrorLogs", 0, &sendErrorLogs)) {

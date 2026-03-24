@@ -7,10 +7,37 @@
 #include <storm/String.hpp>
 #include <bc/File.hpp>
 #include "util/Filesystem.hpp"
+#include <client/CmdLine.hpp>
+#include <bc/os/Path.hpp>
+#include <storm/Log.hpp>
+#include <bc/os/file/SetCurrentDirectory.hpp>
 
 static char s_basepath[STORM_MAX_PATH] = { 0 };
 static char s_datapath[STORM_MAX_PATH] = { 0 };
 static char s_datapath2[STORM_MAX_PATH] = { 0 };
+
+// OFFSET: 0x00402B20
+void SFile::Initialize()
+{
+    //SFile::DisableSFileCheckDisk();
+    //SFile::EnableDirectAccess(0);
+
+    char buffer[STORM_MAX_PATH] = { 0 };
+
+    const char* datadir = CmdLineGetString(CMD_DATA_DIR);
+    if (*datadir == '\0') {
+        OsGetExePath(buffer, STORM_MAX_PATH);
+        datadir = buffer;
+    }
+
+    // TODO Why is this here? Not in decompiled output!
+    SLogSetDefaultDirectory(datadir);
+
+    OsSetCurrentDirectory(datadir);
+    SFile::SetBasePath(datadir);
+    //dword_B2FA10 = 0;
+    SFile::SetDataPath("Data\\");
+}
 
 // TODO Proper implementation
 int32_t SFile::Close(SFile* file) {

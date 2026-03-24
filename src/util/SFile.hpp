@@ -24,6 +24,7 @@ enum SFILE_TYPE {
 class SFile {
     public:
         // Static functions
+        static void Initialize();
         static int32_t Close(SFile*);
         static uint32_t GetFileSize(SFile*, uint32_t*);
         static int32_t FileExists(const char* filename);
