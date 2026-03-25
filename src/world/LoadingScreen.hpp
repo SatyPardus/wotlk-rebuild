@@ -29,7 +29,11 @@ static int32_t s_simpleMapID;
 static int32_t s_nextPingTime;
 static int32_t s_lastUpdateTime;
 static float s_progress;
+static float s_xmlProgress;
+static float s_worldProgress;
+static float s_asyncProgress;
 static const char* s_gameTip;
+static bool s_loadingWorld;
 static bool s_usingWideScreen;
 static bool s_sizeEventPosted;
 static bool s_positionsGuard;
@@ -43,6 +47,7 @@ const uint16_t s_indices[] = { 0, 1, 2, 3 };
 const C2Vector s_texCoord[] = { C2Vector(0.0, 1.0), C2Vector(1.0, 1.0), C2Vector(0.0, 0.0), C2Vector(1.0, 0.0) };
 const TextureInfo s_textureInfo[] = {
     { "Interface\\Glues\\LoadingBar\\Loading-BarFill", 1, CRect(0.5, 0.075000003, 0.52499998, 0.025) },
+    // TODO should be "BarBorder", but crashes currently.
     { "Interface\\Glues\\LoadingBar\\Loading-BarFill", 0, CRect(0.5, 0.075000003, 0.60000002, 0.050000001) }
 };
 
@@ -50,12 +55,13 @@ void LoadingScreenInitialize();
 void LoadingScreenEnable(int32_t mapId, bool a2);
 void LoadingScreenDisable();
 void LoadingScreenSetTip(const char* tip);
-void UpdateProgressBar(int a1);
+void UpdateProgressBar(bool force);
+void UpdateProgressValue();
 void ProgressBarSendKeepAlive(int time);
 void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visible, float elapsedSec);
 void LoadingScreenEnableShip(int32_t a1, int32_t a2, int32_t a3);
 void ClearDynamicData();
-void InitializeProgressBar(bool a1);
+void InitializeProgressBar(bool worldLoading);
 void LoadingScreenEnableEvents();
 void LoadingScreenDisableEvents();
 int32_t EatEvent(const void* a1, void* a2);
@@ -66,5 +72,9 @@ bool PaintBackgroundImage();
 bool PaintSimpleBackground();
 void PaintLoadingBar(const TextureInfo* textureInfo, size_t infoCount, const HTEXTURE* textures);
 void PaintDynamicLoadingBar();
+bool IsStillLoading();
+void LoadingScreenAsyncCallback(float progress, void* param);
+void LoadingScreenXMLCallback(float progress, void* param);
+void LoadingScreenWorldCallback(float progress, void* param);
 
 #endif

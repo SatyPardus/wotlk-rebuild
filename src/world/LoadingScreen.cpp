@@ -106,21 +106,47 @@ void LoadingScreenSetTip(const char* tip) {
 }
 
 // OFFSET: 0x40A920
-void UpdateProgressBar(int a1) {
+void UpdateProgressBar(bool force) {
     // TODO
     auto currentTime = OsGetAsyncTimeMs();
     auto context = EventGetCurrentContext();
     // EventInputProcess(CurrentContext);
 
-    if (a1 || currentTime - s_lastUpdateTime >= 250) {
+    if (force || currentTime - s_lastUpdateTime >= 250) {
         s_lastUpdateTime = currentTime;
         // SE2::HeartBeat();
         // NOP();
         ProgressBarSendKeepAlive(currentTime);
-        // sub_4079D0();
+        UpdateProgressValue();
         LoadingScreenPaint(nullptr, nullptr, nullptr, 0);
         // sub_682A00();
     }
+}
+
+void UpdateProgressValue() {
+    float v0 = 0.0;
+    float v1 = 1.0;
+    if (s_xmlProgress != 0.0) {
+        v0 = s_xmlProgress;
+        if (s_loadingWorld) {
+            v1 = 0.5;
+            v0 = 0.5 * s_xmlProgress;
+        }
+    }
+    float v2 = v0 + s_asyncProgress * 0.0 + v1 * s_worldProgress;
+    s_progress = v2;
+    if (v2 < 0.0)
+        s_progress = 0.0;
+    if (v2 >= 1.0) {
+        s_progress = 1.0;
+    }
+    //if (IsStreamingAndTrial() && byte_B2FED9) {
+    //    v3 = sub_4215D0();
+    //    if (sub_4215A0(v3))
+    //        s_progress = s_progress * 0.30000001 + 0.69999999;
+    //    else
+    //        s_progress = flt_B2FEDC * 0.69999999;
+    //}
 }
 
 // OFFSET: 0x408520
@@ -143,15 +169,10 @@ void ProgressBarSendKeepAlive(int time) {
     }
 }
 
-static float dir = 1;
-
 // OFFSET: 0x40A270
 void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visible, float elapsedSec) {
     // TODO
-    s_progress += dir * 0.1 * elapsedSec;
-    if (s_progress >= 1)
-        dir = -dir;
-    if (g_theGxDevicePtr /* && CGxDevice::CapsHasContext(-1) && g_theGxDevicePtr && CGxDevice::CapsIsWindowVisible(-1) */ && (s_progress <= 0.99000001)) {
+    if (g_theGxDevicePtr /* && CGxDevice::CapsHasContext(-1) && g_theGxDevicePtr && CGxDevice::CapsIsWindowVisible(-1) */ && (s_progress <= 0.99000001 || IsStillLoading())) {
         if (!s_simpleBackgroundTexture && s_simpleMapID != -1 && !LoadSimpleBackgroundTexture())
             s_simpleMapID = -1;
         C3Vector saveMin;
@@ -278,17 +299,16 @@ void ClearDynamicData() {
 }
 
 // OFFSET: 0x40A990
-void InitializeProgressBar(bool a1) {
+void InitializeProgressBar(bool worldLoading) {
     // TODO
     if (s_loadingScreenLayer) {
-        // v2 = sub_4A8530(s_loadingScreenLayer);
-        // sub_4A8540(s_loadingScreenLayer, v2 & 0xFFFFFFFE);
+        //auto flags = ScrnLayerGetFlags(s_loadingScreenLayer);
+        //ScrnLayerSetFlags(s_loadingScreenLayer, flags & 0xFFFFFFFE);
     }
-    float v3 = 0.0;
     // flt_B2FEB8 = 0.0;
     // flt_B2FEB4 = 0.0;
     // flt_B2FEB0 = 0.0;
-    // byte_B2FEBC = a1;
+    s_loadingWorld = worldLoading;
     if (!s_loadingScreenLayer) {
         CStatus status;
         for (int32_t i = 0; i < 2; i++) {
@@ -297,7 +317,7 @@ void InitializeProgressBar(bool a1) {
                 s_textures[i] = TextureCreate(s_textureInfo[i].path, v0, &status, 0);
             }
         }
-        const RECTF rect = { v3, v3, 1.0f, 1.0f };
+        const RECTF rect = { 0.0, 0.0, 1.0f, 1.0f };
         ScrnLayerCreate(&rect, 9.0, 6, 0, LoadingScreenPaint, &s_loadingScreenLayer);
         LoadingScreenEnableEvents();
         // CStatus::Destroy(status);
@@ -679,4 +699,48 @@ void PaintDynamicLoadingBar() {
     //     sub_682340(3, v5, (int)v17);
     //     NOP();
     // }
+}
+
+// OFFSET: 0x409800
+bool IsStillLoading() {
+    //ActivePlayer = ClntObjMgrGetActivePlayer();
+    //v1 = ClntObjMgrObjectPtr(ActivePlayer, TYPEMASK_PLAYER);
+    //if (!v1)
+    //    return 1;
+    //if (!((__int64(__thiscall*)(CGUnit_C*))v1->ObjectBase.GetTransportGUID)(v1))
+    //    return 1;
+    //v2 = ((__int64(__thiscall*)(CGUnit_C*))v1->ObjectBase.GetTransportGUID)(v1);
+    //v3 = ClntObjMgrObjectPtr(v2, TYPEMASK_GAMEOBJECT);
+    //if (v3) {
+    //    v5 = (*(int(__thiscall**)(DWORD))(*(_DWORD*)v3->data0D4[51] + 112))(v3->data0D4[51]);
+    //    if (!v5 || !sub_77FCD0(v5))
+    //        return 1;
+    //}
+    //LoadingScreenDisable();
+    //return 0;
+    return true;
+}
+
+// OFFSET: 0x40AEF0
+void LoadingScreenAsyncCallback(float progress, void* param) {
+    if (progress > s_asyncProgress) {
+        s_asyncProgress = progress;
+        UpdateProgressBar(progress == 1);
+    }
+}
+
+// OFFSET: 0x40AF90
+void LoadingScreenXMLCallback(float progress, void* param) {
+    if (progress > s_xmlProgress) {
+        s_xmlProgress = progress;
+        UpdateProgressBar(progress == 1);
+    }
+}
+
+// OFFSET: 0x40AF40
+void LoadingScreenWorldCallback(float progress, void* param) {
+    if (progress > s_worldProgress) {
+        s_worldProgress = progress;
+        UpdateProgressBar(progress == 1);
+    }
 }

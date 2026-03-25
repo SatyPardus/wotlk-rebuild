@@ -15,6 +15,8 @@ uint32_t CWorld::s_enables2;
 float CWorld::s_farClip;
 float CWorld::s_nearClip;
 float CWorld::prevFarClip;
+CWorld::CALLBACK_FUNC CWorld::s_loadProgressCallback;
+void* CWorld::s_loadProgressParam;
 
 
 void CWorld::Initialize() {
@@ -80,4 +82,9 @@ void CWorld::Render(const C3Vector& cameraPos, float time) {
 
 uint32_t CWorld::GetEnables() {
     return CWorld::s_enables;
+}
+
+void CWorld::SetLoadProgressCallback(CALLBACK_FUNC callback, void* param) {
+    CWorld::s_loadProgressCallback = callback;
+    CWorld::s_loadProgressParam = param;
 }

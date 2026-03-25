@@ -20,6 +20,7 @@ class CMap {
     static TSGrowableArray<uint32_t> scCollideList;
     static uint32_t scCollideCnt;
     static uint32_t cCount;
+    static bool bPreload;
 
     static uint32_t* lightHeap;
     static uint32_t* cacheLightHeap;
@@ -42,6 +43,10 @@ class CMap {
     static void Load(const char* mapName, int32_t zoneID);
     static void LoadWdt();
     static void LoadTextureBlob();
+    static void PrepareUpdate(bool a1);
+    static void PurgeMaps();
+    static void PreUpdateAreas(bool a1);
+    static void PrepareMapObjDefs(bool a1);
 };
 
 #endif
