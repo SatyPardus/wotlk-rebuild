@@ -55,9 +55,13 @@ void EventPostClose();
 
 void EventPostCloseEx(HEVENTCONTEXT contextHandle);
 
-void EventRegister(EVENTID id, int32_t (*handler)(const void*, void*));
+void EventRegister(EVENTID id, EVENTHANDLERFUNC);
 
-void EventRegisterEx(EVENTID id, int32_t (*handler)(const void*, void*), void* param, float priority);
+void EventRegisterEx(EVENTID id, EVENTHANDLERFUNC, void* param, float priority);
+
+void EventUnregister(EVENTID id, EVENTHANDLERFUNC handler);
+
+void EventUnregisterEx(EVENTID id, EVENTHANDLERFUNC handler, void* param, uint32_t flags);
 
 void OsNetPump(uint32_t timeout);
 
