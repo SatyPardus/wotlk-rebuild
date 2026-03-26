@@ -11,12 +11,14 @@ bool CVar::m_needsSave;
 bool CVar::m_initialized;
 TSHashTable<CVar, HASHKEY_STRI> CVar::s_registeredCVars;
 
+// OFFSET: 0x767440
 CVar* CVar::Lookup(const char* name) {
     return name
         ? CVar::s_registeredCVars.Ptr(name)
         : nullptr;
 }
 
+// OFFSET: 0x767460
 CVar* CVar::LookupRegistered(const char* name) {
     if (!name) {
         return nullptr;
@@ -34,6 +36,7 @@ CVar* CVar::LookupRegistered(const char* name) {
     return nullptr;
 }
 
+// OFFSET: 0x767FC0
 CVar* CVar::Register(const char* name, const char* help, uint32_t flags, const char* value, HANDLER_FUNC fcn, uint32_t category, bool a7, void* arg, bool a9) {
     if (!name || !*name || !value) {
         return nullptr;
@@ -114,6 +117,7 @@ const char* CVar::GetString() {
     return this->m_stringValue.GetString();
 }
 
+// OFFSET: 0x7667B0
 void CVar::InternalSet(const char* value, bool setValue, bool setReset, bool setDefault, bool a6) {
     if (this->m_flags & 0x4 || !value) {
         return;
@@ -148,6 +152,7 @@ void CVar::InternalSet(const char* value, bool setValue, bool setReset, bool set
     }
 }
 
+// OFFSET: 0x7668C0
 bool CVar::Set(const char* value, bool setValue, bool setReset, bool setDefault, bool a6) {
     if (setValue) {
         if (this->m_callback) {
@@ -202,6 +207,7 @@ bool CVar::Default() {
     return true;
 }
 
+// OFFSET: 0x766AB0
 int32_t CVar::Update() {
     if (!(this->m_flags & 0x2)) {
         return 0;
@@ -221,6 +227,7 @@ static int32_t s_CreatePathDirectories(const char* szPath) {
     return true == OsCreateDirectory(szPath, 1);
 }
 
+// OFFSET: 0x766400
 int32_t CVar::Load(HOSFILE file) {
     char fastData[CONSOLE_CVAR_MAX_LINE];
     char line[CONSOLE_CVAR_MAX_LINE];
@@ -262,6 +269,7 @@ int32_t CVar::Load(HOSFILE file) {
     return 1;
 }
 
+// OFFSET: 0x766530
 int32_t CVar::Load(const char* filename) {
     char path[STORM_MAX_PATH] = {0};
 
@@ -282,6 +290,7 @@ int32_t CVar::Load(const char* filename) {
     return result;
 }
 
+// OFFSET: 0x768340
 void CVar::Initialize(const char* filename) {
     STORM_ASSERT(filename);
     s_filename = filename;
@@ -302,6 +311,7 @@ void CVar::Initialize(const char* filename) {
     CVar::Load(s_filename);
 }
 
+// OFFSET: 0x767030
 int32_t CVar::IterateForArchive(uint32_t a1, uint32_t a2, ITERATE_FUNC cb, void* param) {
     auto cvar = s_registeredCVars.Head();
 
@@ -328,6 +338,7 @@ int32_t CVar::IterateForArchive(uint32_t a1, uint32_t a2, ITERATE_FUNC cb, void*
     return 1;
 }
 
+// OFFSET: 0x766640
 bool CVar::SaveCvar(const char* key, const char* value, void* param) {
     char buffer[STORM_MAX_PATH];
     SStrPrintf(buffer, sizeof(buffer), "SET %s \"%s\"\n", key, value);
@@ -336,6 +347,7 @@ bool CVar::SaveCvar(const char* key, const char* value, void* param) {
     return byteswritten != 0;
 }
 
+// OFFSET: 0x767100
 void CVar::SaveAll() {
     if (!CVar::m_needsSave) {
         return;
@@ -356,6 +368,7 @@ void CVar::SaveAll() {
     }
 }
 
+// OFFSET: 0x7673F0
 void CVar::Destroy() {
     m_initialized = 0;
     CVar::SaveAll();
