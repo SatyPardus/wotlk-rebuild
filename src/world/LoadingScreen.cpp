@@ -338,13 +338,13 @@ void LoadingScreenEnableEvents() {
 
 // OFFSET: 0x407BD0
 void LoadingScreenDisableEvents() {
-    // EventUnregister(EVENT_ID_CHAR, EatEvent);
-    // EventUnregister(EVENT_ID_IME, EatEvent);
-    // EventUnregister(EVENT_ID_KEYDOWN, EatEvent);
-    // EventUnregister(EVENT_ID_KEYDOWN_REPEATING, EatEvent);
-    // EventUnregister(EVENT_ID_MOUSEDOWN, EatEvent);
-    // EventUnregister(EVENT_ID_MOUSEMOVE, EatEvent);
-    // EventUnregister(EVENT_ID_SIZE, SizeEvent);
+    EventUnregister(EVENT_ID_CHAR, EatEvent);
+    EventUnregister(EVENT_ID_IME, EatEvent);
+    EventUnregister(EVENT_ID_KEYDOWN, EatEvent);
+    EventUnregister(EVENT_ID_KEYDOWN_REPEATING, EatEvent);
+    EventUnregister(EVENT_ID_MOUSEDOWN, EatEvent);
+    EventUnregister(EVENT_ID_MOUSEMOVE, EatEvent);
+    EventUnregister(EVENT_ID_SIZE, SizeEvent);
     if (s_sizeEventPosted) {
         // CurrentContext = EventGetCurrentContext();
         // EventQueuePost(CurrentContext, 35, (int)&s_sizeEvent, 24);
@@ -702,9 +702,8 @@ bool IsStillLoading() {
     //    if (!v5 || !sub_77FCD0(v5))
     //        return 1;
     //}
-    //LoadingScreenDisable();
-    //return 0;
-    return true;
+    LoadingScreenDisable();
+    return false;
 }
 
 // OFFSET: 0x40AEF0
