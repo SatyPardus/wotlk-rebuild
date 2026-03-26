@@ -546,7 +546,7 @@ void MippedImgSet(uint32_t fourCC, uint32_t width, uint32_t height, MipBits* bit
     auto levelCount = CalcLevelCount(width, height);
 
     for (int32_t level = 0; level < levelCount; level++) {
-        bits->mip[level] = reinterpret_cast<C4Pixel*>(reinterpret_cast<uintptr_t>(bits->mip[levelCount]) + offset);
+        bits->mip[level] = reinterpret_cast<C4Pixel*>(reinterpret_cast<uintptr_t>(&bits[levelCount]) + offset);
         levelDataSize = CalcLevelSize(level, width, height, fourCC);
         offset += levelDataSize;
     }
