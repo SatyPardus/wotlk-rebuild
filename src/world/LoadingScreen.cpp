@@ -4,6 +4,7 @@
 #include <util/CStatus.hpp>
 #include <util/Unimplemented.hpp>
 #include <db/StaticDb.hpp>
+#include <gx/RenderState.hpp>
 
 void LoadingScreenInitialize() {
     g_theGxDevicePtr->ShaderCreate(&s_vertexShader, GxSh_Vertex, "Shaders\\Vertex", "UI", 2);
@@ -559,24 +560,15 @@ void PaintLoadingBar(const TextureInfo* textureInfo, size_t infoCount, const HTE
         if (!textures[i])
             continue;
 
+        GxRsSet(GxRs_BlendingMode, 2);
         //v6 = g_theGxDevicePtr;
-        //if (g_theGxDevicePtr->ukn1[981]) {
-        //    v7 = (_DWORD*)(g_theGxDevicePtr->ukn1[2620] + 144);
-        //    if (*v7 != 2) {
-        //        CGxDevice::IRsDirty(g_theGxDevicePtr, 6);
-        //        p_xMax = v31;
-        //        *v7 = 2;
-        //        v6 = g_theGxDevicePtr;
-        //    }
-        //    if (v6->ukn1[981]) {
-        //        v8 = v6->ukn1[2620];
-        //        v9 = dword_AD8B7C[*(_DWORD*)(v8 + 144)];
-        //        v10 = &v6->ukn1[2620];
-        //        if (*(_DWORD*)(v8 + 168) != v9) {
-        //            CGxDevice::IRsDirty(v6, 7);
-        //            p_xMax = v31;
-        //            *(_DWORD*)(*v10 + 168) = v9;
-        //        }
+        //if (v6->ukn1[981]) {
+        //    v8 = v6->ukn1[2620];
+        //    v9 = CGxDevice::s_alphaRef[*(_DWORD*)(v8 + 144)];
+        //    v10 = &v6->ukn1[2620];
+        //    if (*(_DWORD*)(v8 + 168) != v9) {
+        //        CGxDevice::IRsDirty(v6, 7);
+        //        *(_DWORD*)(*v10 + 168) = v9;
         //    }
         //}
         C3Vector positions[4];
