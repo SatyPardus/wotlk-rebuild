@@ -237,13 +237,7 @@ void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visible, fl
         } else {
             //         sub_408BF0(11, 0);
         }
-        //     if (*(_DWORD*)(g_theGxDevicePtr + 3928)) {
-        //         v10 = (_DWORD*)(*(_DWORD*)(g_theGxDevicePtr + 10484) + 288);
-        //         if (*v10) {
-        g_theGxDevicePtr->IRsDirty(GxRs_Fog);
-        //             *v10 = 0;
-        //         }
-        //     }
+        GxRsSet(GxRs_Fog, 0);
         if (!PaintBackgroundImage()) {
             PaintSimpleBackground();
             if (s_vertexShader->Valid() && s_pixelShader->Valid()) {
