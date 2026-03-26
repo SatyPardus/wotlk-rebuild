@@ -555,7 +555,7 @@ void PaintLoadingBar(const TextureInfo* textureInfo, size_t infoCount, const HTE
     if (infoCount <= 0)
         return;
 
-    for (size_t i = 0; i < 1; i++) {
+    for (size_t i = 0; i < 2; i++) {
         if (!textures[i])
             continue;
 

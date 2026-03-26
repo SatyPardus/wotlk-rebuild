@@ -47,8 +47,7 @@ const uint16_t s_indices[] = { 0, 1, 2, 3 };
 const C2Vector s_texCoord[] = { C2Vector(0.0, 1.0), C2Vector(1.0, 1.0), C2Vector(0.0, 0.0), C2Vector(1.0, 0.0) };
 const TextureInfo s_textureInfo[] = {
     { "Interface\\Glues\\LoadingBar\\Loading-BarFill", 1, CRect(0.5, 0.075000003, 0.52499998, 0.025) },
-    // TODO should be "BarBorder", but crashes currently.
-    { "Interface\\Glues\\LoadingBar\\Loading-BarFill", 0, CRect(0.5, 0.075000003, 0.60000002, 0.050000001) }
+    { "Interface\\Glues\\LoadingBar\\Loading-BarBorder", 0, CRect(0.5, 0.075000003, 0.60000002, 0.050000001) }
 };
 
 void LoadingScreenInitialize();
