@@ -27,6 +27,7 @@ class CVar : public TSHashObject<CVar, HASHKEY_STRI> {
         static void Destroy();
         static int32_t Load(const char* filename);
         static int32_t Load(HOSFILE fileHandle);
+        static void SaveAll();
         static bool SaveCvar(const char* key, const char* value, void* param);
         // Member variables
         uint32_t m_category = 0;

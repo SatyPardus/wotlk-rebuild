@@ -336,9 +336,9 @@ bool CVar::SaveCvar(const char* key, const char* value, void* param) {
     return byteswritten != 0;
 }
 
-int32_t CVarSaveFile() {
+void CVar::SaveAll() {
     if (!CVar::m_needsSave) {
-        return 1;
+        return;
     }
 
     char name[STORM_MAX_PATH];
@@ -354,13 +354,11 @@ int32_t CVarSaveFile() {
         result = CVar::IterateForArchive(0, 0, CVar::SaveCvar, file);
         OsCloseFile(file);
     }
-
-    return result;
 }
 
 void CVar::Destroy() {
     m_initialized = 0;
-    CVarSaveFile();
+    CVar::SaveAll();
     ConsoleCommandUnregister("set");
     ConsoleCommandUnregister("cvar_reset");
     ConsoleCommandUnregister("cvar_default");

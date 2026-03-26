@@ -537,7 +537,7 @@ void CGlueMgr::EnterWorld() {
     //    sub_407E40(v13, *(_DWORD*)&dword_B24180[4 * CGlueMgr::m_characterInfo->raceId]);
     //}
     LoadingScreenEnable(CGlueMgr::m_characterInfo->mapID, true);
-    //CVar::SaveAll();
+    CVar::SaveAll();
 
     CGlueMgr::m_idleState = IDLE_ENTER_WORLD;
     CGlueMgr::m_showedDisconnect = 0;
