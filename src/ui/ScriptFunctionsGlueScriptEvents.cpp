@@ -14,6 +14,7 @@
 #include "util/Unimplemented.hpp"
 #include "sound/SI2.hpp"
 #include <cstdint>
+#include <async/AsyncFileRead.hpp>
 
 int32_t Script_IsShiftKeyDown(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
@@ -82,10 +83,9 @@ int32_t Script_SetCurrentScreen(lua_State* L) {
     auto screen = lua_tolstring(L, 1, nullptr);
     CGlueMgr::UpdateCurrentScreen(screen);
 
-    // TODO
-    // if (!Blizzard::Streaming::IsStreamingMode()) {
-    //     Sub4BAE10();
-    // }
+    if (!SFile::IsStreamingMode()) {
+        AsyncFileReadWaitAll();
+    }
 
     return 0;
 }
