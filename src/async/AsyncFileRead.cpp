@@ -7,7 +7,7 @@
 uint32_t AsyncFileRead::s_threadSleep;
 uint32_t AsyncFileRead::s_handlerTimeout = 100;
 CAsyncObject* AsyncFileRead::s_asyncWaitObject;
-void* AsyncFileRead::s_progressCallback;
+CALLBACK_FUNC AsyncFileRead::s_progressCallback;
 void* AsyncFileRead::s_progressParam;
 int32_t AsyncFileRead::s_progressCount;
 void* AsyncFileRead::s_ingameProgressCallback;
@@ -26,6 +26,8 @@ TSList<CAsyncQueue, TSGetLink<CAsyncQueue>> AsyncFileRead::s_asyncQueueList;
 TSList<CAsyncThread, TSGetLink<CAsyncThread>> AsyncFileRead::s_asyncThreadList;
 STORM_EXPLICIT_LIST(CAsyncObject, link) AsyncFileRead::s_asyncFileReadPostList;
 STORM_EXPLICIT_LIST(CAsyncObject, link) AsyncFileRead::s_asyncFileReadFreeList;
+TSGrowableArray<POLL_FUNC> AsyncFileRead::s_asyncPollHandlers;
+TSGrowableArray<STATUS_FUNC> AsyncFileRead::s_asyncStatusHandlers;
 int32_t AsyncFileRead::s_waiting;
 
 CAsyncQueue* AsyncFileReadCreateQueue() {
@@ -67,6 +69,7 @@ void AsyncFileReadLinkObject(CAsyncObject* object, int32_t a2) {
     object->char25 = 0;
 }
 
+// OFFSET: 0x4B9B20
 int32_t AsyncFileReadPollHandler(const void* a1, void* a2) {
     uint32_t start = OsGetAsyncTimeMsPrecise();
 
@@ -100,10 +103,9 @@ int32_t AsyncFileReadPollHandler(const void* a1, void* a2) {
         }
     }
 
-    // TODO
-    // for (int32_t i = 0; i < DwordB4A224; i++) {
-    //     DwordB4A228[i]();
-    // }
+    for (int32_t i = 0; i < AsyncFileRead::s_asyncPollHandlers.Count(); i++) {
+        AsyncFileRead::s_asyncPollHandlers[i]();
+    }
 
     return 1;
 }
@@ -197,6 +199,31 @@ uint32_t AsyncFileReadThread(void* param) {
     return 0;
 }
 
+// OFFSET: 0x4BAD80
+bool AsyncFileReadIsReading() {
+    AsyncFileRead::s_queueLock.Enter();
+    for (auto def = AsyncFileRead::s_asyncThreadList.Head(); def; def = AsyncFileRead::s_asyncThreadList.Next(def)) {
+        if (def->currentObject) {
+            AsyncFileRead::s_queueLock.Leave();
+            return true;
+        }
+    }
+    for (auto def = AsyncFileRead::s_asyncQueueList.Head(); def; def = AsyncFileRead::s_asyncQueueList.Next(def)) {
+        if (def->Next()) {
+            AsyncFileRead::s_queueLock.Leave();
+            return true;
+        }
+    }
+    if (AsyncFileRead::s_asyncFileReadPostList.Head()) {
+        AsyncFileRead::s_queueLock.Leave();
+        return true;
+    }
+
+    AsyncFileRead::s_queueLock.Leave();
+    return false;
+}
+
+// OFFSET: 0x4BA060
 void AsyncFileReadWait(CAsyncObject* object) {
     STORM_ASSERT(object);
 
@@ -243,4 +270,55 @@ void AsyncFileReadWait(CAsyncObject* object) {
     }
 
     AsyncFileRead::s_waiting--;
+}
+
+// OFFSET: 0x4BAE10
+void AsyncFileReadWaitAll() {
+    int32_t progressCount = 0;
+    for (int32_t i = 0; i < AsyncFileRead::s_asyncStatusHandlers.Count(); i++) {
+        progressCount += AsyncFileRead::s_asyncStatusHandlers[i]();
+    }
+    AsyncFileRead::s_progressCount = progressCount;
+    while (AsyncFileReadIsReading()) {
+        AsyncFileReadPollHandler(nullptr, nullptr);
+        if (AsyncFileRead::s_progressCallback) {
+            float v3 = 1.0;
+            float v4 = 1.0;
+            if (progressCount) {
+                v4 = (float)(progressCount - AsyncFileRead::s_progressCount) / (float)progressCount;
+                if (v4 < 0.0) {
+                    v4 = 0;
+                }
+            }
+
+            AsyncFileRead::s_progressCallback(v4, AsyncFileRead::s_progressParam);
+        }
+        OsSleep(1u);
+    }
+
+    AsyncFileRead::s_progressCallback = nullptr;
+}
+
+void AsyncFileReadAddPollHandler(POLL_FUNC method) {
+    for (int32_t i = 0; i < AsyncFileRead::s_asyncPollHandlers.Count(); i++) {
+        if (AsyncFileRead::s_asyncPollHandlers[i] == method) {
+            return;
+        }
+    }
+
+    POLL_FUNC* ptr = nullptr;
+    ptr = AsyncFileRead::s_asyncPollHandlers.New();
+    *ptr = method;
+}
+
+void AsyncFileReadAddStatusHandler(STATUS_FUNC method) {
+    for (int32_t i = 0; i < AsyncFileRead::s_asyncStatusHandlers.Count(); i++) {
+        if (AsyncFileRead::s_asyncStatusHandlers[i] == method) {
+            return;
+        }
+    }
+
+    STATUS_FUNC* ptr = nullptr;
+    ptr = AsyncFileRead::s_asyncStatusHandlers.New();
+    *ptr = method;
 }

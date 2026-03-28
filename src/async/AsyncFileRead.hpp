@@ -5,10 +5,14 @@
 #include "async/CAsyncThread.hpp"
 #include <common/Prop.hpp>
 #include <storm/Thread.hpp>
+#include <storm/array/TSGrowableArray.hpp>
 
 #define NUM_ASYNC_QUEUES 3
 
 class CAsyncObject;
+typedef void (*CALLBACK_FUNC)(float, void*);
+typedef void (*POLL_FUNC)();
+typedef int32_t (*STATUS_FUNC)();
 
 class AsyncFileRead {
     public:
@@ -16,7 +20,7 @@ class AsyncFileRead {
         static uint32_t s_threadSleep;
         static uint32_t s_handlerTimeout;
         static CAsyncObject* s_asyncWaitObject;
-        static void* s_progressCallback;
+        static CALLBACK_FUNC s_progressCallback;
         static void* s_progressParam;
         static int32_t s_progressCount;
         static void* s_ingameProgressCallback;
@@ -31,6 +35,8 @@ class AsyncFileRead {
         static TSList<CAsyncThread, TSGetLink<CAsyncThread>> s_asyncThreadList;
         static STORM_EXPLICIT_LIST(CAsyncObject, link) s_asyncFileReadPostList;
         static STORM_EXPLICIT_LIST(CAsyncObject, link) s_asyncFileReadFreeList;
+        static TSGrowableArray<POLL_FUNC> s_asyncPollHandlers;
+        static TSGrowableArray<STATUS_FUNC> s_asyncStatusHandlers;
         static int32_t s_waiting;
 };
 
@@ -44,6 +50,14 @@ int32_t AsyncFileReadPollHandler(const void* a1, void* a2);
 
 uint32_t AsyncFileReadThread(void* thread);
 
+bool AsyncFileReadIsReading();
+
 void AsyncFileReadWait(CAsyncObject* object);
+
+void AsyncFileReadWaitAll();
+
+void AsyncFileReadAddPollHandler(POLL_FUNC method);
+
+void AsyncFileReadAddStatusHandler(STATUS_FUNC method);
 
 #endif
