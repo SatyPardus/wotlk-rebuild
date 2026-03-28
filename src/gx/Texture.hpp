@@ -79,6 +79,10 @@ void TextureIncreasePriority(CTexture*);
 
 void TextureInitialize(void);
 
+void AsyncTextureHandler();
+
+int32_t AsyncTextureStatus();
+
 int32_t TextureIsSame(HTEXTURE textureHandle, const char* fileName);
 
 MipBits* TextureLoadImage(const char* filename, uint32_t* width, uint32_t* height, PIXEL_FORMAT* dataFormat, int32_t* isOpaque, CStatus* status, uint32_t* alphaBits, int32_t a8);

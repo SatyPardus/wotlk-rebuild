@@ -10,9 +10,10 @@
 #include <bc/Memory.hpp>
 #include <storm/Error.hpp>
 #include <storm/String.hpp>
+#include <async/AsyncFileRead.hpp>
 
 namespace Texture {
-    int32_t s_createBlpAsync; // Invented name
+    int32_t s_createBlpAsync = 1; // Invented name
     MipBits* s_mipBits;
     int32_t s_mipBitsValid;
     TSHashTable<CTexture, HASHKEY_TEXTUREFILE> s_textureCache;
@@ -33,8 +34,40 @@ namespace Texture {
 
 static CImVector CRAPPY_GREEN = { 0x00, 0xFF, 0x00, 0xFF };
 
+STORM_EXPLICIT_LIST(CAsyncObject, link) s_asyncTextureList;
+static int32_t s_asyncLoadBufferUsed;
+
+// OFFSET: 0x4B64E0
+void AsyncTextureProcess(CAsyncObject* asyncObject, int32_t a2) {
+    asyncObject->link.Unlink();
+    // Is Unlink correct? Check with the code below.
+    //        link = v2->link;
+    //        p_link = &v2->link;
+    //        if (link) {
+    //            file = (unsigned int)v2[1].file;
+    //            if ((file & 1) == 0 && file)
+    //                v6 = (DWORD*)((char*)p_link + file - *(_DWORD*)(link + 4));
+    //            else
+    //                v6 = (_DWORD*)(file & 0xFFFFFFFE);
+    //            *v6 = link;
+    //            *(_DWORD*)(*p_link + 4) = v2[1].file;
+    //            *p_link = 0;
+    //            v2[1].file = 0;
+    //        }
+
+    auto v7 = SMemAlloc(asyncObject->size, ".\\Texture.cpp", __LINE__, 0);
+    s_asyncLoadBufferUsed += asyncObject->size;
+    asyncObject->buffer = v7;
+    AsyncFileReadObject(asyncObject, a2);
+}
+
 void AsyncTextureWait(CTexture* texture) {
-    // TODO
+    if (texture->asyncObject) {
+        if (!texture->asyncObject->buffer)
+            AsyncTextureProcess(texture->asyncObject, 1);
+
+        AsyncFileReadWait(texture->asyncObject);
+    }
 }
 
 uint32_t CalcLevelCount(uint32_t width, uint32_t height) {
@@ -768,10 +801,88 @@ int32_t FindSubstitution(const char* a1, char* a2) {
     return 0;
 }
 
-CTexture* CreateBlpAsync(char* fileExt, char* fileName, int32_t createFlags, CGxTexFlags texFlags) {
-    // TODO
+// OFFSET: 0x4B7E80
+void AsyncTextureSuccessCallback(void* param) {
+    CTexture* texture = static_cast<CTexture*>(param);
 
-    return nullptr;
+    if (!PumpBlpTextureAsync(texture, texture->asyncObject->buffer)) {
+        // if (!CStatus::IsEmpty(&texture->status))
+        //     CStatus::sub_4B4F90(&texture->status);
+        FillInSolidTexture(CRAPPY_GREEN, texture);
+    }
+
+    SFile::Close(texture->asyncObject->file);
+    texture->asyncObject->file = nullptr;
+    s_asyncLoadBufferUsed -= texture->asyncObject->size;
+    SMemFree(texture->asyncObject->buffer, __FILE__, __LINE__, 0);
+    // CAsyncObject::Close((int)texture->asyncObject);
+    texture->asyncObject = nullptr;
+}
+
+// OFFSET: 0x4B5300
+void AsyncTextureFailureCallback(void* param) {
+    CTexture* texture = static_cast<CTexture*>(param);
+
+    s_asyncLoadBufferUsed -= texture->asyncObject->size;
+    // CAsyncObject::Close((int)texture->asyncObject);
+    SMemFree(texture->asyncObject->buffer, __FILE__, __LINE__, 0);
+}
+
+// OFFSET: 0x4B8A50
+CTexture* CreateBlpAsync(char* fileExt, char* fileName, int32_t createFlags, CGxTexFlags texFlags) {
+    SFile* file;
+    SErrSetLastError(0);
+    if (!SFile::OpenEx(nullptr, fileName, (createFlags >> 1) & 1, &file)) {
+        if (!SErrGetLastError()) {
+            SErrSetLastError(2);
+        }
+        return nullptr;
+    }
+
+    if (!file)
+        return nullptr;
+    //if (a1)
+    //    *a1 = 0;
+    //v6 = 0;
+    //if ((a3 & 4) == 0)
+    //    v6 = CTextureBlob::GetTexture(Src);
+    auto m = SMemAlloc(sizeof(CTexture), "HTEXTURE", -2, 0x0);
+    auto texture = new (m) CTexture();
+
+    texture->gxTexFlags = texFlags;
+    if ((createFlags & 2) != 0)
+        texture->flags |= 2;
+    // if ((createFlags & 4) != 0 && s_atlasEnable)
+    //     texture->flags |= 4;
+    // if ((createFlags & 0x20) != 0 && SFile::IsStreamingMode())
+    //    texture->flags |= 0x20u;
+    //if ((a3 & 0x20) != 0 && SFile::IsStreamingMode())
+    //    v8->flags |= 0x20u;
+    
+    SStrCopy(texture->filename, fileName, 0x7FFFFFFF);
+    //if (v6)
+    //    CTextureBlob::CreateTexture(v8, v6);
+    
+    CAsyncObject *asyncObject = AsyncFileReadAllocObject();
+    texture->asyncObject = asyncObject;
+    asyncObject->userArg = texture;
+    texture->asyncObject->userPostloadCallback = AsyncTextureSuccessCallback;
+    texture->asyncObject->userFailedCallback = AsyncTextureFailureCallback;
+    texture->asyncObject->file = file;
+    texture->asyncObject->size = SFile::GetFileSize(file, 0);
+    //if (v6) {
+    //    texture->asyncObject->priority = 131;
+    //} else if ((a3 & 0x10) != 0) {
+    //    texture->asyncObject->priority = 129;
+    //} else {
+        texture->asyncObject->priority = 130;
+    //}
+    if (0x400000 - s_asyncLoadBufferUsed < asyncObject->size)
+        s_asyncTextureList.LinkNode(asyncObject, 2, 0);
+    else
+        AsyncTextureProcess(asyncObject, 0);
+
+    return texture;
 }
 
 CTexture* CreateBlpSync(int32_t createFlags, char* fileName, char* fileExt, CGxTexFlags texFlags) {
@@ -1108,15 +1219,77 @@ CTexture* TextureGetTexturePtr(HTEXTURE handle) {
 }
 
 void TextureIncreasePriority(CTexture* texture) {
-    // TODO
+    //if (SFile::IsStreamingMode()) {
+    //    if (a1->asyncObject->buffer) {
+    //        AsyncFile::EnterQueueLock();
+    //        asyncObject = a1->asyncObject;
+    //        if (!asyncObject->isCurrent && !asyncObject->isRead && !asyncObject->isProcessed)
+    //            sub_4BAC20(a1->asyncObject);
+    //        AsyncFile::LeaveQueueLock();
+    //    } else {
+    //        TSList::AddEntry(&s_asyncLoadList_0.m_linkoffset, (int)a1->asyncObject);
+    //    }
+    //}
 }
 
+// OFFSET: 0x4B7F80
 void TextureInitialize() {
     uint32_t v0 = MippedImgCalcSize(2, 1024, 1024);
     Texture::s_mipBits = reinterpret_cast<MipBits*>(SMemAlloc(v0, __FILE__, __LINE__, 0));
 
-    // TODO
-    // - rest of function
+    AsyncFileReadAddPollHandler(AsyncTextureHandler);
+    AsyncFileReadAddStatusHandler(AsyncTextureStatus);
+    //dword_B49C78 = OsGetAsyncTimeMs();
+    //qword_B49C98 = 0i64;
+    //EventRegisterEx(EVENT_ON_POLL, (int)sub_4B7200, 0, 0.0);
+}
+
+// OFFSET: 0x4B69E0
+void AsyncTextureHandler() {
+    int32_t v1 = 0x400000 - s_asyncLoadBufferUsed;
+    //m_next = (CAsyncObject*)s_asyncLoadList_0.m_terminator.m_next;
+    //if (((int)s_asyncLoadList_0.m_terminator.m_next & 1) != 0 || !s_asyncLoadList_0.m_terminator.m_next)
+    //    m_next = 0;
+    //while (((unsigned __int8)m_next & 1) == 0 && m_next) {
+    //    v8 = *(CAsyncObject**)((char*)&m_next->buffer + s_asyncLoadList_0.m_linkoffset);
+    //    if (v1 >= m_next->size) {
+    //        sub_4B64E0(0);
+    //        v1 -= m_next->size;
+    //    }
+    //    m_next = v8;
+    //}
+
+    for (auto def = s_asyncTextureList.Head(); def; def = s_asyncTextureList.Next(def)) {
+        if (v1 >= def->size) {
+            AsyncTextureProcess(def, 0);
+            v1 -= def->size;
+        }
+    }
+}
+
+// OFFSET: 0x4B7F10
+int32_t AsyncTextureStatus() {
+    int32_t count = 0;
+    //m_next = (char*)s_asyncLoadList_0.m_terminator.m_next;
+    //result = 0;
+    //if (((int)s_asyncLoadList_0.m_terminator.m_next & 1) != 0 || !s_asyncLoadList_0.m_terminator.m_next)
+    //    m_next = 0;
+    //while (((unsigned __int8)m_next & 1) == 0 && m_next) {
+    //    m_next = *(char**)&m_next[s_asyncLoadList_0.m_linkoffset + 4];
+    //    ++result;
+    //}
+
+    for (auto def = s_asyncTextureList.Head(); def; def = s_asyncTextureList.Next(def)) {
+        count++;
+    }
+    //v2 = (char*)s_asyncTextureList.m_terminator.m_next;
+    //if (((int)s_asyncTextureList.m_terminator.m_next & 1) != 0 || !s_asyncTextureList.m_terminator.m_next)
+    //    v2 = 0;
+    //while (((unsigned __int8)v2 & 1) == 0 && v2) {
+    //    v2 = *(char**)&v2[s_asyncTextureList.m_linkoffset + 4];
+    //    ++result;
+    //}
+    return count;
 }
 
 int32_t TextureIsSame(HTEXTURE textureHandle, const char* fileName) {
