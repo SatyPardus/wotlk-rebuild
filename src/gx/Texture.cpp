@@ -815,7 +815,7 @@ void AsyncTextureSuccessCallback(void* param) {
     texture->asyncObject->file = nullptr;
     s_asyncLoadBufferUsed -= texture->asyncObject->size;
     SMemFree(texture->asyncObject->buffer, __FILE__, __LINE__, 0);
-    // CAsyncObject::Close((int)texture->asyncObject);
+    AsyncFileReadDestroyObject(texture->asyncObject);
     texture->asyncObject = nullptr;
 }
 
@@ -824,7 +824,7 @@ void AsyncTextureFailureCallback(void* param) {
     CTexture* texture = static_cast<CTexture*>(param);
 
     s_asyncLoadBufferUsed -= texture->asyncObject->size;
-    // CAsyncObject::Close((int)texture->asyncObject);
+    AsyncFileReadDestroyObject(texture->asyncObject);
     SMemFree(texture->asyncObject->buffer, __FILE__, __LINE__, 0);
 }
 
