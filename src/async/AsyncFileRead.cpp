@@ -31,12 +31,12 @@ TSGrowableArray<STATUS_FUNC> AsyncFileRead::s_asyncStatusHandlers;
 int32_t AsyncFileRead::s_waiting;
 
 CAsyncQueue* AsyncFileReadCreateQueue() {
-    CAsyncQueue* queue = AsyncFileRead::s_asyncQueueList.NewNode(0, 2, 0x8);
+    CAsyncQueue* queue = AsyncFileRead::s_asyncQueueList.NewNode(1, 2, 0x8);
     return queue;
 }
 
 void AsyncFileReadCreateThread(CAsyncQueue* queue, const char* queueName) {
-    CAsyncThread* thread = AsyncFileRead::s_asyncThreadList.NewNode(0, 2, 0x8);
+    CAsyncThread* thread = AsyncFileRead::s_asyncThreadList.NewNode(1, 2, 0x8);
 
     thread->queue = queue;
     thread->currentObject = nullptr;
@@ -209,7 +209,7 @@ bool AsyncFileReadIsReading() {
         }
     }
     for (auto def = AsyncFileRead::s_asyncQueueList.Head(); def; def = AsyncFileRead::s_asyncQueueList.Next(def)) {
-        if (def->Next()) {
+        if (def->readList.Head()) {
             AsyncFileRead::s_queueLock.Leave();
             return true;
         }
