@@ -13,7 +13,7 @@
 #include <async/AsyncFileRead.hpp>
 
 namespace Texture {
-    int32_t s_createBlpAsync = 1; // Invented name
+    int32_t s_createBlpAsync = 0; // Invented name
     MipBits* s_mipBits;
     int32_t s_mipBitsValid;
     TSHashTable<CTexture, HASHKEY_TEXTUREFILE> s_textureCache;
@@ -40,22 +40,8 @@ static int32_t s_asyncLoadBufferUsed;
 // OFFSET: 0x4B64E0
 void AsyncTextureProcess(CAsyncObject* asyncObject, int32_t a2) {
     asyncObject->link.Unlink();
-    // Is Unlink correct? Check with the code below.
-    //        link = v2->link;
-    //        p_link = &v2->link;
-    //        if (link) {
-    //            file = (unsigned int)v2[1].file;
-    //            if ((file & 1) == 0 && file)
-    //                v6 = (DWORD*)((char*)p_link + file - *(_DWORD*)(link + 4));
-    //            else
-    //                v6 = (_DWORD*)(file & 0xFFFFFFFE);
-    //            *v6 = link;
-    //            *(_DWORD*)(*p_link + 4) = v2[1].file;
-    //            *p_link = 0;
-    //            v2[1].file = 0;
-    //        }
 
-    auto v7 = SMemAlloc(asyncObject->size, ".\\Texture.cpp", __LINE__, 0);
+    auto v7 = SMemAlloc(asyncObject->size, __FILE__, __LINE__, 0);
     s_asyncLoadBufferUsed += asyncObject->size;
     asyncObject->buffer = v7;
     AsyncFileReadObject(asyncObject, a2);
@@ -865,18 +851,19 @@ CTexture* CreateBlpAsync(char* fileExt, char* fileName, int32_t createFlags, CGx
     
     CAsyncObject *asyncObject = AsyncFileReadAllocObject();
     texture->asyncObject = asyncObject;
-    asyncObject->userArg = texture;
+    texture->asyncObject->userArg = texture;
     texture->asyncObject->userPostloadCallback = AsyncTextureSuccessCallback;
     texture->asyncObject->userFailedCallback = AsyncTextureFailureCallback;
     texture->asyncObject->file = file;
     texture->asyncObject->size = SFile::GetFileSize(file, 0);
     //if (v6) {
     //    texture->asyncObject->priority = 131;
-    //} else if ((a3 & 0x10) != 0) {
-    //    texture->asyncObject->priority = 129;
-    //} else {
+    //} else
+    if ((createFlags & 0x10) != 0) {
+        texture->asyncObject->priority = 129;
+    } else {
         texture->asyncObject->priority = 130;
-    //}
+    }
     if (0x400000 - s_asyncLoadBufferUsed < asyncObject->size)
         s_asyncTextureList.LinkNode(asyncObject, 2, 0);
     else

@@ -1735,6 +1735,7 @@ void CM2Model::UpdateLoaded() {
     }
 }
 
+// OFFSET: 0x823ED0
 void CM2Model::WaitForLoad(const char* a2) {
     if (this->m_shared->asyncObject) {
         AsyncFileReadWait(this->m_shared->asyncObject);

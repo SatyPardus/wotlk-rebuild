@@ -220,3 +220,54 @@ void GxuXformCreateProjection_SG(float fov, float aspect, float minZ, float maxZ
 
     GxuXformCreateProjection_Exact(v9, aspect, minZ, maxZ, dst);
 }
+
+void GxuXformCalcFrustumCorners(C44Matrix* viewMatrix, C44Matrix* projMatrix, C3Vector corners[8]) {
+    C44Matrix invProj = projMatrix->Inverse();
+    C44Matrix invView = viewMatrix->Inverse();
+    C44Matrix invViewProj = invProj * invView;
+
+    auto Unproject = [&](float x, float y, float z, float w) -> C3Vector {
+        C4Vector ndc = { x, y, z, w };
+        return C3Vector(ndc * invViewProj);
+
+    };
+
+    bool isOrthographic = fabsf(projMatrix->d3 - 1.0f) < 0.00000023841858f;
+
+    // TODO cleaned up with claude, double check for hallucinations
+    if (isOrthographic) {
+        // Standard NDC unit cube corners, w=1
+        corners[0] = Unproject(-1, -1, -1, 1); // near bottom-left
+        corners[1] = Unproject(-1, 1, -1, 1);  // near top-left
+        corners[2] = Unproject(1, 1, -1, 1);   // near top-right
+        corners[3] = Unproject(1, -1, -1, 1);  // near bottom-right
+        corners[4] = Unproject(-1, -1, 1, 1);  // far  bottom-left
+        corners[5] = Unproject(-1, 1, 1, 1);   // far  top-left
+        corners[6] = Unproject(1, 1, 1, 1);    // far  top-right
+        corners[7] = Unproject(1, -1, 1, 1);   // far  bottom-right
+    } else {
+        // Perspective: derive NDC z values from the projection matrix coefficients
+        // M43 and M33 encode the near/far clip planes.
+        // Standard GL-style perspective: M43 = -(2*far*near)/(far-near), M33 = -(far+near)/(far-near)
+        float mz = -projMatrix->d2;
+        float nearZ = mz / (projMatrix->c2 + 1.0f); // NDC z at near plane
+        float farZ = mz / (projMatrix->c2 - 1.0f);  // NDC z at far plane
+
+        float n = nearZ;   // positive near NDC depth
+        float nn = -nearZ; // negative near NDC depth (left/bottom side)
+        float f = farZ;    // positive far NDC depth
+        float nf = -farZ;  // negative far NDC depth
+
+        // Near plane corners (w = n)
+        corners[0] = Unproject(nn, nn, nn, n); // near bottom-left
+        corners[1] = Unproject(nn, n, nn, n);  // near top-left
+        corners[2] = Unproject(n, n, nn, n);   // near top-right
+        corners[3] = Unproject(n, nn, nn, n);  // near bottom-right
+
+        // Far plane corners (w = f)
+        corners[4] = Unproject(nf, nf, f, f); // far bottom-left
+        corners[5] = Unproject(nf, f, f, f);  // far top-left
+        corners[6] = Unproject(f, f, f, f);   // far top-right
+        corners[7] = Unproject(f, nf, f, f);  // far bottom-right
+    }
+}

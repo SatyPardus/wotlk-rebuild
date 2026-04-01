@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <tempest/Vector.hpp>
+#include <tempest/Box.hpp>
+#include <tempest/Rect.hpp>
 
 class CWorld {
     public:
@@ -47,6 +49,11 @@ class CWorld {
         // Static variables
         static uint32_t s_enables;
         static uint32_t s_enables2;
+        static C3Vector s_currentWorldPos;
+        static CAaBox s_groupAreaOfInterest;
+        static CAaBox s_objectAreaOfInterest;
+        static CiRect s_chunkRectHigh;
+        static CiRect s_chunkRectLow;
         static float s_farClip;
         static float s_nearClip;
         static float prevFarClip;
@@ -56,6 +63,7 @@ class CWorld {
         // Static functions
         static void Initialize();
         static void LoadMap(const char* mapName, const C3Vector& position, int32_t zoneID);
+        static void PrepareAreaOfInterest(const C3Vector& position);
         static void Render(const C3Vector& cameraPos, float time);
         static uint32_t GetEnables();
         static void SetLoadProgressCallback(CALLBACK_FUNC callback, void* param);

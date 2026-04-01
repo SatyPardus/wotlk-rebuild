@@ -42,4 +42,6 @@ void GxuXformCreateProjection_Exact(float fovyInRadians, float aspect, float min
 
 void GxuXformCreateProjection_SG(float fov, float aspect, float minZ, float maxZ, C44Matrix& dst);
 
+void GxuXformCalcFrustumCorners(C44Matrix* viewMatrix, C44Matrix* projMatrix, C3Vector corners[8]);
+
 #endif

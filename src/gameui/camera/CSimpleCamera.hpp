@@ -12,12 +12,12 @@ class CSimpleCamera {
     CSimpleCamera(float nearZ, float farZ, float fov);
     virtual ~CSimpleCamera();
 
-    C3Vector& Position() { this->m_position; }
-    C33Matrix& Facing() { this->m_facing; }
-    float NearZ() { this->m_nearZ; }
-    float FarZ() { this->m_farZ; }
-    float FOV() { this->m_fov; }
-    float Aspect() { this->m_aspect; }
+    C3Vector& Position() { return this->m_position; }
+    C33Matrix& Facing() { return this->m_facing; }
+    float NearZ() { return this->m_nearZ; }
+    float FarZ() { return this->m_farZ; }
+    float FOV() { return this->m_fov; }
+    float Aspect() { return this->m_aspect; }
 
     virtual C3Vector Forward();
     virtual C3Vector Right();
