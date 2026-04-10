@@ -7,6 +7,7 @@
 #include "world/map/CMapRenderChunk.hpp"
 #include "world/map/CMapArea.hpp"
 #include "world/map/Types.hpp"
+#include <gx/buffer/Types.hpp>
 
 class CMapChunk : public CMapBaseObj {
     public:
@@ -45,13 +46,13 @@ class CMapChunk : public CMapBaseObj {
     SMChunk* header;
     uint8_t* lowQualityTexMap;
     uint8_t* predTexture;
-    float* vertices;
+    float* height;
     uint32_t* vertexShading;
     int8_t* normals;
     uint8_t* shadowMap;
     SMLayer* layers;
     uint8_t* additionalShadowmap;
-    uint8_t* MCRF_ptr;
+    uint32_t* MCRF_ptr;
     SMLiquidChunk* liquid;
     CWSoundEmitter* soundEmitters;
     int32_t unk_140;
@@ -63,6 +64,11 @@ class CMapChunk : public CMapBaseObj {
 
     void Create(SIffChunk* headerChunk, bool a3);
     void ProcessIffChunks(bool a3);
+    void CreateBounds();
+    void CreateIndices(void* buf, CMapRenderChunkState* state);
+    int16_t CreateIndices(void* buf, int32_t offset);
+    void CreateVertices(void* buf, int32_t bufOffset);
+    void CreateVerticesLocal(CGxVertexPN* vertices);
 };
 
 #endif

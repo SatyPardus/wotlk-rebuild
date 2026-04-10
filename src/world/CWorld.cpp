@@ -43,7 +43,10 @@ void CWorld::Initialize() {
         | Enables::Enable_Particulates
         | Enables::Enable_LowDetail;
 
-    // TODO
+    //flt_CD769C = 0.0;
+    //CWorld::frameCnt = 0;
+    //dword_CD768C = 0;
+    //dword_CD7694 = 0;
 
     if (GxCaps().m_shaderTargets[GxSh_Pixel] > GxShPS_none) {
         CWorld::s_enables |= Enables::Enable_PixelShader;
@@ -53,7 +56,70 @@ void CWorld::Initialize() {
         CWorld::s_enables2 |= Enables2::Enable_VertexShader;
     }
 
-    // TODO
+    //dword_CD7754 |= 7u;
+    //dword_CD765C = *(_DWORD*)(dword_CD85C4 + 48);
+    //CWorld::shadowMipLevel = CWorldParam::cvar_shadowLevel->m_intValue;
+    //CWorld::farFog = CWorldParam::cvar_farClip->m_numberValue;
+    //dword_CD7664 = 4;
+    //CWorld::prepareAll = 0i64;
+    //CWorld::bShowSimpleDoodads = 0;
+    //CWorld::bLoadSimpleDoodads = 0;
+    //Scene = M2CreateScene();
+    //World::texVect[0].x = 0.0;
+    //World::texVect[0].y = 0.0;
+    //s_m2Scene = Scene;
+    //World::texVect[0].z = 0.0;
+    //dword_CD7658 = 1;
+    //CWorld::shadowColor = -1;
+    //World::texVect[0].w = 1.0;
+    //CWorld::detailDoodadAlphaRef = 128;
+    //World::texVect[1].w = 1.0;
+    //dword_CD7670 = 0;
+    //World::texVect[2].w = 1.0;
+    //World::texVect[3].w = 1.0;
+    //World::texVect[4].w = 1.0;
+    //World::texVect[5].w = 1.0;
+    //World::texVect[6].w = 1.0;
+    //World::texVect[7].w = 1.0;
+    //flt_ADF1A4 = 1.0;
+    //flt_ADF190 = 1.0;
+    //flt_ADF17C = 1.0;
+    //flt_ADF168 = 1.0;
+    //World::texVect[1].x = 0.0;
+    //World::texVect[1].y = 0.0;
+    //World::texVect[1].z = 0.0;
+    //World::texVect[2].x = 0.0;
+    //World::texVect[2].y = 0.0;
+    //World::texVect[2].z = 0.0;
+    //World::texVect[3].x = 0.0;
+    //World::texVect[3].y = 0.0;
+    //World::texVect[3].z = 0.0;
+    //World::texVect[4].x = 0.0;
+    //World::texVect[4].y = 0.0;
+    //World::texVect[4].z = 0.0;
+    //World::texVect[5].x = 0.0;
+    //World::texVect[5].y = 0.0;
+    //World::texVect[5].z = 0.0;
+    //World::texVect[6].x = 0.0;
+    //World::texVect[6].y = 0.0;
+    //World::texVect[6].z = 0.0;
+    //World::texVect[7].x = 0.0;
+    //World::texVect[7].y = 0.0;
+    //World::texVect[7].z = 0.0;
+    //flt_ADF1A0 = 0.0;
+    //flt_ADF19C = 0.0;
+    //flt_ADF198 = 0.0;
+    //flt_ADF194 = 0.0;
+    //flt_ADF18C = 0.0;
+    //flt_ADF188 = 0.0;
+    //flt_ADF184 = 0.0;
+    //flt_ADF180 = 0.0;
+    //flt_ADF178 = 0.0;
+    //flt_ADF174 = 0.0;
+    //flt_ADF170 = 0.0;
+    //flt_ADF16C = 0.0;
+    //World::groundEffectDistValueSqr = CWorld::detailDoodadDist * CWorld::detailDoodadDist;
+    //CWorld::shadowMipLevel = CWorldParam::cvar_shadowLevel->m_intValue;
 
     uint32_t m2Flags = M2GetCacheFlags();
     CShaderEffect::InitShaderSystem(
@@ -61,10 +127,70 @@ void CWorld::Initialize() {
         (CWorld::s_enables2 & Enables2::Enable_HwPcf) != 0
     );
 
+    //CShaderEffectManager::AddEffectFile("MapObj.wfx");
+    //CShaderEffectManager::AddEffectFile("MapObjU.wfx");
+    //CShaderEffectManager::AddEffectFile("Model2.wfx");
+    //CShaderEffectManager::AddEffectFile("Particle.wfx");
+    //CShaderEffectManager::AddEffectFile("ShadowMap.wfx");
+    //CShadowQuery::Initialize();
+
     CWorldScene::Initialize();
     CMap::Initialize();
 
-    // TODO
+    //CWorld::chunkRectHi.minY = 0;
+    //CWorld::chunkRectHi.minX = 0;
+    //CWorld::chunkRectHi.maxY = 0;
+    //CWorld::s_chunkRectLow.minY = 0;
+    //CWorld::s_chunkRectLow.minX = 0;
+    //CWorld::s_chunkRectLow.maxY = 0;
+    //CMap::gbPrevChunkRect.minY = 0;
+    //CMap::gbPrevChunkRect.minX = 0;
+    //CMap::gbPrevChunkRect.maxY = 0;
+    //CWorld::groupAoi.min.x = 0.0;
+    //CWorld::groupAoi.min.y = 0.0;
+    //CWorld::groupAoi.min.z = 0.0;
+    //CWorld::groupAoi.max.x = 0.0;
+    //CWorld::groupAoi.max.y = 0.0;
+    //CWorld::groupAoi.max.z = 0.0;
+    //CWorld::objectAoi.min.x = 0.0;
+    //CWorld::objectAoi.min.y = 0.0;
+    //CWorld::objectAoi.min.z = 0.0;
+    //dword_ADEEC4 = 3;
+    //dword_ADEEC8 = 2;
+    //CWorld::chunkRectHi.maxX = 0;
+    //CWorld::s_chunkRectLow.maxX = 0;
+    //CMap::gbPrevChunkRect.maxX = 0;
+    //CWorld::objectAoi.max.x = 0.0;
+    //CWorld::objectAoi.max.y = 0.0;
+    //CWorld::objectAoi.max.z = 0.0;
+    //v2 = SMemAlloc(64064, ".\\World.cpp", 470, 0);
+    //if (v2)
+    //    CWorld::particulate = (void*)Particulate::Particulate(
+    //        (int)v2,
+    //        0.027777778,
+    //        30.0,
+    //        (int)"Textures\\WaterPoop02.blp");
+    //else
+    //    CWorld::particulate = 0;
+    //v3 = (float*)SMemAlloc(0x198, ".\\World.cpp", 473, 0);
+    //if (v3)
+    //    dword_CD7544 = MapWeather::MapWeather(v3);
+    //else
+    //    dword_CD7544 = 0;
+    //CM2Scene::SetProjectTextureCallback(s_m2Scene, (DWORD)World::ProjectTextureCallback, 0);
+    //CM2Scene::SetProjectPositionCallback(s_m2Scene, (int)World::ProjectPositionCallback, 0);
+    //ConsoleCommandRegister("showDetailDoodads", (int)sub_77F5B0, 1, 0);
+    //ConsoleCommandRegister("maxLOD", (int)sub_77F600, 1, 0);
+    //ConsoleCommandRegister("showCull", (int)sub_77F650, 1, 0);
+    //ConsoleCommandRegister("setShadow", (int)CWorld::ConsoleCommand_SetShadow, 1, 0);
+    //ConsoleCommandRegister("waterRipples", (int)sub_77F690, 1, 0);
+    //ConsoleCommandRegister("waterParticulates", (int)sub_77F6B0, 1, 0);
+    //ConsoleCommandRegister("showShadow", (int)sub_77F7E0, 1, 0);
+    //ConsoleCommandRegister("showLowDetail", (int)sub_77F820, 1, 0);
+    //ConsoleCommandRegister("showSimpleDoodads", (int)CWorld::ConsoleCommand_ShowSimpleDoodads, 1, 0);
+    //ConsoleCommandRegister("detailDoodadAlpha", (int)sub_77F700, 1, 0);
+    //ConsoleCommandRegister("characterAmbient", (int)sub_77F750, 1, 0);
+    //sub_77ED40();
 }
 
 void CWorld::LoadMap(const char* mapName, const C3Vector& position, int32_t zoneID) {

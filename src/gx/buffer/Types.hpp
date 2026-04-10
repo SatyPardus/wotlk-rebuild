@@ -88,4 +88,15 @@ struct CGxVertexPCT {
     C2Vector tc[1];
 };
 
+struct CGxVertexPN {
+    C3Vector position;
+    C3Vector normal;
+};
+
+struct CGxVertexPNC {
+    C3Vector position;
+    C3Vector normal;
+    CImVector color;
+};
+
 #endif

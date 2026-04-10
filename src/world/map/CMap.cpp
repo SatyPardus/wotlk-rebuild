@@ -9,10 +9,17 @@
 #include <storm/Error.hpp>
 #include <world/CWorld.hpp>
 #include <async/AsyncFileRead.hpp>
+#include <gx/Device.hpp>
 
 char CMap::mapPath[STORM_MAX_PATH];
 char CMap::mapName[STORM_MAX_PATH];
 char CMap::wdtFilename[STORM_MAX_PATH];
+uint32_t CMap::s_holeMask[16] = {
+    1 << 0, 1 << 1, 1 << 2, 1 << 3,
+    1 << 4, 1 << 5, 1 << 6, 1 << 7,
+    1 << 8, 1 << 9, 1 << 10, 1 << 11,
+    1 << 12, 1 << 13, 1 << 14, 1 << 15,
+};
 uint32_t CMap::version;
 SMMapHeader CMap::header;
 SMAreaInfo CMap::areaInfo[64 * 64];
@@ -27,6 +34,14 @@ uint32_t CMap::scCollideCnt;
 uint32_t CMap::cCount;
 bool CMap::bPreload;
 bool CMap::bIsStreamingMode;
+
+CGxShader* CMap::vertexShader_Terrain[128];
+CGxShader* CMap::pixelShader_Terrain0[3];
+CGxShader* CMap::pixelShader_Terrain0_env;
+CGxShader* CMap::pixelShader_Terrain1[32];
+CGxShader* CMap::pixelShader_Terrain2[32];
+CGxShader* CMap::pixelShader_Terrain3[96];
+CGxShader* CMap::pixelShader_TerrainSM;
 
 uint32_t* CMap::lightHeap;
 uint32_t* CMap::cacheLightHeap;
@@ -74,187 +89,69 @@ void CMap::Initialize() {
     //CMap::bActive = 0;
     //CMap::oldSelectLightParm = 0;
     //sub_79E3C0();
-    //memset(&dword_CE0008, 0, 0x200u);
-    //dword_CE0488 = 0;
-    //dword_CE048C = 0;
-    //dword_CE0490 = 0;
-    //dword_CE0004 = 0;
-    //dword_CE0408[0] = 0;
-    //dword_CE040C = 0;
-    //dword_CE0410 = 0;
-    //dword_CE0414 = 0;
-    //dword_CE0418 = 0;
-    //dword_CE041C = 0;
-    //dword_CE0420 = 0;
-    //dword_CE0424 = 0;
-    //dword_CE0428 = 0;
-    //dword_CE042C = 0;
-    //dword_CE0430 = 0;
-    //dword_CE0434 = 0;
-    //dword_CE0438 = 0;
-    //dword_CE043C = 0;
-    //dword_CE0440 = 0;
-    //dword_CE0444 = 0;
-    //dword_CE0448 = 0;
-    //dword_CE044C = 0;
-    //dword_CE0450 = 0;
-    //dword_CE0454 = 0;
-    //dword_CE0458 = 0;
-    //dword_CE045C = 0;
-    //dword_CE0460 = 0;
-    //dword_CE0464 = 0;
-    //dword_CE0468 = 0;
-    //dword_CE046C = 0;
-    //dword_CE0470 = 0;
-    //dword_CE0474 = 0;
-    //dword_CE0478 = 0;
-    //dword_CE047C = 0;
-    //dword_CE0480 = 0;
-    //dword_CE0484 = 0;
-    //sub_79E4F0();
-    //dword_CE0000 = 0;
-    //g_theGxDevicePtr->ShaderCreate(
-    //    g_theGxDevicePtr,
-    //    (CGxShader**)&dword_CE0008,
-    //    GxSh_Vertex,
-    //    "Shaders\\Vertex",
-    //    "Terrain",
-    //    128);
-    //g_theGxDevicePtr->ShaderCreate(
-    //    g_theGxDevicePtr,
-    //    (CGxShader**)&dword_CE0488,
-    //    GxSh_Pixel,
-    //    "Shaders\\Pixel",
-    //    "Terrain0",
-    //    3);
-    //g_theGxDevicePtr->ShaderCreate(
-    //    g_theGxDevicePtr,
-    //    (CGxShader**)&dword_CE0004,
-    //    GxSh_Pixel,
-    //    "Shaders\\Pixel",
-    //    "Terrain0_env",
-    //    1);
-    //switch (*((_DWORD*)CGxDevice::Caps((char*)g_theGxDevicePtr) + 49)) {
-    //case 1:
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)dword_CE0408,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1",
-    //        6);
-    //    v23 = 6;
-    //    goto LABEL_12;
-    //case 2:
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)dword_CE0408,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1",
-    //        8);
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE0428,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1w_1",
-    //        1);
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE042C,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1w_1",
-    //        1);
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE0430,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1w_2",
-    //        1);
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE0434,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1w_2",
-    //        1);
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE0438,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1w_3",
-    //        1);
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE043C,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1w_3",
-    //        1);
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE0440,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1w_4",
-    //        1);
-    //    goto LABEL_16;
-    //case 8:
-    //case 9:
-    //case 0xA:
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)dword_CE0408,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1",
-    //        4);
-    //    v23 = 4;
-//LABEL_12:
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE0428,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "Terrain1w",
-    //        v23);
-    //    goto LABEL_17;
-    //default:
-    //    v28 = 32;
-    //    v27 = "Terrain1";
-    //    v26 = "Shaders\\Pixel";
-    //    v25 = 4;
-    //    v24 = dword_CE0408;
-//LABEL_16:
-    //    ((void(__thiscall*)(CGxDevice*, int, int, int, int, int, int*, int, const char*, const char*, int))g_theGxDevicePtr->ShaderCreate)(
-    //        g_theGxDevicePtr,
-    //        v18,
-    //        v19,
-    //        v20,
-    //        v21,
-    //        v22,
-    //        v24,
-    //        v25,
-    //        v26,
-    //        v27,
-    //        v28);
-//LABEL_17:
-    //    g_theGxDevicePtr->ShaderCreate(
-    //        g_theGxDevicePtr,
-    //        (CGxShader**)&dword_CE0000,
-    //        GxSh_Pixel,
-    //        "Shaders\\Pixel",
-    //        "TerrainSM",
-    //        1);
+    memset(CMap::vertexShader_Terrain, 0, sizeof(CMap::vertexShader_Terrain));
+    memset(CMap::pixelShader_Terrain0, 0, sizeof(CMap::pixelShader_Terrain0));
+    CMap::pixelShader_Terrain0_env = nullptr;
+    memset(CMap::pixelShader_Terrain1, 0, sizeof(CMap::pixelShader_Terrain1));
+    //CMap::InitializePCFShaders();
+    CMap::pixelShader_TerrainSM = nullptr;
+
+    g_theGxDevicePtr->ShaderCreate(CMap::vertexShader_Terrain, GxSh_Vertex, "Shaders\\Vertex", "Terrain", 128);
+    g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain0, GxSh_Pixel, "Shaders\\Pixel", "Terrain0", 3);
+    g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain0_env, GxSh_Pixel, "Shaders\\Pixel", "Terrain0_env", 1);
+    switch (g_theGxDevicePtr->Caps().m_shaderTargets[GxSh_Pixel]) {
+    case 1:
+        g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain1, GxSh_Pixel, "Shaders\\Pixel", "Terrain1", 6);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[8], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w", 6);
+        break;
+
+    case 2:
+        g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain1, GxSh_Pixel, "Shaders\\Pixel", "Terrain1", 8);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[8], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w_1", 1);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[9], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w_1", 1);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[10], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w_2", 1);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[11], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w_2", 1);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[12], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w_3", 1);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[13], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w_3", 1);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[14], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w_4", 1);
+        break;
+
+    case 8:
+    case 9:
+    case 0xA:
+        g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain1, GxSh_Pixel, "Shaders\\Pixel", "Terrain1", 4);
+        g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_Terrain1[8], GxSh_Pixel, "Shaders\\Pixel", "Terrain1w", 4);
+        break;
+
+    default:
+        g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain1, GxSh_Pixel, "Shaders\\Pixel", "Terrain1", 32);
+        break;
+    }
+
+    g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_TerrainSM, GxSh_Pixel, "Shaders\\Pixel", "TerrainSM", 1);
     //    dword_CDFFFC = (int)CGxDevice::PoolCreate(g_theGxDevicePtr, 1, 1, 6144, 0, (int)"CMap::lowDetailIndexPool");
     //    dword_CDFFF8 = (int)CGxDevice::BufCreate(dword_CDFFFC, 2, 3072, 0);
     //    sub_7D58B0(dword_ADFBCC, 0, 1, 16, 545, 0x18u);
     CMap::MapMemInitialize();
     //}
+}
+
+// 0x79E4F0
+void CMap::InitializePCFShaders() {
+    for (int32_t i = 0; i < 32; i++) {
+        if (CMap::pixelShader_Terrain2[i]) {
+            // g_theGxDevicePtr->ShaderDestroy(CMap::pixelShader_Terrain2[i]);
+        }
+    }
+
+    for (int32_t i = 0; i < 96; i++) {
+        if (CMap::pixelShader_Terrain3[i]) {
+            // g_theGxDevicePtr->ShaderDestroy(CMap::pixelShader_Terrain3[i]);
+        }
+    }
+
+    g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain2, GxSh_Pixel, "Shaders\\Pixel", CShaderEffect::s_usePcfFiltering ? "Terrain2_pcf" : "Terrain2", 32);
+    g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain3, GxSh_Pixel, "Shaders\\Pixel", CShaderEffect::s_usePcfFiltering ? "Terrain3_pcf" : "Terrain3", 96);
 }
 
 void CMap::MapMemInitialize() {
@@ -396,6 +293,29 @@ void CMap::LoadTextureBlob() {
     char* suffix = SStrChrR(path, '.');
     SStrCopy(suffix, ".tex", STORM_MAX_STR);
     // TODO: TextureLoadBlob(path);
+}
+
+// OFFSET: 0x7D6980
+void CMap::LoadTerrainTexture(CMapArea* area, CMapAreaTexture* areaTexture, int32_t textureId) {
+    //v4 = CGxDevice::Caps((char*)g_theGxDevicePtr)->m_texTarget[1] && CGxDevice::Caps((char*)g_theGxDevicePtr)->m_shaderTargets[0] && CGxDevice::Caps((char*)g_theGxDevicePtr)->m_shaderTargets[4];
+    //textureFlags = this->textureFlags;
+    //LOBYTE(v6) = 0;
+    //if (textureFlags)
+    //    v6 = textureFlags[a3];
+    //v7 = v6 & 1;
+    //if (v7 || !byte_CE049D) {
+    //    if (!v7 || v4) {
+    //        a2->texture = (CTexture*)CMap::LoadTexture(a2->textureName);
+    //    } else {
+    CImVector color = { 0x00, 0x00, 0x00, 0xFF };
+    areaTexture->texture = TextureCreateSolid(color);
+    //    }
+    //} else {
+    //    SStrCopy(v9, a2->textureName, 0x7FFFFFFF);
+    //    LastChar = SStr::FindLastChar(v9, 46);
+    //    SStrCopy(LastChar, "_s.blp", 0x7FFFFFFF);
+    //    a2->texture = (CTexture*)CMap::LoadTexture(v9);
+    //}
 }
 
 bool CMap::SafeOpen(const char* fileName, SFile** file) {

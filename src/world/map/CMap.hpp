@@ -7,12 +7,14 @@
 #include <storm/Array.hpp>
 #include <storm/List.hpp>
 #include <tempest/Rect.hpp>
+#include <gx/shader/CGxShader.hpp>
 
 class CMap {
     public:
     static char mapPath[STORM_MAX_PATH];
     static char mapName[STORM_MAX_PATH];
     static char wdtFilename[STORM_MAX_PATH];
+    static uint32_t s_holeMask[16];
     static uint32_t version;
     static SMMapHeader header;
     static SMAreaInfo areaInfo[64 * 64];
@@ -27,6 +29,14 @@ class CMap {
     static uint32_t cCount;
     static bool bPreload;
     static bool bIsStreamingMode;
+
+    static CGxShader* vertexShader_Terrain[128];
+    static CGxShader* pixelShader_Terrain0[3];
+    static CGxShader* pixelShader_Terrain0_env;
+    static CGxShader* pixelShader_Terrain1[32];
+    static CGxShader* pixelShader_Terrain2[32];
+    static CGxShader* pixelShader_Terrain3[96];
+    static CGxShader* pixelShader_TerrainSM;
 
     static uint32_t* lightHeap;
     static uint32_t* cacheLightHeap;
@@ -45,10 +55,12 @@ class CMap {
 
 
     static void Initialize();
+    static void InitializePCFShaders();
     static void MapMemInitialize();
     static void Load(const char* mapName, int32_t zoneID);
     static void LoadWdt();
     static void LoadTextureBlob();
+    static void LoadTerrainTexture(CMapArea* area, CMapAreaTexture* areaTexture, int32_t textureId);
     static bool SafeOpen(const char* fileName, SFile** file);
     static CMapArea* AllocArea();
     static CMapChunk* AllocMapChunk();

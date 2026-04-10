@@ -6,8 +6,15 @@
 #include "async/CAsyncObject.hpp"
 #include "util/SFile.hpp"
 #include <tempest/Rect.hpp>
+#include <storm/Array.hpp>
+#include "gx/Texture.hpp"
 
 class CMapChunk;
+
+struct CMapAreaTexture {
+    char* textureName;
+    HTEXTURE texture;
+};
 
 class CMapArea : public CMapBaseObj {
     public:
@@ -16,7 +23,7 @@ class CMapArea : public CMapBaseObj {
     C2iVector index;
     C2iVector tileChunkIndex;
 
-    //TSGrowableArray_CMapAreaTexture textures;
+    TSGrowableArray<CMapAreaTexture> textures;
     SMAreaHeader* header;
     SFile* file;
     CAsyncObject* asyncObject;
