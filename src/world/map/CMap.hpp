@@ -3,6 +3,7 @@
 
 #include "world/map/Types.hpp"
 #include "world/map/CMapArea.hpp"
+#include "world/map/CMapRenderChunk.hpp"
 #include <storm/String.hpp>
 #include <storm/Array.hpp>
 #include <storm/List.hpp>
@@ -20,6 +21,7 @@ class CMap {
     static SMAreaInfo areaInfo[64 * 64];
     static CMapArea *areaTable[64 * 64];
     static STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) mapAreaList;
+    static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkFreeList;
     static int32_t uniqueId;
     static int32_t bDungeon;
     static int32_t counts[11];
@@ -64,6 +66,7 @@ class CMap {
     static bool SafeOpen(const char* fileName, SFile** file);
     static CMapArea* AllocArea();
     static CMapChunk* AllocMapChunk();
+    static CMapRenderChunk* AllocRenderChunk();
     static CMapBaseObjLink* AllocBaseObjLink(CMapBaseObj* baseObj);
     static void FreeBaseObjLink(CMapBaseObjLink* link);
     static CMapArea* PrepareArea(int32_t areaIndexX, int32_t areaIndexY);

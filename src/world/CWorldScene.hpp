@@ -17,6 +17,8 @@ class CWorldScene {
 
     static void Initialize();
     static void Render(const C3Vector& cameraPos, float time);
+    static void RenderChunks();
+    static void RenderChunksSolid();
 };
 
 #endif // WORLD_C_WORLDSCENE_HPP

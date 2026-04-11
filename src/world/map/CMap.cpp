@@ -25,6 +25,7 @@ SMMapHeader CMap::header;
 SMAreaInfo CMap::areaInfo[64 * 64];
 CMapArea* CMap::areaTable[64 * 64];
 STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) CMap::mapAreaList;
+STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkFreeList;
 int32_t CMap::uniqueId;
 int32_t CMap::bDungeon;
 int32_t CMap::counts[11];
@@ -61,10 +62,10 @@ uint32_t* CMap::chunkLiquidHeap;
 // OFFSET: 0x79E7C0
 void CMap::Initialize() {
     //NOP();
-    //sub_7C3D90();
-    //sub_7AFEE0();
+    CMapChunk::Initialize();
+    //CMapObjRender::Initialize();
     //sub_7CB990();
-    //sub_7B2760();
+    //CDetailDoodad::Initialize();
     //sub_7A03C0();
     memset(&CMap::counts, 0, sizeof(CMap::counts));
     memset(&CMap::freeCounts, 0, sizeof(CMap::freeCounts));
@@ -361,6 +362,20 @@ CMapChunk* CMap::AllocMapChunk() {
 
     // HashTable::AddEntry(&CMap::s_mapChunkList, 0);
     return nullptr;
+}
+
+// OFFSET: 0x7C0500
+CMapRenderChunk* CMap::AllocRenderChunk() {
+    CMapRenderChunk* chunk = s_mapRenderChunkFreeList.Head();
+    if (!chunk) {
+        chunk = (CMapRenderChunk*)SMemAlloc(sizeof(CMapRenderChunk), ".?AVCMapRenderChunk@@", -2, 8);
+        if (!chunk)
+            return nullptr;
+        s_mapRenderChunkFreeList.LinkToTail(chunk);
+    }
+    chunk->renderChunkLink.Unlink();
+    new (chunk) CMapRenderChunk();
+    return chunk;
 }
 
 // OFFSET: 0x7C0750

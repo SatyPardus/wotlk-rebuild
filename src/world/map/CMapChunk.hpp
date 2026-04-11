@@ -24,7 +24,7 @@ class CMapChunk : public CMapBaseObj {
     CAaBox bbox2;
     void* detailDoodadInst;
     CMapRenderChunk* renderChunk;
-    int32_t unk_AC;
+    int32_t bLoaded;
     int32_t areaId;
     int32_t unk_B4;
     int32_t unk_B8;
@@ -65,10 +65,14 @@ class CMapChunk : public CMapBaseObj {
     void Create(SIffChunk* headerChunk, bool a3);
     void ProcessIffChunks(bool a3);
     void CreateBounds();
-    void CreateIndices(void* buf, CMapRenderChunkState* state);
-    int16_t CreateIndices(void* buf, int32_t offset);
-    void CreateVertices(void* buf, int32_t bufOffset);
-    void CreateVerticesLocal(CGxVertexPN* vertices);
+    void RenderPrep();
+    void Batch();
+    void CreateIndices(char* buf, CMapRenderChunkState* state);
+    int16_t CreateIndices(char* buf, int32_t offset);
+    void CreateVertices(char* buf, int32_t bufOffset);
+    void CreateVerticesLocal(char* buf);
+
+    static void Initialize();
 };
 
 #endif

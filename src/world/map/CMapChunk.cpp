@@ -1,6 +1,13 @@
 #include "world/map/CMapChunk.hpp"
 #include "world/map/CMap.hpp"
 
+// OFFSET: 0x7C3D90
+void CMapChunk::Initialize() {
+    CMapRenderChunk::Initialize();
+    //sub_7C3C60();
+    //CMapChunk::s_geoToTex = -1.0 / flt_D254A8;
+}
+
 void CMapChunk::Create(SIffChunk* headerChunk, bool a3) {
     this->chunkHeaderPtr = headerChunk;
     this->ProcessIffChunks(a3);
@@ -110,8 +117,53 @@ void CMapChunk::CreateBounds() {
     this->radius = sqrt(ex * ex + ey * ey + ez * ez);
 }
 
+// OFFSET: 0x7D3FE0
+void CMapChunk::RenderPrep() {
+    if (!this->renderChunk)
+        this->Batch();
+
+    if (this->renderChunk) {
+        //    if (CWorld::shadowMipLevel || (v2 = CWorldScene::s_activeWorldView.y - this->center.y,
+        //                                   v3 = CWorldScene::s_activeWorldView.z - this->center.z,
+        //                                   v4 = CWorldScene::s_activeWorldView.x - this->center.x,
+        //                                   v4 * v4 + v3 * v3 + v2 * v2 > 603729.0)) {
+        //        this->renderChunk->unk_0A |= 0x10u;
+        //    }
+        this->renderChunk->RenderPrep();
+    }
+    //if ((CWorld::enables & Enable_DetailDoodads) != 0 && CWorld::detailDoodadDist > (double)this->distToCamera) {
+    //    if (!this->detailDoodadInst)
+    //        sub_7D3390(this);
+    //    detailDoodadInst = (char*)this->detailDoodadInst;
+    //    if (detailDoodadInst)
+    //        sub_792FA0(detailDoodadInst);
+    //}
+}
+
+// OFFSET: 0x7C5440
+void CMapChunk::Batch() {
+    if (this->bLoaded)
+        return;
+
+    //if (CMap::enableChunkBatching) {
+    //    m_next = this->parentLinkList.m_terminator.m_next;
+    //    if (((unsigned __int8)m_next & 1) != 0 || !m_next)
+    //        m_next = 0;
+    //    ref = (CMapArea*)m_next->ref;
+    //    y = this->aIndex.y;
+    //    v6[0] = this->aIndex.x & 0xFFFFFFFE;
+    //    v6[1] = y & 0xFFFFFFFE;
+    //    CMapArea::BatchChunks(ref, v6);
+    //} else {
+    //    v5 = CMap::AllocRenderChunk();
+    this->renderChunk = CMap::AllocRenderChunk();
+    this->renderChunk->AddBatch(this, nullptr, &this->topLeftCoords, 0);
+    this->bLoaded = 1;
+    //}
+}
+
 // OFFSET: 0x7C51B0
-void CMapChunk::CreateIndices(void* buf, CMapRenderChunkState* state) {
+void CMapChunk::CreateIndices(char* buf, CMapRenderChunkState* state) {
     uint16_t baseVertex = state->maxVertexIndex != 0 ? state->maxVertexIndex + 1 : 0;
     int16_t indicesWritten = this->CreateIndices(buf, baseVertex);
 
@@ -128,8 +180,8 @@ void CMapChunk::CreateIndices(void* buf, CMapRenderChunkState* state) {
     state->indexCount += indicesWritten;
 }
 
-int16_t CMapChunk::CreateIndices(void* buf, int32_t baseVertex) {
-    uint16_t* indexDst = static_cast<uint16_t*>(buf);
+int16_t CMapChunk::CreateIndices(char* buf, int32_t baseVertex) {
+    uint16_t* indexDst = reinterpret_cast<uint16_t*>(buf);
     int16_t totalIndices = 0;
 
     for (int row = 0; row < 8; ++row) {
@@ -172,21 +224,23 @@ int16_t CMapChunk::CreateIndices(void* buf, int32_t baseVertex) {
 }
 
 // OFFSET: 0x7C54C0
-void CMapChunk::CreateVertices(void* buf, int32_t bufOffset) {
+void CMapChunk::CreateVertices(char* buf, int32_t bufOffset) {
     //if (CMap::enableTerrainShaderVertex) {
     //    if (CMapRenderChunk::s_gxBufVertexFormat == 1)
     //        CMapChunk::CreateVerticesWorld((CGxVertexPN*)&a2[6 * a3]);
     //    else
     //        CMapChunk::CreateVerticesWorld((CGxVertexPNC*)&a2[7 * a3]);
     //} else if (CMapRenderChunk::s_gxBufVertexFormat == 1) {
-        CMapChunk::CreateVerticesLocal((CGxVertexPN*)buf);
+        CMapChunk::CreateVerticesLocal(buf);
     //} else {
     //    CMapChunk::CreateVerticesLocal((CGxVertexPNC*)a2);
     //}
 }
 
 // OFFSET: 0x7C4960
-void CMapChunk::CreateVerticesLocal(CGxVertexPN* vertices) {
+void CMapChunk::CreateVerticesLocal(char* buf) {
+    CGxVertexPN* v = reinterpret_cast<CGxVertexPN*>(buf);
+
     // ~1/127: scales packed signed-byte normals into [-1, 1] float range
     static const float NORMAL_SCALE = 0.0078740157f;
 
@@ -198,7 +252,6 @@ void CMapChunk::CreateVerticesLocal(CGxVertexPN* vertices) {
 
     float* height = this->height;
     int8_t* normals = this->normals;
-    CGxVertexPN* v = vertices;
 
     for (int row = 0; row < 9; row++) {
         // --- Outer grid row: 9 evenly-spaced vertices ---

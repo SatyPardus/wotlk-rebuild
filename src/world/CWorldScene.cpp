@@ -1,6 +1,7 @@
 #include "world/CWorldScene.hpp"
 #include "world/CWorld.hpp"
 #include "world/map/CMap.hpp"
+#include "world/map/CMapChunk.hpp"
 #include "world/daynight/DayNight.hpp"
 
 #include "gx/Device.hpp"
@@ -101,7 +102,7 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //ActiveCamera = CGWorldFrame::GetActiveCamera();
     //flt_CD877C = CWorld::farFog / cos(((double(__thiscall*)(CGCamera*))ActiveCamera->Fov)(ActiveCamera) * 0.5) - CWorld::farFog;
     //sub_782F20();
-    //sub_7BA600();
+    CMapRenderChunk::UpdatePools();
     //sub_7AE060();
     //sub_7B2A80();
     //memset(&byte_CD87B8, 0, 0x180u);
@@ -210,7 +211,7 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
 
     CShaderEffect::UpdateProjMatrix();
     //sub_781610();
-    //sub_798DA0();
+    CWorldScene::RenderChunks();
 
     DayNight::Update();
     DayNight::RenderSky();
@@ -259,4 +260,320 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     if (CWorld::GetEnables() & 0x200000) {
         // TODO
     }
+}
+
+// OFFSET: 0x798DA0
+void CWorldScene::RenderChunks() {
+    GxRsPush();
+    //    dword_D2509C = *(_DWORD*)(g_theGxDevicePtr->ukn1[2620] + 240);
+    //    if (CMap::enableTerrainShaderVertex) {
+    //        v42.M11 = 1.0;
+    //        v42.M22 = 1.0;
+    //        v42.M33 = 1.0;
+    //        v42.M44 = 1.0;
+    //        v42.M12 = 0.0;
+    //        v42.M13 = 0.0;
+    //        v42.M14 = 0.0;
+    //        v42.M21 = 0.0;
+    //        v42.M23 = 0.0;
+    //        v42.M24 = 0.0;
+    //        v42.M31 = 0.0;
+    //        v42.M32 = 0.0;
+    //        v42.M34 = 0.0;
+    //        v42.M41 = 0.0;
+    //        v42.M42 = 0.0;
+    //        v42.M43 = 0.0;
+    //        a3.x = -CWorldScene::s_activeWorldView.x;
+    //        a3.y = -CWorldScene::s_activeWorldView.y;
+    //        a3.z = -CWorldScene::s_activeWorldView.z;
+    //        C44Matrix::Translate(&v42, &a3);
+    //        v43.M11 = 1.0;
+    //        v43.M12 = 0.0;
+    //        v43.M13 = 0.0;
+    //        v43.M14 = 0.0;
+    //        v43.M21 = 0.0;
+    //        v43.M23 = 0.0;
+    //        v43.M24 = 0.0;
+    //        v43.M31 = 0.0;
+    //        v43.M32 = 0.0;
+    //        v43.M34 = 0.0;
+    //        v43.M41 = 0.0;
+    //        v43.M42 = 0.0;
+    //        v43.M43 = 0.0;
+    //        v43.M22 = 1.0;
+    //        v43.M33 = 1.0;
+    //        v43.M44 = 1.0;
+    //        C44Matrix::Copy(&v43, (C44Matrix*)&g_theGxDevicePtr->ukn1[16 * g_theGxDevicePtr->ukn1[1725] + 1727]);
+    //        sub_7CFBE0(&v42, &v43);
+    //    } else {
+    //        ActiveDayNight = DayNight::GetActiveDayNight();
+    //        v1 = g_theGxDevicePtr;
+    //        v2 = g_theGxDevicePtr->ukn1[981] == 0;
+    //        v3 = ActiveDayNight;
+    //        v4 = *((float*)ActiveDayNight + 36);
+    //        v46 = *((float*)ActiveDayNight + 36);
+    //        if (!v2) {
+    //            v5 = g_theGxDevicePtr->ukn1[2620];
+    //            v6 = v4 == *(float*)(v5 + 192);
+    //            v7 = (float*)(v5 + 192);
+    //            if (!v6) {
+    //                CGxDevice::IRsDirty(g_theGxDevicePtr, 8);
+    //                *v7 = v46;
+    //                v1 = g_theGxDevicePtr;
+    //            }
+    //        }
+    //        v2 = v1->ukn1[981] == 0;
+    //        v8 = *((float*)v3 + 37);
+    //        v46 = *((float*)v3 + 37);
+    //        if (!v2) {
+    //            v9 = v1->ukn1[2620];
+    //            v10 = v8 == *(float*)(v9 + 216);
+    //            v11 = (float*)(v9 + 216);
+    //            if (!v10) {
+    //                CGxDevice::IRsDirty(v1, 9);
+    //                *v11 = v46;
+    //                v1 = g_theGxDevicePtr;
+    //            }
+    //        }
+    //        if (v1->ukn1[981]) {
+    //            v12 = v1->ukn1[2620];
+    //            v13 = *(_DWORD*)(v12 + 24);
+    //            v14 = (_DWORD*)(v12 + 24);
+    //            if (v13 != -8421505) {
+    //                CGxDevice::IRsDirty(v1, 1);
+    //                *v14 = -8421505;
+    //                v1 = g_theGxDevicePtr;
+    //            }
+    //        }
+    //        if (byte_CE049D) {
+    //            if (v1->ukn1[981]) {
+    //                v15 = v1->ukn1[2620];
+    //                v16 = *(_DWORD*)(v15 + 72);
+    //                v17 = (_DWORD*)(v15 + 72);
+    //                if (v16 != -1) {
+    //                    CGxDevice::IRsDirty(v1, 3);
+    //                    *v17 = -1;
+    //                }
+    //            }
+    //            sub_763C70(4, 20.0);
+    //            v1 = g_theGxDevicePtr;
+    //        }
+    //        v18 = 0;
+    //        for (i = 1272; i < 1392; i += 24) {
+    //            if (v1->ukn1[981]) {
+    //                v20 = (_DWORD*)(v1->ukn1[2620] + i + 384);
+    //                if (*v20 != v18) {
+    //                    CGxDevice::IRsDirty(v1, v18 + 69);
+    //                    *v20 = v18;
+    //                    v1 = g_theGxDevicePtr;
+    //                }
+    //                if (v1->ukn1[981]) {
+    //                    v21 = (_DWORD*)(i + v1->ukn1[2620]);
+    //                    if (*v21 != 2) {
+    //                        CGxDevice::IRsDirty(v1, v18 + 53);
+    //                        *v21 = 2;
+    //                        v1 = g_theGxDevicePtr;
+    //                    }
+    //                    if (v1->ukn1[981]) {
+    //                        v22 = (_DWORD*)(v1->ukn1[2620] + i + 192);
+    //                        if (*v22 != 1) {
+    //                            CGxDevice::IRsDirty(v1, v18 + 61);
+    //                            *v22 = 1;
+    //                            v1 = g_theGxDevicePtr;
+    //                        }
+    //                    }
+    //                }
+    //            }
+    //            ++v18;
+    //        }
+    //    }
+    //    if (byte_CE049E) {
+    //        v23 = DayNight::GetActiveDayNight();
+    //        if (CGxDevice::Caps((char*)g_theGxDevicePtr)->int134) {
+    //            v24 = (char*)g_theGxDevicePtr;
+    //            v25 = v23[35];
+    //            if (!g_theGxDevicePtr->ukn1[981])
+    //                goto LABEL_35;
+    //            v26 = (int*)(g_theGxDevicePtr->ukn1[2620] + 240);
+    //            if (*v26 == v25)
+    //                goto LABEL_35;
+    //            CGxDevice::IRsDirty(g_theGxDevicePtr, 10);
+    //            *v26 = v25;
+    //        } else {
+    //            sub_984C90(v23 + 35);
+    //            ((void(__thiscall*)(CGxDevice*, int, int, char*, int))g_theGxDevicePtr->ukn70)(
+    //                g_theGxDevicePtr,
+    //                4,
+    //                2,
+    //                v44,
+    //                1);
+    //        }
+    //        v24 = (char*)g_theGxDevicePtr;
+    // LABEL_35:
+    //        if (CGxDevice::Caps(v24)->int138) {
+    //            if (g_theGxDevicePtr->ukn1[981]) {
+    //                v27 = (_DWORD*)(g_theGxDevicePtr->ukn1[2620] + 288);
+    //                if (*v27 != 1) {
+    //                    CGxDevice::IRsDirty(g_theGxDevicePtr, 12);
+    //                    *v27 = 1;
+    //                }
+    //            }
+    //        }
+    //        sub_874660();
+    //        goto LABEL_58;
+    //    }
+    //    v28 = DayNight::GetActiveDayNight();
+    //    v29 = g_theGxDevicePtr;
+    //    v30 = v28[35];
+    //    if (g_theGxDevicePtr->ukn1[981]) {
+    //        v31 = (int*)(g_theGxDevicePtr->ukn1[2620] + 240);
+    //        if (*v31 != v30) {
+    //            CGxDevice::IRsDirty(g_theGxDevicePtr, 10);
+    //            *v31 = v30;
+    //            v29 = g_theGxDevicePtr;
+    //        }
+    //        if (v29->ukn1[981]) {
+    //            v32 = (_DWORD*)(v29->ukn1[2620] + 288);
+    //            if (*v32 != 1) {
+    //                CGxDevice::IRsDirty(v29, 12);
+    //                *v32 = 1;
+    //                v29 = g_theGxDevicePtr;
+    //            }
+    //            if (v29->ukn1[981]) {
+    //                v33 = (_DWORD*)(v29->ukn1[2620] + 888);
+    //                if (*v33 != 1) {
+    //                    CGxDevice::IRsDirty(v29, 37);
+    //                    *v33 = 1;
+    //                    v29 = g_theGxDevicePtr;
+    //                }
+    //                if (v29->ukn1[981]) {
+    //                    v34 = (_DWORD*)(v29->ukn1[2620] + 1080);
+    //                    if (*v34) {
+    //                        CGxDevice::IRsDirty(v29, 45);
+    //                        *v34 = 0;
+    //                        v29 = g_theGxDevicePtr;
+    //                    }
+    //                    if (v29->ukn1[981]) {
+    //                        v35 = (_DWORD*)(v29->ukn1[2620] + 912);
+    //                        if (*v35) {
+    //                            CGxDevice::IRsDirty(v29, 38);
+    //                            *v35 = 0;
+    //                            v29 = g_theGxDevicePtr;
+    //                        }
+    //                        if (v29->ukn1[981]) {
+    //                            v36 = (_DWORD*)(v29->ukn1[2620] + 1104);
+    //                            if (*v36) {
+    //                                CGxDevice::IRsDirty(v29, 46);
+    //                                *v36 = 0;
+    //                            }
+    //                        }
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
+    // LABEL_58:
+    //    CWorldScene::RenderChunksSinglePass();
+    CWorldScene::RenderChunksSolid();
+    //    CWorldScene::RenderChunksZoneDebug();
+    //    for (j = 0; j < 350; j += 70) {
+    //        v38 = g_theGxDevicePtr->ukn1[j + 1025];
+    //        v39 = &g_theGxDevicePtr->ukn1[j + 1025];
+    //        if ((v39[v38 + 66] & 1) == 0) {
+    //            v40 = (float*)&v39[16 * v38 + 2];
+    //            v40[15] = 1.0;
+    //            v40[10] = 1.0;
+    //            v40[5] = 1.0;
+    //            *v40 = 1.0;
+    //            v40[14] = 0.0;
+    //            v40[13] = 0.0;
+    //            v40[12] = 0.0;
+    //            v40[11] = 0.0;
+    //            v40[9] = 0.0;
+    //            v40[8] = 0.0;
+    //            v40[7] = 0.0;
+    //            v40[6] = 0.0;
+    //            v40[4] = 0.0;
+    //            v40[3] = 0.0;
+    //            v40[2] = 0.0;
+    //            v40[1] = 0.0;
+    //            v41 = *v39;
+    //            *((_BYTE*)v39 + 4) = 1;
+    //            v39[v41 + 66] = 1;
+    //        }
+    //    }
+    GxRsPop();
+}
+
+// OFFSET: 0x793B10
+void CWorldScene::RenderChunksSolid() {
+    // ### FAKE WORLD RENDER #######
+    for (auto link = CMap::mapAreaList.Head(); link; link = CMap::mapAreaList.Next(link)) {
+        CMapArea* area = (CMapArea*)link->owner;
+        for (int32_t i = 0; i < 16 * 16; i++) {
+            CMapChunk* chunk = area->mapChunks[i];
+            if (!chunk)
+                continue;
+
+            chunk->RenderPrep();
+            if (chunk->renderChunk) {
+                chunk->renderChunk->RenderSetup(1);
+            }
+        }
+    }
+    // #############################
+
+
+    //CMapRenderChunk::SetShaders(0, 0);
+    //if (CMapRenderChunk::s_currentShaderX)
+    //    CGxDevice::RsSet(g_theGxDevicePtr, GxRs_PixelShader, CMapRenderChunk::s_currentShaderX);
+    //m_next = (CMapRenderChunk*)CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next;
+    //if (((int)CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next & 1) != 0 || !CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next) {
+    //    m_next = 0;
+    //}
+    //while (((unsigned __int8)m_next & 1) == 0 && m_next) {
+    //    v9 = *(CMapRenderChunk**)((char*)&m_next->renderChunkLink.m_next + CWorldScene::sortTable.renderChunkList[0].m_linkoffset);
+    //    CMapRenderChunk::RenderSetup(m_next, 1);
+    //    if ((CWorld::enables & 2) != 0) {
+    //        if (CMapRenderChunk::s_currentShaderX) {
+    //            if (CMap::enableTerrainShaderVertex)
+    //                CMapRenderChunk::RenderSolidVertexPixelShader(m_next);
+    //            else
+    //                CMapRenderChunk::RenderSolidPixelShader((int)m_next);
+    //        } else {
+    //            CMapRenderChunk::RenderSolid((int)m_next);
+    //        }
+    //    }
+    //    m_prevLink = m_next->renderChunkLink.m_prevLink;
+    //    if (m_next->renderChunkLink.m_prevLink) {
+    //        v2 = m_next->renderChunkLink.m_next;
+    //        if (((unsigned __int8)v2 & 1) == 0 && v2)
+    //            v3 = (TSLink_CMapRenderChunk**)((char*)&v2->renderChunkLink.m_prevLink + (char*)m_next - (char*)m_prevLink->m_next);
+    //        else
+    //            v3 = (_DWORD*)((unsigned int)v2 & 0xFFFFFFFE);
+    //        *v3 = m_prevLink;
+    //        m_next->renderChunkLink.m_prevLink->m_next = m_next->renderChunkLink.m_next;
+    //        m_next->renderChunkLink.m_prevLink = 0;
+    //        m_next->renderChunkLink.m_next = 0;
+    //    }
+    //    v4 = *(int*)((char*)&m_next->renderChunkLink.m_prevLink + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
+    //    v5 = (TSLink*)((char*)m_next + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
+    //    if (v4) {
+    //        v6 = (unsigned int)v5->m_next;
+    //        if ((v6 & 1) == 0 && v6)
+    //            v7 = (TSLink**)((char*)&v5->m_prevlink + v6 - *(_DWORD*)(v4 + 4));
+    //        else
+    //            v7 = (_DWORD*)(v6 & 0xFFFFFFFE);
+    //        *v7 = v4;
+    //        v5->m_prevlink->m_next = v5->m_next;
+    //        v5->m_prevlink = 0;
+    //        v5->m_next = 0;
+    //    }
+    //    v8 = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
+    //    v5->m_prevlink = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
+    //    v5->m_next = v8->m_next;
+    //    v8->m_next = m_next;
+    //    m_next = v9;
+    //    CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink = v5;
+    //}
 }

@@ -3,9 +3,14 @@
 #include "world/map/CMap.hpp"
 #include "gx/Device.hpp"
 #include <world/CWorld.hpp>
+#include "world/CWorldScene.hpp"
+#include "gx/RenderState.hpp"
+#include "gx/Draw.hpp"
+#include "gx/Transform.hpp"
+#include <tempest/matrix/C44Matrix.hpp>
 
-STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, blockLink) CMapRenderChunk::s_bufList;
-STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, bufLink) CMapRenderChunk::s_chunkBufBlockFreeList;
+STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, bufLink) CMapRenderChunk::s_bufList;
+STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, blockLink) CMapRenderChunk::s_chunkBufBlockFreeList;
 STORM_EXPLICIT_LIST(CMapRenderChunkBuf, unk_14) CMapRenderChunk::s_renderChunkBufFreeList;
 TSGrowableArray<CMapRenderChunkBufBlock> CMapRenderChunk::s_chunkBlockArray;
 bool CMapRenderChunk::s_bPoolsDirty;
@@ -33,6 +38,39 @@ void CMapRenderChunk::Initialize() {
     CMapRenderChunk::s_chunkBlockArray.SetCount(0);
     //memset(&unk_D1D018, 0, 0x40u);
     //memset(&unk_D1CFD8, 0, 0x40u);
+}
+
+// OFFSET: 0x7B7AF0
+void CMapRenderChunk::AddBatch(CMapChunk* a2, CMapChunk* a3, C3Vector* a4, uint8_t a5) {
+    this->mapChunkPtrs[0] = a2;
+    this->mapChunkPtrs[1] = a3;
+    this->vec1 = *a4;
+    this->unkFlags = a5;
+    //v15.min.x = a2->bbox.min.x;
+    //v15.min.y = a2->bbox.min.y;
+    //v15.min.z = a2->bbox.min.z;
+    //v15.max.x = a2->bbox.max.x;
+    //z = a2->bbox.max.z;
+    //v15.max.y = a2->bbox.max.y;
+    //v15.max.z = z;
+    //if (a3)
+    //    sub_715130(&v15.min.x, v14, &a3->bbox.min.x);
+    //x = v15.max.x;
+    //v8 = v15.min.x;
+    //y = v15.max.y;
+    //v10 = v15.min.y;
+    //this->radius = sqrt(
+    //                   (v15.max.x - v15.min.x) * (v15.max.x - v15.min.x) + (v15.max.y - v15.min.y) * (v15.max.y - v15.min.y) + (v15.max.z - v15.min.z) * (v15.max.z - v15.min.z)) *
+    //               0.5;
+    //v11 = v10 + y;
+    //v12 = x + v8;
+    //v13 = v15.max.z + v15.min.z;
+    //v15.max.x = v12 * 0.5;
+    //this->vec2.x = v15.max.x;
+    //v15.max.y = v11 * 0.5;
+    //this->vec2.y = v15.max.y;
+    //v15.max.z = v13 * 0.5;
+    //this->vec2.z = v15.max.z;
 }
 
 // OFFSET: 0x7BA600
@@ -158,7 +196,7 @@ void CMapRenderChunk::UpdateLoaded() {
 // OFFSET: 0x7D0420
 void CMapRenderChunk::UseStreamingBufs() {
     int32_t v2 = 24;
-    if (CMapRenderChunk::s_gxBufVertexFormat == 2)
+    if (CMapRenderChunk::s_gxBufVertexFormat == GxVBF_PNC)
         v2 = 28;
     int32_t v3 = 145;
     int32_t v4 = 768;
@@ -176,7 +214,7 @@ void CMapRenderChunk::UseStreamingBufs() {
 // OFFSET: 0x7D02C0
 void CMapRenderChunk::RenderPrepBufs(CGxBuf* vertexBuf, CGxBuf* indexBuf) {
     if (!vertexBuf->unk1C || !vertexBuf->unk1D) {
-        auto bufData = g_theGxDevicePtr->BufLock(vertexBuf);
+        char* bufData = g_theGxDevicePtr->BufLock(vertexBuf);
 
         if (this->mapChunkPtrs[0]) {
             this->mapChunkPtrs[0]->CreateVertices(bufData, 0);
@@ -186,9 +224,7 @@ void CMapRenderChunk::RenderPrepBufs(CGxBuf* vertexBuf, CGxBuf* indexBuf) {
             this->mapChunkPtrs[1]->CreateVertices(bufData, 145);
         }
 
-        g_theGxDevicePtr->BufUnlock(vertexBuf, 0);
-
-        vertexBuf->unk1C = 1;
+        GxBufUnlock(vertexBuf, 0);
     }
 
     if (!indexBuf->unk1C || !indexBuf->unk1D) {
@@ -208,9 +244,7 @@ void CMapRenderChunk::RenderPrepBufs(CGxBuf* vertexBuf, CGxBuf* indexBuf) {
             this->mapChunkPtrs[1]->CreateIndices(&bufData[this->state.indexCount], &this->state);
         }
 
-        g_theGxDevicePtr->BufUnlock(vertexBuf, 0);
-
-        indexBuf->unk1C = 1;
+        GxBufUnlock(indexBuf, 0);
     }
 }
 
@@ -276,4 +310,52 @@ CMapRenderChunkBuf* CMapRenderChunk::AllocBuf(int32_t a1, CMapRenderChunk* rende
         }
     }
     return nullptr;
+}
+
+// OFFSET: 0x7D04A0
+void CMapRenderChunk::RenderSetup(int32_t a2) {
+    this->unk_0C = 0.0;
+    //CMapRenderChunk::AllocLayerTextures(this);
+    //if (!a2 || !CMap::enableTerrainShaderVertex) {
+    //    v11.M11 = 1.0;
+    //    v11.M12 = 0.0;
+    //    v11.M13 = 0.0;
+    //    v11.M14 = 0.0;
+    //    v11.M21 = 0.0;
+    //    v11.M23 = 0.0;
+    //    v11.M24 = 0.0;
+    //    v11.M31 = 0.0;
+    //    v11.M32 = 0.0;
+    //    v11.M34 = 0.0;
+    //    v11.M22 = 1.0;
+    //    v11.M33 = 1.0;
+    //    v11.M44 = 1.0;
+    //    v12 = this->vec1.x - CWorldScene::s_activeWorldView.x;
+    //    y = this->vec1.y;
+    //    v11.M41 = v12;
+    //    v4 = &g_theGxDevicePtr->ukn1[605];
+    //    v13 = y - CWorldScene::s_activeWorldView.y;
+    //    z = this->vec1.z;
+    //    v11.M42 = v13;
+    //    v6 = z - CWorldScene::s_activeWorldView.z;
+    //    v7 = &g_theGxDevicePtr->ukn1[g_theGxDevicePtr->ukn1[605] + 671];
+    //    LOBYTE(g_theGxDevicePtr->ukn1[606]) = 1;
+    //    *v7 &= ~1u;
+    //    v14 = v6;
+    //    v8 = *v4;
+    //    v11.M43 = v14;
+    //    C44Matrix::Copy((C44Matrix*)&v4[16 * v8 + 2], &v11);
+    //    sub_790440(v10, &this->vec2.x);
+    //    CM2Scene::SelectLights(s_m2Scene, v10);
+    //    CMapRenderChunk::SelectLights((int)v10);
+    //    CM2Lighting::SetupGxLights(v10, &CWorldScene::s_activeWorldView.x);
+    //    CM2Lighting::SetupGxFog(v10);
+    //}
+
+    if (this->chunkBuf) {
+        GxPrimVertexPtr(this->chunkBuf->vertexBuf, CMapRenderChunk::s_gxBufVertexFormat);
+        GxPrimIndexPtr(this->chunkBuf->indexBuf);
+    } else {
+        this->UseStreamingBufs();
+    }
 }

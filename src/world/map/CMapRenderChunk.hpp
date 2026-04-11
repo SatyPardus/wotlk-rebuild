@@ -63,8 +63,8 @@ class CMapRenderChunk {
     CMapRenderChunkBuf* chunkBuf;
     CMapRenderChunkState state;
 
-    static STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, blockLink) s_bufList;
-    static STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, bufLink) s_chunkBufBlockFreeList;
+    static STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, bufLink) s_bufList;
+    static STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, blockLink) s_chunkBufBlockFreeList;
     static STORM_EXPLICIT_LIST(CMapRenderChunkBuf, unk_14) s_renderChunkBufFreeList;
     static TSGrowableArray<CMapRenderChunkBufBlock> s_chunkBlockArray;
     static bool s_bPoolsDirty;
@@ -76,16 +76,18 @@ class CMapRenderChunk {
     static int32_t s_pnEstimateVertex;
     static int32_t s_pnEstimateIndex;
 
-    void Initialize();
-    void UpdatePools();
+    void AddBatch(CMapChunk* a2, CMapChunk* a3, C3Vector* a4, uint8_t a5);
     void RenderPrep();
     void CreateLayers();
     void CreateLayer(CMapArea* area, SMLayer* layer, bool a4);
     void UpdateLoaded();
     void UseStreamingBufs();
     void RenderPrepBufs(CGxBuf* vertexBuf, CGxBuf* indexBuf);
+    void RenderSetup(int32_t a2);
 
+    static void Initialize();
     static CMapRenderChunkBuf* AllocBuf(int32_t a1, CMapRenderChunk* renderChunk);
+    static void UpdatePools();
 };
 
 #endif
