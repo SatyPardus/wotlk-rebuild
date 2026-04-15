@@ -44,6 +44,14 @@ CGxShader* CMap::pixelShader_Terrain2[32];
 CGxShader* CMap::pixelShader_Terrain3[96];
 CGxShader* CMap::pixelShader_TerrainSM;
 
+bool CMap::enableVertexShaders;
+bool CMap::enablePixelShaders;
+bool CMap::enableSpecular;
+bool CMap::gTerrainPixelShadersValid;
+bool CMap::enableSpecularTerrain;
+bool CMap::enableTerrainShaderVertex;
+bool CMap::enableChunkBatching;
+
 uint32_t* CMap::lightHeap;
 uint32_t* CMap::cacheLightHeap;
 uint32_t* CMap::mapObjGroupHeap;
@@ -137,7 +145,7 @@ void CMap::Initialize() {
     //}
 }
 
-// 0x79E4F0
+// OFFSET: 0x79E4F0
 void CMap::InitializePCFShaders() {
     for (int32_t i = 0; i < 32; i++) {
         if (CMap::pixelShader_Terrain2[i]) {
@@ -153,6 +161,57 @@ void CMap::InitializePCFShaders() {
 
     g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain2, GxSh_Pixel, "Shaders\\Pixel", CShaderEffect::s_usePcfFiltering ? "Terrain2_pcf" : "Terrain2", 32);
     g_theGxDevicePtr->ShaderCreate(CMap::pixelShader_Terrain3, GxSh_Pixel, "Shaders\\Pixel", CShaderEffect::s_usePcfFiltering ? "Terrain3_pcf" : "Terrain3", 96);
+}
+
+// OFFSET: 0x7BD8A0
+void CMap::ValidateShaders() {
+    CMap::enableVertexShaders = CWorld::s_enables2 & CWorld::Enables2::Enable_VertexShader;
+    CMap::enablePixelShaders = (CWorld::s_enables & CWorld::Enables::Enable_PixelShader) != 0;
+    CMap::enableSpecular = true;
+    CMap::gTerrainPixelShadersValid = false;
+    CMap::enableSpecularTerrain = false;
+    CMap::enableTerrainShaderVertex = false;
+    CMap::enableChunkBatching = false;
+
+    bool v1 = (CMap::header.flags >> 2) & 1;
+
+    if ((CWorld::s_enables & CWorld::Enables::Enable_800000) == 0 || !CMap::enablePixelShaders) {
+        CMap::enableSpecular = false;
+    }
+
+    if (CMap::enablePixelShaders) {
+        CGxShader* shader1 = CMap::GetPixelShader(v1, 1, 0);
+        CGxShader* shader2 = CMap::GetPixelShader(v1, 0, 0);
+        CMap::gTerrainPixelShadersValid = shader1 && shader1->Valid() && shader2 && shader2->Valid();
+    }
+
+    if (CMap::enableSpecular && CMap::gTerrainPixelShadersValid) {
+        CGxShader* shader1 = CMap::GetPixelShader(v1, 1, 0);
+        CGxShader* shader2 = CMap::GetPixelShader(v1, 0, 0);
+        CMap::enableSpecularTerrain = shader1 && shader1->Valid() && shader2 && shader2->Valid();
+    }
+
+    if (CMap::enableVertexShaders) {
+        CMap::enableTerrainShaderVertex = true;
+        if (!CMap::gTerrainPixelShadersValid || !CMap::vertexShader_Terrain[0] || !CMap::vertexShader_Terrain[0]->Valid()) {
+            CMap::enableTerrainShaderVertex = false;
+        }
+    }
+
+    if (CMap::gTerrainPixelShadersValid) {
+        CMap::enableChunkBatching = CMap::enableTerrainShaderVertex;
+    }
+}
+
+// OFFSET: 0x79E4B0
+CGxShader* CMap::GetPixelShader(bool a1, bool a2, bool a3) {
+    if (!a1)
+        return CMap::pixelShader_Terrain0[0];
+    if (!a2)
+        return CMap::pixelShader_Terrain0[2];
+    if (a3)
+        return CMap::pixelShader_Terrain0_env;
+    return CMap::pixelShader_Terrain0[1];
 }
 
 void CMap::MapMemInitialize() {
@@ -283,7 +342,7 @@ void CMap::LoadWdt() {
         // TODO: sub_7B7330(1);
     }
 
-    // sub_7BD8A0();
+    CMap::ValidateShaders();
 
     SFile::Close(file);
 }
@@ -296,27 +355,36 @@ void CMap::LoadTextureBlob() {
     // TODO: TextureLoadBlob(path);
 }
 
+// OFFSET: 0x7D9990
+HTEXTURE CMap::LoadTexture(const char* fileName) {
+    CStatus status;
+    CGxTexFlags texFlags = CGxTexFlags(GxTex_LinearMipLinear, 1, 1, 0, 0, 0, 1);
+    HTEXTURE texture = TextureCreate(fileName, texFlags, &status, 0);
+    // SysMsgAdd(status);
+    //CStatus::Destroy(status);
+    return texture;
+}
+
 // OFFSET: 0x7D6980
 void CMap::LoadTerrainTexture(CMapArea* area, CMapAreaTexture* areaTexture, int32_t textureId) {
-    //v4 = CGxDevice::Caps((char*)g_theGxDevicePtr)->m_texTarget[1] && CGxDevice::Caps((char*)g_theGxDevicePtr)->m_shaderTargets[0] && CGxDevice::Caps((char*)g_theGxDevicePtr)->m_shaderTargets[4];
-    //textureFlags = this->textureFlags;
-    //LOBYTE(v6) = 0;
-    //if (textureFlags)
-    //    v6 = textureFlags[a3];
-    //v7 = v6 & 1;
-    //if (v7 || !byte_CE049D) {
-    //    if (!v7 || v4) {
-    //        a2->texture = (CTexture*)CMap::LoadTexture(a2->textureName);
-    //    } else {
-    CImVector color = { 0x00, 0x00, 0x00, 0xFF };
-    areaTexture->texture = TextureCreateSolid(color);
-    //    }
-    //} else {
-    //    SStrCopy(v9, a2->textureName, 0x7FFFFFFF);
-    //    LastChar = SStr::FindLastChar(v9, 46);
-    //    SStrCopy(LastChar, "_s.blp", 0x7FFFFFFF);
-    //    a2->texture = (CTexture*)CMap::LoadTexture(v9);
-    //}
+    bool v4 = g_theGxDevicePtr->Caps().m_texTarget[1] && g_theGxDevicePtr->Caps().m_shaderTargets[0] && g_theGxDevicePtr->Caps().m_shaderTargets[4];
+    int32_t v6 = 0;
+    if (area->textureFlags)
+        v6 = area->textureFlags[textureId];
+    if ((v6 & 1) != 0 || !CMap::enableSpecularTerrain) {
+        if ((v6 & 1) == 0 || v4)
+            areaTexture->texture = CMap::LoadTexture(areaTexture->textureName);
+        else {
+            CImVector color = { 0x00, 0x00, 0x00, 0xFF };
+            areaTexture->texture = TextureCreateSolid(color);
+        }
+    } else {
+        char path[STORM_MAX_PATH];
+        SStrCopy(path, areaTexture->textureName, STORM_MAX_STR);
+        char* suffix = SStrChrR(path, '.');
+        SStrCopy(suffix, "_s.blp", STORM_MAX_STR);
+        areaTexture->texture = CMap::LoadTexture(path);
+    }
 }
 
 bool CMap::SafeOpen(const char* fileName, SFile** file) {
@@ -643,7 +711,7 @@ void CMap::PreUpdateAreas(bool a1) {
 
     C2Vector worldPos = { CWorld::s_currentWorldPos.x, CWorld::s_currentWorldPos.y };
 
-    size_t numAreas = 0;
+    int32_t numAreas = 0;
     void* stackMem = alloca(8192);
     CMapAreaEntry* areas = (CMapAreaEntry*)stackMem;
 

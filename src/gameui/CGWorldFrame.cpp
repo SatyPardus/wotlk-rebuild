@@ -57,22 +57,22 @@ int32_t CGWorldFrame::OnLayerKeyDown(const CKeyEvent& evt) {
 
     switch (evt.key) {
     case KEY_W:
-        position.z -= step;
+        position.z -= step * 10;
         break;
     case KEY_A:
-        position.y -= step;
+        position.y -= step * 10;
         break;
     case KEY_S:
-        position.z += step;
+        position.z += step * 10;
         break;
     case KEY_D:
-        position.y += step;
+        position.y += step * 10;
         break;
     case KEY_PLUS:
-        position.x += step;
+        position.x += step * 10;
         break;
     case KEY_MINUS:
-        position.x -= step;
+        position.x -= step * 10;
         break;
 
     case KEY_P:
@@ -161,8 +161,16 @@ void CGWorldFrame::RenderWorld(void* param) {
     CShaderEffect::UpdateProjMatrix();
 }
 
+// OFFSET: 0x4FA5F0
 void CGWorldFrame::OnWorldUpdate() {
+    CGCamera* cam = CGWorldFrame::GetActiveCamera();
+    C3Vector camPos = cam->m_position;
+    C3Vector camForward = cam->Forward();
+    C3Vector camTarget = camPos + camForward;
 
+    C3Vector position = camPos;
+
+    CWorld::Update(&camPos, &camTarget, &position);
 }
 
 void CGWorldFrame::OnWorldRender() {

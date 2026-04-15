@@ -708,6 +708,18 @@ void CGxDeviceD3d::DsSet(EDeviceState state, uint32_t val) {
         break;
     }
 
+    case Ds_TssTTF0:
+    case Ds_TssTTF1:
+    case Ds_TssTTF2:
+    case Ds_TssTTF3:
+    case Ds_TssTTF4:
+    case Ds_TssTTF5:
+    case Ds_TssTTF6:
+    case Ds_TssTTF7: {
+        this->m_d3dDevice->SetTextureStageState(state - Ds_TssTTF0, D3DTSS_TEXTURETRANSFORMFLAGS, val);
+        break;
+    }
+
     case Ds_AlphaBlendEnable: {
         this->m_d3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, val);
         break;
@@ -1860,6 +1872,7 @@ void CGxDeviceD3d::IStateSyncVertexPtrs() {
     }
 }
 
+// OFFSET: 0x6A4850
 void CGxDeviceD3d::IStateSyncXforms() {
     if (this->m_xforms[GxXform_Projection].m_dirty) {
         this->m_d3dDevice->SetTransform(D3DTS_PROJECTION, reinterpret_cast<D3DMATRIX*>(&this->m_projNative));
@@ -1875,7 +1888,14 @@ void CGxDeviceD3d::IStateSyncXforms() {
         this->IXformSetWorld();
     }
 
-    // TODO tex
+    for (int32_t i = 0; i < this->Caps().m_numTmus; i++) {
+        CGxMatrixStack texStack = this->m_texGen[i];
+        CGxMatrixStack formStack = this->m_xforms[i];
+
+        if (formStack.m_dirty || texStack.m_dirty) {
+            this->IXformSetTex(i);
+        }
+    }
 }
 
 void CGxDeviceD3d::ITexCreate(CGxTex* texId) {
@@ -2140,6 +2160,76 @@ void CGxDeviceD3d::IXformSetWorld() {
 
     isIdent = stack.m_flags[stack.m_level] & CGxMatrixStack::F_Identity;
     stack.m_dirty = 0;
+}
+
+// OFFSET: 0x6A5AA0
+void CGxDeviceD3d::IXformSetTex(int32_t index) {
+    int32_t v3 = static_cast<int32_t>(this->m_appRenderStates[GxRs_TextureShader0 + index].m_value);
+    uint32_t v4 = 0;
+
+    if (v3 == 0) {
+        C44Matrix& texGenMat = this->m_texGen[index].m_mtx[this->m_texGen[index].m_level];
+        bool isProjected = (this->m_texGen[index].m_flags[this->m_texGen[index].m_level] & 1) != 0;
+        this->m_d3dDevice->SetTransform((D3DTRANSFORMSTATETYPE)(index + D3DTS_TEXTURE0), (D3DMATRIX*)&texGenMat);
+
+        v4 = isProjected ? D3DTTFF_DISABLE : D3DTTFF_COUNT3;
+    } else if (v3 == 1) {
+
+        v4 = D3DTTFF_COUNT2 | D3DTTFF_PROJECTED;
+    } else if (v3 == 2) {
+        v4 = D3DTTFF_COUNT3;
+    }
+
+    //if (v3) {
+    //    v5 = v3 - 1;
+    //    if (v5) {
+    //        if (v5 == 1) {
+    //            C44Matrix::Multiply(
+    //                &v11,
+    //                &this->m_texGen[a2].m_mtx[this->m_texGen[a2].m_level],
+    //                &this->m_xforms[a2].m_mtx[this->m_xforms[a2].m_level]);
+    //            (*(void(__stdcall**)(DWORD, int, C44Matrix*))(*(_DWORD*)v2->ukn1[1051] + 176))(
+    //                v2->ukn1[1051],
+    //                a2 + 16,
+    //                &v11);
+    //            v4 = 0x103;
+    //        }
+    //    } else {
+    //        C44Matrix::Multiply(
+    //            &v10,
+    //            &this->m_texGen[a2].m_mtx[this->m_texGen[a2].m_level],
+    //            &this->m_xforms[a2].m_mtx[this->m_xforms[a2].m_level]);
+    //        qmemcpy(&v11, &v10, sizeof(v11));
+    //        if (v12->m_appRenderStates.m_data[a2 + 53].m_value.m_data.i[0]) {
+    //            v4 = 3;
+    //        } else {
+    //            v4 = 2;
+    //            v11.M31 = v10.M41;
+    //            v11.M32 = v10.M42;
+    //        }
+    //        (*(void(__stdcall**)(DWORD, int, C44Matrix*))(*(_DWORD*)v12->ukn1[1051] + 176))(
+    //            v12->ukn1[1051],
+    //            a2 + 16,
+    //            &v11);
+    //        v2 = v12;
+    //    }
+    //} else {
+    //    v6 = &this->m_texGen[a2];
+    //    v7 = (int*)this->ukn1[1051];
+    //    v8 = *v7;
+    //    if ((v6->m_flags[v2->m_texGen[a2].m_level] & 1) != 0) {
+    //        (*(void(__stdcall**)(DWORD, int, C44Matrix*))(v8 + 176))(
+    //            v2->ukn1[1051],
+    //            a2 + 16,
+    //            &v6->m_mtx[v6->m_level]);
+    //    } else {
+    //        (*(void(__stdcall**)(int*, int, C44Matrix*))(v8 + 176))(v7, a2 + 16, &v6->m_mtx[v6->m_level]);
+    //        v4 = 3;
+    //    }
+    //}
+    this->DsSet((EDeviceState)(Ds_TssTTF0 + index), v4);
+    this->m_xforms[index].m_dirty = 0;
+    this->m_texGen[index].m_dirty = 0;
 }
 
 void CGxDeviceD3d::PoolSizeSet(CGxPool* pool, uint32_t size) {

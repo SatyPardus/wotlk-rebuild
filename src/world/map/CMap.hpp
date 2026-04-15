@@ -40,6 +40,14 @@ class CMap {
     static CGxShader* pixelShader_Terrain3[96];
     static CGxShader* pixelShader_TerrainSM;
 
+    static bool enableVertexShaders;
+    static bool enablePixelShaders;
+    static bool enableSpecular;
+    static bool gTerrainPixelShadersValid;
+    static bool enableSpecularTerrain;
+    static bool enableTerrainShaderVertex;
+    static bool enableChunkBatching;
+
     static uint32_t* lightHeap;
     static uint32_t* cacheLightHeap;
     static uint32_t* mapObjGroupHeap;
@@ -58,10 +66,13 @@ class CMap {
 
     static void Initialize();
     static void InitializePCFShaders();
+    static void ValidateShaders();
+    static CGxShader* GetPixelShader(bool a1, bool a2, bool a3);
     static void MapMemInitialize();
     static void Load(const char* mapName, int32_t zoneID);
     static void LoadWdt();
     static void LoadTextureBlob();
+    static HTEXTURE LoadTexture(const char* fileName);
     static void LoadTerrainTexture(CMapArea* area, CMapAreaTexture* areaTexture, int32_t textureId);
     static bool SafeOpen(const char* fileName, SFile** file);
     static CMapArea* AllocArea();

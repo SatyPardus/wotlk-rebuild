@@ -786,7 +786,7 @@ void WowClientInit() {
 }
 
 // OFFSET: 0x405540
-void ClientInitializeGame(int32_t continentID, const C3Vector& position) {
+void ClientInitializeGame(int32_t continentID, C3Vector* position) {
     //if (IsStreamingAndTrial())
     //    sub_41E4E0(0);
     //(*(void(__thiscall**)(int, int, int))(*(_DWORD*)g_theGxDevicePtr + 204))(g_theGxDevicePtr, 1, 1);

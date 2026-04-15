@@ -3,6 +3,8 @@
 #include "world/map/CMap.hpp"
 #include "world/map/CMapChunk.hpp"
 #include "world/daynight/DayNight.hpp"
+#include "world/daynight/DNInfo.hpp"
+#include "world/map/CWorldOcclusion.hpp"
 
 #include "gx/Device.hpp"
 #include "gx/Shader.hpp"
@@ -20,6 +22,22 @@
 CM2Scene* CWorldScene::s_m2Scene;
 HTEXTURE CWorldScene::s_defaultTexture;
 HTEXTURE CWorldScene::s_defaultBlendTexture;
+
+int32_t CWorldScene::frustumIndex;
+CFrustum CWorldScene::frustumStack[32];
+CRect CWorldScene::frustumRect;
+CiRect CWorldScene::s_frustumChunkRect;
+C3Vector CWorldScene::s_frustumCorners[8];
+
+CSortTable CWorldScene::sortTable;
+
+C3Vector CWorldScene::s_activeWorldView;
+C3Vector CWorldScene::camTarget;
+C3Vector CWorldScene::camVec;
+C4Plane CWorldScene::camPlane;
+C4Plane CWorldScene::camPlaneXY;
+C44Matrix CWorldScene::viewMatrix;
+C44Matrix CWorldScene::projMatrix;
 
 CM2Model* g_models[10] = {};
 
@@ -81,6 +99,344 @@ void CWorldScene::Initialize() {
     }
 }
 
+// OFFSET: 0x795400
+void CWorldScene::Update(C3Vector* camPos, C3Vector* camTarget) {
+    //v2 = 0;
+    //if (dword_CD8610)
+    //    NOP();
+    //flt_ADF574 = 3.4028235e38;
+    //flt_ADF570 = 3.4028235e38;
+    //dword_CD8620 = 0;
+    //dword_CD861C = 0;
+    //flt_ADF57C = -3.4028235e38;
+    //dword_ADF584 = 0;
+    //flt_ADF578 = -3.4028235e38;
+    //dword_ADF588 = 0;
+    //dword_ADF5A0 = 0;
+    //flt_ADF580 = -1.0;
+    //dword_ADF5A4 = 0;
+    CWorldScene::frustumRect.minX = 3.4028235e38;
+    CWorldScene::frustumRect.minY = 3.4028235e38;
+    CWorldScene::frustumRect.maxX = -3.4028235e38;
+    CWorldScene::frustumRect.maxY = -3.4028235e38;
+    //flt_ADF59C = -1.0;
+    //sub_794190(0);
+    //sub_794190(0);
+
+    CWorldScene::s_activeWorldView = *camPos;
+    CWorldScene::camTarget = *camTarget;
+
+    C3Vector camDir;
+    camDir.x = camTarget->x - camPos->x;
+    camDir.y = camTarget->y - camPos->y;
+    camDir.z = camTarget->z - camPos->z;
+
+    float invLen = 1.0f / sqrtf(camDir.x * camDir.x + camDir.y * camDir.y + camDir.z * camDir.z);
+    CWorldScene::camVec.x = camDir.x * invLen;
+    CWorldScene::camVec.y = camDir.y * invLen;
+    CWorldScene::camVec.z = camDir.z * invLen;
+
+    CWorldScene::camPlane.n = CWorldScene::camVec;
+    CWorldScene::camPlane.d = -(camPos->x * CWorldScene::camVec.x +
+                                camPos->y * CWorldScene::camVec.y +
+                                camPos->z * CWorldScene::camVec.z);
+
+    //float farClip = CWorld::s_farClip - 100.0f;
+    //flt_CD87AC = (farClip < 400.0f) ? 400.0f : farClip;
+
+    float flatX = CWorldScene::camVec.x;
+    float flatY = CWorldScene::camVec.y;
+    float flatLen = flatX * flatX + flatY * flatY;
+
+    if (flatLen <= 0.0001f) {
+        CWorldScene::camPlaneXY.n = { 0.0f, 0.0f, 0.0f };
+    } else {
+        float invFlatLen = 1.0f / sqrtf(flatLen);
+        CWorldScene::camPlaneXY.n.x = flatX * invFlatLen;
+        CWorldScene::camPlaneXY.n.y = flatY * invFlatLen;
+        CWorldScene::camPlaneXY.n.z = 0.0f;
+    }
+
+    CWorldScene::camPlaneXY.d = -(CWorldScene::camPlaneXY.n.x * camPos->x +
+                                  CWorldScene::camPlaneXY.n.y * camPos->y +
+                                  CWorldScene::camPlaneXY.n.z * camPos->z);
+
+    //sub_7906C0(&CWorldScene::sortTable, v30);
+    g_theGxDevicePtr->XformView(CWorldScene::viewMatrix);
+    g_theGxDevicePtr->XformProjection(CWorldScene::projMatrix);
+    //CWorldScene::viewPort.x.l = v22->m_viewport.x.l;
+    //CWorldScene::viewPort.y.h = v22->m_viewport.x.h;
+    //CWorldScene::viewPort.x.h = v22->m_viewport.y.l;
+    //CWorldScene::viewPort.z.l = v22->m_viewport.y.h;
+    //CWorldScene::viewPort.y.l = v22->m_viewport.z.l;
+    //CWorldScene::viewPort.z.h = v22->m_viewport.z.h;
+    GxuXformCalcFrustumCorners(&CWorldScene::viewMatrix, &CWorldScene::projMatrix, CWorldScene::s_frustumCorners);
+    for (int32_t i = 0; i < 8; i++) {
+        CWorldScene::s_frustumCorners[i] += CWorldScene::s_activeWorldView;
+    }
+    //CFrustum::CalcPlanesFromCorners(&stru_CDD108, CWorldScene::s_frustumCorners);
+    CWorldScene::viewMatrix.Translate(-CWorldScene::s_activeWorldView);
+    C44Matrix v23 = CWorldScene::viewMatrix * CWorldScene::projMatrix;
+    //stru_ADF5A8.M11 = v23->M11;
+    //stru_ADF5A8.M12 = v23->M12;
+    //stru_ADF5A8.M13 = v23->M13;
+    //M14 = v23->M14;
+    //stru_ADF5A8.M14 = v23->M14;
+    //stru_ADF5A8.M21 = v23->M21;
+    //stru_ADF5A8.M22 = v23->M22;
+    //stru_ADF5A8.M23 = v23->M23;
+    //stru_ADF5A8.M24 = v23->M24;
+    //stru_ADF5A8.M31 = v23->M31;
+    //stru_ADF5A8.M32 = v23->M32;
+    //stru_ADF5A8.M33 = v23->M33;
+    //M34 = v23->M34;
+    //stru_ADF5A8.M34 = v23->M34;
+    //stru_ADF5A8.M41 = v23->M41;
+    //stru_ADF5A8.M42 = v23->M42;
+    //stru_ADF5A8.M43 = v23->M43;
+    //stru_ADF5A8.M44 = v23->M44;
+    //v36.z = stru_ADF5A8.M44;
+    //*(float*)&v35 = M14;
+    //dword_CD8FC8 = v35;
+    //v36.x = stru_ADF5A8.M24;
+    //dword_CD8FCC = LODWORD(stru_ADF5A8.M24);
+    //v36.y = M34;
+    //dword_CD8FD0 = LODWORD(v36.y);
+    //dword_CD8FD4 = LODWORD(stru_ADF5A8.M44);
+    //CWorldScene::boundingBox = *(CAaBox*)CAaBox::Bounding((float*)v34, CWorldScene::s_frustumCorners, 8u);
+    //v41 = -(CWorldScene::boundingBox.max.y - 17066.666) * 0.029999999;
+    //CWorldScene::s_frustumChunkRect.minX = (int)(v41 - halfConst);
+    //v42 = -(CWorldScene::boundingBox.max.x - 17066.666) * 0.029999999;
+    //CWorldScene::s_frustumChunkRect.minY = (int)(v42 - halfConst);
+    //v43 = -(CWorldScene::boundingBox.min.y - 17066.666) * 0.029999999;
+    //CWorldScene::s_frustumChunkRect.maxX = (int)(v43 - halfConst);
+    //v44 = -(CWorldScene::boundingBox.min.x - 17066.666) * 0.029999999;
+    //CWorldScene::s_frustumChunkRect.maxY = (int)(v44 - halfConst);
+    //CWorldScene::frustumIndex = 0;
+    //CFrustum::CalcPlanesFromCorners(CWorldScene::frustumStack, CWorldScene::s_frustumCorners);
+    CMapChunk::farCornerIndex = 0;
+    if (CWorldScene::camTarget.x > CWorldScene::s_activeWorldView.x)
+        CMapChunk::farCornerIndex = 2;
+    if (CWorldScene::camTarget.y > CWorldScene::s_activeWorldView.y)
+        CMapChunk::farCornerIndex += 1;
+    //dword_CD8F3C = 0;
+    //if (CWorldScene::camTarg.x < (double)CWorldScene::s_activeWorldView.x) {
+    //    v2 = 2;
+    //    dword_CD8F3C = 2;
+    //}
+    //if (CWorldScene::camTarg.y < (double)CWorldScene::s_activeWorldView.y)
+    //    dword_CD8F3C = v2 + 1;
+    //CWorldScene::camPlane.n = CWorldScene::camVec;
+    //CWorldScene::camPlane.d = -(camPos->x * CWorldScene::camVec.x + camPos->y * CWorldScene::camVec.y + CWorldScene::camVec.z * camPos->z);
+    //if (v33 <= 0.000099999997) {
+    //    stru_ADF460.M44 = 1.0;
+    //    stru_ADF460.M33 = 1.0;
+    //    stru_ADF460.M22 = 1.0;
+    //    stru_ADF460.M11 = 1.0;
+    //    stru_ADF460.M43 = 0.0;
+    //    stru_ADF460.M42 = 0.0;
+    //    stru_ADF460.M41 = 0.0;
+    //    stru_ADF460.M34 = 0.0;
+    //    stru_ADF460.M32 = 0.0;
+    //    stru_ADF460.M31 = 0.0;
+    //    stru_ADF460.M24 = 0.0;
+    //    stru_ADF460.M23 = 0.0;
+    //    stru_ADF460.M21 = 0.0;
+    //    stru_ADF460.M14 = 0.0;
+    //    stru_ADF460.M13 = 0.0;
+    //    stru_ADF460.M12 = 0.0;
+    //    AsyncTimeMs = OsGetAsyncTimeMs();
+    //    return sub_9A81F0(AsyncTimeMs);
+    //} else {
+    //    v32.M11 = 1.0;
+    //    v32.M12 = 0.0;
+    //    v32.M13 = 0.0;
+    //    v32.M14 = 0.0;
+    //    v32.M21 = 0.0;
+    //    v32.M23 = 0.0;
+    //    v32.M24 = 0.0;
+    //    v32.M31 = 0.0;
+    //    v32.M32 = 0.0;
+    //    v32.M34 = 0.0;
+    //    v32.M41 = 0.0;
+    //    v32.M42 = 0.0;
+    //    v32.M43 = 0.0;
+    //    a3.x = 0.0;
+    //    a3.y = 0.0;
+    //    v36.x = 0.0;
+    //    v36.y = 0.0;
+    //    v36.z = 0.0;
+    //    v32.M22 = 1.0;
+    //    v32.M33 = 1.0;
+    //    v32.M44 = 1.0;
+    //    a3.z = 1.0;
+    //    sub_6BFE60(&v36.x, &v38, &a3.x, &v32);
+    //    v36.x = -CWorldScene::s_activeWorldView.x;
+    //    v36.y = -CWorldScene::s_activeWorldView.y;
+    //    v36.z = -CWorldScene::s_activeWorldView.z;
+    //    C44Matrix::Translate(&v32, &v36);
+    //    v26 = C44Matrix::Multiply(&v31, &v32, &CWorldScene::projMatrix);
+    //    stru_ADF460.M11 = v26->M11;
+    //    stru_ADF460.M12 = v26->M12;
+    //    stru_ADF460.M13 = v26->M13;
+    //    stru_ADF460.M14 = v26->M14;
+    //    stru_ADF460.M21 = v26->M21;
+    //    stru_ADF460.M22 = v26->M22;
+    //    stru_ADF460.M23 = v26->M23;
+    //    stru_ADF460.M24 = v26->M24;
+    //    stru_ADF460.M31 = v26->M31;
+    //    stru_ADF460.M32 = v26->M32;
+    //    stru_ADF460.M33 = v26->M33;
+    //    stru_ADF460.M34 = v26->M34;
+    //    stru_ADF460.M41 = v26->M41;
+    //    stru_ADF460.M42 = v26->M42;
+    //    stru_ADF460.M43 = v26->M43;
+    //    stru_ADF460.M44 = v26->M44;
+    //    v27 = OsGetAsyncTimeMs();
+    //    return sub_9A81F0(v27);
+    //}
+}
+
+// OFFSET: 0x790650
+void CWorldScene::GetNearestCornerToCamera(CAaBox* box, C3Vector* outCorner) {
+    outCorner->x = (CWorldScene::camTarget.x >= CWorldScene::s_activeWorldView.x)
+                       ? box->b.x
+                       : box->t.x;
+
+    outCorner->y = (CWorldScene::camTarget.y >= CWorldScene::s_activeWorldView.y)
+                       ? box->b.y
+                       : box->t.y;
+
+    outCorner->z = (CWorldScene::camTarget.z >= CWorldScene::s_activeWorldView.z)
+                       ? box->b.z
+                       : box->t.z;
+}
+
+// OFFSET: 0x7C3E70
+void CWorldScene::AddMapChunk(CMapChunk* mapChunk) {
+    if (CWorldScene::FrustumCull(&mapChunk->bbox))
+        return;
+
+    C3Vector corner;
+    CWorldScene::GetNearestCornerToCamera(&mapChunk->bbox, &corner);
+    mapChunk->distToCamera = CWorldScene::camPlane.n.z * corner.z + CWorldScene::camPlane.n.y * corner.y + CWorldScene::camPlane.n.x * corner.x + CWorldScene::camPlane.d;
+    int32_t vertexIndex = CMapChunk::cornerVertexIndex[CMapChunk::farCornerIndex];
+    C3Vector chunkPos = {
+        CMapChunk::vertexList[vertexIndex].x + mapChunk->topLeftCoords.x,
+        CMapChunk::vertexList[vertexIndex].y + mapChunk->topLeftCoords.y,
+        mapChunk->height[vertexIndex] + mapChunk->topLeftCoords.z
+    };
+    CWorldScene::AddMapChunkToRenderList(mapChunk, &chunkPos);
+}
+
+// OFFSET: 0x792D80
+void CWorldScene::AddMapChunkToRenderList(CMapChunk* mapChunk, C3Vector* pos) {
+    float planeDist = C3Vector::Dot(*pos, CWorldScene::camPlaneXY.n) + CWorldScene::camPlaneXY.d;
+    int index = (int)(planeDist * 0.03f - 0.5f);
+    if (planeDist <= 0) // TODO shouldnt produce negative values? Maybe InsideFrustumRect is the fault
+        return;
+    if (planeDist <= 0.0f || index < 64) {
+        CWorldScene::sortTable.table[index].mapChunkList.LinkToTail(mapChunk);
+    }
+}
+
+// OFFSET: 0x78FB20
+bool CWorldScene::FrustumCull(CAaBox* box) {
+    return CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(box) == WorldCull_outside;
+}
+
+// OFFSET: 0x7D6690
+bool CWorldScene::InsideFrustumRect(CiRect* rect) {
+    return true; // TODO fix chunk rect
+    return rect->minX <= CWorldScene::s_frustumChunkRect.maxX
+        && rect->minY <= CWorldScene::s_frustumChunkRect.maxY
+        && rect->maxX >= CWorldScene::s_frustumChunkRect.minX
+        && rect->maxY >= CWorldScene::s_frustumChunkRect.minY;
+}
+
+// OFFSET: 0x79A790
+void CWorldScene::CullSortTable(CRect* a1) {
+    //CWorldScene::CreateOcclusionVolumes(&CWorldScene::s_activeWorldView.x, stru_CDB108, 0);
+    ++CWorldScene::frustumIndex;
+    //CWorldScene::FrustumPush(
+    //    &CWorldScene::frustumStack[CWorldScene::frustumIndex],
+    //    &CWorldScene::frustumStack[CWorldScene::frustumIndex - 1]);
+    //CWorldScene::FrustumSet(a1);
+    for (int32_t i = 0; i < 64; i++) {
+        CSortEntry* entry = &CWorldScene::sortTable.table[i];
+
+        CWorldScene::CullChunks(entry, i);
+        //CWorldScene::CullMapObjDefGroups(entry, a1, v1);
+        //CWorldScene::CullLiquid(entry);
+        //sub_793060(entry);
+        //v4 = (double)v1 * 33.333332;
+        //v3 = sub_78FB60(v4);
+        //CWorldScene::CullDoodads(entry, v3);
+        //sub_793760(entry);
+    }
+    //CWorldScene::CullHorizon(a1);
+    --CWorldScene::frustumIndex;
+}
+
+// OFFSET: 0x799D40
+void CWorldScene::CullChunks(CSortEntry* entry, int32_t index) {
+    bool v19 = true;
+
+    if ((CWorld::s_enables & CWorld::Enables::Enable_Culling) == 0 || index >= 63)
+        v19 = false;
+
+    for (auto mapChunk = entry->mapChunkList.Head(); mapChunk; mapChunk = entry->mapChunkList.Next(mapChunk)) {
+        mapChunk->sortListLink.Unlink();
+
+        if (CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(&mapChunk->bbox) == WorldCull_outside)
+            continue;
+
+        if (CWorldOcclusion::QueryVolumes(&mapChunk->sphere) || CWorldOcclusion::QueryBuffer(&mapChunk->bbox, 0))
+            continue;
+
+        //v7 = sub_78FB60(m_next->distToCamera);
+        //sub_799980(&m_next->doodadDefLinkList.m_linkoffset, v7);
+        if (CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(&mapChunk->bbox2) == WorldCull_outside || CWorldOcclusion::QueryBuffer(&mapChunk->bbox2, 0))
+            continue;
+
+        if (mapChunk->header->holes != 0xFFFF) {
+            //    ++dword_CD8770;
+            mapChunk->RenderPrep();
+            if (mapChunk->renderChunk) {
+                uint8_t layersCount = 0;
+                if ((mapChunk->renderChunk->unkFlags & 8) != 0)
+                    layersCount = mapChunk->renderChunk->layersCount;
+
+                int32_t v10 = 0;
+                if (layersCount) {
+                    if ((mapChunk->renderChunk->unk_0A & 1) != 0)
+                        v10 = (mapChunk->renderChunk->unk_0A & 4 | 2) >> 1;
+                    else
+                        v10 = (mapChunk->renderChunk->unk_0A >> 1) & 2;
+                }
+
+                CWorldScene::sortTable.renderChunkLists[4 * layersCount + v10].LinkToTail(mapChunk->renderChunk);
+            }
+        }
+
+        if (v19) {
+            //    if (m_next->header->holes) {
+            //        v12 = index;
+            // LABEL_36
+            //         HashTable::AddEntry(&CWorldScene::sortTable.table[v12].unkList8, (char*)m_next);
+            //         continue;
+            //     }
+            //     sub_790520(m_next, dword_AEEE3C[dword_CD8F3C], &v15);
+            //     v13 = 0;
+            //     v14 = sub_790620(&v15);
+            //     if (v14 <= 0.0 || (v17 = v14 * 0.029999999, v18 = (int)(v17 - halfConst), v13 = v18, v18 < 64)) {
+            //         v12 = v13;
+            //         goto LABEL_36;
+            //     }
+        }
+    }
+}
+
 // OFFSET: 0x79A870
 void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //if (!dword_CD87A4)
@@ -107,7 +463,7 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //sub_7B2A80();
     //memset(&byte_CD87B8, 0, 0x180u);
     //memset32(flt_CD8938, 0xC9742400, 0x180u);
-    //CWorldOcclusion::ClearVolumes();
+    CWorldOcclusion::ClearVolumes();
     //CWorldScene::AddWorldOccluders();
     //if (dword_CD87A4) {
     //    ++dword_CD87B0;
@@ -153,15 +509,15 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //    flt_ADF57C = 1.0;
     //    v18 = 1.0;
     //    v19 = 1.0;
-    //    flt_ADF58C = 0.0;
+    CWorldScene::frustumRect.minY = 0.0;
     //    flt_ADF59C = 0.0;
     //    dword_ADF588 = 0;
-    //    flt_ADF590 = 0.0;
+    CWorldScene::frustumRect.minX = 0.0;
     //    flt_CD8780 = -10000.0;
-    //    flt_ADF594 = 1.0;
-    //    flt_ADF598 = 1.0;
+    CWorldScene::frustumRect.maxY = 1.0;
+    CWorldScene::frustumRect.maxX = 1.0;
     //    dword_ADF5A4 = 0;
-    //    sub_79A790(&flt_ADF58C);
+    CWorldScene::CullSortTable(&CWorldScene::frustumRect);
     //}
     //sub_79A260();
     //sub_793450();
@@ -422,93 +778,143 @@ void CWorldScene::RenderChunks() {
     //        sub_874660();
     //        goto LABEL_58;
     //    }
-    //    v28 = DayNight::GetActiveDayNight();
-    //    v29 = g_theGxDevicePtr;
-    //    v30 = v28[35];
-    //    if (g_theGxDevicePtr->ukn1[981]) {
-    //        v31 = (int*)(g_theGxDevicePtr->ukn1[2620] + 240);
-    //        if (*v31 != v30) {
-    //            CGxDevice::IRsDirty(g_theGxDevicePtr, 10);
-    //            *v31 = v30;
-    //            v29 = g_theGxDevicePtr;
-    //        }
-    //        if (v29->ukn1[981]) {
-    //            v32 = (_DWORD*)(v29->ukn1[2620] + 288);
-    //            if (*v32 != 1) {
-    //                CGxDevice::IRsDirty(v29, 12);
-    //                *v32 = 1;
-    //                v29 = g_theGxDevicePtr;
-    //            }
-    //            if (v29->ukn1[981]) {
-    //                v33 = (_DWORD*)(v29->ukn1[2620] + 888);
-    //                if (*v33 != 1) {
-    //                    CGxDevice::IRsDirty(v29, 37);
-    //                    *v33 = 1;
-    //                    v29 = g_theGxDevicePtr;
-    //                }
-    //                if (v29->ukn1[981]) {
-    //                    v34 = (_DWORD*)(v29->ukn1[2620] + 1080);
-    //                    if (*v34) {
-    //                        CGxDevice::IRsDirty(v29, 45);
-    //                        *v34 = 0;
-    //                        v29 = g_theGxDevicePtr;
-    //                    }
-    //                    if (v29->ukn1[981]) {
-    //                        v35 = (_DWORD*)(v29->ukn1[2620] + 912);
-    //                        if (*v35) {
-    //                            CGxDevice::IRsDirty(v29, 38);
-    //                            *v35 = 0;
-    //                            v29 = g_theGxDevicePtr;
-    //                        }
-    //                        if (v29->ukn1[981]) {
-    //                            v36 = (_DWORD*)(v29->ukn1[2620] + 1104);
-    //                            if (*v36) {
-    //                                CGxDevice::IRsDirty(v29, 46);
-    //                                *v36 = 0;
-    //                            }
-    //                        }
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
-    // LABEL_58:
-    //    CWorldScene::RenderChunksSinglePass();
+    DayNight::DNInfo* activeDayNight = DayNight::GetInfo();
+    GxRsSet(GxRs_FogColor, activeDayNight->fogInfo.color.value);
+    GxRsSet(GxRs_Fog, 1);
+    GxRsSet(GxRs_ColorOp0, 1);
+    GxRsSet(GxRs_AlphaOp0, 0);
+    GxRsSet(GxRs_ColorOp1, 0);
+    GxRsSet(GxRs_AlphaOp1, 0);
+//LABEL_58:
+    CWorldScene::RenderChunksSinglePass();
     CWorldScene::RenderChunksSolid();
-    //    CWorldScene::RenderChunksZoneDebug();
-    //    for (j = 0; j < 350; j += 70) {
-    //        v38 = g_theGxDevicePtr->ukn1[j + 1025];
-    //        v39 = &g_theGxDevicePtr->ukn1[j + 1025];
-    //        if ((v39[v38 + 66] & 1) == 0) {
-    //            v40 = (float*)&v39[16 * v38 + 2];
-    //            v40[15] = 1.0;
-    //            v40[10] = 1.0;
-    //            v40[5] = 1.0;
-    //            *v40 = 1.0;
-    //            v40[14] = 0.0;
-    //            v40[13] = 0.0;
-    //            v40[12] = 0.0;
-    //            v40[11] = 0.0;
-    //            v40[9] = 0.0;
-    //            v40[8] = 0.0;
-    //            v40[7] = 0.0;
-    //            v40[6] = 0.0;
-    //            v40[4] = 0.0;
-    //            v40[3] = 0.0;
-    //            v40[2] = 0.0;
-    //            v40[1] = 0.0;
-    //            v41 = *v39;
-    //            *((_BYTE*)v39 + 4) = 1;
-    //            v39[v41 + 66] = 1;
-    //        }
+    //CWorldScene::RenderChunksZoneDebug();
+    //for (j = 0; j < 5; ++j) {
+    //    m_level = g_theGxDevicePtr->m_xforms[j].m_level;
+    //    v39 = &g_theGxDevicePtr->m_xforms[j];
+    //    if ((v39->m_flags[m_level] & 1) == 0) {
+    //        p_M11 = &v39->m_mtx[m_level];
+    //        p_M11->M44 = 1.0;
+    //        p_M11->M33 = 1.0;
+    //        p_M11->M22 = 1.0;
+    //        p_M11->M11 = 1.0;
+    //        p_M11->M43 = 0.0;
+    //        p_M11->M42 = 0.0;
+    //        p_M11->M41 = 0.0;
+    //        p_M11->M34 = 0.0;
+    //        p_M11->M32 = 0.0;
+    //        p_M11->M31 = 0.0;
+    //        p_M11->M24 = 0.0;
+    //        p_M11->M23 = 0.0;
+    //        p_M11->M21 = 0.0;
+    //        p_M11->M14 = 0.0;
+    //        p_M11->M13 = 0.0;
+    //        p_M11->M12 = 0.0;
+    //        v41 = v39->m_level;
+    //        v39->m_dirty = 1;
+    //        v39->m_flags[v41] = 1;
     //    }
+    //}
     GxRsPop();
+}
+
+void CWorldScene::RenderChunksSinglePass() {
+    for (int32_t pass = 0; pass < 4; pass++) {
+        switch (pass) {
+        case 0:
+            CMapRenderChunk::SetShaders(0, 0);
+            break;
+        case 1:
+            CMapRenderChunk::SetShaders(0, 1);
+            break;
+        case 2:
+            CMapRenderChunk::SetShaders(1, 0);
+            break;
+        case 3:
+            CMapRenderChunk::SetShaders(1, 1);
+            break;
+        }
+
+        for (int32_t layer = 0; layer < 4; layer++) {
+            if (CMapRenderChunk::s_currentShaderX[layer])
+                GxRsSet(GxRs_PixelShader, CMapRenderChunk::s_currentShaderX[layer]);
+
+            int32_t layerIndex = 4 + pass + (layer * 4);
+            for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[layerIndex].Head(); renderChunk; renderChunk = CWorldScene::sortTable.renderChunkLists[layerIndex].Next(renderChunk)) {
+                renderChunk->RenderSetup(1);
+                //if ((CWorld::enables & Enable_2) != 0) {
+                //    if (*v36) {
+                //        if (CMap::enableTerrainShaderVertex)
+                //            sub_7D2D70((int)v2);
+                //        else
+                //            sub_7D28B0(v2);
+                //    } else {
+                CMapRenderChunk::s_renderLayersFunc(renderChunk);
+                //    }
+                //}
+
+                //renderChunk->renderChunkLink.Unlink();
+
+                if ((CWorld::s_enables & 0x40000000) != 0) {
+                    //v6 = *(int*)((char*)&v2->renderChunkLink.m_prevLink + v32.m_linkoffset);
+                    //v7 = (TSLink*)((char*)v2 + v32.m_linkoffset);
+                    //if (v6) {
+                    //    v8 = (unsigned int)v7->m_next;
+                    //    if ((v8 & 1) == 0 && v8)
+                    //        v9 = (TSLink**)((char*)&v7->m_prevlink + v8 - *(_DWORD*)(v6 + 4));
+                    //    else
+                    //        v9 = (_DWORD*)(v8 & 0xFFFFFFFE);
+                    //    *v9 = v6;
+                    //    v7->m_prevlink->m_next = v7->m_next;
+                    //    v7->m_prevlink = 0;
+                    //    v7->m_next = 0;
+                    //}
+                    //v10 = v32.m_terminator.m_prevlink;
+                    //v1 = v34;
+                    //v7->m_prevlink = v32.m_terminator.m_prevlink;
+                    //v7->m_next = v10->m_next;
+                    //v10->m_next = v2;
+                    //v2 = v33;
+                    //v32.m_terminator.m_prevlink = v7;
+                } else {
+                    //v11 = *(int*)((char*)&v2->renderChunkLink.m_prevLink + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
+                    //v12 = (TSLink*)((char*)v2 + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
+                    //if (v11) {
+                    //    v13 = (unsigned int)v12->m_next;
+                    //    if ((v13 & 1) == 0 && v13)
+                    //        v14 = (TSLink**)((char*)&v12->m_prevlink + v13 - *(_DWORD*)(v11 + 4));
+                    //    else
+                    //        v14 = (_DWORD*)(v13 & 0xFFFFFFFE);
+                    //    *v14 = v11;
+                    //    v12->m_prevlink->m_next = v12->m_next;
+                    //    v12->m_prevlink = 0;
+                    //    v12->m_next = 0;
+                    //}
+                    //v15 = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
+                    //v1 = v34;
+                    //v12->m_prevlink = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
+                    //v12->m_next = v15->m_next;
+                    //v15->m_next = v2;
+                    //v2 = v33;
+                    //CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink = v12;
+                }
+            }
+        }
+    }
+
+    GxRsSet(GxRs_VertexShader, (CGxShader*)nullptr);
+    GxRsSet(GxRs_PixelShader, (CGxShader*)nullptr);
+
+    // TODO 0x40000000 render list
 }
 
 // OFFSET: 0x793B10
 void CWorldScene::RenderChunksSolid() {
+    CMapRenderChunk::SetShaders(0, 0);
+    if (CMapRenderChunk::s_currentShaderX[0])
+        GxRsSet(GxRs_PixelShader, CMapRenderChunk::s_currentShaderX[0]);
     // ### FAKE WORLD RENDER #######
-    for (auto link = CMap::mapAreaList.Head(); link; link = CMap::mapAreaList.Next(link)) {
+    /*for (auto link = CMap::mapAreaList.Head(); link; link = CMap::mapAreaList.Next(link)) {
         CMapArea* area = (CMapArea*)link->owner;
         for (int32_t i = 0; i < 16 * 16; i++) {
             CMapChunk* chunk = area->mapChunks[i];
@@ -518,15 +924,36 @@ void CWorldScene::RenderChunksSolid() {
             chunk->RenderPrep();
             if (chunk->renderChunk) {
                 chunk->renderChunk->RenderSetup(1);
+                chunk->renderChunk->RenderSolid();
             }
         }
-    }
+    }*/
     // #############################
+    for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[0].Head(); renderChunk; renderChunk = CWorldScene::sortTable.renderChunkLists[0].Next(renderChunk)) {
+        renderChunk->RenderSetup(1);
+        renderChunk->RenderSolid();
 
-
-    //CMapRenderChunk::SetShaders(0, 0);
-    //if (CMapRenderChunk::s_currentShaderX)
-    //    CGxDevice::RsSet(g_theGxDevicePtr, GxRs_PixelShader, CMapRenderChunk::s_currentShaderX);
+        renderChunk->renderChunkLink.Unlink();
+        //    v4 = *(int*)((char*)&m_next->renderChunkLink.m_prevLink + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
+        //    v5 = (TSLink*)((char*)m_next + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
+        //    if (v4) {
+        //        v6 = (unsigned int)v5->m_next;
+        //        if ((v6 & 1) == 0 && v6)
+        //            v7 = (TSLink**)((char*)&v5->m_prevlink + v6 - *(_DWORD*)(v4 + 4));
+        //        else
+        //            v7 = (_DWORD*)(v6 & 0xFFFFFFFE);
+        //        *v7 = v4;
+        //        v5->m_prevlink->m_next = v5->m_next;
+        //        v5->m_prevlink = 0;
+        //        v5->m_next = 0;
+        //    }
+        //    v8 = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
+        //    v5->m_prevlink = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
+        //    v5->m_next = v8->m_next;
+        //    v8->m_next = m_next;
+        //    m_next = v9;
+        //    CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink = v5;
+    }
     //m_next = (CMapRenderChunk*)CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next;
     //if (((int)CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next & 1) != 0 || !CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next) {
     //    m_next = 0;

@@ -14,8 +14,7 @@ class CMapChunk : public CMapBaseObj {
     C2iVector aIndex;
     C2iVector sOffset;
     C2iVector cOffset;
-    C3Vector center;
-    float radius;
+    CAaSphere sphere;
     CAaBox bbox;
     C3Vector bottomRight;
     C3Vector topLeft;
@@ -28,8 +27,7 @@ class CMapChunk : public CMapBaseObj {
     int32_t areaId;
     int32_t unk_B4;
     int32_t unk_B8;
-    int32_t unk_BC;
-    int32_t unk_C0;
+    TSLink<CMapChunk> sortListLink;
     STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) doodadDefLinkList;
     STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) mapObjDefLinkList;
     int32_t TSExplicitList__m_linkoffset_DC;
@@ -62,17 +60,24 @@ class CMapChunk : public CMapBaseObj {
     int32_t unk_150;
     int32_t unk_154;
 
+    static C3Vector vertexList[145];
+    static int32_t cornerVertexIndex[4];
+    static int32_t farCornerIndex;
+    static float s_geoToTex;
+
     void Create(SIffChunk* headerChunk, bool a3);
     void ProcessIffChunks(bool a3);
     void CreateBounds();
     void RenderPrep();
     void Batch();
-    void CreateIndices(char* buf, CMapRenderChunkState* state);
+    void CreateIndices(char* buf, CGxBatch* batch);
     int16_t CreateIndices(char* buf, int32_t offset);
     void CreateVertices(char* buf, int32_t bufOffset);
     void CreateVerticesLocal(char* buf);
 
+    CMapChunk();
     static void Initialize();
+    static void InitializeVertexGrid();
 };
 
 #endif

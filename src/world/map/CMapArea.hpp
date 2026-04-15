@@ -12,7 +12,7 @@
 class CMapChunk;
 
 struct CMapAreaTexture {
-    char* textureName;
+    const char* textureName;
     HTEXTURE texture;
 };
 

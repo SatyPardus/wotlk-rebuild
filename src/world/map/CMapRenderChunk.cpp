@@ -16,11 +16,14 @@ TSGrowableArray<CMapRenderChunkBufBlock> CMapRenderChunk::s_chunkBlockArray;
 bool CMapRenderChunk::s_bPoolsDirty;
 CGxPool* CMapRenderChunk::s_gxVertexPool;
 CGxPool* CMapRenderChunk::s_gxIndexPool;
+CGxShader* CMapRenderChunk::s_currentShaderX[4];
 EGxVertexBufferFormat CMapRenderChunk::s_gxBufVertexFormat;
 int16_t CMapRenderChunk::s_maxVertexCount = 145;
 int16_t CMapRenderChunk::s_maxVertexOffset;
 int32_t CMapRenderChunk::s_pnEstimateVertex;
 int32_t CMapRenderChunk::s_pnEstimateIndex;
+
+RENDER_LAYER_FUNC* CMapRenderChunk::s_renderLayersFunc;
 
 // OFFSET: 0x7BA340
 void CMapRenderChunk::Initialize() {
@@ -165,7 +168,7 @@ void CMapRenderChunk::CreateLayer(CMapArea* area, SMLayer* layer, bool a4) {
 
     newLayer->texture = areaTexture->texture;
     newLayer->textureId = layer->textureId;
-    newLayer->unkValue = 0;
+    newLayer->layerTexture = nullptr;
     newLayer->owner = this;
 
     if ((newLayer->flags & 0x80) != 0)
@@ -176,6 +179,120 @@ void CMapRenderChunk::CreateLayer(CMapArea* area, SMLayer* layer, bool a4) {
     }
 
     ++this->layersCount;
+}
+
+// OFFSET: 0x7BA050
+void CMapRenderChunk::AllocLayerTextures() {
+    if (!this->layersCount) {
+        this->unk_0A &= 0xFFCF;
+        return;
+    }
+
+    if ((this->unk_0A & 0x20) == 0 && ((this->unk_0A & 0x10) != 0 && (this->unk_0A & 0x8) != 0) || (this->unk_0A & 0x8) == 0) {
+        this->unk_0A &= 0xFFCF;
+        return;
+    }
+
+    this->unk_0A &= 0xFFF7;
+    if ((this->unk_0A & 0x10) != 0)
+        this->unk_0A |= 0x8;
+
+    if (CMap::gTerrainPixelShadersValid || CMap::enableSpecularTerrain) {
+        this->AllocShaderTexture();
+    } else {
+        for (int32_t i = 0; i < this->layersCount; i++) {
+            this->AllocLayerTexture(&this->layers[i]);
+        }
+
+        if ((CMap::header.flags & 0x4) == 0) {
+            this->AllocShadowTexture();
+        }
+    }
+
+    this->unk_0A &= 0xFFCF;
+}
+
+// OFFSET: 0x7B9F90
+void CMapRenderChunk::AllocShaderTexture() {
+    if (this->terrainBlendTexture)
+        HandleClose(this->terrainBlendTexture);
+    this->terrainBlendTexture = nullptr;
+
+    CMapBaseObjLink* link = this->mapChunkPtrs[0]->parentLinkList.Head();
+    CMapArea* area = (CMapArea*)link->ref;
+    int32_t v4 = 64 >> area->header->mamp_value;
+
+    if ((this->unk_0A & 0x8) != 0) {
+        v4 /= 2;
+    }
+
+    int32_t v5 = v4;
+    if ((this->unkFlags & 0x1) != 0) {
+        v5 *= 2;
+    } else if ((this->unkFlags & 0x2) != 0) {
+        v4 *= 2;
+    }
+
+    HTEXTURE v7;
+    if ((CMap::header.flags & 4) != 0)
+        v7 = CMapRenderChunk::AllocTexture(v4, v5, this, CMapRenderChunk::UpdateShaderGxTexture, GxTex_Argb8888, 2u);
+    else
+        v7 = CMapRenderChunk::AllocTexture(v4, v5, this, CMapRenderChunk::UpdateShaderGxTexture, GxTex_Argb4444, 3u);
+    this->terrainBlendTexture = v7;
+    CGxTex* tex = TextureGetGxTex(v7, 1, nullptr);
+    GxTexUpdate(tex, 0, 0, v4, v5, 1);
+}
+
+// OFFSET: 0x7B9DE0
+void CMapRenderChunk::AllocLayerTexture(CMapRenderChunkLayer* layer) {
+    if (layer->layerTexture)
+        HandleClose(layer->layerTexture);
+    layer->layerTexture = nullptr;
+
+    bool v4 = (CMap::header.flags >> 2) & 1;
+    bool v5 = v4 && !layer->layerIndex;
+    if ((layer->flags & 0x100) != 0 || v5) {
+        CMapBaseObjLink* link = this->mapChunkPtrs[0]->parentLinkList.Head();
+        CMapArea* area = (CMapArea*)link->ref;
+        int32_t v10 = 64 >> area->header->mamp_value;
+
+        if ((this->unk_0A & 0x8) != 0) {
+            v10 /= 2;
+        }
+
+        HTEXTURE v12;
+        if (v4)
+            v12 = CMapRenderChunk::AllocTexture(v10, v10, layer, CMapRenderChunk::UpdateLayerGxTexture, GxTex_Argb8888, 2u);
+        else
+            v12 = CMapRenderChunk::AllocTexture(v10, v10, layer, CMapRenderChunk::UpdateLayerGxTexture, GxTex_Argb4444, 3u);
+        layer->layerTexture = v12;
+        CGxTex* tex = TextureGetGxTex(v12, 1, nullptr);
+        GxTexUpdate(tex, 0, 0, v10, v10, 1);
+    }
+}
+
+// OFFSET: 0x7B9EE0
+void CMapRenderChunk::AllocShadowTexture() {
+    if (this->shadowTexture)
+        HandleClose(this->shadowTexture);
+    this->shadowTexture = nullptr;
+
+    if ((CWorld::s_enables & CWorld::Enables::Enable_Shadow) != 0) {
+        if ((this->mapChunkPtrs[0]->header->flags & 1) != 0) {
+            CMapBaseObjLink* link = this->mapChunkPtrs[0]->parentLinkList.Head();
+            CMapArea* area = (CMapArea*)link->ref;
+            int32_t v4 = 64 >> area->header->mamp_value;
+
+            if ((this->unk_0A & 0x8) != 0) {
+                v4 /= 2;
+            }
+
+            HTEXTURE v6 = CMapRenderChunk::AllocTexture(v4, v4, this, CMapRenderChunk::UpdateShadowGxTexture, GxTex_Argb4444, 3u);
+            this->shadowTexture = v6;
+            CGxTex* tex = TextureGetGxTex(v6, 1, nullptr);
+            GxTexUpdate(tex, 0, 0, v4, v4, 1);
+        }
+    }
 }
 
 // OFFSET: 0x7B73E0
@@ -228,20 +345,20 @@ void CMapRenderChunk::RenderPrepBufs(CGxBuf* vertexBuf, CGxBuf* indexBuf) {
     }
 
     if (!indexBuf->unk1C || !indexBuf->unk1D) {
-        this->state.unk_00 = 3;
-        this->state.unk_04 = 0;
-        this->state.indexCount = 0;
-        this->state.minVertexIndex = -1;
-        this->state.maxVertexIndex = 0;
+        this->batch.m_primType = GxPrim_Triangles;
+        this->batch.m_start = 0;
+        this->batch.m_count = 0;
+        this->batch.m_minIndex = -1;
+        this->batch.m_maxIndex = 0;
 
         auto bufData = g_theGxDevicePtr->BufLock(indexBuf);
 
         if (this->mapChunkPtrs[0]) {
-            this->mapChunkPtrs[0]->CreateIndices(bufData, &this->state);
+            this->mapChunkPtrs[0]->CreateIndices(bufData, &this->batch);
         }
 
         if (this->mapChunkPtrs[1]) {
-            this->mapChunkPtrs[1]->CreateIndices(&bufData[this->state.indexCount], &this->state);
+            this->mapChunkPtrs[1]->CreateIndices(&bufData[this->batch.m_count], &this->batch);
         }
 
         GxBufUnlock(indexBuf, 0);
@@ -312,39 +429,65 @@ CMapRenderChunkBuf* CMapRenderChunk::AllocBuf(int32_t a1, CMapRenderChunk* rende
     return nullptr;
 }
 
+// OFFSET: 0x7B7A70
+HTEXTURE CMapRenderChunk::AllocTexture(int32_t a1, int32_t a2, void* userArg, TEXTURE_CALLBACK* a4, EGxTexFormat a5, int16_t a6) {
+    EGxTexFormat v6 = a5;
+    if ((CMap::header.flags & 4) != 0)
+        v6 = (CWorld::terrainAlphaBitDepth != 8) ? GxTex_Argb4444 : GxTex_Argb8888;
+
+    CGxTexFlags texFlags = CGxTexFlags(GxTex_Linear, 0, 0, 0, 0, 0, 1);
+    return TextureCreate(GxTex_2d, a1, a2, 0, v6, v6, texFlags, userArg, a4, "TerrainBlend", 0);
+}
+
+// OFFSET: 0x7B9C60
+void CMapRenderChunk::UpdateShaderGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels) {
+    CMapRenderChunk* renderChunk = static_cast<CMapRenderChunk*>(userArg);
+
+    if (cmd == GxTex_Latch) {
+        // CMapRenderChunk::CreateShaderTexture(renderChunk);
+        //*texels = CMapRenderChunk::s_defaultTex;
+        // v8 = 4 * w;
+        // if ((CMap::header.flags & 4) == 0)
+        //     v8 = 2 * w;
+        //*texelStrideInBytes = v8;
+    }
+}
+
+// OFFSET: 0x7B9BC0
+void CMapRenderChunk::UpdateLayerGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels) {
+    CMapRenderChunkLayer* layer = static_cast<CMapRenderChunkLayer*>(userArg);
+
+    if (cmd == GxTex_Latch) {
+        // CMapRenderChunk::CreateChunkLayerTex(a6->owner, (int)a6);
+        // v8 = 4 * a2;
+        // if ((CMap::header.flags & 4) == 0)
+        //     v8 = 2 * a2;
+        //*a7 = v8;
+        //*(_DWORD*)a8 = CMapRenderChunk::s_defaultTex;
+    }
+}
+
+// OFFSET: 0x7B9C20
+void CMapRenderChunk::UpdateShadowGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels) {
+    CMapRenderChunk* renderChunk = static_cast<CMapRenderChunk*>(userArg);
+
+    if (cmd == GxTex_Latch) {
+        //CMapRenderChunk::CreateShadowTex(a6);
+        //*a7 = 2 * a2;
+        //*a8 = CMapRenderChunk::s_defaultTex;
+    }
+}
+
 // OFFSET: 0x7D04A0
 void CMapRenderChunk::RenderSetup(int32_t a2) {
     this->unk_0C = 0.0;
-    //CMapRenderChunk::AllocLayerTextures(this);
+    this->AllocLayerTextures();
     //if (!a2 || !CMap::enableTerrainShaderVertex) {
-    //    v11.M11 = 1.0;
-    //    v11.M12 = 0.0;
-    //    v11.M13 = 0.0;
-    //    v11.M14 = 0.0;
-    //    v11.M21 = 0.0;
-    //    v11.M23 = 0.0;
-    //    v11.M24 = 0.0;
-    //    v11.M31 = 0.0;
-    //    v11.M32 = 0.0;
-    //    v11.M34 = 0.0;
-    //    v11.M22 = 1.0;
-    //    v11.M33 = 1.0;
-    //    v11.M44 = 1.0;
-    //    v12 = this->vec1.x - CWorldScene::s_activeWorldView.x;
-    //    y = this->vec1.y;
-    //    v11.M41 = v12;
-    //    v4 = &g_theGxDevicePtr->ukn1[605];
-    //    v13 = y - CWorldScene::s_activeWorldView.y;
-    //    z = this->vec1.z;
-    //    v11.M42 = v13;
-    //    v6 = z - CWorldScene::s_activeWorldView.z;
-    //    v7 = &g_theGxDevicePtr->ukn1[g_theGxDevicePtr->ukn1[605] + 671];
-    //    LOBYTE(g_theGxDevicePtr->ukn1[606]) = 1;
-    //    *v7 &= ~1u;
-    //    v14 = v6;
-    //    v8 = *v4;
-    //    v11.M43 = v14;
-    //    C44Matrix::Copy((C44Matrix*)&v4[16 * v8 + 2], &v11);
+    C44Matrix worldMatrix = C44Matrix();
+    worldMatrix.d0 = this->vec1.x - CWorldScene::s_activeWorldView.x;
+    worldMatrix.d1 = this->vec1.y - CWorldScene::s_activeWorldView.y;
+    worldMatrix.d2 = this->vec1.z - CWorldScene::s_activeWorldView.z;
+    g_theGxDevicePtr->XformSet(GxXform_World, worldMatrix);
     //    sub_790440(v10, &this->vec2.x);
     //    CM2Scene::SelectLights(s_m2Scene, v10);
     //    CMapRenderChunk::SelectLights((int)v10);
@@ -358,4 +501,344 @@ void CMapRenderChunk::RenderSetup(int32_t a2) {
     } else {
         this->UseStreamingBufs();
     }
+}
+
+void BuildTexCoordMatrices(
+    C44Matrix* detailMtx,
+    C44Matrix* alphaMtx,
+    C3Vector* translation,
+    float geoToTex) // s_geoToTex ≈ 0.24f
+{
+    detailMtx->Scale(geoToTex);
+    {
+        float M11 = detailMtx->a0, M12 = detailMtx->a1,
+              M13 = detailMtx->a2, M14 = detailMtx->a3;
+        detailMtx->a0 = detailMtx->b0;
+        detailMtx->a1 = detailMtx->b1;
+        detailMtx->a2 = detailMtx->b2;
+        detailMtx->a3 = detailMtx->b3;
+        detailMtx->b0 = M11;
+        detailMtx->b1 = M12;
+        detailMtx->b2 = M13;
+        detailMtx->b3 = M14;
+    }
+    detailMtx->Translate(*translation);
+
+    alphaMtx->Scale(geoToTex * 0.125f);
+    {
+        float M11 = alphaMtx->a0, M12 = alphaMtx->a1,
+              M13 = alphaMtx->a2, M14 = alphaMtx->a3;
+        alphaMtx->a0 = alphaMtx->b0;
+        alphaMtx->a1 = alphaMtx->b1;
+        alphaMtx->a2 = alphaMtx->b2;
+        alphaMtx->a3 = alphaMtx->b3;
+        alphaMtx->b0 = M11;
+        alphaMtx->b1 = M12;
+        alphaMtx->b2 = M13;
+        alphaMtx->b3 = M14;
+    }
+    alphaMtx->Translate(*translation);
+}
+
+// OFFSET: 0x7D3010
+void CMapRenderChunk::RenderSolid() {
+    g_theGxDevicePtr->XformSet(GxXform_Tex0, C44Matrix());
+    g_theGxDevicePtr->XformSet(GxXform_Tex1, C44Matrix());
+    g_theGxDevicePtr->RsSet(GxRs_BlendingMode, 0);
+    // if (v8->m_context) {
+    //     m_data = v8->m_appRenderStates.m_data;
+    //     p_m_data = &v8->m_appRenderStates.m_data;
+    //     v12 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
+    //     if (m_data[7].m_value.m_data.i[0] != v12) {
+    //         CGxDevice::IRsDirty(v8, GxRs_AlphaRef);
+    //         (*p_m_data)[7].m_value.m_data.i[0] = v12;
+    //     }
+    // }
+    CGxTex* defaultTexture = TextureGetGxTex(this->layers[0].texture, 0, nullptr);
+    g_theGxDevicePtr->RsSet(GxRs_Texture0, defaultTexture);
+    GxTexSetWrap(defaultTexture, GxTex_Wrap, GxTex_Wrap);
+    CGxTex* blendTexture;
+    if (CMap::gTerrainPixelShadersValid)
+        blendTexture = TextureGetGxTex(CWorldScene::s_defaultBlendTexture, 1, nullptr);
+    else
+        blendTexture = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, nullptr);
+    g_theGxDevicePtr->RsSet(GxRs_Texture1, blendTexture);
+    g_theGxDevicePtr->Draw(&this->batch, 1);
+    g_theGxDevicePtr->RsSet(GxRs_Texture0, nullptr);
+    g_theGxDevicePtr->RsSet(GxRs_Texture1, nullptr);
+}
+
+// OFFSET: 0x7D3240
+void CMapRenderChunk::RenderSolidVertexPixelShader() {
+    g_theGxDevicePtr->RsSet(GxRs_BlendingMode, 0);
+    // if (v8->m_context) {
+    //     m_data = v8->m_appRenderStates.m_data;
+    //     p_m_data = &v8->m_appRenderStates.m_data;
+    //     v12 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
+    //     if (m_data[7].m_value.m_data.i[0] != v12) {
+    //         CGxDevice::IRsDirty(v8, GxRs_AlphaRef);
+    //         (*p_m_data)[7].m_value.m_data.i[0] = v12;
+    //     }
+    // }
+    CGxTex* defaultTexture = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, nullptr);
+    g_theGxDevicePtr->RsSet(GxRs_Texture0, defaultTexture);
+    GxTexSetWrap(defaultTexture, GxTex_Wrap, GxTex_Wrap);
+    CGxTex* blendTexture = TextureGetGxTex(CWorldScene::s_defaultBlendTexture, 1, nullptr);
+    g_theGxDevicePtr->RsSet(GxRs_Texture1, blendTexture);
+    this->SetVertexShader(2, 0);
+    g_theGxDevicePtr->Draw(&this->batch, 1);
+    g_theGxDevicePtr->RsSet(GxRs_Texture0, nullptr);
+    g_theGxDevicePtr->RsSet(GxRs_Texture1, nullptr);
+}
+
+// OFFSET: 0x7D0050
+void CMapRenderChunk::SetVertexShader(int32_t a1, int32_t a2) {
+    //v25 = (unsigned __int8)CMap::enableSpecularTerrain;
+    //v26 = CMapRenderChunk::s_gxBufVertexFormat == GxVBF_PNC;
+    //sub_790440(v24, &a1->vec2.x);
+    //CM2Scene::SelectLights(s_m2Scene, v24);
+    //CMapRenderChunk::SelectLights((int)v24);
+    //v27 = 0.0;
+    //v28 = 0.0;
+    //v31 = 0;
+    //v29 = 0.0;
+    //v32 = 0;
+    //v3 = &flt_D25278;
+    //v30 = 3;
+    //do {
+    //    if (sub_8349E0(v32, &v27, v3 - 2, v3 + 2)) {
+    //        v4 = v28 - CWorldScene::s_activeWorldView.y;
+    //        v5 = v29 - CWorldScene::s_activeWorldView.z;
+    //        x = v27 - CWorldScene::s_activeWorldView.x;
+    //        *(v3 - 6) = x;
+    //        y = v4;
+    //        *(v3 - 5) = y;
+    //        v35 = v5;
+    //        *(v3 - 4) = v35;
+    //        *(float*)&v36 = 1.0;
+    //        v6 = 0.0;
+    //        *(v3 - 3) = 1.0;
+    //        v31 = 1;
+    //    } else {
+    //        v6 = 0.0;
+    //        *(v3 - 6) = 0.0;
+    //        *(v3 - 5) = 0.0;
+    //        *(v3 - 4) = 0.0;
+    //        *(v3 - 3) = 0.0;
+    //        *(v3 - 2) = 0.0;
+    //        *(v3 - 1) = 0.0;
+    //        *v3 = 0.0;
+    //        v3[1] = 0.0;
+    //        v3[2] = 1.0;
+    //        v3[3] = 0.0;
+    //        v3[4] = 0.0;
+    //        v3[5] = 0.0;
+    //    }
+    //    ++v32;
+    //    v3 += 12;
+    //    --v30;
+    //} while (v30);
+    //v7 = a1;
+    //x = a1->vec1.x;
+    //y = a1->vec1.y;
+    //z = a1->vec1.z;
+    //dword_D25214 = LODWORD(y);
+    //v35 = z;
+    //*(float*)&v36 = v6;
+    //dword_D25210 = LODWORD(x);
+    //v9 = CMapChunk::s_geoToTex;
+    //v10 = a2 - 1;
+    //v11 = -CMapChunk::s_geoToTex;
+    //dword_D2521C = v36;
+    //x = v11;
+    //dword_D25218 = LODWORD(v35);
+    //v12 = v11;
+    //y = v11;
+    //v13 = v11;
+    //v14 = v6;
+    //v15 = v13;
+    //v35 = v14;
+    //*(float*)&v36 = v14;
+    //v16 = v36;
+    //if (a2 != 1) {
+    //    dword_D251C0 = LODWORD(x);
+    //    dword_D251C4 = LODWORD(y);
+    //    dword_D251C8 = LODWORD(v35);
+    //    dword_D251CC = v36;
+    //    qmemcpy(&unk_D251D0, &dword_D251C0, 4 * ((unsigned int)(16 * v10 - 13) >> 2));
+    //    v7 = a1;
+    //}
+    //unkFlags = v7->unkFlags;
+    //x = v12 * 0.125;
+    //v18 = v9;
+    //v19 = v15 * 0.125;
+    //v20 = v18;
+    //y = v19;
+    //if ((unkFlags & 1) != 0) {
+    //    x = v20 * -0.0625;
+    //} else if ((unkFlags & 2) != 0) {
+    //    y = v20 * -0.0625;
+    //}
+    //v21 = &dword_D251B0[4 * a2];
+    //*(float*)v21 = x;
+    //*((float*)v21 + 1) = y;
+    //*((float*)v21 + 2) = v35;
+    //v21[3] = v16;
+    //v22 = sub_873FF0();
+    //v23 = CMapRenderChunk::GetVertexShader(v31, v10, v25, v26, a3, v22);
+    //CGxDevice::RsSet(g_theGxDevicePtr, GxRs_VertexShader, v23);
+    //g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 0, &stru_D250A0, 37);
+}
+
+void sub_7D0D70(CMapRenderChunk* renderChunk) {
+    C44Matrix tex0Matrix = C44Matrix();
+    C44Matrix tex1Matrix = C44Matrix();
+    C3Vector viewVector = {
+        CWorldScene::s_activeWorldView.x - renderChunk->vec1.x,
+        CWorldScene::s_activeWorldView.y - renderChunk->vec1.y,
+        CWorldScene::s_activeWorldView.z - renderChunk->vec1.z
+    };
+    BuildTexCoordMatrices(&tex0Matrix, &tex1Matrix, &viewVector, -CMapChunk::s_geoToTex);
+    g_theGxDevicePtr->XformSet(GxXform_Tex0, tex0Matrix);
+    g_theGxDevicePtr->XformSet(GxXform_Tex1, tex1Matrix);
+
+    GxRsSet(GxRs_BlendingMode, 0);
+    //if (v6->m_context) {
+    //    m_data = v6->m_appRenderStates.m_data;
+    //    v9 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
+    //    p_m_data = &v6->m_appRenderStates.m_data;
+    //    if (m_data[7].m_value.m_data.i[0] != v9) {
+    //        CGxDevice::IRsDirty(v6, GxRs_AlphaRef);
+    //        (*p_m_data)[7].m_value.m_data.i[0] = v9;
+    //        v6 = g_theGxDevicePtr;
+    //    }
+    //}
+
+    bool v51 = (renderChunk->unk_0A & 4) != 0;
+
+    for (int layer = 0; layer < renderChunk->layersCount; layer++) {
+        CMapRenderChunkLayer* chunkLayer = &renderChunk->layers[layer];
+
+        CGxTex* gxTex = TextureGetGxTex(chunkLayer->texture, 0, 0);
+        GxRsSet(GxRs_Texture0, gxTex);
+        GxTexSetWrap(gxTex, GxTex_Wrap, GxTex_Wrap);
+
+        if (layer == 0 && v51) {
+            GxRsSet(GxRs_TexGen0, 4);
+            GxRsSet(GxRs_TextureShader0, 0);
+        }
+
+        //if (chunkLayer->flags & 0x80)
+            GxRsSet(GxRs_Lighting, 0);
+
+        // Flag bit 6: apply texture coordinate translation
+        if (chunkLayer->flags & 0x40) {
+            //C3Vector__C3Vector(&a3, (C3Vector*)&World::texVect[v14->flags & 7]);
+            //v20 = 1.0 / CMapChunk::s_geoToTex / flt_AF14F8[(LOBYTE(v14->flags) >> 3) & 7];
+            //v21 = g_theGxDevicePtr->m_xforms;
+            //a3.x = a3.x * v20;
+            //a3.y = a3.y * v20;
+            //a3.z = v20 * a3.z;
+            //v22 = &g_theGxDevicePtr->m_xforms[0].m_flags[g_theGxDevicePtr->m_xforms[0].m_level];
+            //g_theGxDevicePtr->m_xforms[0].m_dirty = 1;
+            //*v22 &= ~1u;
+            //C44Matrix::Translate(&v21->m_mtx[v21->m_level], &a3);
+            //v16 = g_theGxDevicePtr;
+        }
+
+        if (layer == 1) {
+            GxRsSet(GxRs_BlendingMode, 2);
+            //if (v16->m_context) {
+            //    v24 = v16->m_appRenderStates.m_data;
+            //    v25 = CGxDevice::s_alphaRef[v24[6].m_value.m_data.i[0]];
+            //    v26 = &v16->m_appRenderStates.m_data;
+            //    if (v24[7].m_value.m_data.i[0] != v25) {
+            //        CGxDevice::IRsDirty(v16, GxRs_AlphaRef);
+            //        (*v26)[7].m_value.m_data.i[0] = v25;
+            //        v16 = g_theGxDevicePtr;
+            //    }
+            //    v11 = v50;
+            //}
+        }
+
+        if (chunkLayer->layerTexture) {
+            CGxTex* layerGxTex = TextureGetGxTex(chunkLayer->layerTexture, 1, 0);
+            GxRsSet(GxRs_Texture1, layerGxTex);
+        } else {
+            GxRsSet(GxRs_Texture1, (CGxTex*)nullptr);
+        }
+
+        g_theGxDevicePtr->Draw(&renderChunk->batch, 1);
+
+        if (layer == 0 && v51) {
+            GxRsSet(GxRs_TexGen0, 2);
+            GxRsSet(GxRs_TextureShader0, 1);
+        }
+
+        if (chunkLayer->flags & 0x80)
+            GxRsSet(GxRs_Lighting, 1);
+
+        if (chunkLayer->flags & 0x40)
+            g_theGxDevicePtr->XformSet(GxXform_World, tex0Matrix);
+    }
+
+    if (renderChunk->shadowTexture && (CWorld::s_enables & CWorld::Enables::Enable_Shadow)) {
+        //GxRsSet(GxRs_BlendingMode, 2);
+        //SyncAlphaRef();
+        //
+        //GxRsSet(GxRs_Texture0, TextureGetGxTex(texturepointer, 1, 0));
+        //GxRsSet(GxRs_Texture1, TextureGetGxTex(renderChunk->shadowTexture, 1, 0));
+        //g_theGxDevicePtr->Draw(&renderChunk->batch, 1);
+    }
+
+    g_theGxDevicePtr->RsSet(GxRs_Texture0, nullptr);
+    g_theGxDevicePtr->RsSet(GxRs_Texture1, nullptr);
+}
+
+void CMapRenderChunk::SetShaders(int32_t a1, int32_t a2) {
+    //dword_D1D094 = 0;
+    //dword_D1D090 = 0;
+    CMapRenderChunk::s_currentShaderX[0] = nullptr;
+    CMapRenderChunk::s_currentShaderX[1] = nullptr;
+    CMapRenderChunk::s_currentShaderX[2] = nullptr;
+    CMapRenderChunk::s_currentShaderX[3] = nullptr;
+    //dword_D1D070 = 0;
+    //dword_D1D074 = 0;
+    //dword_D1D078 = 0;
+    //dword_D1D07C = 0;
+    //if (CMap::gTerrainPixelShadersValid) {
+    //    v2 = (CMap::header.flags >> 2) & 1;
+    //    v3 = a1;
+    //    v6 = sub_873FF0();
+    //    dword_D1D094 = CMap::GetPixelShader(v2, 1, a1);
+    //    dword_D1D090 = CMap::GetPixelShader(v2, 0, a1);
+    //    v4 = 1;
+    //    v8 = CMapRenderChunk::s_currentShaderX;
+    //    v7 = 4;
+    //    while (1) {
+    //        TerrainPixelShader = (CGxShader*)CMap::GetTerrainPixelShader(v2, v4, v6, v3, a2);
+    //        if (v4 <= CGxDevice::Caps((char*)g_theGxDevicePtr)->m_numTmus && TerrainPixelShader && CGxShaderPermute::Valid(TerrainPixelShader)) {
+    //            *v8 = TerrainPixelShader;
+    //        }
+    //        ++v8;
+    //        ++v4;
+    //        if (!--v7)
+    //            break;
+    //        v3 = a1;
+    //    }
+    //    if ((CMap::header.flags & 4) != 0) {
+    //        if (CMap::enableTerrainShaderVertex)
+    //            CMapRenderChunk::s_renderLayersFunc = sub_7D20A0;
+    //        else
+    //            CMapRenderChunk::s_renderLayersFunc = (int(__cdecl*)(_DWORD))sub_7D13F0;
+    //    } else {
+    //        CMapRenderChunk::s_renderLayersFunc = (int(__cdecl*)(_DWORD))sub_7D2520;
+    //        if (!CMap::enableTerrainShaderVertex)
+    //            CMapRenderChunk::s_renderLayersFunc = sub_7D1AD0;
+    //    }
+    //} else if ((CMap::header.flags & 4) != 0) {
+    //    CMapRenderChunk::s_renderLayersFunc = sub_7D0760;
+    //} else {
+        CMapRenderChunk::s_renderLayersFunc = sub_7D0D70;
+    //}
 }

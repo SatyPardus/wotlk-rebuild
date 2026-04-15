@@ -59,11 +59,13 @@ class CWorld {
         static float prevFarClip;
         static CALLBACK_FUNC s_loadProgressCallback;
         static void* s_loadProgressParam;
+        static int32_t terrainAlphaBitDepth;
 
         // Static functions
         static void Initialize();
-        static void LoadMap(const char* mapName, const C3Vector& position, int32_t zoneID);
-        static void PrepareAreaOfInterest(const C3Vector& position);
+        static void LoadMap(const char* mapName, C3Vector* position, int32_t zoneID);
+        static void Update(C3Vector* camPos, C3Vector* camTarget, C3Vector* position);
+        static void PrepareAreaOfInterest(C3Vector* position);
         static void Render(const C3Vector& cameraPos, float time);
         static uint32_t GetEnables();
         static void SetLoadProgressCallback(CALLBACK_FUNC callback, void* param);

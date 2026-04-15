@@ -8,18 +8,12 @@
 #include "world/map/Types.hpp"
 #include <gx/Texture.hpp>
 #include <gx/Buffer.hpp>
+#include <gx/CGxBatch.hpp>
+#include <gx/Shader.hpp>
 
 class CMapChunk;
 class CMapRenderChunk;
 struct CMapRenderChunkBufBlock;
-
-struct CMapRenderChunkState {
-    int32_t unk_00;
-    int32_t unk_04;
-    int32_t indexCount;
-    int16_t minVertexIndex;
-    int16_t maxVertexIndex;
-};
 
 struct CMapRenderChunkBuf {
     CGxBuf* vertexBuf;
@@ -42,9 +36,11 @@ struct CMapRenderChunkLayer {
     int16_t layerIndex;
     HTEXTURE texture;
     int32_t textureId;
-    int32_t unkValue;
+    HTEXTURE layerTexture;
     CMapRenderChunk* owner;
 };
+
+typedef void(RENDER_LAYER_FUNC)(CMapRenderChunk*);
 
 class CMapRenderChunk {
     public:
@@ -58,10 +54,10 @@ class CMapRenderChunk {
     C3Vector vec2;
     float radius;
     CMapRenderChunkLayer layers[4];
-    CTexture* terrainBlendTexture;
-    CTexture* shadowTexture;
+    HTEXTURE terrainBlendTexture;
+    HTEXTURE shadowTexture;
     CMapRenderChunkBuf* chunkBuf;
-    CMapRenderChunkState state;
+    CGxBatch batch;
 
     static STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, bufLink) s_bufList;
     static STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, blockLink) s_chunkBufBlockFreeList;
@@ -70,24 +66,38 @@ class CMapRenderChunk {
     static bool s_bPoolsDirty;
     static CGxPool* s_gxVertexPool;
     static CGxPool* s_gxIndexPool;
+    static CGxShader* s_currentShaderX[4];
     static EGxVertexBufferFormat s_gxBufVertexFormat;
     static int16_t s_maxVertexCount;
     static int16_t s_maxVertexOffset;
     static int32_t s_pnEstimateVertex;
     static int32_t s_pnEstimateIndex;
+    static RENDER_LAYER_FUNC* s_renderLayersFunc;
 
     void AddBatch(CMapChunk* a2, CMapChunk* a3, C3Vector* a4, uint8_t a5);
     void RenderPrep();
     void CreateLayers();
     void CreateLayer(CMapArea* area, SMLayer* layer, bool a4);
+    void AllocLayerTextures();
+    void AllocShaderTexture();
+    void AllocLayerTexture(CMapRenderChunkLayer* layer);
+    void AllocShadowTexture();
     void UpdateLoaded();
     void UseStreamingBufs();
     void RenderPrepBufs(CGxBuf* vertexBuf, CGxBuf* indexBuf);
     void RenderSetup(int32_t a2);
+    void RenderSolid();
+    void RenderSolidVertexPixelShader();
+    void SetVertexShader(int32_t a1, int32_t a2);
 
     static void Initialize();
     static CMapRenderChunkBuf* AllocBuf(int32_t a1, CMapRenderChunk* renderChunk);
+    static HTEXTURE AllocTexture(int32_t a1, int32_t a2, void* userArg, TEXTURE_CALLBACK* a4, EGxTexFormat a5, int16_t a6);
+    static void UpdateShaderGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels);
+    static void UpdateLayerGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels);
+    static void UpdateShadowGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels);
     static void UpdatePools();
+    static void SetShaders(int32_t a1, int32_t a2);
 };
 
 #endif

@@ -2,6 +2,7 @@
 #include "world/map/CMapChunk.hpp"
 #include "world/map/CMap.hpp"
 #include "world/World.hpp"
+#include "world/CWorldScene.hpp"
 #include "async/AsyncFile.hpp"
 
 // OFFSET: 0x7BFE40
@@ -38,50 +39,21 @@ void CMapArea::LoadTextures(const char* fileNames, int32_t fileNamesSize) {
     if (fileNamesSize <= 0)
         return;
 
-    //v4 = 0;
-    //p_textures = &this->textures;
-    //do {
-    //    v6 = p_textures->m_count + 1;
-    //    if (v6 > p_textures->m_alloc) {
-    //        m_chunk = p_textures->m_chunk;
-    //        if (!m_chunk) {
-    //            m_chunk = p_textures->m_count + 1;
-    //            if (v6 >= 0x20) {
-    //                p_textures->m_chunk = 32;
-    //                m_chunk = 32;
-    //            } else {
-    //                for (i = (p_textures->m_count + 1) & p_textures->m_count; i; i &= i - 1)
-    //                    m_chunk = i;
-    //                if (!m_chunk)
-    //                    m_chunk = 1;
-    //            }
-    //        }
-    //        if (v6 % m_chunk)
-    //            v9 = v6 + m_chunk - v6 % m_chunk;
-    //        else
-    //            v9 = v6;
-    //        sub_7C30B0(&p_textures->m_alloc, v9);
-    //    }
-    //    m_count = p_textures->m_count;
-    //    v11 = a2;
-    //    v12 = &p_textures->m_data[m_count];
-    //    p_textures->m_count = m_count + 1;
-    //    v12->textureName = &a2[v4];
-    //    v12->texture = 0;
-    //    if (!IsStreamingMode) {
-    //        CMap::LoadTerrainTexture(
-    //            this,
-    //            (int)&this->textures.m_data[this->textures.m_count - 1],
-    //            this->textures.m_count - 1);
-    //        v11 = a2;
-    //    }
-    //    if (a2[v4]) {
-    //        do
-    //            ++v4;
-    //        while (v11[v4]);
-    //    }
-    //    ++v4;
-    //} while (v4 < fileNamesSize);
+    this->textures.m_chunk = 16;
+    for (int32_t i = 0; i < fileNamesSize; i++) {
+        CMapAreaTexture* areaTexture = this->textures.New();
+
+        areaTexture->textureName = &fileNames[i];
+        areaTexture->texture = nullptr;
+
+        if (!SFile::IsStreamingMode()) {
+            CMap::LoadTerrainTexture(this, areaTexture, this->textures.Count() - 1);
+        }
+
+        while (fileNames[i]) {
+            i++;
+        }
+    }
 }
 
 // OFFSET: 0x7D6EF0
@@ -203,10 +175,10 @@ void CMapArea::Update(bool a1, CiRect* chunkRect) {
                 chunk = this->mapChunks[chunkIndex];
             }
 
-            //if (a1 && sub_7D6690(chunkRect)) {
-            //    sub_7C3E70(chunk);
-            //    sub_7C5B20(chunk);
-            //}
+            if (a1 && CWorldScene::InsideFrustumRect(chunkRect)) {
+                CWorldScene::AddMapChunk(chunk);
+                //sub_7C5B20(chunk);
+            }
         }
     }
 }

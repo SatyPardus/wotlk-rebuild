@@ -7,17 +7,21 @@
 class CM2Scene;
 class CM2Model;
 
+struct DNFogInfo {
+    CImVector color;
+    float start;
+    float end;
+};
+
 namespace DayNight {
 
 class DNInfo {
     public:
 
-    uint32_t unk0;
+    uint32_t time;
     float dayProgression = 0.0f;
     float day = 0.0f;
-    uint32_t unk3;
-    uint32_t unk4;
-    uint32_t unk5;
+    C3Vector playerPos;
     C3Vector cameraPos;
     uint32_t unk9;
     uint32_t unk10;
@@ -43,9 +47,7 @@ class DNInfo {
     uint32_t unk32;
     uint32_t unk33;
     uint32_t unk34;
-    uint32_t unk35;
-    uint32_t unk36;
-    uint32_t unk37;
+    DNFogInfo fogInfo;
     uint32_t unk38;
     uint32_t unk39;
     uint32_t unk40;

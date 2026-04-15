@@ -25,7 +25,7 @@ float CWorld::s_nearClip;
 float CWorld::prevFarClip;
 CWorld::CALLBACK_FUNC CWorld::s_loadProgressCallback;
 void* CWorld::s_loadProgressParam;
-
+int32_t CWorld::terrainAlphaBitDepth;
 
 void CWorld::Initialize() {
     CWorld::s_enables |=
@@ -193,9 +193,9 @@ void CWorld::Initialize() {
     //sub_77ED40();
 }
 
-void CWorld::LoadMap(const char* mapName, const C3Vector& position, int32_t zoneID) {
+void CWorld::LoadMap(const char* mapName, C3Vector* position, int32_t zoneID) {
     // TODO: calculate far clip
-    CWorld::s_farClip = 1583.3334f;
+    CWorld::s_farClip = 1583.3334f * 2;
     //World::s_farClip = sub_780770(CWorldParam::cvar_farClip->m_numberValue, mapid);
     CWorld::s_nearClip = 0.2f;
     CWorld::prevFarClip = CWorld::s_farClip;
@@ -212,8 +212,115 @@ void CWorld::LoadMap(const char* mapName, const C3Vector& position, int32_t zone
     //sub_8A1F50();
 }
 
-void CWorld::PrepareAreaOfInterest(const C3Vector& position) {
-    CWorld::s_currentWorldPos = position;
+// OFFSET: 0x7831A0
+void CWorld::Update(C3Vector* camPos, C3Vector* camTarget, C3Vector* position) {
+    //sub_77F900();
+    //v3 = profIdx;
+    bool v4 = true;
+    //profTimes[profIdx] = flt_CD76A0;
+    //profIdx = v3 + 1;
+    //if (v3 == 29)
+    //    profIdx = 0;
+    //CMap::gbPrevChunkRect = CWorld::s_chunkRectLow;
+    CWorld::PrepareAreaOfInterest(position);
+    //maxX = CMap::gbPrevChunkRect.maxX;
+    //if (CMap::gbPrevChunkRect.maxX >= CWorld::s_chunkRectLow.maxX)
+    //    maxX = CWorld::s_chunkRectLow.maxX;
+    //maxY = CMap::gbPrevChunkRect.maxY;
+    //if (CMap::gbPrevChunkRect.maxY >= CWorld::s_chunkRectLow.maxY)
+    //    maxY = CWorld::s_chunkRectLow.maxY;
+    //minX = CMap::gbPrevChunkRect.minX;
+    //if (CMap::gbPrevChunkRect.minX <= CWorld::s_chunkRectLow.minX)
+    //    minX = CWorld::s_chunkRectLow.minX;
+    //minY = CMap::gbPrevChunkRect.minY;
+    //if (CMap::gbPrevChunkRect.minY <= CWorld::s_chunkRectLow.minY)
+    //    minY = CWorld::s_chunkRectLow.minY;
+    //if (minY < maxY && minX < maxX) {
+    //    HIDWORD(CWorld::prepareAll) = 0;
+    //} else {
+    //    HIDWORD(CWorld::prepareAll) = 1;
+    //    dword_D4314C = 1;
+    //}
+    //++CWorld::frameCnt;
+    //if (s_FrameCntCallback)
+    //    s_FrameCntCallback();
+    //v9 = flt_CD76A0;
+    //p_y = &World::texVect[0].y;
+    //for (i = 0; i < 8; ++i) {
+    //    v12 = stru_ADEE78[i].x * v9 + *(p_y - 1);
+    //    *(p_y - 1) = v12;
+    //    v13 = stru_ADEE78[i].y * v9 + *p_y;
+    //    *p_y = v13;
+    //    if (v12 >= 64.0)
+    //        *(p_y - 1) = 0.0;
+    //    if (v13 >= 64.0)
+    //        *p_y = 0.0;
+    //    p_y += 4;
+    //}
+    CWorldScene::Update(camPos, camTarget);
+    //v14 = 0;
+    //if (World::s_farClip - World::s_prevFarClip > 10.0) {
+    //    v4 = 0;
+    //    v14 = 1;
+    //}
+    //World::s_prevFarClip = World::s_farClip;
+    //if (v14) {
+    //    World::s_loadProgressCallback = (int(__cdecl*)(_DWORD, _DWORD))LoadingScreenWorldCallback;
+    //    World::s_loadProgressParam = 0;
+    //    LoadingScreenEnable(s_mapId, 1);
+    //    CMap::bPreload = 1;
+    //}
+    CMap::PrepareUpdate(v4);
+    //if (v14) {
+    //    CMap::bPreload = 0;
+    //    World::s_loadProgressCallback = 0;
+    //    World::s_loadProgressParam = 0;
+    //    AsyncFile::ProgressCallback(0, 0);
+    //    LoadingScreenDisable();
+    //}
+    //sub_795D40();
+    //sub_7816F0(HIDWORD(CWorld::prepareAll) | CWorld::prepareAll, &camPos->x);
+    //CWorld::farFog = DayNight::GetActiveDayNight()->fogInfo.end;
+    //if (!CGxDevice::MasterEnable(g_theGxDevicePtr, 1))
+    //    CWorld::farFog = 100000.0;
+    //LODWORD(CWorld::prepareAll) = 0;
+    //if ((CWorld::enables & 0x2000000) != 0 && dword_CD8794)
+    //    sub_79BF40(CWorld::particulate);
+    //MapWeather::Update((int)dword_CD7544);
+    //ActivePlayer = ClntObjMgrGetActivePlayer();
+    //v16 = (CGPlayer_C*)ClntObjMgrObjectPtr(ActivePlayer, TYPEMASK_PLAYER);
+    //if (v16) {
+    //    if (!dword_CD7740) {
+    //        sub_782560(*(_DWORD*)&v16->gap0[184], &v22);
+    //        if (v22 >= g_AreaTableDB.minIndex && v22 <= g_AreaTableDB.maxIndex) {
+    //            v17 = g_AreaTableDB.Rows[v22 - g_AreaTableDB.minIndex];
+    //            if (v17) {
+    //                if ((*(_DWORD*)(v17 + 16) & 0x2000) == 0) {
+    //                    v18 = *(_DWORD*)(v17 + 8);
+    //                    if (v18) {
+    //                        if (v18 < g_AreaTableDB.minIndex || v18 > g_AreaTableDB.maxIndex)
+    //                            goto LABEL_49;
+    //                        v17 = g_AreaTableDB.Rows[v18 - g_AreaTableDB.minIndex];
+    //                    }
+    //                }
+    //                if (v17) {
+    //                    v19 = *(float*)(v17 + 72) + *(float*)(v17 + 72) + 1.0;
+    //                    v20 = v19 - flt_ADEEBC;
+    //                    v21 = flt_CD76A0;
+    //                    if (fabs(v20) > 0.0099999998 && v21 < 1.0)
+    //                        v19 = flt_ADEEBC + v21 * v20;
+    //                    flt_ADEEBC = v19;
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
+//LABEL_49:
+    //s_m2Scene->ukn82 = dword_CD8794;
+}
+
+void CWorld::PrepareAreaOfInterest(C3Vector* position) {
+    CWorld::s_currentWorldPos = *position;
 
     CGCamera* activeCamera = CGWorldFrame::GetActiveCamera();
     float fov = activeCamera->FOV();
@@ -238,13 +345,13 @@ void CWorld::PrepareAreaOfInterest(const C3Vector& position) {
         streamDist = CWorld::s_farClip * 1.25f;
     }
 
-    CWorld::s_groupAreaOfInterest.b = { position.x - 150.0f, position.y - 150.0f, position.z - 150.0f };
-    CWorld::s_groupAreaOfInterest.t = { position.x + 150.0f, position.y + 150.0f, position.z + 150.0f };
-    CWorld::s_objectAreaOfInterest.b = { position.x - CWorld::s_farClip, position.y - CWorld::s_farClip, position.z - CWorld::s_farClip };
-    CWorld::s_objectAreaOfInterest.t = { position.x + CWorld::s_farClip, position.y + CWorld::s_farClip, position.z + CWorld::s_farClip };
+    CWorld::s_groupAreaOfInterest.b = { position->x - 150.0f, position->y - 150.0f, position->z - 150.0f };
+    CWorld::s_groupAreaOfInterest.t = { position->x + 150.0f, position->y + 150.0f, position->z + 150.0f };
+    CWorld::s_objectAreaOfInterest.b = { position->x - CWorld::s_farClip, position->y - CWorld::s_farClip, position->z - CWorld::s_farClip };
+    CWorld::s_objectAreaOfInterest.t = { position->x + CWorld::s_farClip, position->y + CWorld::s_farClip, position->z + CWorld::s_farClip };
     int32_t v10 = 1 - (int32_t)(streamDist * -0.030000001);
-    float v25 = -(position.y - 17066.666) * 0.029999999;
-    float v26 = -(position.x - 17066.666) * 0.029999999;
+    float v25 = -(position->y - 17066.666) * 0.029999999;
+    float v26 = -(position->x - 17066.666) * 0.029999999;
     int32_t v11 = (int32_t)(v26 - 0.5);
     int32_t v25i = (int32_t)(v25 - 0.5);
     //if (IsStreamingAndTrial())

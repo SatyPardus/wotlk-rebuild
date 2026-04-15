@@ -24,6 +24,14 @@ struct SIffChunk {
     }
 };
 
+enum WorldCullStatus {
+    WorldCull_outside = 0x0,
+    WorldCull_inside = 0x1,
+    WorldCull_intersect = 0x2,
+    WorldCull_notOutside = 0x3,
+    WorldCull_count = 0x4,
+};
+
 struct SMMapHeader {
     uint32_t flags;
     uint32_t something;

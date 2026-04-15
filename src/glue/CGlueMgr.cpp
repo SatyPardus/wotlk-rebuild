@@ -1163,7 +1163,7 @@ void CGlueMgr::PollEnterWorld() {
     }
 
     CGlueMgr::Suspend();
-    ClientInitializeGame(info->mapID, info->position);
+    ClientInitializeGame(info->mapID, &info->position);
 }
 
 void CGlueMgr::SurveyDownloadStart() {

@@ -36,7 +36,7 @@ int32_t LoadNewWorld(const void* eventData) {
     //sub_4B9930(0, 0);
     //AsyncFile::ProgressCallback((int)LoadingScreenAsyncCallback, 0);
     CWorld::SetLoadProgressCallback(LoadingScreenWorldCallback, nullptr);
-    CWorld::LoadMap(s_newMapname, s_newPosition, s_newZoneID);
+    CWorld::LoadMap(s_newMapname, &s_newPosition, s_newZoneID);
     //AsyncFile::ProgressCallback(0, 0);
     CWorld::SetLoadProgressCallback(nullptr, nullptr);
     //ActiveCamera = CGWorldFrame::GetActiveCamera();

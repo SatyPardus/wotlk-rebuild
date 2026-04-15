@@ -313,6 +313,7 @@ class CGxDeviceD3d : public CGxDevice {
     void IXformSetProjection(const C44Matrix& matrix);
     void IXformSetViewport();
     void IXformSetWorld();
+    void IXformSetTex(int32_t index);
 };
 
 #endif
