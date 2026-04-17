@@ -40,6 +40,11 @@ struct CMapRenderChunkLayer {
     CMapRenderChunk* owner;
 };
 
+struct TextureLayerInfo {
+    uint32_t flags;
+    uint8_t* alphaData;
+};
+
 typedef void(RENDER_LAYER_FUNC)(CMapRenderChunk*);
 
 class CMapRenderChunk {
@@ -48,7 +53,7 @@ class CMapRenderChunk {
     uint8_t unkFlags;
     uint8_t layersCount;
     int16_t unk_0A;
-    float unk_0C;
+    float lastUpdateTime;
     CMapChunk* mapChunkPtrs[2];
     C3Vector vec1;
     C3Vector vec2;
@@ -73,6 +78,7 @@ class CMapRenderChunk {
     static int32_t s_pnEstimateVertex;
     static int32_t s_pnEstimateIndex;
     static RENDER_LAYER_FUNC* s_renderLayersFunc;
+    static uint16_t s_defaultTex[64 * 64];
 
     void AddBatch(CMapChunk* a2, CMapChunk* a3, C3Vector* a4, uint8_t a5);
     void RenderPrep();
@@ -89,6 +95,17 @@ class CMapRenderChunk {
     void RenderSolid();
     void RenderSolidVertexPixelShader();
     void SetVertexShader(int32_t a1, int32_t a2);
+    void FreeBuf();
+    void CreateChunkLayerTex(CMapRenderChunkLayer* layer);
+    void UnpackAlphaBits(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap, int32_t layerMode, bool bigAlpha);
+    void UnpackAlphaBitsUnfixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
+    void UnpackAlphaBitsUnfixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
+    void UnpackAlphaShadowBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap);
+    void UnpackAlphaShadowBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap);
+    void RecreateAlphaBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap);
+    void RecreateAlphaBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap);
+    void UnpackAlphaShadowBitsFixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
+    void UnpackAlphaShadowBitsFixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
 
     static void Initialize();
     static CMapRenderChunkBuf* AllocBuf(int32_t a1, CMapRenderChunk* renderChunk);

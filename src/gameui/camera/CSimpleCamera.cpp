@@ -85,10 +85,10 @@ static void BuildBillboardMatrixWithRoll(const C3Vector& direction, const C3Vect
 }
 
 CSimpleCamera::CSimpleCamera()
-    : m_position()
+    : m_position(0, 0, 50)
     , m_facing()
     , m_nearZ(0.11111111f)
-    , m_farZ(277.77777f)
+    , m_farZ(5000.77777f)
     , m_fov(1.5707964f)
     , m_aspect(1.0f) {
     this->SetFacing(0.0f, 0.0f, 0.0f);

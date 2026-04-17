@@ -12,7 +12,7 @@ enum EVENTID {
     EVENT_ID_FOCUS              = 2,
     EVENT_ID_3                  = 3,
     EVENT_ID_DESTROY            = 4,
-    EVENT_ID_5                  = 5,
+    EVENT_ON_UPDATE             = 5,
     EVENT_ID_IDLE               = 6,
     EVENT_ID_POLL               = 7,
     EVENT_ID_INITIALIZE         = 8,
@@ -197,6 +197,11 @@ struct EVENT_DATA_FOCUS {
 };
 
 struct EVENT_DATA_IDLE {
+    float elapsedSec;
+    uint32_t time;
+};
+
+struct EVENT_DATA_UPDATE {
     float elapsedSec;
     uint32_t time;
 };

@@ -5,6 +5,7 @@
 #include "world/daynight/DayNight.hpp"
 #include <common/ObjectAlloc.hpp>
 #include <common/Processor.hpp>
+#include "client/FrameTime.hpp"
 #include <cstring>
 #include <storm/Error.hpp>
 #include <world/CWorld.hpp>
@@ -26,6 +27,7 @@ SMAreaInfo CMap::areaInfo[64 * 64];
 CMapArea* CMap::areaTable[64 * 64];
 STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) CMap::mapAreaList;
 STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkFreeList;
+STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkUpdateList;
 int32_t CMap::uniqueId;
 int32_t CMap::bDungeon;
 int32_t CMap::counts[11];
@@ -172,6 +174,8 @@ void CMap::ValidateShaders() {
     CMap::enableSpecularTerrain = false;
     CMap::enableTerrainShaderVertex = false;
     CMap::enableChunkBatching = false;
+
+    return; // Just for testing, so no shader modes get activated
 
     bool v1 = (CMap::header.flags >> 2) & 1;
 
@@ -639,10 +643,12 @@ void CMap::PurgeArea(CMapArea* area) {
 
 // OFFSET: 0x7C3730
 void CMap::PurgeMaps() {
-    for (auto link = CMap::mapAreaList.Head(); link; link = CMap::mapAreaList.Next(link)) {
+    for (auto link = CMap::mapAreaList.Head(); link;) {
+        auto next = CMap::mapAreaList.Next(link);
         CMapArea* area = (CMapArea*)link->owner;
         CMap::FreeBaseObjLink(link);
         CMap::PurgeArea(area);
+        link = next;
     }
 
     // Apparently unused? I see it being used with mapAreaMedHeap, but it never gets created or used
@@ -722,7 +728,8 @@ void CMap::PreUpdateAreas(bool a1) {
 
     bool shouldWaitForAsync = !(CMap::bIsStreamingMode || CMap::bPreload);
 
-    for (auto link = CMap::mapAreaList.Head(); link; link = CMap::mapAreaList.Next(link)) {
+    for (auto link = CMap::mapAreaList.Head(); link;) {
+        auto next = CMap::mapAreaList.Next(link);
         CMapArea* area = static_cast<CMapArea*>(link->owner);
 
         if (area->index.x >= cellXMin && area->index.x <= cellXMax &&
@@ -734,6 +741,8 @@ void CMap::PreUpdateAreas(bool a1) {
             CMap::FreeBaseObjLink(link);
             CMap::PurgeArea(area);
         }
+
+        link = next;
     }
 
     for (int32_t cellX = cellXMin; cellX <= cellXMax; cellX++) {
@@ -873,4 +882,19 @@ void CMap::PrepareMapObjDefs(bool a1) {
 // OFFSET: 0x7B5630
 void CMap::PrepareMapDoodadDefs() {
     // TODO
+}
+
+// OFFSET: 0x7B5500
+void CMap::ProcessRenderChunkUpdateList() {
+    for (auto renderChunk = CMap::s_mapRenderChunkUpdateList.Head(); renderChunk;) {
+        auto next = CMap::s_mapRenderChunkUpdateList.Next(renderChunk);
+        renderChunk->lastUpdateTime += FrameTime::s_tickTimeSec;
+        if (renderChunk->lastUpdateTime > 2.0f)
+            renderChunk->FreeBuf();
+
+        if (!renderChunk->chunkBuf)
+            renderChunk->renderChunkLink.Unlink();
+
+        renderChunk = next;
+    }
 }

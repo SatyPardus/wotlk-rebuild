@@ -107,7 +107,7 @@ class CGxDevice {
         C44Matrix m_projection;
         C44Matrix m_projNative;
         CGxMatrixStack m_xforms[GxXforms_Last];
-        CGxMatrixStack m_texGen[GxXform_Tex7];
+        CGxMatrixStack m_texGen[8];
         uint32_t m_appMasterEnables = 0;
         uint32_t m_hwMasterEnables = 0;
         TSList<CGxPool, TSGetLink<CGxPool>> m_poolList;

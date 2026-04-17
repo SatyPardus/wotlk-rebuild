@@ -8,6 +8,7 @@
 #include "event/Queue.hpp"
 #include "event/Synthesize.hpp"
 #include "event/Timer.hpp"
+#include "client/FrameTime.hpp"
 #include <algorithm>
 #include <cstring>
 #include <common/Call.hpp>
@@ -300,11 +301,9 @@ int32_t SchedulerThreadProcProcess(uint32_t a1) {
 
         uint32_t v9 = (currTime - context->m_schedLastIdle);
         context->m_schedLastIdle = currTime;
-        double elapsedSec = v9 * 0.001;
+        float elapsedSec = v9 * 0.001f;
 
-        // TODO
-        // FrameTime::Update(currTime, elapsedSec);
-
+        IEvtDispatchUpdate(context, currTime, elapsedSec);
         IEvtTimerDispatch(context);
 
         if (context->m_schedFlags & 0x2) {

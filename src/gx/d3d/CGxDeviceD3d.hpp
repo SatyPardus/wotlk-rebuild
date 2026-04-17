@@ -198,6 +198,7 @@ class CGxDeviceD3d : public CGxDevice {
     // Static variables
     static int32_t s_clientAdjustWidth;
     static int32_t s_clientAdjustHeight;
+    static float s_normalizeNormals;
     static D3DCMPFUNC s_cmpFunc[];
     static D3DCULL s_cullMode[];
     static D3DBLEND s_dstBlend[];
@@ -214,6 +215,8 @@ class CGxDeviceD3d : public CGxDevice {
     static D3DBLEND s_srcBlend[];
     static EGxTexFormat s_tolerableTexFmtMapping[];
     static D3DTEXTUREADDRESS s_wrapModes[];
+    static D3DTEXTUREOP s_texOp[];
+    static int32_t s_texArgs[];
 
     // Static functions
     static int32_t ILoadD3dLib(HINSTANCE& d3dLib, LPDIRECT3D9& d3d);
@@ -294,6 +297,11 @@ class CGxDeviceD3d : public CGxDevice {
     void ISceneEnd();
     void ISetCaps(const CGxFormat& format);
     void ISetTexture(uint32_t tmu, CGxTex* texId);
+    void ISetTexCoord(uint32_t a1, int32_t a2);
+    void ISetTexCoordIndex(int32_t a2, int32_t a3, int32_t a4);
+    void ISetTexGen(uint32_t a1, int32_t a2);
+    void ISetAlphaOp(uint32_t a1, int32_t a2);
+    void ISetColorOp(uint32_t a1, int32_t a2);
     void ISetVertexBuffer(uint32_t stream, LPDIRECT3DVERTEXBUFFER9 buffer, uint32_t offset, uint32_t stride);
     void IShaderBindPixel(CGxShader* shader);
     void IShaderBindVertex(CGxShader* shader);

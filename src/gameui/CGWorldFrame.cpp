@@ -68,10 +68,10 @@ int32_t CGWorldFrame::OnLayerKeyDown(const CKeyEvent& evt) {
     case KEY_D:
         position.y += step * 10;
         break;
-    case KEY_PLUS:
+    case KEY_Q:
         position.x += step * 10;
         break;
-    case KEY_MINUS:
+    case KEY_E:
         position.x -= step * 10;
         break;
 

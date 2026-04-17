@@ -2,6 +2,7 @@
 
 CGxMatrixStack::CGxMatrixStack() {
     this->m_flags[0] = F_Identity;
+    this->m_level = 0;
 }
 
 void CGxMatrixStack::Pop() {
@@ -31,4 +32,12 @@ C44Matrix& CGxMatrixStack::Top() {
 
 const C44Matrix& CGxMatrixStack::TopConst() {
     return this->m_mtx[this->m_level];
+}
+
+void CGxMatrixStack::Identity() {
+    if ((this->m_flags[this->m_level] & 1) == 0) {
+        this->m_mtx[this->m_level] = C44Matrix();
+        this->m_dirty = 1;
+        this->m_flags[this->m_level] = 1;
+    }
 }

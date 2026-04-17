@@ -8,6 +8,7 @@
 
 int32_t CGxDeviceD3d::s_clientAdjustWidth;
 int32_t CGxDeviceD3d::s_clientAdjustHeight;
+float CGxDeviceD3d::s_normalizeNormals;
 
 D3DCMPFUNC CGxDeviceD3d::s_cmpFunc[] = {
     D3DCMP_LESSEQUAL,
@@ -196,6 +197,24 @@ EGxTexFormat CGxDeviceD3d::s_tolerableTexFmtMapping[] = {
 D3DTEXTUREADDRESS CGxDeviceD3d::s_wrapModes[] = {
     D3DTADDRESS_CLAMP,  // GxTex_Clamp
     D3DTADDRESS_WRAP,   // GxTex_Wrap
+};
+
+D3DTEXTUREOP CGxDeviceD3d::s_texOp[] {
+    D3DTOP_MODULATE,          // 4
+    D3DTOP_MODULATE2X,        // 5
+    D3DTOP_ADD,               // 7
+    D3DTOP_SELECTARG2,        // 3
+    D3DTOP_BLENDCURRENTALPHA, // 16 (0x10)
+    D3DTOP_BLENDDIFFUSEALPHA  // 12 (0x0C)
+};
+
+int32_t CGxDeviceD3d::s_texArgs[] {
+    D3DTA_TEXTURE, D3DTA_CURRENT, // 2, 1
+    D3DTA_TEXTURE, D3DTA_CURRENT, // 2, 1
+    D3DTA_TEXTURE, D3DTA_CURRENT, // 2, 1
+    D3DTA_TEXTURE, D3DTA_CURRENT, // 2, 1
+    D3DTA_CURRENT, D3DTA_TEXTURE, // 1, 2
+    D3DTA_TEXTURE, D3DTA_CURRENT  // 2, 1
 };
 
 ATOM WindowClassCreate() {
@@ -720,6 +739,110 @@ void CGxDeviceD3d::DsSet(EDeviceState state, uint32_t val) {
         break;
     }
 
+    case Ds_TssMaxAnisotropy0:
+    case Ds_TssMaxAnisotropy1:
+    case Ds_TssMaxAnisotropy2:
+    case Ds_TssMaxAnisotropy3:
+    case Ds_TssMaxAnisotropy4:
+    case Ds_TssMaxAnisotropy5:
+    case Ds_TssMaxAnisotropy6:
+    case Ds_TssMaxAnisotropy7:
+    case Ds_TssMaxAnisotropy8:
+    case Ds_TssMaxAnisotropy9:
+    case Ds_TssMaxAnisotropy10:
+    case Ds_TssMaxAnisotropy11:
+    case Ds_TssMaxAnisotropy12:
+    case Ds_TssMaxAnisotropy13:
+    case Ds_TssMaxAnisotropy14:
+    case Ds_TssMaxAnisotropy15: {
+        this->m_d3dDevice->SetSamplerState(state - Ds_TssMaxAnisotropy0, D3DSAMP_MAXANISOTROPY, val);
+        break;
+    }
+
+    case Ds_TssTexCoordIndex0:
+    case Ds_TssTexCoordIndex1:
+    case Ds_TssTexCoordIndex2:
+    case Ds_TssTexCoordIndex3:
+    case Ds_TssTexCoordIndex4:
+    case Ds_TssTexCoordIndex5:
+    case Ds_TssTexCoordIndex6:
+    case Ds_TssTexCoordIndex7: {
+        this->m_d3dDevice->SetTextureStageState(state - Ds_TssTexCoordIndex0, D3DTSS_TEXCOORDINDEX, val);
+        break;
+    }
+
+    case Ds_TssColorOp0:
+    case Ds_TssColorOp1:
+    case Ds_TssColorOp2:
+    case Ds_TssColorOp3:
+    case Ds_TssColorOp4:
+    case Ds_TssColorOp5:
+    case Ds_TssColorOp6:
+    case Ds_TssColorOp7: {
+        this->m_d3dDevice->SetTextureStageState(state - Ds_TssColorOp0, D3DTSS_COLOROP, val);
+        break;
+    }
+
+    case Ds_TssAlphaOp0:
+    case Ds_TssAlphaOp1:
+    case Ds_TssAlphaOp2:
+    case Ds_TssAlphaOp3:
+    case Ds_TssAlphaOp4:
+    case Ds_TssAlphaOp5:
+    case Ds_TssAlphaOp6:
+    case Ds_TssAlphaOp7: {
+        this->m_d3dDevice->SetTextureStageState(state - Ds_TssAlphaOp0, D3DTSS_ALPHAOP, val);
+        break;
+    }
+
+    case Ds_TssColorArg10:
+    case Ds_TssColorArg11:
+    case Ds_TssColorArg12:
+    case Ds_TssColorArg13:
+    case Ds_TssColorArg14:
+    case Ds_TssColorArg15:
+    case Ds_TssColorArg16:
+    case Ds_TssColorArg17: {
+        this->m_d3dDevice->SetTextureStageState(state - Ds_TssColorArg10, D3DTSS_COLORARG1, val);
+        break;
+    }
+
+    case Ds_TssColorArg20:
+    case Ds_TssColorArg21:
+    case Ds_TssColorArg22:
+    case Ds_TssColorArg23:
+    case Ds_TssColorArg24:
+    case Ds_TssColorArg25:
+    case Ds_TssColorArg26:
+    case Ds_TssColorArg27: {
+        this->m_d3dDevice->SetTextureStageState(state - Ds_TssColorArg20, D3DTSS_COLORARG2, val);
+        break;
+    }
+
+    case Ds_TssAlphaArg10:
+    case Ds_TssAlphaArg11:
+    case Ds_TssAlphaArg12:
+    case Ds_TssAlphaArg13:
+    case Ds_TssAlphaArg14:
+    case Ds_TssAlphaArg15:
+    case Ds_TssAlphaArg16:
+    case Ds_TssAlphaArg17: {
+        this->m_d3dDevice->SetTextureStageState(state - Ds_TssAlphaArg10, D3DTSS_ALPHAARG1, val);
+        break;
+    }
+
+    case Ds_TssAlphaArg20:
+    case Ds_TssAlphaArg21:
+    case Ds_TssAlphaArg22:
+    case Ds_TssAlphaArg23:
+    case Ds_TssAlphaArg24:
+    case Ds_TssAlphaArg25:
+    case Ds_TssAlphaArg26:
+    case Ds_TssAlphaArg27: {
+        this->m_d3dDevice->SetTextureStageState(state - Ds_TssAlphaArg20, D3DTSS_ALPHAARG2, val);
+        break;
+    }
+
     case Ds_AlphaBlendEnable: {
         this->m_d3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, val);
         break;
@@ -735,8 +858,18 @@ void CGxDeviceD3d::DsSet(EDeviceState state, uint32_t val) {
         break;
     }
 
+    case Ds_FogEnable: {
+        this->m_d3dDevice->SetRenderState(D3DRS_FOGENABLE, val);
+        break;
+    }
+
     case Ds_ZWriteEnable: {
         this->m_d3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, val);
+        break;
+    }
+
+    case Ds_ColorWriteEnable: {
+        this->m_d3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, val);
         break;
     }
 
@@ -750,7 +883,7 @@ void CGxDeviceD3d::DsSet(EDeviceState state, uint32_t val) {
         break;
     }
     default: {
-
+        SErrDisplayAppFatal("Error, unhandled EGxRenderState '%d'", state);
     }
     }
 
@@ -1096,11 +1229,57 @@ void CGxDeviceD3d::IReleaseD3dResources(int32_t a2) {
     }
 }
 
+// OFFSET: 0x6A4C30
 void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
     auto state = &this->m_appRenderStates[which];
 
     switch (which) {
-    // TODO handle all render states
+    case GxRs_PolygonOffset: {
+        if (this->Caps().m_depthBias) {
+            this->m_d3dDevice->SetRenderState(D3DRS_DEPTHBIAS, -static_cast<float>(state->m_value));
+        }
+
+        break;
+    }
+
+    case GxRs_MatDiffuse:
+    case GxRs_MatEmissive:
+    case GxRs_MatSpecular:
+    case GxRs_MatSpecularExp: {
+        //sub_6A4250(
+        //    m_data[1].m_value.m_data.i[0],
+        //    m_data[2].m_value.m_data.i[0],
+        //    m_data[3].m_value.m_data.i[0],
+        //    m_data[4].m_value.m_data.f[0]);
+        //v6 = 0;
+        //this->m_appRenderStates.m_data[1].m_dirty = 0;
+        //this->m_appRenderStates.m_data[2].m_dirty = 0;
+        //this->m_appRenderStates.m_data[3].m_dirty = 0;
+        //this->m_appRenderStates.m_data[4].m_dirty = 0;
+        //v7 = this->m_appRenderStates.m_data;
+        //if (v7[4].m_value.m_data.f[0] > 0.0 && v7[3].m_value.m_data.i[0])
+        //    v6 = 1;
+        //if (*(_DWORD*)&this[1].m_gammaRamp.red[44] != v6) {
+        //    ((void(__stdcall*)(LPDIRECT3DDEVICE9, int, int))this->m_d3dDevice->v_table->v_fn_57_SetRenderState)(
+        //        this->m_d3dDevice,
+        //        29,
+        //        v6);
+        //    *(_DWORD*)&this[1].m_gammaRamp.red[44] = v6;
+        //}
+
+        break;
+    }
+
+    case GxRs_NormalizeNormals: {
+        auto normalizeNormals = static_cast<float>(state->m_value);
+
+        if (CGxDeviceD3d::s_normalizeNormals != normalizeNormals) {
+            this->m_d3dDevice->SetRenderState(D3DRS_NORMALIZENORMALS, normalizeNormals);
+            CGxDeviceD3d::s_normalizeNormals = normalizeNormals;
+        }
+
+        break;
+    }
 
     case GxRs_BlendingMode: {
         auto blendMode = static_cast<EGxBlend>(static_cast<int32_t>(state->m_value));
@@ -1129,6 +1308,21 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
         break;
     }
 
+    case GxRs_FogStart: {
+        this->m_d3dDevice->SetRenderState(D3DRS_FOGSTART, static_cast<uint32_t>(state->m_value));
+        break;
+    }
+
+    case GxRs_FogEnd: {
+        this->m_d3dDevice->SetRenderState(D3DRS_FOGEND, static_cast<uint32_t>(state->m_value));
+        break;
+    }
+
+    case GxRs_FogColor: {
+        this->m_d3dDevice->SetRenderState(D3DRS_FOGCOLOR, static_cast<uint32_t>(state->m_value));
+        break;
+    }
+
     case GxRs_Lighting: {
         int32_t enabled = 0;
 
@@ -1140,6 +1334,17 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
             this->m_d3dDevice->SetRenderState(D3DRS_LIGHTING, enabled);
             this->m_deviceStates[Ds_Lighting] = enabled;
         }
+        break;
+    }
+
+    case GxRs_Fog: {
+        auto fogWrite = static_cast<uint32_t>(state->m_value);
+        if (!this->MasterEnable(GxMasterEnable_Fog)) {
+            fogWrite = 0;
+        }
+
+        this->DsSet(Ds_FogEnable, fogWrite);
+
         break;
     }
 
@@ -1168,6 +1373,25 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
         }
 
         this->DsSet(Ds_ZWriteEnable, depthWrite);
+
+        break;
+    }
+
+    case GxRs_ColorWrite: {
+        auto colorWrite = static_cast<uint32_t>(state->m_value);
+        if (!this->MasterEnable(GxMasterEnable_ColorWrite)) {
+            colorWrite = 0;
+        }
+
+        uint32_t finalWrite = (colorWrite & 1) != 0 ? 1 : 0;
+        if ((colorWrite & 4) != 0)
+            finalWrite |= 2u;
+        if ((colorWrite & 2) != 0)
+            finalWrite |= 4u;
+        if ((colorWrite & 8) != 0)
+            finalWrite |= 8u;
+
+        this->DsSet(Ds_ColorWriteEnable, finalWrite);
 
         break;
     }
@@ -1218,6 +1442,54 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
         break;
     }
 
+    case GxRs_ColorOp0:
+    case GxRs_ColorOp1:
+    case GxRs_ColorOp2:
+    case GxRs_ColorOp3:
+    case GxRs_ColorOp4:
+    case GxRs_ColorOp5:
+    case GxRs_ColorOp6:
+    case GxRs_ColorOp7: {
+        this->ISetColorOp(which - GxRs_ColorOp0, static_cast<int32_t>(state->m_value));
+        break;
+    }
+
+    case GxRs_AlphaOp0:
+    case GxRs_AlphaOp1:
+    case GxRs_AlphaOp2:
+    case GxRs_AlphaOp3:
+    case GxRs_AlphaOp4:
+    case GxRs_AlphaOp5:
+    case GxRs_AlphaOp6:
+    case GxRs_AlphaOp7: {
+        this->ISetAlphaOp(which - GxRs_AlphaOp0, static_cast<int32_t>(state->m_value));
+        break;
+    }
+
+    case GxRs_TexGen0:
+    case GxRs_TexGen1:
+    case GxRs_TexGen2:
+    case GxRs_TexGen3:
+    case GxRs_TexGen4:
+    case GxRs_TexGen5:
+    case GxRs_TexGen6:
+    case GxRs_TexGen7: {
+        this->ISetTexGen(which - GxRs_TexGen0, static_cast<int32_t>(state->m_value));
+        break;
+    }
+
+    case GxRs_TextureCoord0:
+    case GxRs_TextureCoord1:
+    case GxRs_TextureCoord2:
+    case GxRs_TextureCoord3:
+    case GxRs_TextureCoord4:
+    case GxRs_TextureCoord5:
+    case GxRs_TextureCoord6:
+    case GxRs_TextureCoord7: {
+        this->ISetTexCoord(which - GxRs_TextureCoord0, static_cast<int32_t>(state->m_value));
+        break;
+    }
+
     case GxRs_VertexShader: {
         auto shader = static_cast<CGxShader*>(static_cast<void*>(state->m_value));
         this->IShaderBindVertex(shader);
@@ -1232,7 +1504,82 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
         break;
     }
 
+    case GxRs_PointScale: {
+        //v22 = v5->m_value.m_data.f[0];
+        //if ((unsigned __int8)CGxStateBom__operator_ne(&m_data[80], &dword_AD8BB4)) {
+        //    v17 = sub_682D70(this);
+        //    v18 = v22 / ((1.0 - this->m_viewport.y.l) * *(float*)(v17 + 8) - (1.0 - this->m_viewport.y.h) * *(float*)(v17 + 8));
+        //} else {
+        //    v18 = v22;
+        //}
+        //v23 = v18;
+        //((void(__stdcall*)(LPDIRECT3DDEVICE9, _D3DDEVTYPE, _DWORD))this->m_d3dDevice->v_table->v_fn_57_SetRenderState)(
+        //    this->m_d3dDevice,
+        //    D3DRS_POINTSIZE,
+        //    LODWORD(v23))
+
+        break;
+    }
+
+    case GxRs_PointScaleAttenuation: {
+        //v19 = (unsigned __int8)CGxStateBom__operator_ne(&m_data[a2], &dword_AD8BB4) != 0;
+        //if (*(_DWORD*)&this[1].m_gammaRamp.red[58] != v19) {
+        //    ((void(__stdcall*)(LPDIRECT3DDEVICE9, _D3DDEVTYPE, int))this->m_d3dDevice->v_table->v_fn_57_SetRenderState)(
+        //        this->m_d3dDevice,
+        //        D3DRS_POINTSCALEENABLE,
+        //        v19);
+        //    *(_DWORD*)&this[1].m_gammaRamp.red[58] = v19;
+        //}
+        //if (v19) {
+        //    CGxDeviceD3d::DsSet(this, 178, COERCE__DWORD_(v5->m_value.m_data.f[0]));
+        //    CGxDeviceD3d::DsSet(this, 179, COERCE__DWORD_(v5->m_value.m_data.f[1]));
+        //    CGxDeviceD3d::DsSet(this, 180, COERCE__DWORD_(v5->m_value.m_data.f[2]));
+        //}
+
+        break;
+    }
+
+    case GxRs_PointScaleMin: {
+        m_d3dDevice->SetRenderState(D3DRS_POINTSIZE_MIN, static_cast<float>(state->m_value));
+
+        break;
+    }
+
+    case GxRs_PointScaleMax: {
+        m_d3dDevice->SetRenderState(D3DRS_POINTSIZE_MAX, static_cast<float>(state->m_value));
+
+        break;
+    }
+
+    case GxRs_PointSprite: {
+        m_d3dDevice->SetRenderState(D3DRS_POINTSPRITEENABLE, static_cast<uint32_t>(state->m_value) != 0);
+
+        break;
+    }
+
+    case GxRs_BlendFactor: {
+        uint8_t channel = (uint8_t)(static_cast<float>(state->m_value) * 255.0f);
+        D3DCOLOR factor = D3DCOLOR_RGBA(channel, channel, channel, channel);
+        m_d3dDevice->SetRenderState(D3DRS_BLENDFACTOR, factor);
+        break;
+    }
+
+    case GxRs_ClipPlaneMask:
+    case GxRs_Multisample:
+    case GxRs_TextureShader0:
+    case GxRs_TextureShader1:
+    case GxRs_TextureShader2:
+    case GxRs_TextureShader3:
+    case GxRs_TextureShader4:
+    case GxRs_TextureShader5:
+    case GxRs_TextureShader6:
+    case GxRs_TextureShader7:
+    case GxRs_ColorMaterial: {
+        break; // Not handled in client
+    }
+
     default:
+        SErrDisplayAppFatal("Error, unhandled EGxRenderState '%d'", which);
         break;
     }
 }
@@ -1582,6 +1929,93 @@ void CGxDeviceD3d::ISetTexture(uint32_t tmu, CGxTex* texId) {
             // TODO FFP
         }
     }
+}
+
+// OFFSET: 0x6A4AC0
+void CGxDeviceD3d::ISetTexCoord(uint32_t a2, int32_t a3) {
+    if (a2 < this->Caps().m_numTmus) {
+        int32_t state;
+        this->RsGet((EGxRenderState)(a2 + GxRs_TexGen0), state);
+        this->ISetTexCoordIndex(a2, state, a3);
+    }
+}
+
+// OFFSET: 0x6A4100
+void CGxDeviceD3d::ISetTexCoordIndex(int32_t a2, int32_t a3, int32_t a4) {
+    switch (a3) {
+    case 0:
+        this->DsSet((EDeviceState)(a2 + Ds_TssTexCoordIndex0), a4);
+        break;
+    case 1:
+    case 2:
+    case 3:
+        this->DsSet((EDeviceState)(a2 + Ds_TssTexCoordIndex0), (a2 | 0x20000));
+        break;
+    case 4:
+    case 6:
+        this->DsSet((EDeviceState)(a2 + Ds_TssTexCoordIndex0), (a2 | 0x40000));
+        break;
+    case 5:
+        this->DsSet((EDeviceState)(a2 + Ds_TssTexCoordIndex0), (a2 | 0x10000));
+        break;
+    }
+}
+
+// OFFSET: 0x6A4AF0
+void CGxDeviceD3d::ISetTexGen(uint32_t a2, int32_t a3) {
+    if (a2 >= this->Caps().m_numTmus)
+        return;
+
+    int32_t state;
+    this->RsGet((EGxRenderState)(a2 + GxRs_TextureCoord0), state);
+    this->ISetTexCoordIndex(a2, a3, state);
+
+    if (a3 <= 0) {
+        m_texGen[a2].Identity();
+        return;
+    }
+
+    C44Matrix mat;
+
+    if (a3 == 1 || a3 == 2) {
+        this->XformView(mat);
+        mat = mat.AffineInverse();
+
+        if (a3 == 1) {
+            C44Matrix biasMat = C44Matrix().Inverse();
+            mat *= biasMat;
+        }
+    } else if (a3 == 6) {
+        mat = C44Matrix();
+        mat.a0 = 0.5f;
+        mat.b1 = 0.5f;
+        mat.d0 = 0.5f;
+        mat.d1 = 0.5f;
+    } else {
+        return;
+    }
+
+    m_texGen[a2].Top() = mat;
+}
+
+// OFFSET: 0x6A41F0
+void CGxDeviceD3d::ISetAlphaOp(uint32_t a2, int32_t a3) {
+    if (a2 >= this->Caps().m_numTmus)
+        return;
+
+    this->DsSet((EDeviceState)(a2 + Ds_TssAlphaOp0), CGxDeviceD3d::s_texOp[a3]);
+    this->DsSet((EDeviceState)(a2 + Ds_TssAlphaArg10), CGxDeviceD3d::s_texArgs[a3 * 2]);
+    this->DsSet((EDeviceState)(a2 + Ds_TssAlphaArg20), CGxDeviceD3d::s_texArgs[a3 * 2 + 1]);
+}
+
+// OFFSET: 0x6A4190
+void CGxDeviceD3d::ISetColorOp(uint32_t a2, int32_t a3) {
+    if (a2 >= this->Caps().m_numTmus)
+        return;
+
+    this->DsSet((EDeviceState)(a2 + Ds_TssColorOp0), CGxDeviceD3d::s_texOp[a3]);
+    this->DsSet((EDeviceState)(a2 + Ds_TssColorArg10), CGxDeviceD3d::s_texArgs[a3 * 2]);
+    this->DsSet((EDeviceState)(a2 + Ds_TssColorArg20), CGxDeviceD3d::s_texArgs[a3 * 2 + 1]);
 }
 
 void CGxDeviceD3d::ISetVertexBuffer(uint32_t stream, LPDIRECT3DVERTEXBUFFER9 buffer, uint32_t offset, uint32_t stride) {
@@ -2174,59 +2608,23 @@ void CGxDeviceD3d::IXformSetTex(int32_t index) {
 
         v4 = isProjected ? D3DTTFF_DISABLE : D3DTTFF_COUNT3;
     } else if (v3 == 1) {
-
-        v4 = D3DTTFF_COUNT2 | D3DTTFF_PROJECTED;
+        C44Matrix mat = this->m_texGen[index].TopConst() * this->m_xforms[index].TopConst();
+        int32_t state;
+        this->RsGet((EGxRenderState)(index + GxRs_TexGen0), state);
+        if (state) {
+            v4 = D3DTTFF_COUNT3;
+        } else {
+            v4 = D3DTTFF_COUNT2;
+            mat.c0 = mat.d0;
+            mat.c1 = mat.d1;
+        }
+        this->m_d3dDevice->SetTransform((D3DTRANSFORMSTATETYPE)(index + D3DTS_TEXTURE0), (D3DMATRIX*)&mat);
     } else if (v3 == 2) {
-        v4 = D3DTTFF_COUNT3;
+        C44Matrix mat = this->m_texGen[index].TopConst() * this->m_xforms[index].TopConst();
+        this->m_d3dDevice->SetTransform((D3DTRANSFORMSTATETYPE)(index + D3DTS_TEXTURE0), (D3DMATRIX*)&mat);
+        v4 = D3DTTFF_COUNT3 | D3DTTFF_PROJECTED;
     }
 
-    //if (v3) {
-    //    v5 = v3 - 1;
-    //    if (v5) {
-    //        if (v5 == 1) {
-    //            C44Matrix::Multiply(
-    //                &v11,
-    //                &this->m_texGen[a2].m_mtx[this->m_texGen[a2].m_level],
-    //                &this->m_xforms[a2].m_mtx[this->m_xforms[a2].m_level]);
-    //            (*(void(__stdcall**)(DWORD, int, C44Matrix*))(*(_DWORD*)v2->ukn1[1051] + 176))(
-    //                v2->ukn1[1051],
-    //                a2 + 16,
-    //                &v11);
-    //            v4 = 0x103;
-    //        }
-    //    } else {
-    //        C44Matrix::Multiply(
-    //            &v10,
-    //            &this->m_texGen[a2].m_mtx[this->m_texGen[a2].m_level],
-    //            &this->m_xforms[a2].m_mtx[this->m_xforms[a2].m_level]);
-    //        qmemcpy(&v11, &v10, sizeof(v11));
-    //        if (v12->m_appRenderStates.m_data[a2 + 53].m_value.m_data.i[0]) {
-    //            v4 = 3;
-    //        } else {
-    //            v4 = 2;
-    //            v11.M31 = v10.M41;
-    //            v11.M32 = v10.M42;
-    //        }
-    //        (*(void(__stdcall**)(DWORD, int, C44Matrix*))(*(_DWORD*)v12->ukn1[1051] + 176))(
-    //            v12->ukn1[1051],
-    //            a2 + 16,
-    //            &v11);
-    //        v2 = v12;
-    //    }
-    //} else {
-    //    v6 = &this->m_texGen[a2];
-    //    v7 = (int*)this->ukn1[1051];
-    //    v8 = *v7;
-    //    if ((v6->m_flags[v2->m_texGen[a2].m_level] & 1) != 0) {
-    //        (*(void(__stdcall**)(DWORD, int, C44Matrix*))(v8 + 176))(
-    //            v2->ukn1[1051],
-    //            a2 + 16,
-    //            &v6->m_mtx[v6->m_level]);
-    //    } else {
-    //        (*(void(__stdcall**)(int*, int, C44Matrix*))(v8 + 176))(v7, a2 + 16, &v6->m_mtx[v6->m_level]);
-    //        v4 = 3;
-    //    }
-    //}
     this->DsSet((EDeviceState)(Ds_TssTTF0 + index), v4);
     this->m_xforms[index].m_dirty = 0;
     this->m_texGen[index].m_dirty = 0;

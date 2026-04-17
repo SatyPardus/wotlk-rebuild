@@ -6,7 +6,7 @@
 #include <tempest/Matrix.hpp>
 #include <tempest/Rect.hpp>
 
-const C3Vector CCamera::DEFAULT_POSITION = { 100.0f, 0.0f, 0.0f };
+const C3Vector CCamera::DEFAULT_POSITION = { 100.0f, 0.0f, 50.0f };
 const float CCamera::DEFAULT_DIST = 100.0f;
 const float CCamera::DEFAULT_FARZ = 5000.0f;
 const float CCamera::DEFAULT_NEARZ = 8.0f;

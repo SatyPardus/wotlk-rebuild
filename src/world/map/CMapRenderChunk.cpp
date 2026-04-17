@@ -22,6 +22,7 @@ int16_t CMapRenderChunk::s_maxVertexCount = 145;
 int16_t CMapRenderChunk::s_maxVertexOffset;
 int32_t CMapRenderChunk::s_pnEstimateVertex;
 int32_t CMapRenderChunk::s_pnEstimateIndex;
+uint16_t CMapRenderChunk::s_defaultTex[64 * 64];
 
 RENDER_LAYER_FUNC* CMapRenderChunk::s_renderLayersFunc;
 
@@ -188,9 +189,16 @@ void CMapRenderChunk::AllocLayerTextures() {
         return;
     }
 
-    if ((this->unk_0A & 0x20) == 0 && ((this->unk_0A & 0x10) != 0 && (this->unk_0A & 0x8) != 0) || (this->unk_0A & 0x8) == 0) {
-        this->unk_0A &= 0xFFCF;
-        return;
+    if ((this->unk_0A & 0x20) == 0) {
+        if ((this->unk_0A & 0x10) != 0) {
+            if ((this->unk_0A & 0x8) != 0) {
+                this->unk_0A &= 0xFFCF;
+                return;
+            }
+        } else if ((this->unk_0A & 0x8) == 0) {
+            this->unk_0A &= 0xFFCF;
+            return;
+        }
     }
 
     this->unk_0A &= 0xFFF7;
@@ -205,7 +213,7 @@ void CMapRenderChunk::AllocLayerTextures() {
         }
 
         if ((CMap::header.flags & 0x4) == 0) {
-            this->AllocShadowTexture();
+            //this->AllocShadowTexture(); // TODO implement shadow gx texture callback
         }
     }
 
@@ -260,13 +268,11 @@ void CMapRenderChunk::AllocLayerTexture(CMapRenderChunkLayer* layer) {
             v10 /= 2;
         }
 
-        HTEXTURE v12;
         if (v4)
-            v12 = CMapRenderChunk::AllocTexture(v10, v10, layer, CMapRenderChunk::UpdateLayerGxTexture, GxTex_Argb8888, 2u);
+            layer->layerTexture = CMapRenderChunk::AllocTexture(v10, v10, layer, CMapRenderChunk::UpdateLayerGxTexture, GxTex_Argb8888, 2u);
         else
-            v12 = CMapRenderChunk::AllocTexture(v10, v10, layer, CMapRenderChunk::UpdateLayerGxTexture, GxTex_Argb4444, 3u);
-        layer->layerTexture = v12;
-        CGxTex* tex = TextureGetGxTex(v12, 1, nullptr);
+            layer->layerTexture = CMapRenderChunk::AllocTexture(v10, v10, layer, CMapRenderChunk::UpdateLayerGxTexture, GxTex_Argb4444, 3u);
+        CGxTex* tex = TextureGetGxTex(layer->layerTexture, 1, nullptr);
         GxTexUpdate(tex, 0, 0, v10, v10, 1);
     }
 }
@@ -458,14 +464,162 @@ void CMapRenderChunk::UpdateLayerGxTexture(EGxTexCommand cmd, uint32_t w, uint32
     CMapRenderChunkLayer* layer = static_cast<CMapRenderChunkLayer*>(userArg);
 
     if (cmd == GxTex_Latch) {
-        // CMapRenderChunk::CreateChunkLayerTex(a6->owner, (int)a6);
-        // v8 = 4 * a2;
-        // if ((CMap::header.flags & 4) == 0)
-        //     v8 = 2 * a2;
-        //*a7 = v8;
-        //*(_DWORD*)a8 = CMapRenderChunk::s_defaultTex;
+        layer->owner->CreateChunkLayerTex(layer);
+        texelStrideInBytes = 4 * w;
+        if ((CMap::header.flags & 4) == 0)
+            texelStrideInBytes = 2 * w;
+        texels = CMapRenderChunk::s_defaultTex;
     }
 }
+
+// OFFSET: 0x7B9890
+void CMapRenderChunk::CreateChunkLayerTex(CMapRenderChunkLayer* layer) {
+    int layerMode = 3;
+    if ((CMap::header.flags & 4) != 0)
+        layerMode = 2;
+
+    SMLayer* chunkLayer = &this->mapChunkPtrs[0]->layers[layer->layerIndex];
+    TextureLayerInfo layerInfo;
+    layerInfo.flags = chunkLayer->flags;
+    layerInfo.alphaData = nullptr;
+    if ((chunkLayer->flags & 0x100) != 0)
+        layerInfo.alphaData = &this->mapChunkPtrs[0]->additionalShadowmap[chunkLayer->offsetInMCAL];
+
+    uint8_t* shadowMap = nullptr;
+    uint32_t chunkHeaderFlags = this->mapChunkPtrs[0]->header->flags;
+    if ((chunkHeaderFlags & 1) != 0 && (CWorld::s_enables & CWorld::Enables::Enable_Shadow) != 0)
+        shadowMap = this->mapChunkPtrs[0]->shadowMap;
+
+    CMapBaseObjLink* link = this->mapChunkPtrs[0]->parentLinkList.Head();
+    CMapArea* area = (CMapArea*)link->ref;
+    unsigned int texSize = 64 >> area->header->mamp_value;
+
+    this->UnpackAlphaBits(CMapRenderChunk::s_defaultTex, texSize, &layerInfo, shadowMap, layerMode, chunkHeaderFlags & 0x8000);
+}
+
+// OFFSET: 0x7B8E20
+void CMapRenderChunk::UnpackAlphaBits(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap, int32_t layerMode, bool bigAlpha) {
+    bool v1 = (this->unk_0A & 0x8) != 0;
+
+    if (bigAlpha) {
+        if (layerMode == 3) {
+            if (v1)
+                this->UnpackAlphaShadowBitsFixed4444Mip1(outputTexture, texSize, layerInfo);
+            else
+                this->UnpackAlphaShadowBitsFixed4444Mip0(outputTexture, texSize, layerInfo);
+            return;
+        }
+        if (layerMode == 2) {
+            if(layerInfo->alphaData) {
+                if (v1)
+                    this->RecreateAlphaBitsFixed8888Mip1(outputTexture, texSize, layerInfo, shadowMap);
+                else
+                    this->RecreateAlphaBitsFixed8888Mip0(outputTexture, texSize, layerInfo, shadowMap);
+            } else if (v1) {
+                this->UnpackAlphaShadowBitsFixed8888Mip0(outputTexture, texSize, shadowMap);
+            } else {
+                this->UnpackAlphaShadowBitsFixed8888Mip0(outputTexture, texSize, shadowMap);
+            }
+            return;
+        }
+        SErrDisplayAppFatal("CMapChunk::UnpackAlphaBits(): Bad genformat.");
+        return;
+    }
+
+    if (layerMode != 3)
+        SErrDisplayAppFatal("CMapChunk::UnpackAlphaBits(): Bad genformat.");
+
+    if (v1)
+        this->UnpackAlphaBitsUnfixed4444Mip1(outputTexture, texSize, layerInfo);
+    else
+        this->UnpackAlphaBitsUnfixed4444Mip0(outputTexture, texSize, layerInfo);
+}
+
+// OFFSET: 0x7B77D0
+void CMapRenderChunk::UnpackAlphaBitsUnfixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaBitsUnfixed4444Mip1(): Not implemented.");
+}
+
+// OFFSET: 0x7B76F0
+void CMapRenderChunk::UnpackAlphaBitsUnfixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
+    if (texSize == 1)
+        return;
+
+    const uint32_t NIBBLE_MASKS[2] = { 0x0F, 0xF0 };
+    const uint32_t NIBBLE_SHIFTS[2] = { 0, 4 };
+
+    uint32_t nibbleIndex = 0;
+    uint16_t lastPixel = 0x0FFF;
+
+    for (int32_t i = 0; i < texSize - 1; i++) {
+        for (int32_t j = 0; j < texSize - 1; j++) {
+            uint8_t rawByte = layerInfo->alphaData[nibbleIndex >> 1];
+            uint8_t alpha4 = (rawByte & NIBBLE_MASKS[nibbleIndex & 1]) >> NIBBLE_SHIFTS[nibbleIndex & 1];
+            lastPixel = (uint16_t)((alpha4 << 12) | 0x0FFF);
+            *outputTexture++ = lastPixel;
+            ++nibbleIndex;
+        }
+
+        *outputTexture++ = lastPixel;
+        ++nibbleIndex;
+    }
+
+    uint32_t finalStart = nibbleIndex - texSize;
+    for (int32_t col = 0; col < texSize - 1; col++) {
+        unsigned int idx = finalStart + col;
+        uint8_t rawByte = layerInfo->alphaData[idx >> 1];
+        uint8_t alpha4 = (rawByte & NIBBLE_MASKS[idx & 1]) >> NIBBLE_SHIFTS[idx & 1];
+        lastPixel = (uint16_t)((alpha4 << 12) | 0x0FFF);
+        *outputTexture++ = lastPixel;
+    }
+    *outputTexture = lastPixel;
+}
+
+// OFFSET: 0x7B8C70
+void CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip1(): Not implemented.");
+}
+
+// OFFSET: 0x7B8B80
+void CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip0(): Not implemented.");
+}
+
+// OFFSET: 0x7B89C0
+void CMapRenderChunk::RecreateAlphaBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::RecreateAlphaBitsFixed8888Mip1(): Not implemented.");
+}
+
+// OFFSET: 0x7B88D0
+void CMapRenderChunk::RecreateAlphaBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::RecreateAlphaBitsFixed8888Mip0(): Not implemented.");
+}
+
+// OFFSET: 0x7B7620
+void CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip1(): Not implemented.");
+}
+
+// OFFSET: 0x7B75B0
+void CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
+    if (!texSize)
+        return;
+
+    const uint32_t NIBBLE_MASKS[2] = { 0x0F, 0xF0 };
+    const uint32_t NIBBLE_SHIFTS[2] = { 0, 4 };
+
+    unsigned int nibbleIndex = 0;
+
+    for (unsigned int row = 0; row < texSize; ++row) {
+        for (unsigned int col = 0; col < texSize; ++col) {
+            uint8_t rawByte = layerInfo->alphaData[nibbleIndex >> 1];
+            uint8_t alpha4 = (rawByte & NIBBLE_MASKS[nibbleIndex & 1]) >> NIBBLE_SHIFTS[nibbleIndex & 1];
+            *outputTexture++ = (uint16_t)((alpha4 << 12) | 0x0FFF);
+            ++nibbleIndex;
+        }
+    }
+}
+
 
 // OFFSET: 0x7B9C20
 void CMapRenderChunk::UpdateShadowGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels) {
@@ -480,7 +634,7 @@ void CMapRenderChunk::UpdateShadowGxTexture(EGxTexCommand cmd, uint32_t w, uint3
 
 // OFFSET: 0x7D04A0
 void CMapRenderChunk::RenderSetup(int32_t a2) {
-    this->unk_0C = 0.0;
+    this->lastUpdateTime = 0.0;
     this->AllocLayerTextures();
     //if (!a2 || !CMap::enableTerrainShaderVertex) {
     C44Matrix worldMatrix = C44Matrix();
@@ -554,7 +708,7 @@ void CMapRenderChunk::RenderSolid() {
     //         (*p_m_data)[7].m_value.m_data.i[0] = v12;
     //     }
     // }
-    CGxTex* defaultTexture = TextureGetGxTex(this->layers[0].texture, 0, nullptr);
+    CGxTex* defaultTexture = TextureGetGxTex(CWorldScene::s_defaultTexture, 0, nullptr);
     g_theGxDevicePtr->RsSet(GxRs_Texture0, defaultTexture);
     GxTexSetWrap(defaultTexture, GxTex_Wrap, GxTex_Wrap);
     CGxTex* blendTexture;
@@ -690,6 +844,7 @@ void CMapRenderChunk::SetVertexShader(int32_t a1, int32_t a2) {
     //g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 0, &stru_D250A0, 37);
 }
 
+// OFFSET: 0x7D0D70
 void sub_7D0D70(CMapRenderChunk* renderChunk) {
     C44Matrix tex0Matrix = C44Matrix();
     C44Matrix tex1Matrix = C44Matrix();
@@ -728,10 +883,10 @@ void sub_7D0D70(CMapRenderChunk* renderChunk) {
             GxRsSet(GxRs_TextureShader0, 0);
         }
 
+        // TODO enable when lighting is implemented
         //if (chunkLayer->flags & 0x80)
             GxRsSet(GxRs_Lighting, 0);
-
-        // Flag bit 6: apply texture coordinate translation
+        
         if (chunkLayer->flags & 0x40) {
             //C3Vector__C3Vector(&a3, (C3Vector*)&World::texVect[v14->flags & 7]);
             //v20 = 1.0 / CMapChunk::s_geoToTex / flt_AF14F8[(LOBYTE(v14->flags) >> 3) & 7];
@@ -841,4 +996,17 @@ void CMapRenderChunk::SetShaders(int32_t a1, int32_t a2) {
     //} else {
         CMapRenderChunk::s_renderLayersFunc = sub_7D0D70;
     //}
+}
+
+// OFFSET: 0x7B9830
+void CMapRenderChunk::FreeBuf() {
+    if (!this->chunkBuf)
+        return;
+
+    if ((this->chunkBuf->unkFlags & 3) != 0)
+        CMapRenderChunk::s_chunkBufBlockFreeList.LinkToTail(this->chunkBuf->block);
+    else
+        CMapRenderChunk::s_renderChunkBufFreeList.LinkToTail(this->chunkBuf);
+    this->chunkBuf->renderChunk = nullptr;
+    this->chunkBuf = nullptr;
 }

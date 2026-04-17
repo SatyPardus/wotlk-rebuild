@@ -22,6 +22,7 @@ class CMap {
     static CMapArea *areaTable[64 * 64];
     static STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) mapAreaList;
     static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkFreeList;
+    static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkUpdateList;
     static int32_t uniqueId;
     static int32_t bDungeon;
     static int32_t counts[11];
@@ -89,6 +90,7 @@ class CMap {
     static void UpdateArea(bool a1, CMapArea* area, CiRect* chunkRect, int32_t a4);
     static void PrepareMapObjDefs(bool a1);
     static void PrepareMapDoodadDefs();
+    static void ProcessRenderChunkUpdateList();
 };
 
 #endif

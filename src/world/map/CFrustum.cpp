@@ -4,7 +4,7 @@
 WorldCullStatus CFrustum::Cull(CAaBox* box) {
     static constexpr float CULL_EPSILON = -0.019444443f;
 
-    for (int i = 0; i < 6; i++) {
+    /*for (int i = 0; i < 6; i++) {
         const C4Plane& plane = this->planes[i];
 
         float dot = (plane.n.x >= 0.0f ? box->t.x : box->b.x) * plane.n.x
@@ -14,7 +14,7 @@ WorldCullStatus CFrustum::Cull(CAaBox* box) {
 
         if (dot < CULL_EPSILON)
             return WorldCull_outside;
-    }
+    }*/
 
     return WorldCull_notOutside;
 }

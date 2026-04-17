@@ -852,8 +852,8 @@ CTexture* CreateBlpAsync(char* fileExt, char* fileName, int32_t createFlags, CGx
     CAsyncObject *asyncObject = AsyncFileReadAllocObject();
     texture->asyncObject = asyncObject;
     texture->asyncObject->userArg = texture;
-    texture->asyncObject->userPostloadCallback = AsyncTextureSuccessCallback;
-    texture->asyncObject->userFailedCallback = AsyncTextureFailureCallback;
+    texture->asyncObject->userPostloadCallback = &AsyncTextureSuccessCallback;
+    texture->asyncObject->userFailedCallback = &AsyncTextureFailureCallback;
     texture->asyncObject->file = file;
     texture->asyncObject->size = SFile::GetFileSize(file, 0);
     //if (v6) {
@@ -1246,11 +1246,13 @@ void AsyncTextureHandler() {
     //    m_next = v8;
     //}
 
-    for (auto def = s_asyncTextureList.Head(); def; def = s_asyncTextureList.Next(def)) {
+    for (auto def = s_asyncTextureList.Head(); def;) {
+        auto next = s_asyncTextureList.Next(def);
         if (v1 >= def->size) {
             AsyncTextureProcess(def, 0);
             v1 -= def->size;
         }
+        def = next;
     }
 }
 

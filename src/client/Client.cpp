@@ -3,6 +3,7 @@
 #include "client/ClientServices.hpp"
 #include "client/CmdLine.hpp"
 #include "client/ClientHandlers.hpp"
+#include "client/FrameTime.hpp"
 #include "console/CVar.hpp"
 #include "console/Client.hpp"
 #include "console/Device.hpp"
@@ -696,9 +697,14 @@ void StormInitialize() {
     Blizzard::Debug::SetAssertHandler(BlizzardAssertCallback);
 }
 
+int32_t EnableCallback(const EVENT_DATA_UPDATE* data, void* param) {
+    FrameTime::Update(data->elapsedSec, data->time);
+    return 1;
+}
+
 void WowClientInit() {
     // TODO
-    // EventRegister(EVENT_ID_5, (int)sub_4020E0);
+    EventRegister(EVENT_ON_UPDATE, reinterpret_cast<EVENTHANDLERFUNC>(EnableCallback));
     // _cfltcvt_init_0();
 
     ClientMiscInitialize();

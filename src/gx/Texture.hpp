@@ -97,4 +97,6 @@ CGxTex* TextureGetGxTex(HTEXTURE, int32_t, CStatus*);
 
 CTexture* TextureGetTexturePtr(HTEXTURE);
 
+static void AsyncTextureSuccessCallback(void* param);
+
 #endif

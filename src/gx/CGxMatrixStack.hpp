@@ -23,6 +23,7 @@ class CGxMatrixStack {
         void Push();
         C44Matrix& Top();
         const C44Matrix& TopConst();
+        void Identity();
 };
 
 #endif

@@ -385,19 +385,26 @@ void CWorldScene::CullChunks(CSortEntry* entry, int32_t index) {
     if ((CWorld::s_enables & CWorld::Enables::Enable_Culling) == 0 || index >= 63)
         v19 = false;
 
-    for (auto mapChunk = entry->mapChunkList.Head(); mapChunk; mapChunk = entry->mapChunkList.Next(mapChunk)) {
+    for (auto mapChunk = entry->mapChunkList.Head(); mapChunk;) {
+        auto next = entry->mapChunkList.Next(mapChunk);
         mapChunk->sortListLink.Unlink();
 
-        if (CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(&mapChunk->bbox) == WorldCull_outside)
+        if (CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(&mapChunk->bbox) == WorldCull_outside) {
+            mapChunk = next;
             continue;
+        }
 
-        if (CWorldOcclusion::QueryVolumes(&mapChunk->sphere) || CWorldOcclusion::QueryBuffer(&mapChunk->bbox, 0))
+        if (CWorldOcclusion::QueryVolumes(&mapChunk->sphere) || CWorldOcclusion::QueryBuffer(&mapChunk->bbox, 0)) {
+            mapChunk = next;
             continue;
+        }
 
         //v7 = sub_78FB60(m_next->distToCamera);
         //sub_799980(&m_next->doodadDefLinkList.m_linkoffset, v7);
-        if (CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(&mapChunk->bbox2) == WorldCull_outside || CWorldOcclusion::QueryBuffer(&mapChunk->bbox2, 0))
+        if (CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(&mapChunk->bbox2) == WorldCull_outside || CWorldOcclusion::QueryBuffer(&mapChunk->bbox2, 0)) {
+            mapChunk = next;
             continue;
+        }
 
         if (mapChunk->header->holes != 0xFFFF) {
             //    ++dword_CD8770;
@@ -434,6 +441,7 @@ void CWorldScene::CullChunks(CSortEntry* entry, int32_t index) {
             //         goto LABEL_36;
             //     }
         }
+        mapChunk = next;
     }
 }
 
@@ -621,163 +629,168 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
 // OFFSET: 0x798DA0
 void CWorldScene::RenderChunks() {
     GxRsPush();
-    //    dword_D2509C = *(_DWORD*)(g_theGxDevicePtr->ukn1[2620] + 240);
-    //    if (CMap::enableTerrainShaderVertex) {
-    //        v42.M11 = 1.0;
-    //        v42.M22 = 1.0;
-    //        v42.M33 = 1.0;
-    //        v42.M44 = 1.0;
-    //        v42.M12 = 0.0;
-    //        v42.M13 = 0.0;
-    //        v42.M14 = 0.0;
-    //        v42.M21 = 0.0;
-    //        v42.M23 = 0.0;
-    //        v42.M24 = 0.0;
-    //        v42.M31 = 0.0;
-    //        v42.M32 = 0.0;
-    //        v42.M34 = 0.0;
-    //        v42.M41 = 0.0;
-    //        v42.M42 = 0.0;
-    //        v42.M43 = 0.0;
-    //        a3.x = -CWorldScene::s_activeWorldView.x;
-    //        a3.y = -CWorldScene::s_activeWorldView.y;
-    //        a3.z = -CWorldScene::s_activeWorldView.z;
-    //        C44Matrix::Translate(&v42, &a3);
-    //        v43.M11 = 1.0;
-    //        v43.M12 = 0.0;
-    //        v43.M13 = 0.0;
-    //        v43.M14 = 0.0;
-    //        v43.M21 = 0.0;
-    //        v43.M23 = 0.0;
-    //        v43.M24 = 0.0;
-    //        v43.M31 = 0.0;
-    //        v43.M32 = 0.0;
-    //        v43.M34 = 0.0;
-    //        v43.M41 = 0.0;
-    //        v43.M42 = 0.0;
-    //        v43.M43 = 0.0;
-    //        v43.M22 = 1.0;
-    //        v43.M33 = 1.0;
-    //        v43.M44 = 1.0;
-    //        C44Matrix::Copy(&v43, (C44Matrix*)&g_theGxDevicePtr->ukn1[16 * g_theGxDevicePtr->ukn1[1725] + 1727]);
-    //        sub_7CFBE0(&v42, &v43);
-    //    } else {
-    //        ActiveDayNight = DayNight::GetActiveDayNight();
-    //        v1 = g_theGxDevicePtr;
-    //        v2 = g_theGxDevicePtr->ukn1[981] == 0;
-    //        v3 = ActiveDayNight;
-    //        v4 = *((float*)ActiveDayNight + 36);
-    //        v46 = *((float*)ActiveDayNight + 36);
-    //        if (!v2) {
-    //            v5 = g_theGxDevicePtr->ukn1[2620];
-    //            v6 = v4 == *(float*)(v5 + 192);
-    //            v7 = (float*)(v5 + 192);
-    //            if (!v6) {
-    //                CGxDevice::IRsDirty(g_theGxDevicePtr, 8);
-    //                *v7 = v46;
-    //                v1 = g_theGxDevicePtr;
-    //            }
-    //        }
-    //        v2 = v1->ukn1[981] == 0;
-    //        v8 = *((float*)v3 + 37);
-    //        v46 = *((float*)v3 + 37);
-    //        if (!v2) {
-    //            v9 = v1->ukn1[2620];
-    //            v10 = v8 == *(float*)(v9 + 216);
-    //            v11 = (float*)(v9 + 216);
-    //            if (!v10) {
-    //                CGxDevice::IRsDirty(v1, 9);
-    //                *v11 = v46;
-    //                v1 = g_theGxDevicePtr;
-    //            }
-    //        }
-    //        if (v1->ukn1[981]) {
-    //            v12 = v1->ukn1[2620];
-    //            v13 = *(_DWORD*)(v12 + 24);
-    //            v14 = (_DWORD*)(v12 + 24);
-    //            if (v13 != -8421505) {
-    //                CGxDevice::IRsDirty(v1, 1);
-    //                *v14 = -8421505;
-    //                v1 = g_theGxDevicePtr;
-    //            }
-    //        }
-    //        if (byte_CE049D) {
-    //            if (v1->ukn1[981]) {
-    //                v15 = v1->ukn1[2620];
-    //                v16 = *(_DWORD*)(v15 + 72);
-    //                v17 = (_DWORD*)(v15 + 72);
-    //                if (v16 != -1) {
-    //                    CGxDevice::IRsDirty(v1, 3);
-    //                    *v17 = -1;
-    //                }
-    //            }
-    //            sub_763C70(4, 20.0);
+    //dword_D2509C = g_theGxDevicePtr->m_appRenderStates.m_data[GxRs_FogColor].m_value.m_data.i[GxRs_PolygonOffset];
+    //if (CMap::enableTerrainShaderVertex) {
+    //    v42.M11 = 1.0;
+    //    v42.M22 = 1.0;
+    //    v42.M33 = 1.0;
+    //    v42.M44 = 1.0;
+    //    v42.M12 = 0.0;
+    //    v42.M13 = 0.0;
+    //    v42.M14 = 0.0;
+    //    v42.M21 = 0.0;
+    //    v42.M23 = 0.0;
+    //    v42.M24 = 0.0;
+    //    v42.M31 = 0.0;
+    //    v42.M32 = 0.0;
+    //    v42.M34 = 0.0;
+    //    v42.M41 = 0.0;
+    //    v42.M42 = 0.0;
+    //    v42.M43 = 0.0;
+    //    v44.y = -CWorldScene::s_activeWorldView.x;
+    //    v44.z = -CWorldScene::s_activeWorldView.y;
+    //    v44.w = -CWorldScene::s_activeWorldView.z;
+    //    C44Matrix::Translate(&v42, (const C3Vector*)&v44.y);
+    //    v43.M11 = 1.0;
+    //    v43.M12 = 0.0;
+    //    v43.M13 = 0.0;
+    //    v43.M14 = 0.0;
+    //    v43.M21 = 0.0;
+    //    v43.M23 = 0.0;
+    //    v43.M24 = 0.0;
+    //    v43.M31 = 0.0;
+    //    v43.M32 = 0.0;
+    //    v43.M34 = 0.0;
+    //    v43.M41 = 0.0;
+    //    v43.M42 = 0.0;
+    //    v43.M43 = 0.0;
+    //    v43.M22 = 1.0;
+    //    v43.M33 = 1.0;
+    //    v43.M44 = 1.0;
+    //    C44Matrix::Copy(&v43, &g_theGxDevicePtr->m_xforms[10].m_mtx[g_theGxDevicePtr->m_xforms[10].m_level]);
+    //    sub_7CFBE0(&v42, &v43);
+    //} else {
+    //    ActiveDayNight = DayNight::GetActiveDayNight();
+    //    v1 = g_theGxDevicePtr;
+    //    v2 = g_theGxDevicePtr->m_context == 0;
+    //    v3 = ActiveDayNight;
+    //    start = ActiveDayNight->fogInfo.start;
+    //    v45 = ActiveDayNight->fogInfo.start;
+    //    if (!v2) {
+    //        m_data = g_theGxDevicePtr->m_appRenderStates.m_data;
+    //        v6 = start == m_data[8].m_value.m_data.f[0];
+    //        f = m_data[8].m_value.m_data.f;
+    //        if (!v6) {
+    //            CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_FogStart);
+    //            *f = v45;
     //            v1 = g_theGxDevicePtr;
     //        }
-    //        v18 = 0;
-    //        for (i = 1272; i < 1392; i += 24) {
-    //            if (v1->ukn1[981]) {
-    //                v20 = (_DWORD*)(v1->ukn1[2620] + i + 384);
-    //                if (*v20 != v18) {
-    //                    CGxDevice::IRsDirty(v1, v18 + 69);
-    //                    *v20 = v18;
+    //    }
+    //    v2 = v1->m_context == 0;
+    //    end = v3->fogInfo.end;
+    //    v45 = v3->fogInfo.end;
+    //    if (!v2) {
+    //        v9 = v1->m_appRenderStates.m_data;
+    //        v10 = end == v9[9].m_value.m_data.f[0];
+    //        v11 = v9[9].m_value.m_data.f;
+    //        if (!v10) {
+    //            CGxDevice::IRsDirty(v1, GxRs_FogEnd);
+    //            *v11 = v45;
+    //            v1 = g_theGxDevicePtr;
+    //        }
+    //    }
+    //    if (v1->m_context) {
+    //        v12 = v1->m_appRenderStates.m_data;
+    //        v13 = v12[GxRs_MatDiffuse].m_value.m_data.i[GxRs_PolygonOffset];
+    //        v14 = v12 + 1;
+    //        if (v13 != 0xFF7F7F7F) {
+    //            CGxDevice::IRsDirty(v1, GxRs_MatDiffuse);
+    //            v14->m_value.m_data.i[0] = 0xFF7F7F7F;
+    //            v1 = g_theGxDevicePtr;
+    //        }
+    //    }
+    //    if (CMap::enableSpecularTerrain) {
+    //        if (v1->m_context) {
+    //            v15 = v1->m_appRenderStates.m_data;
+    //            v16 = v15[3].m_value.m_data.i[0];
+    //            v17 = v15 + 3;
+    //            if (v16 != -1) {
+    //                CGxDevice::IRsDirty(v1, GxRs_MatSpecular);
+    //                v17->m_value.m_data.i[0] = 0xFFFFFFFF;
+    //            }
+    //        }
+    //        sub_763C70(GxRs_MatSpecularExp, 20.0);
+    //        v1 = g_theGxDevicePtr;
+    //    }
+    for (int32_t i = 0; i < 5; i++) {
+        GxRsSet((EGxRenderState)(GxRs_TextureCoord0 + i), i);
+        GxRsSet((EGxRenderState)(GxRs_TexGen0 + i), 2);
+        GxRsSet((EGxRenderState)(GxRs_TextureShader0 + i), 1);
+    }
+    //    v18 = 0;
+    //    for (i = GxRs_TexGen0; i < GxRs_TexGen5; ++i) {
+    //        if (v1->m_context) {
+    //            v20 = &v1->m_appRenderStates.m_data[i + 16];
+    //            if (v20->m_value.m_data.i[0] != v18) {
+    //                CGxDevice::IRsDirty(v1, (EGxRenderState)(v18 + 69));
+    //                v20->m_value.m_data.i[0] = v18;
+    //                v1 = g_theGxDevicePtr;
+    //            }
+    //            if (v1->m_context) {
+    //                v21 = &v1->m_appRenderStates.m_data[i];
+    //                if (v21->m_value.m_data.i[0] != 2) {
+    //                    CGxDevice::IRsDirty(v1, (EGxRenderState)(v18 + 53));
+    //                    v21->m_value.m_data.i[0] = 2;
     //                    v1 = g_theGxDevicePtr;
     //                }
-    //                if (v1->ukn1[981]) {
-    //                    v21 = (_DWORD*)(i + v1->ukn1[2620]);
-    //                    if (*v21 != 2) {
-    //                        CGxDevice::IRsDirty(v1, v18 + 53);
-    //                        *v21 = 2;
+    //                if (v1->m_context) {
+    //                    v22 = &v1->m_appRenderStates.m_data[i + 8];
+    //                    if (v22->m_value.m_data.i[0] != 1) {
+    //                        CGxDevice::IRsDirty(v1, (EGxRenderState)(v18 + 61));
+    //                        v22->m_value.m_data.i[0] = 1;
     //                        v1 = g_theGxDevicePtr;
     //                    }
-    //                    if (v1->ukn1[981]) {
-    //                        v22 = (_DWORD*)(v1->ukn1[2620] + i + 192);
-    //                        if (*v22 != 1) {
-    //                            CGxDevice::IRsDirty(v1, v18 + 61);
-    //                            *v22 = 1;
-    //                            v1 = g_theGxDevicePtr;
-    //                        }
-    //                    }
     //                }
     //            }
-    //            ++v18;
     //        }
+    //        ++v18;
     //    }
-    //    if (byte_CE049E) {
-    //        v23 = DayNight::GetActiveDayNight();
-    //        if (CGxDevice::Caps((char*)g_theGxDevicePtr)->int134) {
-    //            v24 = (char*)g_theGxDevicePtr;
-    //            v25 = v23[35];
-    //            if (!g_theGxDevicePtr->ukn1[981])
-    //                goto LABEL_35;
-    //            v26 = (int*)(g_theGxDevicePtr->ukn1[2620] + 240);
-    //            if (*v26 == v25)
-    //                goto LABEL_35;
-    //            CGxDevice::IRsDirty(g_theGxDevicePtr, 10);
-    //            *v26 = v25;
-    //        } else {
-    //            sub_984C90(v23 + 35);
-    //            ((void(__thiscall*)(CGxDevice*, int, int, char*, int))g_theGxDevicePtr->ukn70)(
-    //                g_theGxDevicePtr,
-    //                4,
-    //                2,
-    //                v44,
-    //                1);
-    //        }
+    //}
+    //if (CMap::gTerrainPixelShadersValid) {
+    //    v23 = DayNight::GetActiveDayNight();
+    //    if (CGxDevice::Caps((char*)g_theGxDevicePtr)->int134) {
     //        v24 = (char*)g_theGxDevicePtr;
-    // LABEL_35:
-    //        if (CGxDevice::Caps(v24)->int138) {
-    //            if (g_theGxDevicePtr->ukn1[981]) {
-    //                v27 = (_DWORD*)(g_theGxDevicePtr->ukn1[2620] + 288);
-    //                if (*v27 != 1) {
-    //                    CGxDevice::IRsDirty(g_theGxDevicePtr, 12);
-    //                    *v27 = 1;
-    //                }
+    //        color = v23->fogInfo.color;
+    //        if (!g_theGxDevicePtr->m_context)
+    //            goto LABEL_35;
+    //        v26 = g_theGxDevicePtr->m_appRenderStates.m_data + 10;
+    //        if (v26->m_value.m_data.i[0] == color)
+    //            goto LABEL_35;
+    //        CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_FogColor);
+    //        v26->m_value.m_data.i[0] = (int32_t)color;
+    //    } else {
+    //        sub_984C90(&v44, &v23->fogInfo);
+    //        ((void(__thiscall*)(CGxDevice*, int, int, C4Vector*, int))g_theGxDevicePtr->ShaderConstantsSet)(
+    //            g_theGxDevicePtr,
+    //            4,
+    //            2,
+    //            &v44,
+    //            1);
+    //    }
+    //    v24 = (char*)g_theGxDevicePtr;
+//LABEL_35:
+    //    if (CGxDevice::Caps(v24)->int138) {
+    //        if (g_theGxDevicePtr->m_context) {
+    //            v27 = g_theGxDevicePtr->m_appRenderStates.m_data + 12;
+    //            if (v27->m_value.m_data.i[0] != 1) {
+    //                CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_Fog);
+    //                v27->m_value.m_data.i[0] = 1;
     //            }
     //        }
-    //        sub_874660();
-    //        goto LABEL_58;
     //    }
+    //    sub_874660();
+    //    goto LABEL_58;
+    //}
     DayNight::DNInfo* activeDayNight = DayNight::GetInfo();
     GxRsSet(GxRs_FogColor, activeDayNight->fogInfo.color.value);
     GxRsSet(GxRs_Fog, 1);
@@ -840,7 +853,8 @@ void CWorldScene::RenderChunksSinglePass() {
                 GxRsSet(GxRs_PixelShader, CMapRenderChunk::s_currentShaderX[layer]);
 
             int32_t layerIndex = 4 + pass + (layer * 4);
-            for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[layerIndex].Head(); renderChunk; renderChunk = CWorldScene::sortTable.renderChunkLists[layerIndex].Next(renderChunk)) {
+            for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[layerIndex].Head(); renderChunk;) {
+                auto next = CWorldScene::sortTable.renderChunkLists[layerIndex].Next(renderChunk);
                 renderChunk->RenderSetup(1);
                 //if ((CWorld::enables & Enable_2) != 0) {
                 //    if (*v36) {
@@ -853,7 +867,7 @@ void CWorldScene::RenderChunksSinglePass() {
                 //    }
                 //}
 
-                //renderChunk->renderChunkLink.Unlink();
+                renderChunk->renderChunkLink.Unlink();
 
                 if ((CWorld::s_enables & 0x40000000) != 0) {
                     //v6 = *(int*)((char*)&v2->renderChunkLink.m_prevLink + v32.m_linkoffset);
@@ -877,27 +891,9 @@ void CWorldScene::RenderChunksSinglePass() {
                     //v2 = v33;
                     //v32.m_terminator.m_prevlink = v7;
                 } else {
-                    //v11 = *(int*)((char*)&v2->renderChunkLink.m_prevLink + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
-                    //v12 = (TSLink*)((char*)v2 + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
-                    //if (v11) {
-                    //    v13 = (unsigned int)v12->m_next;
-                    //    if ((v13 & 1) == 0 && v13)
-                    //        v14 = (TSLink**)((char*)&v12->m_prevlink + v13 - *(_DWORD*)(v11 + 4));
-                    //    else
-                    //        v14 = (_DWORD*)(v13 & 0xFFFFFFFE);
-                    //    *v14 = v11;
-                    //    v12->m_prevlink->m_next = v12->m_next;
-                    //    v12->m_prevlink = 0;
-                    //    v12->m_next = 0;
-                    //}
-                    //v15 = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
-                    //v1 = v34;
-                    //v12->m_prevlink = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
-                    //v12->m_next = v15->m_next;
-                    //v15->m_next = v2;
-                    //v2 = v33;
-                    //CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink = v12;
+                    CMap::s_mapRenderChunkUpdateList.LinkToTail(renderChunk);
                 }
+                renderChunk = next;
             }
         }
     }
@@ -929,7 +925,8 @@ void CWorldScene::RenderChunksSolid() {
         }
     }*/
     // #############################
-    for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[0].Head(); renderChunk; renderChunk = CWorldScene::sortTable.renderChunkLists[0].Next(renderChunk)) {
+    for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[0].Head(); renderChunk;) {
+        auto next = CWorldScene::sortTable.renderChunkLists[0].Next(renderChunk);
         renderChunk->RenderSetup(1);
         renderChunk->RenderSolid();
 
@@ -953,6 +950,7 @@ void CWorldScene::RenderChunksSolid() {
         //    v8->m_next = m_next;
         //    m_next = v9;
         //    CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink = v5;
+        renderChunk = next;
     }
     //m_next = (CMapRenderChunk*)CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next;
     //if (((int)CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next & 1) != 0 || !CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next) {

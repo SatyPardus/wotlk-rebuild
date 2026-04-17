@@ -195,7 +195,7 @@ void CWorld::Initialize() {
 
 void CWorld::LoadMap(const char* mapName, C3Vector* position, int32_t zoneID) {
     // TODO: calculate far clip
-    CWorld::s_farClip = 1583.3334f * 2;
+    CWorld::s_farClip = 1583.3334f;
     //World::s_farClip = sub_780770(CWorldParam::cvar_farClip->m_numberValue, mapid);
     CWorld::s_nearClip = 0.2f;
     CWorld::prevFarClip = CWorld::s_farClip;
