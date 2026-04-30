@@ -120,7 +120,7 @@ void UpdateProgressBar(bool force) {
         ProgressBarSendKeepAlive(currentTime);
         UpdateProgressValue();
         LoadingScreenPaint(nullptr, nullptr, nullptr, 0);
-        // sub_682A00();
+        GxScenePresent();
     }
 }
 

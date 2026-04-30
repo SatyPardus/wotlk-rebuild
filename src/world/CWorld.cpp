@@ -405,6 +405,7 @@ uint32_t CWorld::GetEnables() {
     return CWorld::s_enables;
 }
 
+// OFFSET: 0x77EC90
 void CWorld::SetLoadProgressCallback(CALLBACK_FUNC callback, void* param) {
     CWorld::s_loadProgressCallback = callback;
     CWorld::s_loadProgressParam = param;

@@ -7,6 +7,7 @@
 #include "world/map/CWorldOcclusion.hpp"
 
 #include "gx/Device.hpp"
+#include "gx/Draw.hpp"
 #include "gx/Shader.hpp"
 #include "gx/RenderState.hpp"
 #include "gx/Transform.hpp"
@@ -38,6 +39,9 @@ C4Plane CWorldScene::camPlane;
 C4Plane CWorldScene::camPlaneXY;
 C44Matrix CWorldScene::viewMatrix;
 C44Matrix CWorldScene::projMatrix;
+CAaBox CWorldScene::boundingBox;
+
+uint32_t CWorldScene::s_chunksRendered;
 
 CM2Model* g_models[10] = {};
 
@@ -203,17 +207,13 @@ void CWorldScene::Update(C3Vector* camPos, C3Vector* camTarget) {
     //v36.y = M34;
     //dword_CD8FD0 = LODWORD(v36.y);
     //dword_CD8FD4 = LODWORD(stru_ADF5A8.M44);
-    //CWorldScene::boundingBox = *(CAaBox*)CAaBox::Bounding((float*)v34, CWorldScene::s_frustumCorners, 8u);
-    //v41 = -(CWorldScene::boundingBox.max.y - 17066.666) * 0.029999999;
-    //CWorldScene::s_frustumChunkRect.minX = (int)(v41 - halfConst);
-    //v42 = -(CWorldScene::boundingBox.max.x - 17066.666) * 0.029999999;
-    //CWorldScene::s_frustumChunkRect.minY = (int)(v42 - halfConst);
-    //v43 = -(CWorldScene::boundingBox.min.y - 17066.666) * 0.029999999;
-    //CWorldScene::s_frustumChunkRect.maxX = (int)(v43 - halfConst);
-    //v44 = -(CWorldScene::boundingBox.min.x - 17066.666) * 0.029999999;
-    //CWorldScene::s_frustumChunkRect.maxY = (int)(v44 - halfConst);
-    //CWorldScene::frustumIndex = 0;
-    //CFrustum::CalcPlanesFromCorners(CWorldScene::frustumStack, CWorldScene::s_frustumCorners);
+    CWorldScene::boundingBox = CAaBox::Bounding(CWorldScene::s_frustumCorners, 8u);
+    CWorldScene::s_frustumChunkRect.minX = (int)((-(CWorldScene::boundingBox.t.y - 17066.666f) * 0.03f) - 0.5f);
+    CWorldScene::s_frustumChunkRect.minY = (int)((-(CWorldScene::boundingBox.t.x - 17066.666f) * 0.03f) - 0.5f);
+    CWorldScene::s_frustumChunkRect.maxX = (int)((-(CWorldScene::boundingBox.b.y - 17066.666f) * 0.03f) - 0.5f);
+    CWorldScene::s_frustumChunkRect.maxY = (int)((-(CWorldScene::boundingBox.b.x - 17066.666f) * 0.03f) - 0.5f);
+    CWorldScene::frustumIndex = 0;
+    CWorldScene::frustumStack[0].CalcPlanesFromCorners(CWorldScene::s_frustumCorners);
     CMapChunk::farCornerIndex = 0;
     if (CWorldScene::camTarget.x > CWorldScene::s_activeWorldView.x)
         CMapChunk::farCornerIndex = 2;
@@ -333,10 +333,8 @@ void CWorldScene::AddMapChunk(CMapChunk* mapChunk) {
 void CWorldScene::AddMapChunkToRenderList(CMapChunk* mapChunk, C3Vector* pos) {
     float planeDist = C3Vector::Dot(*pos, CWorldScene::camPlaneXY.n) + CWorldScene::camPlaneXY.d;
     int index = (int)(planeDist * 0.03f - 0.5f);
-    if (planeDist <= 0) // TODO shouldnt produce negative values? Maybe InsideFrustumRect is the fault
-        return;
     if (planeDist <= 0.0f || index < 64) {
-        CWorldScene::sortTable.table[index].mapChunkList.LinkToTail(mapChunk);
+        CWorldScene::sortTable.table[planeDist <= 0.0f ? 0 : index].mapChunkList.LinkToTail(mapChunk);
     }
 }
 
@@ -345,9 +343,37 @@ bool CWorldScene::FrustumCull(CAaBox* box) {
     return CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(box) == WorldCull_outside;
 }
 
+void CWorldScene::FrustumSet(CRect* rect) {
+    C3Vector corners[8] = {};
+
+    for (int i = 0; i < 2; i++) {
+        const C3Vector& c0 = s_frustumCorners[i * 4 + 0];
+        const C3Vector& c1 = s_frustumCorners[i * 4 + 1];
+        const C3Vector& c2 = s_frustumCorners[i * 4 + 2];
+        const C3Vector& c3 = s_frustumCorners[i * 4 + 3];
+
+        C3Vector edgeTop = c2 - c1;
+        C3Vector edgeBot = c3 - c0;
+
+        C3Vector topLeft = c1 + edgeTop * rect->minX;
+        C3Vector topRight = c1 + edgeTop * rect->maxX;
+        C3Vector botLeft = c0 + edgeBot * rect->minX;
+        C3Vector botRight = c0 + edgeBot * rect->maxX;
+
+        C3Vector diagLeft = topLeft - botLeft;
+        C3Vector diagRight = topRight - botRight;
+
+        corners[i * 4 + 0] = botLeft + diagLeft * rect->minY;
+        corners[i * 4 + 1] = botLeft + diagLeft * rect->maxY;
+        corners[i * 4 + 2] = botRight + diagRight * rect->maxY;
+        corners[i * 4 + 3] = botRight + diagRight * rect->minY;
+    }
+
+    CWorldScene::frustumStack[CWorldScene::frustumIndex].CalcPlanesFromCorners(corners);
+}
+
 // OFFSET: 0x7D6690
 bool CWorldScene::InsideFrustumRect(CiRect* rect) {
-    return true; // TODO fix chunk rect
     return rect->minX <= CWorldScene::s_frustumChunkRect.maxX
         && rect->minY <= CWorldScene::s_frustumChunkRect.maxY
         && rect->maxX >= CWorldScene::s_frustumChunkRect.minX
@@ -358,10 +384,8 @@ bool CWorldScene::InsideFrustumRect(CiRect* rect) {
 void CWorldScene::CullSortTable(CRect* a1) {
     //CWorldScene::CreateOcclusionVolumes(&CWorldScene::s_activeWorldView.x, stru_CDB108, 0);
     ++CWorldScene::frustumIndex;
-    //CWorldScene::FrustumPush(
-    //    &CWorldScene::frustumStack[CWorldScene::frustumIndex],
-    //    &CWorldScene::frustumStack[CWorldScene::frustumIndex - 1]);
-    //CWorldScene::FrustumSet(a1);
+    CWorldScene::frustumStack[CWorldScene::frustumIndex].FrustumPush(&CWorldScene::frustumStack[CWorldScene::frustumIndex - 1]);
+    CWorldScene::FrustumSet(a1);
     for (int32_t i = 0; i < 64; i++) {
         CSortEntry* entry = &CWorldScene::sortTable.table[i];
 
@@ -407,7 +431,7 @@ void CWorldScene::CullChunks(CSortEntry* entry, int32_t index) {
         }
 
         if (mapChunk->header->holes != 0xFFFF) {
-            //    ++dword_CD8770;
+            ++CWorldScene::s_chunksRendered;
             mapChunk->RenderPrep();
             if (mapChunk->renderChunk) {
                 uint8_t layersCount = 0;
@@ -452,12 +476,9 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //sub_790920();
     GxRsPush();
     GxXformPush(GxXform_World);
-    CRect rect;
-    CGWorldFrame::s_currentWorldFrame->GetRect(&rect);
-    CGWorldFrame::GetActiveCamera()->SetGxProjectionAndView(rect);
 
     //dword_CD8774 = 0;
-    //dword_CD8770 = 0;
+    CWorldScene::s_chunksRendered = 0;
     //dword_CD872C = 0;
     //dword_CD8624 = 0;
     //CFrustum::CalcPlanesFromCorners(&flt_CDB168[63 * dword_CD8798], &stru_CDB108[0].x);
@@ -557,12 +578,25 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //}
 
     if (CWorldScene::s_m2Scene) {
-        for (size_t i = 0; i < 10; ++i) {
+        /*for (size_t i = 0; i < 10; ++i) {
             if (!g_models[i])
                 continue;
             g_models[i]->SetAnimating(1);
             g_models[i]->SetVisible(1);
-        }
+        }*/
+
+        /*uint32_t count = 0;
+        for (auto mapDoodadDef = CMap::doodadDefList.Head(); mapDoodadDef;) {
+            auto next = CMap::doodadDefList.Next(mapDoodadDef);
+
+            if (mapDoodadDef->model) {
+                mapDoodadDef->model->SetAnimating(1);
+                mapDoodadDef->model->SetVisible(1);
+                count++;
+            }
+
+            mapDoodadDef = next;
+        }*/
 
         CWorldScene::s_m2Scene->m_flags |= 1u;
         CWorldScene::s_m2Scene->AdvanceTime(static_cast<uint32_t>(time * 1000.0f));
@@ -727,35 +761,6 @@ void CWorldScene::RenderChunks() {
         GxRsSet((EGxRenderState)(GxRs_TexGen0 + i), 2);
         GxRsSet((EGxRenderState)(GxRs_TextureShader0 + i), 1);
     }
-    //    v18 = 0;
-    //    for (i = GxRs_TexGen0; i < GxRs_TexGen5; ++i) {
-    //        if (v1->m_context) {
-    //            v20 = &v1->m_appRenderStates.m_data[i + 16];
-    //            if (v20->m_value.m_data.i[0] != v18) {
-    //                CGxDevice::IRsDirty(v1, (EGxRenderState)(v18 + 69));
-    //                v20->m_value.m_data.i[0] = v18;
-    //                v1 = g_theGxDevicePtr;
-    //            }
-    //            if (v1->m_context) {
-    //                v21 = &v1->m_appRenderStates.m_data[i];
-    //                if (v21->m_value.m_data.i[0] != 2) {
-    //                    CGxDevice::IRsDirty(v1, (EGxRenderState)(v18 + 53));
-    //                    v21->m_value.m_data.i[0] = 2;
-    //                    v1 = g_theGxDevicePtr;
-    //                }
-    //                if (v1->m_context) {
-    //                    v22 = &v1->m_appRenderStates.m_data[i + 8];
-    //                    if (v22->m_value.m_data.i[0] != 1) {
-    //                        CGxDevice::IRsDirty(v1, (EGxRenderState)(v18 + 61));
-    //                        v22->m_value.m_data.i[0] = 1;
-    //                        v1 = g_theGxDevicePtr;
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        ++v18;
-    //    }
-    //}
     //if (CMap::gTerrainPixelShadersValid) {
     //    v23 = DayNight::GetActiveDayNight();
     //    if (CGxDevice::Caps((char*)g_theGxDevicePtr)->int134) {
@@ -909,96 +914,22 @@ void CWorldScene::RenderChunksSolid() {
     CMapRenderChunk::SetShaders(0, 0);
     if (CMapRenderChunk::s_currentShaderX[0])
         GxRsSet(GxRs_PixelShader, CMapRenderChunk::s_currentShaderX[0]);
-    // ### FAKE WORLD RENDER #######
-    /*for (auto link = CMap::mapAreaList.Head(); link; link = CMap::mapAreaList.Next(link)) {
-        CMapArea* area = (CMapArea*)link->owner;
-        for (int32_t i = 0; i < 16 * 16; i++) {
-            CMapChunk* chunk = area->mapChunks[i];
-            if (!chunk)
-                continue;
-
-            chunk->RenderPrep();
-            if (chunk->renderChunk) {
-                chunk->renderChunk->RenderSetup(1);
-                chunk->renderChunk->RenderSolid();
-            }
-        }
-    }*/
-    // #############################
     for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[0].Head(); renderChunk;) {
         auto next = CWorldScene::sortTable.renderChunkLists[0].Next(renderChunk);
         renderChunk->RenderSetup(1);
+        //    if ((CWorld::enables & 2) != 0) {
+        //        if (CMapRenderChunk::s_currentShaderX) {
+        //            if (CMap::enableTerrainShaderVertex)
+        //                CMapRenderChunk::RenderSolidVertexPixelShader(m_next);
+        //            else
+        //                CMapRenderChunk::RenderSolidPixelShader((int)m_next);
+        //        } else {
         renderChunk->RenderSolid();
+        //        }
+        //    }
 
         renderChunk->renderChunkLink.Unlink();
-        //    v4 = *(int*)((char*)&m_next->renderChunkLink.m_prevLink + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
-        //    v5 = (TSLink*)((char*)m_next + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
-        //    if (v4) {
-        //        v6 = (unsigned int)v5->m_next;
-        //        if ((v6 & 1) == 0 && v6)
-        //            v7 = (TSLink**)((char*)&v5->m_prevlink + v6 - *(_DWORD*)(v4 + 4));
-        //        else
-        //            v7 = (_DWORD*)(v6 & 0xFFFFFFFE);
-        //        *v7 = v4;
-        //        v5->m_prevlink->m_next = v5->m_next;
-        //        v5->m_prevlink = 0;
-        //        v5->m_next = 0;
-        //    }
-        //    v8 = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
-        //    v5->m_prevlink = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
-        //    v5->m_next = v8->m_next;
-        //    v8->m_next = m_next;
-        //    m_next = v9;
-        //    CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink = v5;
+        CMap::s_mapRenderChunkUpdateList.LinkToTail(renderChunk);
         renderChunk = next;
     }
-    //m_next = (CMapRenderChunk*)CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next;
-    //if (((int)CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next & 1) != 0 || !CWorldScene::sortTable.renderChunkList[0].m_terminator.m_next) {
-    //    m_next = 0;
-    //}
-    //while (((unsigned __int8)m_next & 1) == 0 && m_next) {
-    //    v9 = *(CMapRenderChunk**)((char*)&m_next->renderChunkLink.m_next + CWorldScene::sortTable.renderChunkList[0].m_linkoffset);
-    //    CMapRenderChunk::RenderSetup(m_next, 1);
-    //    if ((CWorld::enables & 2) != 0) {
-    //        if (CMapRenderChunk::s_currentShaderX) {
-    //            if (CMap::enableTerrainShaderVertex)
-    //                CMapRenderChunk::RenderSolidVertexPixelShader(m_next);
-    //            else
-    //                CMapRenderChunk::RenderSolidPixelShader((int)m_next);
-    //        } else {
-    //            CMapRenderChunk::RenderSolid((int)m_next);
-    //        }
-    //    }
-    //    m_prevLink = m_next->renderChunkLink.m_prevLink;
-    //    if (m_next->renderChunkLink.m_prevLink) {
-    //        v2 = m_next->renderChunkLink.m_next;
-    //        if (((unsigned __int8)v2 & 1) == 0 && v2)
-    //            v3 = (TSLink_CMapRenderChunk**)((char*)&v2->renderChunkLink.m_prevLink + (char*)m_next - (char*)m_prevLink->m_next);
-    //        else
-    //            v3 = (_DWORD*)((unsigned int)v2 & 0xFFFFFFFE);
-    //        *v3 = m_prevLink;
-    //        m_next->renderChunkLink.m_prevLink->m_next = m_next->renderChunkLink.m_next;
-    //        m_next->renderChunkLink.m_prevLink = 0;
-    //        m_next->renderChunkLink.m_next = 0;
-    //    }
-    //    v4 = *(int*)((char*)&m_next->renderChunkLink.m_prevLink + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
-    //    v5 = (TSLink*)((char*)m_next + CMap::s_mapRenderChunkUpdateList.m_linkoffset);
-    //    if (v4) {
-    //        v6 = (unsigned int)v5->m_next;
-    //        if ((v6 & 1) == 0 && v6)
-    //            v7 = (TSLink**)((char*)&v5->m_prevlink + v6 - *(_DWORD*)(v4 + 4));
-    //        else
-    //            v7 = (_DWORD*)(v6 & 0xFFFFFFFE);
-    //        *v7 = v4;
-    //        v5->m_prevlink->m_next = v5->m_next;
-    //        v5->m_prevlink = 0;
-    //        v5->m_next = 0;
-    //    }
-    //    v8 = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
-    //    v5->m_prevlink = CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink;
-    //    v5->m_next = v8->m_next;
-    //    v8->m_next = m_next;
-    //    m_next = v9;
-    //    CMap::s_mapRenderChunkUpdateList.m_terminator.m_prevlink = v5;
-    //}
 }

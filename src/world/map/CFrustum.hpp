@@ -20,6 +20,9 @@ class CFrustum {
     TSLink<CFrustum> sceneLink;
 
     WorldCullStatus Cull(CAaBox* box);
+    void CalcPlanesFromCorners(C3Vector* corners);
+    void CalcPlanesFromCorners();
+    void FrustumPush(CFrustum* other);
 };
 
 #endif

@@ -64,6 +64,7 @@ void AsyncFileReadDestroyObject(CAsyncObject* object) {
     AsyncFileRead::s_queueLock.Leave();
 }
 
+// OFFSET 0x4BAA40 TODO
 void AsyncFileReadInitialize(uint32_t threadSleep, uint32_t handlerTimeout) {
     AsyncFileRead::s_threadSleep = std::min(threadSleep, 100u);
     AsyncFileRead::s_handlerTimeout = std::max(handlerTimeout, 20u);
@@ -71,7 +72,7 @@ void AsyncFileReadInitialize(uint32_t threadSleep, uint32_t handlerTimeout) {
     EventRegisterEx(EVENT_ID_POLL, &AsyncFileReadPollHandler, nullptr, 0.0f);
     if (SFile::IsStreamingMode()) {
         // TODO
-        // EventRegisterEx(EVENT_ID_IDLE, &Sub4B9F40, nullptr, -1.0f);
+        // EventRegisterEx(EVENT_ID_IDLE, &NetQueuePromoteLocalFiles, nullptr, -1.0f);
     }
 
     AsyncFileRead::s_asyncWaitObject = nullptr;
@@ -140,4 +141,11 @@ void AsyncFileReadObject(CAsyncObject* object, int32_t a2) {
         // TODO
         // SFile::LogFileAccess(object->file, 0, 0);
     }
+}
+
+// OFFSET: 0x4B9E90
+void DefaultAsyncObjectCleanupCallback(void* param) {
+    CAsyncObject* object = static_cast<CAsyncObject*>(param);
+
+    AsyncFileReadDestroyObject(object);
 }

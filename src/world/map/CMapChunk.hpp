@@ -66,6 +66,7 @@ class CMapChunk : public CMapBaseObj {
     static float s_geoToTex;
 
     void Create(SIffChunk* headerChunk, bool a3);
+    void CreateRefs(CMapArea* mapChunk, uint32_t* mcrfPtr, uint32_t doodadRefs, uint32_t mapObjRefs);
     void ProcessIffChunks(bool a3);
     void CreateBounds();
     void RenderPrep();

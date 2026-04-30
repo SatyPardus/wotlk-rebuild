@@ -167,6 +167,9 @@ void CGWorldFrame::OnWorldUpdate() {
     C3Vector camPos = cam->m_position;
     C3Vector camForward = cam->Forward();
     C3Vector camTarget = camPos + camForward;
+    CRect rect;
+    CGWorldFrame::s_currentWorldFrame->GetRect(&rect);
+    CGWorldFrame::GetActiveCamera()->SetupWorldProjection(rect);
 
     C3Vector position = camPos;
 
@@ -211,7 +214,7 @@ void CGWorldFrame::OnWorldRender() {
 
     float elapsed = static_cast<float>(OsGetAsyncTimeMs() - s_time) / 1000.0f;
     s_time = OsGetAsyncTimeMs();
-    CWorld::Render(C3Vector(), elapsed);
+    CWorld::Render(CGWorldFrame::GetActiveCamera()->m_position, elapsed);
 
     if (CWorldScene::s_m2Scene) {
         CWorldScene::s_m2Scene->Draw(M2PASS_0);

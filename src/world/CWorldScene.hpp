@@ -59,6 +59,9 @@ class CWorldScene {
     static C4Plane camPlaneXY;
     static C44Matrix viewMatrix;
     static C44Matrix projMatrix;
+    static CAaBox boundingBox;
+
+    static uint32_t s_chunksRendered;
 
     static void Initialize();
     static void Update(C3Vector* camPos, C3Vector* camTarget);
@@ -66,6 +69,7 @@ class CWorldScene {
     static void AddMapChunk(CMapChunk* mapChunk);
     static void AddMapChunkToRenderList(CMapChunk* mapChunk, C3Vector* pos);
     static bool FrustumCull(CAaBox* box);
+    static void FrustumSet(CRect* rect);
     static bool InsideFrustumRect(CiRect* rect);
     static void CullSortTable(CRect* a1);
     static void CullChunks(CSortEntry* entry, int32_t index);

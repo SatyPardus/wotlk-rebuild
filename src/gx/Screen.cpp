@@ -114,14 +114,14 @@ int32_t OnPaint(const void* a1, void* a2) {
         if (Screen::s_captureScreen) {
             // TODO
 
-            GxSub682A00();
+            GxScenePresent();
 
             // TODO
 
             return 1;
         }
 
-        GxSub682A00();
+        GxScenePresent();
     }
 
     Screen::s_elapsedSec = 0.0f;

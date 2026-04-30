@@ -17,6 +17,8 @@ typedef void (TEXTURE_CALLBACK)(EGxTexCommand, uint32_t, uint32_t, uint32_t, uin
 
 class CImVector;
 
+static int32_t s_asyncLoadBufferUsed;
+
 void AsyncTextureWait(CTexture*);
 
 uint32_t CalcLevelCount(uint32_t, uint32_t);
@@ -97,6 +99,8 @@ CGxTex* TextureGetGxTex(HTEXTURE, int32_t, CStatus*);
 
 CTexture* TextureGetTexturePtr(HTEXTURE);
 
-static void AsyncTextureSuccessCallback(void* param);
+void AsyncTextureSuccessCallback(void* param);
+
+void AsyncTextureDestroyedCallback(void* param);
 
 #endif

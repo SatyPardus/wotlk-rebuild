@@ -41,6 +41,9 @@ void SFile::Initialize()
 
 // TODO Proper implementation
 int32_t SFile::Close(SFile* file) {
+    if (!file)
+        return 1;
+
     switch (file->m_type) {
     case SFILE_PLAIN:
         Blizzard::File::Close(reinterpret_cast<Blizzard::File::StreamRecord*>(file->m_handle));

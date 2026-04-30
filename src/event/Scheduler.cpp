@@ -112,6 +112,7 @@ void IEvtSchedulerInitialize(int32_t threadCount, int32_t netServer) {
     }
 }
 
+// OFFSET: 0x47F2D0
 void IEvtSchedulerProcess() {
     #if defined(WHOA_SYSTEM_WIN) || defined(WHOA_SYSTEM_LINUX)
         Event::s_startEvent.Set();
@@ -149,8 +150,8 @@ void IEvtSchedulerProcess() {
     #endif
 }
 
+// OFFSET: 0x47D990
 void IEvtSchedulerShutdown() {
-    // TODO
     Event::s_shutdownEvent.Set();
     if (Event::s_netServer) {
         return;
@@ -330,8 +331,7 @@ int32_t SchedulerThreadProcProcess(uint32_t a1) {
     }
 
     if (a1 == Event::s_mainThread) {
-        // TODO
-        // dword_B417C4 = 0;
+        Event::s_currentEvtContext = nullptr;
     }
 
     context->m_critsect.Enter();

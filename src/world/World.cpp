@@ -1,5 +1,6 @@
 #include "world/World.hpp"
 #include "world/LoadingScreen.hpp"
+#include <async/AsyncFileRead.hpp>
 
 uint32_t s_newZoneID = 0;
 C3Vector s_newPosition;
@@ -34,10 +35,10 @@ int32_t LoadNewWorld(const void* eventData) {
     //sub_6FAFD0();
     //sub_52CC30();
     //sub_4B9930(0, 0);
-    //AsyncFile::ProgressCallback((int)LoadingScreenAsyncCallback, 0);
+    AsyncFileReadSetProgressCallback(LoadingScreenAsyncCallback, nullptr);
     CWorld::SetLoadProgressCallback(LoadingScreenWorldCallback, nullptr);
     CWorld::LoadMap(s_newMapname, &s_newPosition, s_newZoneID);
-    //AsyncFile::ProgressCallback(0, 0);
+    AsyncFileReadSetProgressCallback(nullptr, nullptr);
     CWorld::SetLoadProgressCallback(nullptr, nullptr);
     //ActiveCamera = CGWorldFrame::GetActiveCamera();
     //*(C3Vector*)(ActiveCamera + 8) = World::s_spawnPosition;

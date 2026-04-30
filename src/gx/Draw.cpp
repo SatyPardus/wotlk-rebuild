@@ -30,15 +30,11 @@ void GxSceneClear(uint32_t mask, CImVector color) {
     g_theGxDevicePtr->SceneClear(mask, color);
 }
 
-void GxScenePresent(uint32_t a2) {
-    g_theGxDevicePtr->ScenePresent();
-}
-
-void GxSub682A00() {
+void GxScenePresent() {
     C3Vector v2 = { 0.0f, 0.0f, 0.0f };
     GxuFlushDrawList(GxuCat_2, v2);
 
-    GxScenePresent(0);
+    g_theGxDevicePtr->ScenePresent();
 }
 
 void GxuFlushDrawList(EGxuDrawListCategory a1, const C3Vector& a2) {

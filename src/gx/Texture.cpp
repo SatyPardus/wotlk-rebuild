@@ -13,7 +13,7 @@
 #include <async/AsyncFileRead.hpp>
 
 namespace Texture {
-    int32_t s_createBlpAsync = 0; // Invented name
+    int32_t s_createBlpAsync = 1; // Invented name
     MipBits* s_mipBits;
     int32_t s_mipBitsValid;
     TSHashTable<CTexture, HASHKEY_TEXTUREFILE> s_textureCache;
@@ -35,7 +35,6 @@ namespace Texture {
 static CImVector CRAPPY_GREEN = { 0x00, 0xFF, 0x00, 0xFF };
 
 STORM_EXPLICIT_LIST(CAsyncObject, link) s_asyncTextureList;
-static int32_t s_asyncLoadBufferUsed;
 
 // OFFSET: 0x4B64E0
 void AsyncTextureProcess(CAsyncObject* asyncObject, int32_t a2) {
@@ -814,6 +813,17 @@ void AsyncTextureFailureCallback(void* param) {
     SMemFree(texture->asyncObject->buffer, __FILE__, __LINE__, 0);
 }
 
+
+// OFFSET: 0x4B5130
+void AsyncTextureDestroyedCallback(void* param) {
+    CAsyncObject* object = static_cast<CAsyncObject*>(param);
+
+    s_asyncLoadBufferUsed -= object->size;
+    auto buffer = object->buffer;
+    AsyncFileReadDestroyObject(object);
+    SMemFree(buffer, __FILE__, __LINE__, 0);
+}
+
 // OFFSET: 0x4B8A50
 CTexture* CreateBlpAsync(char* fileExt, char* fileName, int32_t createFlags, CGxTexFlags texFlags) {
     SFile* file;
@@ -827,8 +837,8 @@ CTexture* CreateBlpAsync(char* fileExt, char* fileName, int32_t createFlags, CGx
 
     if (!file)
         return nullptr;
-    //if (a1)
-    //    *a1 = 0;
+    if (fileExt)
+        *fileExt = 0;
     //v6 = 0;
     //if ((a3 & 4) == 0)
     //    v6 = CTextureBlob::GetTexture(Src);

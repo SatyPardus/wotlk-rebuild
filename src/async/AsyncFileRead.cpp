@@ -1,4 +1,5 @@
 #include "async/AsyncFileRead.hpp"
+#include "async/AsyncFile.hpp"
 #include "util/SFile.hpp"
 #include <common/Prop.hpp>
 #include <common/Time.hpp>
@@ -321,4 +322,29 @@ void AsyncFileReadAddStatusHandler(STATUS_FUNC method) {
     STATUS_FUNC* ptr = nullptr;
     ptr = AsyncFileRead::s_asyncStatusHandlers.New();
     *ptr = method;
+}
+
+// OFFSET: 0x4B9EA0
+bool AsyncFileReadCancel(CAsyncObject* object, void (*callback)(void*)) {
+    AsyncFileRead::s_queueLock.Enter();
+    if (object->isCurrent) {
+        object->userArg = object;
+        if (!callback)
+            callback = DefaultAsyncObjectCleanupCallback;
+        object->userFailedCallback = callback;
+        object->userPostloadCallback = callback;
+        AsyncFileRead::s_queueLock.Leave();
+        return false;
+    } else {
+        SFile::Close(object->file);
+        object->link.Unlink();
+        AsyncFileRead::s_asyncFileReadFreeList.LinkToTail(object);
+        AsyncFileRead::s_queueLock.Leave();
+        return true;
+    }
+}
+
+void AsyncFileReadSetProgressCallback(CALLBACK_FUNC callback, void* param) {
+    AsyncFileRead::s_progressCallback = callback;
+    AsyncFileRead::s_progressParam = param;
 }

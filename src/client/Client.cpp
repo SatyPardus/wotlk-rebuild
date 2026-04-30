@@ -36,6 +36,7 @@
 #include <bc/File.hpp>
 #include <cstdio>
 #include <world/LoadingScreen.hpp>
+#include <async/AsyncFileRead.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -423,7 +424,7 @@ bool TimingMethodCallback(CVar* h, const char* oldValue, const char* newValue, v
 
 #endif
 
-// OFFSET: 0x004067F0
+// OFFSET: 0x004067F0 TODO
 int32_t InitializeGlobal() {
     ProcessCommandLine();
 
@@ -431,7 +432,7 @@ int32_t InitializeGlobal() {
     // WowConfigureFileSystem::ReadBuildKeyFromFile("WoW.mfil");
 
     // if (dword_B2FA10 != 2) {
-    //     sub_403560();
+    //     SetInstallPath();
     // }
 
     // LOBYTE(v24) = 0;
@@ -443,7 +444,7 @@ int32_t InitializeGlobal() {
     ClientServices::LoadCDKey();
 
     ConsoleInitializeClientCommand();
-    ConsoleInitializeClientCVar("Config.wtf");
+    CVar::Initialize("Config.wtf");
     // TODO: CVar::ArchiveCodeRegisteredOnly();
 
     // v18 = 0;
@@ -497,8 +498,7 @@ int32_t InitializeGlobal() {
         false
     );
 
-    // TODO: SFile::IsTrial() check
-    // if (sub_422140()) {
+    // if (IsStreamingAndTrial()) {
     //     sub_4036B0(v24, 0, a2, (int)v2, (char)v24);
     // }
 
@@ -511,8 +511,6 @@ int32_t InitializeGlobal() {
     SStrPrintf(path, sizeof(path), "%s%s", "Data\\", locale->GetString());
     SFile::SetDataPathAlternate(path);
     SFile::RebuildHash();
-
-
     OpenArchives();
 
     // TODO: This method should be placed inside OpenArchives
@@ -635,7 +633,7 @@ void StormDestroy() {
     SRegDestroy();
 }
 
-// OFFSET: 0x00406C70
+// OFFSET: 0x00406C70 TODO
 void CommonMain() {
     StormInitialize();
 
@@ -900,13 +898,13 @@ void ClientInitializeGame(int32_t continentID, C3Vector* position) {
     //NOP();
 //LABEL_32:
     //sub_4B9930(0, 0);
-    //AsyncFile::ProgressCallback(LoadingScreenAsyncCallback, 0);
-    //World::SetLoadProgressCallback(LoadingScreenWorldCallback, 0);
+    AsyncFileReadSetProgressCallback(LoadingScreenAsyncCallback, 0);
+    CWorld::SetLoadProgressCallback(LoadingScreenWorldCallback, nullptr);
     //if (IsStreamingAndTrial())
     //    sub_41E4E0(1);
     CWorld::LoadMap(record->m_directory, position, continentID);
-    //AsyncFile::ProgressCallback(0, 0);
-    //World::SetLoadProgressCallback(0, 0);
+    AsyncFileReadSetProgressCallback(nullptr, nullptr);
+    CWorld::SetLoadProgressCallback(nullptr, nullptr);
     //dword_B2F9E4 = OsGetAsyncTimeMs();
     //dword_B2F9E8 = 1200;
     //byte_B2F9E0 = 1;

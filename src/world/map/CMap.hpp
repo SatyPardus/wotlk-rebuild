@@ -4,6 +4,7 @@
 #include "world/map/Types.hpp"
 #include "world/map/CMapArea.hpp"
 #include "world/map/CMapRenderChunk.hpp"
+#include "world/map/CMapDoodadDef.hpp"
 #include <storm/String.hpp>
 #include <storm/Array.hpp>
 #include <storm/List.hpp>
@@ -23,6 +24,8 @@ class CMap {
     static STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) mapAreaList;
     static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkFreeList;
     static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkUpdateList;
+    static STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) doodadDefList;
+    static TSHashTable<CMapDoodadDef, uint32_t> doodadDefHashtable;
     static int32_t uniqueId;
     static int32_t bDungeon;
     static int32_t counts[11];
@@ -80,6 +83,8 @@ class CMap {
     static CMapChunk* AllocMapChunk();
     static CMapRenderChunk* AllocRenderChunk();
     static CMapBaseObjLink* AllocBaseObjLink(CMapBaseObj* baseObj);
+    static CMapDoodadDef* AllocDoodadDef();
+    static CMapDoodadDef* CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3Vector* position);
     static void FreeBaseObjLink(CMapBaseObjLink* link);
     static CMapArea* PrepareArea(int32_t areaIndexX, int32_t areaIndexY);
     static void LoadArea(CMapArea* area);

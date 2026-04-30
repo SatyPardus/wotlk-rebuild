@@ -60,4 +60,8 @@ void AsyncFileReadAddPollHandler(POLL_FUNC method);
 
 void AsyncFileReadAddStatusHandler(STATUS_FUNC method);
 
+bool AsyncFileReadCancel(CAsyncObject* object, void (*callback)(void*));
+
+void AsyncFileReadSetProgressCallback(CALLBACK_FUNC callback, void* param);
+
 #endif

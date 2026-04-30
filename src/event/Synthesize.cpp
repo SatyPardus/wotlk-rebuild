@@ -110,6 +110,7 @@ void SynthesizePaint(EvtContext* context) {
     }
 }
 
+// OFFSET: 0x47DC20
 void SynthesizePoll(EvtContext* context) {
     bool closed;
 

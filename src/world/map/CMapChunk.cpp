@@ -97,6 +97,7 @@ void CMapChunk::Initialize() {
     CMapChunk::s_geoToTex = -1.0 / CMapChunk::vertexList[1].y;
 }
 
+// OFFSET: 7C3C60
 void CMapChunk::InitializeVertexGrid() {
     const float OUTER_STEP = 100.0f / 24.0f;
     const float INNER_OFFSET = OUTER_STEP / 2.0f;
@@ -126,6 +127,7 @@ void CMapChunk::InitializeVertexGrid() {
     }
 }
 
+// OFFSET: 0x7C64B0
 void CMapChunk::Create(SIffChunk* headerChunk, bool a3) {
     this->chunkHeaderPtr = headerChunk;
     this->ProcessIffChunks(a3);
@@ -145,11 +147,141 @@ void CMapChunk::Create(SIffChunk* headerChunk, bool a3) {
         this->unk_C = 64;
     CMapBaseObjLink* link = this->parentLinkList.Head();
     CMapArea* area = (CMapArea*)link->ref;
-    //this->CreateRefs(area, this->MCRF_ptr, this->header->nDoodadRefs, this->header->nMapObjRefs);
+    this->CreateRefs(area, this->MCRF_ptr, this->header->nDoodadRefs, this->header->nMapObjRefs);
     area->mapChunks[16 * this->aIndex.y + this->aIndex.x] = this;
     this->unk_C |= 0x80u;
 }
 
+// OFFSET: 0x
+void CMapChunk::CreateRefs(CMapArea* area, uint32_t* mcrfPtr, uint32_t doodadRefs, uint32_t mapObjRefs) {
+    C3Vector center = { 17066.666f, 17066.666f, 0.0f };
+    //v5 = area;
+    //v7 = 0;
+    //mcrfMapObjPtr = &mcrfPtr[doodadRefs];
+    //for (i = 0; i < mapObjRefs; ++i) {
+    //    v8 = &area->mapObjDef[mcrfMapObjPtr[v7]];
+    //    if ((v8->flags & 1) != 0) {
+    //        if (v8->uniqueId == 5535469 && !sub_7BDDF0((TSHashTable_CMapObjDef_HASHKEY_NONE*)&CMap::mapObjDefHash, 0x5476EDu, (int)&unk_CE04A3)) {
+    //            m_next = stru_AEEDE0.m_terminator.m_next;
+    //            if (((int)stru_AEEDE0.m_terminator.m_next & 1) != 0 || !stru_AEEDE0.m_terminator.m_next)
+    //                m_next = 0;
+    //            while (((unsigned __int8)m_next & 1) == 0 && m_next) {
+    //                if (m_next[7] == v8->uniqueId)
+    //                    goto LABEL_20;
+    //                m_next = *(_DWORD**)((char*)m_next + stru_AEEDE0.m_linkoffset + 4);
+    //            }
+    //            v10 = -v8->extents.max.z;
+    //            v35 = 0;
+    //            x = v8->extents.max.x;
+    //            v36 = 0;
+    //            v12 = v8->extents.min.y + center.z;
+    //            v13 = -v8->extents.min.z;
+    //            v42 = -v8->extents.min.x;
+    //            y = v8->extents.max.y;
+    //            v14 = center.x + v13;
+    //            v15 = center.y + v42;
+    //            v16 = center.z + y;
+    //            v17 = center.y - x + v15;
+    //            v46 = v17;
+    //            v18 = v17;
+    //            v19 = v12 + v16;
+    //            v47 = v19;
+    //            v44 = (v10 + center.x + v14) * 0.5;
+    //            v45 = v46 * 0.5;
+    //            v48 = v44;
+    //            v37 = v44;
+    //            uniqueId = v8->uniqueId;
+    //            v49 = v18 * 0.5;
+    //            v38 = v49;
+    //            v50 = 0.5 * v19;
+    //            v39 = v50;
+    //            v20 = sqrt((v16 - v47 * 0.5) * (v16 - v47 * 0.5) + (v15 - v45) * (v15 - v45) + (v14 - v44) * (v14 - v44));
+    //            v40 = v20;
+    //            if (v20 < 0.001) {
+    //                nameId = v8->nameId;
+    //                wmoFilenamesOffsets = area->wmoFilenamesOffsets;
+    //                v40 = 50.0;
+    //                SysMsgPrintf_0(
+    //                    2,
+    //                    2,
+    //                    "Destructible building WMO(%s) has invalid geobox",
+    //                    &area->wmoFileNames[wmoFilenamesOffsets[nameId]]);
+    //            }
+    //            sub_77F290(v34);
+    //            if (v35) {
+    //                if ((v36 & 1) == 0 && v36) {
+    //                    *(int*)((char*)&v35 + v36 - *(_DWORD*)(v35 + 4)) = v35;
+    //                    *(_DWORD*)(v35 + 4) = v36;
+    //                } else {
+    //                    *(_DWORD*)(v36 & 0xFFFFFFFE) = v35;
+    //                    *(_DWORD*)(v35 + 4) = v36;
+    //                }
+    //            }
+    //        }
+    //    } else {
+    //        MapObjDef_0 = (CMapBaseObj*)CMap::CreateMapObjDef_0(
+    //            (int)&area->wmoFileNames[area->wmoFilenamesOffsets[v8->nameId]],
+    //            (int)v8,
+    //            &center.x,
+    //            1);
+    //        v24 = CMap::AllocBaseObjLink(MapObjDef_0);
+    //        v24->ref = this;
+    //        HashTable::AddEntry((TSList*)&this->mapObjDefLinkList, (char*)v24);
+    //    }
+//LABEL_20:
+    //    v7 = i + 1;
+    //}
+    for (int32_t i = 0; i < doodadRefs; i++) {
+        CMapDoodadDef* mapDoodadDef = CMap::CreateDoodadDef(&area->m2FileNames[area->modelFilenamesOffsets[area->doodadDef[mcrfPtr[i]].nameId]], &area->doodadDef[mcrfPtr[i]], &center);
+        CMapBaseObjLink* link = CMap::AllocBaseObjLink(mapDoodadDef);
+        link->ref = this;
+        this->doodadDefLinkList.LinkToTail(link);
+        mapDoodadDef->unk_08C = 1.0f;
+        mapDoodadDef->unk_C |= 4;
+        if ((mapDoodadDef->unk_C & 0x80) != 0) {
+            //sub_7B4FA0(v25, this);
+        }
+    }
+    //i = 0;
+    //if (doodadRefs) {
+    //    while (1) {
+    //        v25 = CMap::CreateDoodadDef(
+    //            &area->m2FileNames[area->modelFilenamesOffsets[area->doodadDef[mcrfPtr[i]].nameId]],
+    //            &area->doodadDef[mcrfPtr[i]],
+    //            &center);
+    //        v26 = CMap::AllocBaseObjLink((CMapBaseObj*)v25);
+    //        v26->ref = this;
+    //        m_linkoffset = this->doodadDefLinkList.m_linkoffset;
+    //        v28 = *(uint32_t*)((char*)&v26->objectIndex + m_linkoffset);
+    //        v29 = (TSLink_CMapChunkDoodadDefLink*)((char*)v26 + m_linkoffset);
+    //        if (v28) {
+    //            v30 = v29->m_next;
+    //            if (((unsigned __int8)v30 & 1) == 0 && v30) {
+    //                v31 = (uint32_t*)((char*)&v30->objectIndex + (_DWORD)v29 - *(_DWORD*)(v28 + 4));
+    //            } else {
+    //                v31 = (_DWORD*)((unsigned int)v30 & 0xFFFFFFFE);
+    //            }
+    //            *v31 = v28;
+    //            v29->m_prevLink->m_next = v29->m_next;
+    //            v29->m_prevLink = 0;
+    //            v29->m_next = 0;
+    //        }
+    //        m_prevLink = this->doodadDefLinkList.m_terminator.m_prevLink;
+    //        v29->m_prevLink = m_prevLink;
+    //        v29->m_next = m_prevLink->m_next;
+    //        m_prevLink->m_next = (CMapChunkDoodadDefLink*)v26;
+    //        this->doodadDefLinkList.m_terminator.m_prevLink = v29;
+    //        v25->unk_08C = 1.0;
+    //        v25->unk_C |= 4u;
+    //        if ((v25->unk_C & 0x80u) != 0)
+    //            sub_7B4FA0(v25, this);
+    //        if (++i >= doodadRefs)
+    //            break;
+    //    }
+    //}
+}
+
+// OFFSET: 0x7C3A10
 void CMapChunk::ProcessIffChunks(bool a3) {
     this->header = this->chunkHeaderPtr->Data<SMChunk>();
 
@@ -198,6 +330,7 @@ void CMapChunk::ProcessIffChunks(bool a3) {
     }
 }
 
+// OFFSET: 0x7C5220
 void CMapChunk::CreateBounds() {
     int32_t tileX = this->cOffset.x;
     int32_t tileY = this->cOffset.y;
@@ -228,6 +361,8 @@ void CMapChunk::CreateBounds() {
     this->sphere.c.x = (this->bbox.b.x + this->bbox.t.x) * 0.5f;
     this->sphere.c.y = (this->bbox.b.y + this->bbox.t.y) * 0.5f;
     this->sphere.c.z = (this->bbox.b.z + this->bbox.t.z) * 0.5f;
+
+    this->bbox2 = this->bbox;
 
     float ex = this->bbox.t.x - this->sphere.c.x;
     float ey = this->bbox.t.y - this->sphere.c.y;
@@ -297,6 +432,7 @@ void CMapChunk::CreateIndices(char* buf, CGxBatch* batch) {
     batch->m_count += indicesWritten;
 }
 
+// OFFSET: 0x7C3B60
 int16_t CMapChunk::CreateIndices(char* buf, int32_t baseVertex) {
     uint16_t* indexDst = reinterpret_cast<uint16_t*>(buf);
     int16_t totalIndices = 0;

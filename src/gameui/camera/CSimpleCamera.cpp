@@ -146,12 +146,11 @@ void CSimpleCamera::SetGxProjectionAndView(const CRect& projectionRect) {
     this->m_aspect = (projectionRect.maxX - projectionRect.minX) / (projectionRect.maxY - projectionRect.minY);
 
     C44Matrix mProj;
-    GxXformProjection(mProj);
-
-    GxuXformCreateProjection_SG(this->m_fov, this->m_aspect, this->m_nearZ, this->m_farZ, mProj);
+    GxuXformCreateProjection_SG(this->FOV(), this->m_aspect, this->m_nearZ, this->m_farZ, mProj);
     GxXformSetProjection(mProj);
 
     C44Matrix mView;
-    GxuXformCreateLookAtSgCompat(this->m_position, this->m_position + Forward(), Up(), mView);
+    C3Vector zero(0.0f, 0.0f, 0.0f);
+    GxuXformCreateLookAtSgCompat(zero, Forward(), Up(), mView);
     GxXformSetView(mView);
 }

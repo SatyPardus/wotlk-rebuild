@@ -3,6 +3,7 @@
 #include "console/CVar.hpp"
 #include "console/Console.hpp"
 
+// OFFSET 0x7691C0
 void ConsoleInitializeClientCommand() {
     ConsoleCommandInitialize();
     ConsoleInitializeCommonCommand();

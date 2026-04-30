@@ -11,6 +11,8 @@
 #include <world/CWorld.hpp>
 #include <async/AsyncFileRead.hpp>
 #include <gx/Device.hpp>
+#include "world/CWorldScene.hpp"
+#include "model/Model2.hpp"
 
 char CMap::mapPath[STORM_MAX_PATH];
 char CMap::mapName[STORM_MAX_PATH];
@@ -28,6 +30,8 @@ CMapArea* CMap::areaTable[64 * 64];
 STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) CMap::mapAreaList;
 STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkFreeList;
 STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkUpdateList;
+STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) CMap::doodadDefList;
+TSHashTable<CMapDoodadDef, uint32_t> CMap::doodadDefHashtable;
 int32_t CMap::uniqueId;
 int32_t CMap::bDungeon;
 int32_t CMap::counts[11];
@@ -474,6 +478,80 @@ CMapBaseObjLink* CMap::AllocBaseObjLink(CMapBaseObj* baseObj) {
     return link;
 }
 
+// OFFSET: 0x7C01F0
+CMapDoodadDef* CMap::AllocDoodadDef() {
+    uint32_t memHandle;
+    void* object = nullptr;
+
+    if (ObjectAlloc(*CMap::doodadDefHeap, &memHandle, &object, 0)) {
+        CMapDoodadDef* mapDoodadDef = new (object) CMapDoodadDef();
+
+        mapDoodadDef->objectIndex = memHandle;
+        return mapDoodadDef;
+    }
+
+    return nullptr;
+}
+
+void CMapDoodadLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
+    lighting->AddAmbient({ 1.0f, 1.0f, 1.0f });
+    lighting->AddDiffuse({ 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f });
+    lighting->AddSpecular({ 0.0f, 0.0f, 0.0f });
+}
+
+// OFFSET: 0x7BECD0
+CMapDoodadDef* CMap::CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3Vector* position) {
+    constexpr float kDegToRad = 0.017453292f;
+    constexpr float kPi = 3.1415927;
+
+    uint32_t v23;
+    CMapDoodadDef* mapDoodadDef = CMap::doodadDefHashtable.Ptr(doodadDef->uniqueId, v23);
+    if (mapDoodadDef)
+        return mapDoodadDef;
+
+    mapDoodadDef = CMap::AllocDoodadDef();
+    uint32_t a2;
+    CMap::doodadDefHashtable.Insert(mapDoodadDef, doodadDef->uniqueId, a2);
+    CMap::doodadDefList.LinkToTail(mapDoodadDef);
+
+    mapDoodadDef->position = {
+        -doodadDef->position.z + position->x,
+        -doodadDef->position.x + position->y,
+        -doodadDef->position.y + position->z,
+    };
+    mapDoodadDef->sphere.c = mapDoodadDef->position;
+    mapDoodadDef->sphere.r = 0.0f;
+    mapDoodadDef->bboxStaticEntity.b = mapDoodadDef->position;
+    mapDoodadDef->bboxStaticEntity.t = mapDoodadDef->position;
+    mapDoodadDef->scale = doodadDef->scale / 1024.0f;
+
+    mapDoodadDef->unk_C = 1;
+    if ((doodadDef->flags & 1) != 0)
+        mapDoodadDef->unk_C = 2049;
+    mapDoodadDef->model = nullptr;
+    mapDoodadDef->mat = C44Matrix();
+    mapDoodadDef->mat.a0 = mapDoodadDef->position.x;
+    mapDoodadDef->mat.a1 = mapDoodadDef->position.y;
+    mapDoodadDef->mat.a2 = mapDoodadDef->position.z;
+    mapDoodadDef->mat.RotateAroundZ(doodadDef->rotation.z * kDegToRad + kPi);
+    mapDoodadDef->mat.RotateAroundY(doodadDef->rotation.y * kDegToRad);
+    mapDoodadDef->mat.RotateAroundX(doodadDef->rotation.x * kDegToRad);
+    mapDoodadDef->mat.Scale(mapDoodadDef->scale);
+    mapDoodadDef->identity = C44Matrix();
+
+    mapDoodadDef->model = CWorldScene::s_m2Scene->CreateModel(fileName, 32);
+    if (mapDoodadDef->model) {
+        mapDoodadDef->model->m_flag8000 = 1;
+        mapDoodadDef->model->SetWorldTransform(mapDoodadDef->position, 180.0f, 1.0f);
+        //CWorldScene::LoadModel(v5->model, COERCE_FLOAT(CMapStaticEntity::ModelEventCallback), *(float *)&v5, 0.0);
+        //mapDoodadDef->model->m_lightingCallback = MapStaticEntity::ModelLightingCallback;
+        mapDoodadDef->model->m_lightingCallback = CMapDoodadLightingCallback;
+        mapDoodadDef->model->m_lightingArg = mapDoodadDef;
+        mapDoodadDef->model->SetBoneSequence(0xFFFFFFFF, 0, 0xFFFFFFFF, 0, 1.0f, 1, 1);
+    }
+    return mapDoodadDef;
+}
+
 // OFFSET: 0x7C09F0
 void CMap::FreeBaseObjLink(CMapBaseObjLink* link) {
     link->ownerLink.Unlink();
@@ -881,7 +959,13 @@ void CMap::PrepareMapObjDefs(bool a1) {
 
 // OFFSET: 0x7B5630
 void CMap::PrepareMapDoodadDefs() {
-    // TODO
+    for (auto mapDoodadDef = CMap::doodadDefList.Head(); mapDoodadDef;) {
+        auto next = CMap::doodadDefList.Next(mapDoodadDef);
+
+
+
+        mapDoodadDef = next;
+    }
 }
 
 // OFFSET: 0x7B5500
