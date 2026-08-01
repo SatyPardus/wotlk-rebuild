@@ -182,11 +182,13 @@ void IEvtQueueUnregister(EvtContext* context, EVENTID id, EVENTHANDLERFUNC handl
         if (listMatched) {
             auto handlerList = &context->m_queueHandlerList[q];
 
-            for (auto node = handlerList->Head(); node; node = handlerList->Next(node)) {
+            for (auto node = handlerList->Head(); node;) {
                 auto nodeMatched = (!handlerMatch || node->func == handler) && (!paramMatch || node->param == param);
 
                 if (nodeMatched && !node->marker) {
                     node = handlerList->DeleteNode(node);
+                } else {
+                    node = handlerList->Next(node);
                 }
             }
         }
