@@ -531,22 +531,24 @@ void GetTextureFormats(PIXEL_FORMAT* pixFormat, EGxTexFormat* gxTexFormat, PIXEL
 }
 
 MipBits* MippedImgAllocA(uint32_t fourCC, uint32_t width, uint32_t height, const char* fileName, int32_t lineNumber) {
-    uint32_t levelCount = CalcLevelCount(width, height);
-    uint32_t levelDataSize = CalcLevelOffset(levelCount, width, height, fourCC);
+    const uint32_t levelCount = CalcLevelCount(width, height);
+    const uint32_t levelDataSize = CalcLevelOffset(levelCount, width, height, fourCC);
 
-    MipBits* images = reinterpret_cast<MipBits*>(SMemAlloc(levelDataSize + sizeof(void*) * levelCount + 16, fileName, lineNumber, 0));
+    const size_t tableSize = sizeof(void*) * levelCount;
+    const size_t allocSize = levelDataSize + tableSize + 16;
 
-    uintptr_t v10 = (reinterpret_cast<uintptr_t>(images) + sizeof(void*) * levelCount + 15) & static_cast<uintptr_t>(-sizeof(void*));
-    uintptr_t offset = v10 - reinterpret_cast<uintptr_t>(images);
+    uint8_t* base = reinterpret_cast<uint8_t*>(SMemAlloc(allocSize, fileName, lineNumber, 0));
 
-    MipBits** ptr = reinterpret_cast<MipBits**>(images);
+    uintptr_t dataStart = (reinterpret_cast<uintptr_t>(base) + tableSize + 15) & ~static_cast<uintptr_t>(15);
+    size_t offset = dataStart - reinterpret_cast<uintptr_t>(base);
 
-    for (int32_t level = 0; level < levelCount; level++) {
-        ptr[level] = images + offset;
+    MipBits** table = reinterpret_cast<MipBits**>(base);
+    for (uint32_t level = 0; level < levelCount; ++level) {
+        table[level] = reinterpret_cast<MipBits*>(base + offset);
         offset += CalcLevelSize(level, width, height, fourCC);
     }
 
-    return images;
+    return reinterpret_cast<MipBits*>(base);
 }
 
 uint32_t MippedImgCalcSize(uint32_t fourCC, uint32_t width, uint32_t height) {
