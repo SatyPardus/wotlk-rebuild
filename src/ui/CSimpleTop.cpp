@@ -371,7 +371,41 @@ float CSimpleTop::RoundToPixelHeight(float ddcHeight) {
 }
 
 CSimpleTop::CSimpleTop() : CLayoutFrame() {
-    // TODO
+    //this->m_mouseFocus = 0;
+    //this->m_mouseCapture = 0;
+    //this->m_frames.m_terminator.m_next = 0;
+    //this->m_frames.m_terminator.m_prevlink = &this->m_frames.m_terminator;
+    //this->m_frames.m_terminator.m_next = (CSimpleFrame*)((unsigned int)&this->m_frames.m_terminator | 1);
+    //this->m_frames.m_linkoffset = 644;
+    //this->m_destroyed.m_terminator.m_next = 0;
+    //this->m_destroyed.m_terminator.m_prevlink = &this->m_destroyed.m_terminator;
+    //this->m_destroyed.m_terminator.m_next = (CSimpleFrame*)((unsigned int)&this->m_destroyed.m_terminator | 1);
+    //this->m_destroyed.m_linkoffset = 652;
+    //*(float*)&this->ukn14 = 0.0;
+    //*(float*)&this->ukn15 = 0.0;
+    for (int32_t strata = FRAME_STRATA_WORLD; strata < NUM_FRAME_STRATA; strata++) {
+        for (int32_t event = SIMPLE_EVENT_CHAR; event < NUM_SIMPLE_EVENTS; event++) {
+            auto priorities = &this->m_eventqueue[strata][event];
+
+            priorities->m_array.m_alloc = 0;
+            priorities->m_array.m_count = 0;
+            priorities->m_array.m_data = nullptr;
+            priorities->m_array.m_chunk = 0;
+            priorities->m_count = 0;
+            priorities->m_maxcount = 0;
+            priorities->m_iterator = 0;
+        }
+    }
+    //this->ukn23 = 1;
+    //this->ukn31 = 0;
+    //this->mouseButtonHandler = 0;
+    //this->mouseMoveHandler = 0;
+    //this->displaySizeChangedHandler = 0;
+    //this->focusChangedHandler = 0;
+    //this->keyDownHandler = 0;
+    //this->ukn37 = 1;
+    //this->ukn38 = 0;
+    //this->ukn39 = 0;
 
     CSimpleTop::s_instance = this;
 
@@ -386,14 +420,29 @@ CSimpleTop::CSimpleTop() : CLayoutFrame() {
 
     this->m_flags |= 0x1;
 
-    // TODO
+    //this->ukn10 = 0;
+    //this->ukn11 = 0;
+    //this->ukn12 = 0;
+    //this->ukn13 = 0;
+    //this->ukn14 = 0;
+    //this->ukn15 = 0;
 
     for (int32_t s = 0; s < NUM_FRAME_STRATA; s++) {
         auto m = SMemAlloc(sizeof(CFrameStrata), __FILE__, __LINE__, 0x0);
         this->m_strata[s] = new (m) CFrameStrata();
     }
 
-    // TODO
+    //this->mouseEventData.mode = 0;
+    //this->mouseEventData.button = 0;
+    //this->mouseEventData.buttonState = 0;
+    //this->mouseEventData.metaKeyState = 0;
+    //this->mouseEventData.flags = 0;
+    //this->mouseEventData.mousePosition.x = 0.0;
+    //this->mouseEventData.mousePosition.y = 0.0;
+    //this->mouseEventData.wheelAmount = 0;
+    //this->mouseEventData.eventTime = 0;
+    //EventInputGetMousePosition(&v7, &v8);
+    //DDCToNDC(v7, v8, &this->mouseEventData.mousePosition.x, &this->mouseEventData.mousePosition.y);
 
     CSimpleRender::Init();
     CSimpleTexture::Init();
