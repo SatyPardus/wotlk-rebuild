@@ -242,43 +242,6 @@ void CMapChunk::CreateRefs(CMapArea* area, uint32_t* mcrfPtr, uint32_t doodadRef
             //sub_7B4FA0(v25, this);
         }
     }
-    //i = 0;
-    //if (doodadRefs) {
-    //    while (1) {
-    //        v25 = CMap::CreateDoodadDef(
-    //            &area->m2FileNames[area->modelFilenamesOffsets[area->doodadDef[mcrfPtr[i]].nameId]],
-    //            &area->doodadDef[mcrfPtr[i]],
-    //            &center);
-    //        v26 = CMap::AllocBaseObjLink((CMapBaseObj*)v25);
-    //        v26->ref = this;
-    //        m_linkoffset = this->doodadDefLinkList.m_linkoffset;
-    //        v28 = *(uint32_t*)((char*)&v26->objectIndex + m_linkoffset);
-    //        v29 = (TSLink_CMapChunkDoodadDefLink*)((char*)v26 + m_linkoffset);
-    //        if (v28) {
-    //            v30 = v29->m_next;
-    //            if (((unsigned __int8)v30 & 1) == 0 && v30) {
-    //                v31 = (uint32_t*)((char*)&v30->objectIndex + (_DWORD)v29 - *(_DWORD*)(v28 + 4));
-    //            } else {
-    //                v31 = (_DWORD*)((unsigned int)v30 & 0xFFFFFFFE);
-    //            }
-    //            *v31 = v28;
-    //            v29->m_prevLink->m_next = v29->m_next;
-    //            v29->m_prevLink = 0;
-    //            v29->m_next = 0;
-    //        }
-    //        m_prevLink = this->doodadDefLinkList.m_terminator.m_prevLink;
-    //        v29->m_prevLink = m_prevLink;
-    //        v29->m_next = m_prevLink->m_next;
-    //        m_prevLink->m_next = (CMapChunkDoodadDefLink*)v26;
-    //        this->doodadDefLinkList.m_terminator.m_prevLink = v29;
-    //        v25->unk_08C = 1.0;
-    //        v25->unk_C |= 4u;
-    //        if ((v25->unk_C & 0x80u) != 0)
-    //            sub_7B4FA0(v25, this);
-    //        if (++i >= doodadRefs)
-    //            break;
-    //    }
-    //}
 }
 
 // OFFSET: 0x7C3A10
