@@ -13,6 +13,20 @@ class CM2Cache {
         // Member variables
         uint32_t m_initialized = 0;
         uint32_t m_flags = 0;
+        //DWORD ukn3;
+        //DWORD ukn4;
+        CM2Shared* m_shared[1021];
+        //DWORD ukn6;
+        //DWORD ukn7;
+        //DWORD ukn8;
+        //DWORD ukn9;
+        //DWORD ukn10;
+        //DWORD ukn11;
+        //DWORD ukn12;
+        //DWORD ukn13[15];
+        //DWORD ukn14;
+        //DWORD ukn15[16];
+        //TSLIst ukn16;
 
         // Member functions
         void BeginThread(void (*callback)(void*), void* arg);

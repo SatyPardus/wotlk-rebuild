@@ -37,7 +37,11 @@ class CM2Shared {
         CAsyncObject* asyncObject = nullptr;
         CM2Model* m_callbackList = nullptr;
         CM2Model** m_callbackListTail = &this->m_callbackList;
+        CM2Shared* m_previous;
+        CM2Shared* m_next;
         char m_filePath[STORM_MAX_PATH];
+        char* m_fileNameWithoutPath;
+        uint32_t m_fileNameHash;
         char* ext = nullptr;
         M2Data* m_data = nullptr;
         CAaBox aaBox154;

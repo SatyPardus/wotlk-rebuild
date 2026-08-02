@@ -15,6 +15,7 @@ void CM2Cache::BeginThread(void (*callback)(void*), void* arg) {
     // TODO
 }
 
+// OFFSET: 0x81C390
 CM2Shared* CM2Cache::CreateShared(const char* path, uint32_t flags) {
     char convertedPath[STORM_MAX_PATH];
     if (!M2ConvertModelFileName(path, convertedPath, STORM_MAX_PATH, flags)) {
@@ -30,7 +31,62 @@ CM2Shared* CM2Cache::CreateShared(const char* path, uint32_t flags) {
         *ext = '.';
     }
 
-    // TODO
+    bool useFullPath = (flags & 0x10) != 0;
+    const char* key;
+
+    if (useFullPath) {
+        key = convertedPath;
+    } else {
+        key = ext;
+        bool foundKey = false;
+        if (ext > convertedPath) {
+            while (*key != '\\' && *key != '/') {
+                if (--key <= convertedPath) {
+                    foundKey = true;
+                    break;
+                }
+            }
+
+            if (!foundKey) {
+                ++key;
+            }
+        }
+    }
+
+    unsigned int hash = 0;
+    for (const char* p = key; *p; ++p)
+        hash = hash * 19 + (unsigned char)*p;
+
+    unsigned int bucket = hash % 1021;
+
+    CM2Shared* node = this->m_shared[bucket];
+    CM2Shared** slot = &this->m_shared[bucket];
+    if (node) {
+        int cmp = 0;
+        bool found = false;
+
+        while (node) {
+            if (node->m_fileNameHash >= hash) {
+                if (node->m_fileNameHash > hash)
+                    break;
+
+                const char* fileName = useFullPath ? node->m_filePath : node->m_fileNameWithoutPath;
+                cmp = strcmp(fileName, key);
+                if (cmp >= 0) {
+                    found = true;
+                    break;
+                }
+            }
+
+            slot = &node->m_next;
+            node = node->m_next;
+        }
+
+        if (found && cmp <= 0) {
+            (*slot)->AddRef();
+            return *slot;
+        }
+    }
 
     SFile* fileptr;
 
@@ -39,13 +95,33 @@ CM2Shared* CM2Cache::CreateShared(const char* path, uint32_t flags) {
 
         if (shared->Load(fileptr, flags & 0x4, &v28)) {
             strcpy(shared->m_filePath, convertedPath);
-            shared->ext = strrchr(shared->m_filePath, '.');;
+            shared->m_fileNameHash = hash;
+            shared->ext = strrchr(shared->m_filePath, '.');
+            shared->m_fileNameWithoutPath = shared->ext;
 
             if (shared->ext > shared->m_filePath) {
-                // TODO
+                while (*shared->m_fileNameWithoutPath != '\\' && *shared->m_fileNameWithoutPath != '/') {
+                    --shared->m_fileNameWithoutPath;
+                    if (shared->m_fileNameWithoutPath <= shared->m_filePath)
+                        break;
+                }
+                if (shared->m_fileNameWithoutPath > shared->m_filePath)
+                    ++shared->m_fileNameWithoutPath;
             }
 
-            // TODO
+            if ((flags & 0x8) == 0) {
+                shared->m_previous = (CM2Shared*)slot;
+                shared->m_next = *slot;
+
+                if (*slot)
+                    (*slot)->m_previous = (CM2Shared*)&shared->m_next;
+
+                *slot = shared;
+            }
+
+            if ((flags & 0x40) != 0) {
+                shared->m_flag40 = 1;
+            }
 
             return shared;
         }
