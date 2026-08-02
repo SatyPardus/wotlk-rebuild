@@ -19,7 +19,7 @@ class Grunt::Command {
 template <class T>
 int32_t Grunt::Command<T>::Process(CDataStore& msg, Command<T>* commands, uint32_t commandCount, T& a4, uint32_t& pos) {
     while (true) {
-        if (!msg.Sub8CBBF0(1)) {
+        if (!msg.CanReadNumBytes(1)) {
             return 1;
         }
 
@@ -50,7 +50,7 @@ int32_t Grunt::Command<T>::Process(CDataStore& msg, Command<T>* commands, uint32
         }
 
         if (result == 2) {
-            pos = msg.m_read;
+            pos = msg.Tell();
         }
     }
 

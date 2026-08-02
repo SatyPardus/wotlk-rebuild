@@ -74,7 +74,7 @@ class CLayoutFrame {
         int32_t IsResizeDependency(CLayoutFrame* dependentFrame);
         uint32_t IsResizePending();
         float Left();
-        void LoadXML(XMLNode* node, CStatus* status);
+        void LoadXML(const XMLNode* node, CStatus* status);
         int32_t OnFrameResize();
         void OnProtectedAttach(CLayoutFrame* frame);
         int32_t PtInFrameRect(const C2Vector& pt);

@@ -627,12 +627,6 @@ void DestroyGlobal() {
     // TODO
 }
 
-void StormDestroy() {
-    // TODO
-
-    SRegDestroy();
-}
-
 // OFFSET: 0x00406C70 TODO
 void CommonMain() {
     StormInitialize();

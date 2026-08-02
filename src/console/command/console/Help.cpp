@@ -63,7 +63,7 @@ DECLARE_COMMAND(Help) {
 
                 for (auto cmd = g_consoleCommandHash.Head(); cmd; cmd = g_consoleCommandHash.Next(cmd)) {
                     if (cmd->m_category == translation.categoryValue) {
-                        SStrPack(buffer, cmd->m_key.m_str, sizeof(buffer));
+                        SStrPack(buffer, cmd->m_key.GetString(), sizeof(buffer));
                         SStrPack(buffer, ", ", sizeof(buffer));
 
                         if (++counter == 8) {

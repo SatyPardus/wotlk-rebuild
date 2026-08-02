@@ -382,7 +382,7 @@ float CSimpleFontString::GetWidth() {
     return v9 <= v4 ? v4 : v9;
 }
 
-void CSimpleFontString::LoadXML(XMLNode* node, CStatus* status) {
+void CSimpleFontString::LoadXML(const XMLNode* node, CStatus* status) {
     const char* inheritsAttr = node->GetAttributeByName("inherits");
     if (inheritsAttr && *inheritsAttr) {
         auto font = CSimpleFont::GetFont(inheritsAttr, 0);
@@ -458,7 +458,7 @@ void CSimpleFontString::LoadXML(XMLNode* node, CStatus* status) {
         } else {
             float fontHeight = 0.0f;
 
-            XMLNode* fontHeightNode = node->GetChildByName("FontHeight");
+            const XMLNode* fontHeightNode = node->GetChildByName("FontHeight");
             if (fontHeightNode) {
                 LoadXML_Value(fontHeightNode, fontHeight, status);
             }
@@ -625,7 +625,7 @@ void CSimpleFontString::OnFrameSizeChanged(const CRect& rect) {
     }
 }
 
-void CSimpleFontString::PostLoadXML(XMLNode* node, CStatus* status) {
+void CSimpleFontString::PostLoadXML(const XMLNode* node, CStatus* status) {
     if (this->m_parent) {
         int32_t hasPoint = 0;
 

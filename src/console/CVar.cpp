@@ -324,7 +324,7 @@ int32_t CVar::IterateForArchive(uint32_t a1, uint32_t a2, ITERATE_FUNC cb, void*
                     (value = cvar->m_defaultValue.GetString())) {
                     auto defaultvalue = cvar->m_defaultValue.GetString();
                     if (!defaultvalue || SStrCmp(value, defaultvalue, STORM_MAX_STR)) {
-                        if (!cb(cvar->m_key.m_str, value, param)) {
+                        if (!cb(cvar->m_key.GetString(), value, param)) {
                             return 0;
                         }
                     }
@@ -500,7 +500,7 @@ int32_t CvarListCommandHandler(const char* command, const char* arguments) {
     char text2[256];
 
     for (auto cvar = CVar::s_registeredCVars.Head(); cvar != nullptr; cvar = CVar::s_registeredCVars.Next(cvar)) {
-        SStrPrintf(text, sizeof(text), "  \"%s\" is \"%s\"", cvar->m_key.m_str, cvar->m_stringValue.GetString());
+        SStrPrintf(text, sizeof(text), "  \"%s\" is \"%s\"", cvar->m_key.GetString(), cvar->m_stringValue.GetString());
 
         if (cvar->m_defaultValue.GetString()) {
             if (SStrCmp(cvar->m_stringValue.GetString(), cvar->m_defaultValue.GetString(), STORM_MAX_STR)) {

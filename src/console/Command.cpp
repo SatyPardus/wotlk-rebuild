@@ -249,8 +249,8 @@ int32_t ConsoleCommandComplete(const char* partial, const char** previous, int32
     auto len = SStrLen(partial);
     while (current) {
         // console command found
-        if (SStrCmpI(partial, current->m_key.m_str, len) == 0) {
-            *previous = current->m_key.m_str;
+        if (SStrCmpI(partial, current->m_key.GetString(), len) == 0) {
+            *previous = current->m_key.GetString();
             return 1;
         }
         current = g_consoleCommandHash.Next(current);

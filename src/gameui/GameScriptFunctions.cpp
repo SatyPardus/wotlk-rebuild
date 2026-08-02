@@ -223,7 +223,7 @@ static int32_t Script_GetCVarMin(lua_State* L) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     }
 
-    auto key = cvar->m_key.m_str;
+    auto key = cvar->m_key.GetString();
     if (!SStrCmpI(key, "extShadowQuality", STORM_MAX_STR)) {
         lua_pushnumber(L, 0.0);
     } else if (!SStrCmpI(key, "farclip", STORM_MAX_STR)) {
@@ -247,7 +247,7 @@ static int32_t Script_GetCVarMax(lua_State* L) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     }
 
-    auto key = cvar->m_key.m_str;
+    auto key = cvar->m_key.GetString();
     if (!SStrCmpI(key, "extShadowQuality", STORM_MAX_STR)) {
         // TODO
         lua_pushnumber(L, 1.0);
@@ -272,7 +272,7 @@ static int32_t Script_GetCVarAbsoluteMin(lua_State* L) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     }
 
-    auto key = cvar->m_key.m_str;
+    auto key = cvar->m_key.GetString();
     if (!SStrCmpI(key, "extShadowQuality", STORM_MAX_STR)) {
         lua_pushnumber(L, 0.0);
     } else {
@@ -294,7 +294,7 @@ static int32_t Script_GetCVarAbsoluteMax(lua_State* L) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     }
 
-    auto key = cvar->m_key.m_str;
+    auto key = cvar->m_key.GetString();
     if (!SStrCmpI(key, "extShadowQuality", STORM_MAX_STR)) {
         lua_pushnumber(L, 5.0);
     } else {

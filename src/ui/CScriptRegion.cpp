@@ -68,7 +68,7 @@ bool CScriptRegion::IsMouseOver(float a1, float a2, float a3, float a4) {
     return false;
 }
 
-void CScriptRegion::LoadXML(XMLNode* node, CStatus* status) {
+void CScriptRegion::LoadXML(const XMLNode* node, CStatus* status) {
     CLayoutFrame::LoadXML(node, status);
 
     const char* parentKey = node->GetAttributeByName("parentKey");
@@ -99,7 +99,7 @@ void CScriptRegion::LoadXML(XMLNode* node, CStatus* status) {
     this->LoadXML_Animations(node, status);
 }
 
-void CScriptRegion::LoadXML_Animations(XMLNode* node, CStatus* status) {
+void CScriptRegion::LoadXML_Animations(const XMLNode* node, CStatus* status) {
     // TODO
 }
 

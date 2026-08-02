@@ -1331,7 +1331,7 @@ void CSimpleFrame::PostLoadXML_Frames(XMLNode *node, CStatus* status) {
 
     // Create child frames
 
-    XMLNode* framesNode = node->GetChildByName("Frames");
+    const XMLNode* framesNode = node->GetChildByName("Frames");
 
     if (framesNode) {
         XMLNode* frameNode;

@@ -243,7 +243,7 @@ bool CSimpleScrollFrame::IsA(int32_t type) {
 void CSimpleScrollFrame::LoadXML(XMLNode* node, CStatus* status) {
     CSimpleFrame::LoadXML(node, status);
 
-    XMLNode* scrollChildNode = node->GetChildByName("ScrollChild");
+    const XMLNode* scrollChildNode = node->GetChildByName("ScrollChild");
 
     if (scrollChildNode) {
         XMLNode* childNode = scrollChildNode->m_child;
