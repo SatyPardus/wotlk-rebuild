@@ -162,7 +162,8 @@ class CM2Model {
         void DetachAllChildrenById(uint32_t id);
         C44Matrix GetAttachmentWorldTransform(uint32_t attachmentId);
         void FindKey(M2ModelBoneSeq* sequence, const M2TrackBase& track, uint32_t& currentKey, uint32_t& nextKey, float& ratio);
-        CAaBox& GetBoundingBox(CAaBox& bounds);
+        CAaBox& GetBoundingBox();
+        CAaSphere& GetBoundingSphere();
         HCAMERA GetCameraByIndex(uint32_t index);
         C3Vector GetPosition();
         int32_t Initialize(CM2Scene* scene, CM2Shared* shared, CM2Model* a4, uint32_t flags);

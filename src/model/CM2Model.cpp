@@ -909,13 +909,25 @@ LABEL_36:
     }
 }
 
-CAaBox& CM2Model::GetBoundingBox(CAaBox& bounds) {
-    // TODO
-    // WaitForLoad
+CAaBox& CM2Model::GetBoundingBox() {
+    if (!this->m_shared->m_m2DataLoaded)
+        this->WaitForLoad(nullptr);
 
-    bounds = this->m_shared->m_data->bounds.extent;
+    return this->m_shared->m_data->bounds.extent;
+}
 
-    return bounds;
+CAaSphere& CM2Model::GetBoundingSphere() {
+    if (!this->m_shared->m_m2DataLoaded)
+        this->WaitForLoad(nullptr);
+
+    const M2Bounds& b = this->m_shared->m_data->bounds;
+
+    CAaSphere out;
+    out.c.x = (b.extent.b.x + b.extent.t.x) * 0.5f;
+    out.c.y = (b.extent.b.y + b.extent.t.y) * 0.5f;
+    out.c.z = (b.extent.b.z + b.extent.t.z) * 0.5f;
+    out.r = b.radius;
+    return out;
 }
 
 HCAMERA CM2Model::GetCameraByIndex(uint32_t index) {

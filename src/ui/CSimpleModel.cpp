@@ -271,7 +271,7 @@ void CSimpleModel::OnModelLoaded(CM2Model* model) {
     }
 
     CAaBox bounds;
-    this->m_bounds = model->GetBoundingBox(bounds);
+    this->m_bounds = model->GetBoundingBox();
 
     this->Resize(0);
 }
