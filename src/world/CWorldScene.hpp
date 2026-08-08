@@ -9,6 +9,7 @@
 #include "gx/Texture.hpp"
 
 class CM2Scene;
+class CMapDoodadDef;
 
 struct CSortEntry {
     STORM_EXPLICIT_LIST(CMapChunk, sortListLink) mapChunkList;
@@ -62,6 +63,7 @@ class CWorldScene {
     static CAaBox boundingBox;
 
     static uint32_t s_chunksRendered;
+    static uint32_t s_doodadsRendered;
 
     static void Initialize();
     static void Update(C3Vector* camPos, C3Vector* camTarget);
@@ -73,6 +75,9 @@ class CWorldScene {
     static bool InsideFrustumRect(CiRect* rect);
     static void CullSortTable(CRect* a1);
     static void CullChunks(CSortEntry* entry, int32_t index);
+    static void CullDoodads(CSortEntry* entry, uint8_t fadeLevel);
+    static void CullDoodadsExterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, uint8_t fadeLevel);
+    static void AddDoodadDefModelToModelScene(CMapDoodadDef* a1);
     static void Render(const C3Vector& cameraPos, float time);
     static void RenderChunks();
     static void RenderChunksSinglePass();

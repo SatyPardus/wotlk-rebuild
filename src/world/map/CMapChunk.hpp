@@ -71,14 +71,16 @@ class CMapChunk : public CMapBaseObj {
     void CreateBounds();
     void RenderPrep();
     void Batch();
+    void AllocRenderChunkAndBatch();
     void CreateIndices(char* buf, CGxBatch* batch);
     int16_t CreateIndices(char* buf, int32_t offset);
     void CreateVertices(char* buf, int32_t bufOffset);
-    void CreateVerticesLocal(char* buf);
+    void CreateVerticesLocal(CGxVertexPN* buf);
 
     CMapChunk();
     static void Initialize();
     static void InitializeVertexGrid();
+    static bool CanMergeChunkLayers(CMapChunk* chunkA, CMapChunk* chunkB);
 };
 
 #endif

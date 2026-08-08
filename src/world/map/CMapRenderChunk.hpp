@@ -79,6 +79,8 @@ class CMapRenderChunk {
     static int32_t s_pnEstimateIndex;
     static RENDER_LAYER_FUNC* s_renderLayersFunc;
     static uint16_t s_defaultTex[64 * 64];
+    static uint8_t s_defaultShadowRow[64];
+    static uint8_t s_defaultAlphaRow[64];
 
     void AddBatch(CMapChunk* a2, CMapChunk* a3, C3Vector* a4, uint8_t a5);
     void RenderPrep();
@@ -97,15 +99,25 @@ class CMapRenderChunk {
     void SetVertexShader(int32_t a1, int32_t a2);
     void FreeBuf();
     void CreateChunkLayerTex(CMapRenderChunkLayer* layer);
+    void CreateShaderTexture();
+
+    void UnpackAlphaShadowBits(uint16_t* outputTexture, int32_t dstOffset, int32_t dstPitch, uint32_t size, TextureLayerInfo* layerInfo, uint32_t alphaSlot, uint8_t* shadowMap, int32_t genFormat, bool doNotFixAlphaMap);
+    void UnpackAlphaShadowBitsUnfixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
+    void UnpackAlphaShadowBitsUnfixed4444Mip0(uint16_t* dstBase, int32_t dstOffset, int32_t dstPitch, uint32_t size, TextureLayerInfo* cursors, const uint8_t* shadowMap);
+    void UnpackAlphaShadowBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap);
+    void UnpackAlphaShadowBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap);
+    void UnpackAlphaShadowBitsFixed4444Mip1(uint16_t* dstBase, int32_t dstOffset, int32_t dstPitch, uint32_t size, TextureLayerInfo* cursors, const uint8_t* shadowMap);
+    void UnpackAlphaShadowBitsFixed4444Mip0(uint16_t* dstBase, int32_t dstOffset, int32_t dstPitch, uint32_t size, TextureLayerInfo* cursors, const uint8_t* shadowMap);
+
     void UnpackAlphaBits(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap, int32_t layerMode, bool bigAlpha);
     void UnpackAlphaBitsUnfixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
     void UnpackAlphaBitsUnfixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
-    void UnpackAlphaShadowBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap);
-    void UnpackAlphaShadowBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap);
+    void UnpackAlphaBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap);
+    void UnpackAlphaBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap);
     void RecreateAlphaBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap);
     void RecreateAlphaBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap);
-    void UnpackAlphaShadowBitsFixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
-    void UnpackAlphaShadowBitsFixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
+    void UnpackAlphaBitsFixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
+    void UnpackAlphaBitsFixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo);
 
     static void Initialize();
     static CMapRenderChunkBuf* AllocBuf(int32_t a1, CMapRenderChunk* renderChunk);
@@ -114,6 +126,8 @@ class CMapRenderChunk {
     static void UpdateLayerGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels);
     static void UpdateShadowGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels);
     static void UpdatePools();
+    static void RenderMultiPassAlpha(CMapRenderChunk* renderChunk);
+    static void RenderMultiPassAdditive(CMapRenderChunk* renderChunk);
     static void SetShaders(int32_t a1, int32_t a2);
 };
 

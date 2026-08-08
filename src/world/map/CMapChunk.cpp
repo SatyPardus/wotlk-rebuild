@@ -1,5 +1,6 @@
 #include "world/map/CMapChunk.hpp"
 #include "world/map/CMap.hpp"
+#include <os/Debug.hpp>
 
 C3Vector CMapChunk::vertexList[145];
 int32_t CMapChunk::cornerVertexIndex[4] = { 0, 8, 0x88, 0x90 };
@@ -71,7 +72,7 @@ CMapChunk::CMapChunk() {
     //sub_95DA10(&this->unk_14C);
     this->type |= 4u;
     this->distToCamera = 0.0;
-    this->unk_C |= 1u;
+    this->flags |= MAPOBJ_FLAG_UNPLACED;
     this->detailDoodadInst = nullptr;
     this->renderChunk = nullptr;
     this->chunkHeaderPtr = nullptr;
@@ -142,103 +143,99 @@ void CMapChunk::Create(SIffChunk* headerChunk, bool a3) {
     this->CreateBounds();
     //this->CreateLiquids(a3);
     //this->CreateSoundEmitters(a3);
-    this->unk_C = 0;
+    this->flags = 0;
     if ((this->header->flags & 2) != 0)
-        this->unk_C = 64;
+        this->flags = MAPOBJ_FLAG_IMPASSABLE;
     CMapBaseObjLink* link = this->parentLinkList.Head();
     CMapArea* area = (CMapArea*)link->ref;
     this->CreateRefs(area, this->MCRF_ptr, this->header->nDoodadRefs, this->header->nMapObjRefs);
     area->mapChunks[16 * this->aIndex.y + this->aIndex.x] = this;
-    this->unk_C |= 0x80u;
+    this->flags |= MAPOBJ_FLAG_PREPARED;
 }
 
-// OFFSET: 0x
+// OFFSET: 0x7C6150
 void CMapChunk::CreateRefs(CMapArea* area, uint32_t* mcrfPtr, uint32_t doodadRefs, uint32_t mapObjRefs) {
     C3Vector center = { 17066.666f, 17066.666f, 0.0f };
-    //v5 = area;
-    //v7 = 0;
-    //mcrfMapObjPtr = &mcrfPtr[doodadRefs];
-    //for (i = 0; i < mapObjRefs; ++i) {
-    //    v8 = &area->mapObjDef[mcrfMapObjPtr[v7]];
-    //    if ((v8->flags & 1) != 0) {
-    //        if (v8->uniqueId == 5535469 && !sub_7BDDF0((TSHashTable_CMapObjDef_HASHKEY_NONE*)&CMap::mapObjDefHash, 0x5476EDu, (int)&unk_CE04A3)) {
-    //            m_next = stru_AEEDE0.m_terminator.m_next;
-    //            if (((int)stru_AEEDE0.m_terminator.m_next & 1) != 0 || !stru_AEEDE0.m_terminator.m_next)
-    //                m_next = 0;
-    //            while (((unsigned __int8)m_next & 1) == 0 && m_next) {
-    //                if (m_next[7] == v8->uniqueId)
-    //                    goto LABEL_20;
-    //                m_next = *(_DWORD**)((char*)m_next + stru_AEEDE0.m_linkoffset + 4);
-    //            }
-    //            v10 = -v8->extents.max.z;
-    //            v35 = 0;
-    //            x = v8->extents.max.x;
-    //            v36 = 0;
-    //            v12 = v8->extents.min.y + center.z;
-    //            v13 = -v8->extents.min.z;
-    //            v42 = -v8->extents.min.x;
-    //            y = v8->extents.max.y;
-    //            v14 = center.x + v13;
-    //            v15 = center.y + v42;
-    //            v16 = center.z + y;
-    //            v17 = center.y - x + v15;
-    //            v46 = v17;
-    //            v18 = v17;
-    //            v19 = v12 + v16;
-    //            v47 = v19;
-    //            v44 = (v10 + center.x + v14) * 0.5;
-    //            v45 = v46 * 0.5;
-    //            v48 = v44;
-    //            v37 = v44;
-    //            uniqueId = v8->uniqueId;
-    //            v49 = v18 * 0.5;
-    //            v38 = v49;
-    //            v50 = 0.5 * v19;
-    //            v39 = v50;
-    //            v20 = sqrt((v16 - v47 * 0.5) * (v16 - v47 * 0.5) + (v15 - v45) * (v15 - v45) + (v14 - v44) * (v14 - v44));
-    //            v40 = v20;
-    //            if (v20 < 0.001) {
-    //                nameId = v8->nameId;
-    //                wmoFilenamesOffsets = area->wmoFilenamesOffsets;
-    //                v40 = 50.0;
-    //                SysMsgPrintf_0(
-    //                    2,
-    //                    2,
-    //                    "Destructible building WMO(%s) has invalid geobox",
-    //                    &area->wmoFileNames[wmoFilenamesOffsets[nameId]]);
-    //            }
-    //            sub_77F290(v34);
-    //            if (v35) {
-    //                if ((v36 & 1) == 0 && v36) {
-    //                    *(int*)((char*)&v35 + v36 - *(_DWORD*)(v35 + 4)) = v35;
-    //                    *(_DWORD*)(v35 + 4) = v36;
-    //                } else {
-    //                    *(_DWORD*)(v36 & 0xFFFFFFFE) = v35;
-    //                    *(_DWORD*)(v35 + 4) = v36;
-    //                }
-    //            }
-    //        }
-    //    } else {
-    //        MapObjDef_0 = (CMapBaseObj*)CMap::CreateMapObjDef_0(
-    //            (int)&area->wmoFileNames[area->wmoFilenamesOffsets[v8->nameId]],
-    //            (int)v8,
-    //            &center.x,
-    //            1);
-    //        v24 = CMap::AllocBaseObjLink(MapObjDef_0);
-    //        v24->ref = this;
-    //        HashTable::AddEntry((TSList*)&this->mapObjDefLinkList, (char*)v24);
-    //    }
-//LABEL_20:
-    //    v7 = i + 1;
-    //}
+
+    auto v52 = &mcrfPtr[doodadRefs];
+    for (int32_t i = 0; i < mapObjRefs; i++) {
+        auto mapObjectDef = area->mapObjDef[v52[i]];
+        if ((mapObjectDef.flags & 1) != 0) {
+            //if (v8->uniqueId == 5535469 && !maybe_TSHashTable_CMapObjDef__Find(
+            //                                   (TSHashTable_CMapObjDef_HASHKEY_NONE*)&CMap::mapObjDefHash,
+            //                                   0x5476EDu,
+            //                                   (int)&unk_CE04A3)) {
+            //    m_next = stru_AEEDE0.m_terminator.m_next;
+            //    if (((int)stru_AEEDE0.m_terminator.m_next & 1) != 0 || !stru_AEEDE0.m_terminator.m_next)
+            //        m_next = 0;
+            //    while (((unsigned __int8)m_next & 1) == 0 && m_next) {
+            //        if (m_next[7] == v8->uniqueId)
+            //            goto LABEL_20;
+            //        m_next = *(_DWORD**)((char*)m_next + stru_AEEDE0.m_linkoffset + 4);
+            //    }
+            //    v10 = -v8->extents.max.z;
+            //    v35 = 0;
+            //    x = v8->extents.max.x;
+            //    v36 = 0;
+            //    v12 = v8->extents.min.y + v51.z;
+            //    v13 = -v8->extents.min.z;
+            //    v42 = -v8->extents.min.x;
+            //    y = v8->extents.max.y;
+            //    v14 = v51.x + v13;
+            //    v15 = v51.y + v42;
+            //    v16 = v51.z + y;
+            //    v17 = v51.y - x + v15;
+            //    v46 = v17;
+            //    v18 = v17;
+            //    v19 = v12 + v16;
+            //    v47 = v19;
+            //    v44 = (v10 + v51.x + v14) * 0.5;
+            //    v45 = v46 * 0.5;
+            //    v48 = v44;
+            //    v37 = v44;
+            //    uniqueId = v8->uniqueId;
+            //    v49 = v18 * 0.5;
+            //    v38 = v49;
+            //    v50 = 0.5 * v19;
+            //    v39 = v50;
+            //    v20 = sqrt((v16 - v47 * 0.5) * (v16 - v47 * 0.5) + (v15 - v45) * (v15 - v45) + (v14 - v44) * (v14 - v44));
+            //    v40 = v20;
+            //    if (v20 < 0.001) {
+            //        nameId = v8->nameId;
+            //        wmoFilenamesOffsets = area->wmoFilenamesOffsets;
+            //        v40 = 50.0;
+            //        SysMsgPrintf_0(
+            //            2,
+            //            2,
+            //            "Destructible building WMO(%s) has invalid geobox",
+            //            &area->wmoFileNames[wmoFilenamesOffsets[nameId]]);
+            //    }
+            //    sub_77F290((int)v34);
+            //    if (v35) {
+            //        if ((v36 & 1) == 0 && v36) {
+            //            *(int*)((char*)&v35 + v36 - *(_DWORD*)(v35 + 4)) = v35;
+            //            *(_DWORD*)(v35 + 4) = v36;
+            //        } else {
+            //            *(_DWORD*)(v36 & 0xFFFFFFFE) = v35;
+            //            *(_DWORD*)(v35 + 4) = v36;
+            //        }
+            //    }
+            //}
+        } else {
+            auto mapObjDef = CMap::CreateMapObjDef(&area->wmoFileNames[area->wmoFilenamesOffsets[mapObjectDef.nameId]], &mapObjectDef, &center, true);
+            auto baseObj = CMap::AllocBaseObjLink(mapObjDef);
+            baseObj->ref = this;
+            this->mapObjDefLinkList.LinkToTail(baseObj);
+        }
+    }
     for (int32_t i = 0; i < doodadRefs; i++) {
         CMapDoodadDef* mapDoodadDef = CMap::CreateDoodadDef(&area->m2FileNames[area->modelFilenamesOffsets[area->doodadDef[mcrfPtr[i]].nameId]], &area->doodadDef[mcrfPtr[i]], &center);
         CMapBaseObjLink* link = CMap::AllocBaseObjLink(mapDoodadDef);
         link->ref = this;
         this->doodadDefLinkList.LinkToTail(link);
         mapDoodadDef->unk_08C = 1.0f;
-        mapDoodadDef->unk_C |= 4;
-        if ((mapDoodadDef->unk_C & 0x80) != 0) {
+        mapDoodadDef->flags |= MAPOBJ_FLAG_EXTERIOR;
+        if ((mapDoodadDef->flags & MAPOBJ_FLAG_PREPARED) != 0) {
             //sub_7B4FA0(v25, this);
         }
     }
@@ -361,20 +358,21 @@ void CMapChunk::Batch() {
     if (this->bLoaded)
         return;
 
-    //if (CMap::enableChunkBatching) {
-    //    m_next = this->parentLinkList.m_terminator.m_next;
-    //    if (((unsigned __int8)m_next & 1) != 0 || !m_next)
-    //        m_next = 0;
-    //    ref = (CMapArea*)m_next->ref;
-    //    y = this->aIndex.y;
-    //    v6[0] = this->aIndex.x & 0xFFFFFFFE;
-    //    v6[1] = y & 0xFFFFFFFE;
-    //    CMapArea::BatchChunks(ref, v6);
-    //} else {
+    if (CMap::enableChunkBatching) {
+        auto next = this->parentLinkList.Head();
+        auto ref = (CMapArea*)next->ref;
+        C2iVector pos = C2iVector(this->aIndex.x & 0xFFFFFFFE, this->aIndex.y & 0xFFFFFFFE);
+        ref->BatchChunks(pos);
+    } else {
+        this->AllocRenderChunkAndBatch();
+        this->bLoaded = 1;
+    }
+}
+
+// OFFSET: 0x7C3B40
+void CMapChunk::AllocRenderChunkAndBatch() {
     this->renderChunk = CMap::AllocRenderChunk();
     this->renderChunk->AddBatch(this, nullptr, &this->topLeftCoords, 0);
-    this->bLoaded = 1;
-    //}
 }
 
 // OFFSET: 0x7C51B0
@@ -447,16 +445,14 @@ void CMapChunk::CreateVertices(char* buf, int32_t bufOffset) {
     //    else
     //        CMapChunk::CreateVerticesWorld((CGxVertexPNC*)&a2[7 * a3]);
     //} else if (CMapRenderChunk::s_gxBufVertexFormat == 1) {
-        CMapChunk::CreateVerticesLocal(buf);
+    CMapChunk::CreateVerticesLocal(reinterpret_cast<CGxVertexPN*>(buf));
     //} else {
     //    CMapChunk::CreateVerticesLocal((CGxVertexPNC*)a2);
     //}
 }
 
 // OFFSET: 0x7C4960
-void CMapChunk::CreateVerticesLocal(char* buf) {
-    CGxVertexPN* v = reinterpret_cast<CGxVertexPN*>(buf);
-
+void CMapChunk::CreateVerticesLocal(CGxVertexPN* v) {
     // ~1/127: scales packed signed-byte normals into [-1, 1] float range
     static const float NORMAL_SCALE = 0.0078740157f;
 
@@ -505,4 +501,59 @@ void CMapChunk::CreateVerticesLocal(char* buf) {
             normals += 24; // 8 vertices * 3 components
         }
     }
+}
+
+// OFFSET: 0x7D66D0
+bool CMapChunk::CanMergeChunkLayers(CMapChunk* chunkA, CMapChunk* chunkB) {
+    chunkA->bLoaded = true;
+    chunkB->bLoaded = true;
+
+    if ((CMap::header.flags & 4) != 0) {
+        if (chunkA->header->nLayers == 0)
+            return chunkB->header->nLayers <= 4;
+
+        uint32_t totalTextures = chunkB->header->nLayers;
+
+        for (uint32_t i = 0; i < chunkA->header->nLayers; ++i) {
+            SMLayer& layerA = chunkA->layers[i];
+            if ((layerA.flags & 0x4C0) != 0)
+                return false;
+
+            bool foundMatch = false;
+            for (uint32_t j = 0; j < chunkB->header->nLayers; ++j) {
+                SMLayer& layerB = chunkB->layers[j];
+                if ((layerB.flags & 0x4C0) != 0)
+                    break;
+
+                if (layerB.textureId == layerA.textureId) {
+                    foundMatch = true;
+                    break;
+                }
+            }
+
+            if (!foundMatch)
+                ++totalTextures;
+        }
+
+        return totalTextures <= 4;
+    }
+
+    if (chunkA->header->nLayers != chunkB->header->nLayers) {
+        return false;
+    }
+
+    SMLayer* layersA = chunkA->layers;
+    SMLayer* layersB = chunkB->layers;
+
+    for (uint32_t i = 0; i < chunkA->header->nLayers; ++i) {
+        if ((layersA[i].flags & 0xC0) != 0)
+            return 0;
+        if ((layersB[i].flags & 0xC0) != 0)
+            return 0;
+
+        if (layersA[i].textureId != layersB[i].textureId)
+            return 0;
+    }
+
+    return true;
 }

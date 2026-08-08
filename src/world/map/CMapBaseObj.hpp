@@ -11,7 +11,7 @@ class CMapBaseObj {
     int32_t objectIndex;
     uint16_t type;
     uint16_t refCount;
-    int32_t unk_C;
+    uint32_t flags;
     TSLink<CMapBaseObj>* lameAssLink;
     STORM_EXPLICIT_LIST(CMapBaseObjLink, ownerLink) parentLinkList;
 };

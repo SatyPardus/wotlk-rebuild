@@ -10,7 +10,10 @@
 
 class CMapDoodadDef : public CMapBaseObj, public TSHashObject<CMapDoodadDef, uint32_t> {
     public:
-    //int32_t unk_024;
+    uint8_t fadeLevel;
+    uint8_t unk_025;
+    uint8_t unk_026;
+    uint8_t unk_027;
     //uint32_t unkFlags_28;
     //int32_t unkCounter;
     //float unk_030;
@@ -20,7 +23,7 @@ class CMapDoodadDef : public CMapBaseObj, public TSHashObject<CMapDoodadDef, uin
     C3Vector vec2;
     C3Vector position;
     float scale;
-    //int32_t unk_07C;
+    int32_t unk_07C;
     //int32_t unk_080;
     CImVector m2AmbietColor;
     CImVector m2DiffuseColor;
@@ -45,6 +48,8 @@ class CMapDoodadDef : public CMapBaseObj, public TSHashObject<CMapDoodadDef, uin
     //int32_t unk_164;
     //int32_t unk_168;
     //int32_t unk_16C;
+
+    void UpdateBounds();
 };
 
 #endif

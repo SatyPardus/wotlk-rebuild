@@ -10,6 +10,8 @@
 #include <storm/List.hpp>
 #include <tempest/Rect.hpp>
 #include <gx/shader/CGxShader.hpp>
+#include "world/map/CMapObjDef.hpp"
+#include "world/map/CMapObj.hpp"
 
 class CMap {
     public:
@@ -26,6 +28,7 @@ class CMap {
     static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkUpdateList;
     static STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) doodadDefList;
     static TSHashTable<CMapDoodadDef, uint32_t> doodadDefHashtable;
+    static TSHashTable<CMapObjDef, uint32_t> objDefHashtable;
     static int32_t uniqueId;
     static int32_t bDungeon;
     static int32_t counts[11];
@@ -84,7 +87,10 @@ class CMap {
     static CMapRenderChunk* AllocRenderChunk();
     static CMapBaseObjLink* AllocBaseObjLink(CMapBaseObj* baseObj);
     static CMapDoodadDef* AllocDoodadDef();
+    static CMapObjDef* AllocMapObjDef();
+    static CMapObj* AllocMapObj();
     static CMapDoodadDef* CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3Vector* position);
+    static CMapObjDef* CreateMapObjDef(char* fileName, SMMapObjDef* mapObjectDef, C3Vector* center, bool cached);
     static void FreeBaseObjLink(CMapBaseObjLink* link);
     static CMapArea* PrepareArea(int32_t areaIndexX, int32_t areaIndexY);
     static void LoadArea(CMapArea* area);

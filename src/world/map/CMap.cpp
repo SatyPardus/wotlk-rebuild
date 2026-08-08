@@ -32,6 +32,7 @@ STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkFree
 STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkUpdateList;
 STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) CMap::doodadDefList;
 TSHashTable<CMapDoodadDef, uint32_t> CMap::doodadDefHashtable;
+TSHashTable<CMapObjDef, uint32_t> CMap::objDefHashtable;
 int32_t CMap::uniqueId;
 int32_t CMap::bDungeon;
 int32_t CMap::counts[11];
@@ -179,7 +180,7 @@ void CMap::ValidateShaders() {
     CMap::enableTerrainShaderVertex = false;
     CMap::enableChunkBatching = false;
 
-    return; // Just for testing, so no shader modes get activated
+    return; // Disable shader stuff for debugging
 
     bool v1 = (CMap::header.flags >> 2) & 1;
 
@@ -493,10 +494,101 @@ CMapDoodadDef* CMap::AllocDoodadDef() {
     return nullptr;
 }
 
+CMapObjDef* CMap::AllocMapObjDef() {
+    uint32_t memHandle;
+    void* object = nullptr;
+
+    if (ObjectAlloc(*CMap::mapObjDefHeap, &memHandle, &object, 0)) {
+        CMapObjDef* def = new (object) CMapObjDef();
+
+        def->objectIndex = memHandle;
+        return def;
+    }
+
+    return nullptr;
+}
+
+CMapObj* CMap::AllocMapObj() {
+    uint32_t memHandle;
+    void* object = nullptr;
+
+    if (ObjectAlloc(*CMap::mapObjHeap, &memHandle, &object, 0)) {
+        CMapObj* def = new (object) CMapObj();
+
+        def->m_memHandle = memHandle;
+        return def;
+    }
+
+    return nullptr;
+}
+
 void CMapDoodadLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
     lighting->AddAmbient({ 1.0f, 1.0f, 1.0f });
     lighting->AddDiffuse({ 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f });
     lighting->AddSpecular({ 0.0f, 0.0f, 0.0f });
+}
+
+CMapObjDef* CMap::CreateMapObjDef(char* fileName, SMMapObjDef* objectDef, C3Vector* center, bool cached) {
+    constexpr float kDegToRad = 0.017453292f;
+    constexpr float kPi = 3.1415927;
+
+    uint32_t v23;
+    CMapObjDef* mapObjectDef = CMap::objDefHashtable.Ptr(objectDef->uniqueId, v23);
+    if (cached && mapObjectDef)
+        return mapObjectDef;
+
+	mapObjectDef = CMap::AllocMapObjDef();
+    if (cached)
+        CMap::objDefHashtable.Insert(mapObjectDef, objectDef->uniqueId, v23);
+
+	mapObjectDef->position = {
+        -objectDef->position.z + center->x,
+        -objectDef->position.x + center->y,
+        objectDef->position.y + center->z,
+    };
+	mapObjectDef->position.x = center->x + -objectDef->position.z;
+    mapObjectDef->position.y = center->y + -objectDef->position.x;
+    mapObjectDef->position.z = center->z + objectDef->position.y;
+    mapObjectDef->flags = 0;
+    mapObjectDef->nameId = objectDef->nameId;
+    mapObjectDef->doodadSet = objectDef->doodadSet;
+    mapObjectDef->nameSet = objectDef->nameSet;
+    //v6->unk_148 = 0;
+    //v6->unk_14C = 0;
+    //v6->unk_150 = 0;
+    //LOWORD(v6->unk_154) = 0;
+	mapObjectDef->mat = C44Matrix();
+    mapObjectDef->mat.d0 = mapObjectDef->position.x;
+    mapObjectDef->mat.d1 = mapObjectDef->position.y;
+    mapObjectDef->mat.d2 = mapObjectDef->position.z;
+    mapObjectDef->mat.RotateAroundZ(objectDef->rotation.z * kDegToRad + kPi);
+    mapObjectDef->mat.RotateAroundY(objectDef->rotation.y * kDegToRad);
+    mapObjectDef->mat.RotateAroundX(objectDef->rotation.x * kDegToRad);
+    mapObjectDef->invMat = mapObjectDef->mat.AffineInverse();
+    mapObjectDef->bbox.b = {
+        center->x + -objectDef->extents.t.z,
+        center->y + -objectDef->extents.t.x,
+        center->z + objectDef->extents.b.y
+    };
+    mapObjectDef->bbox.t = {
+        center->x + -objectDef->extents.b.z,
+        center->y + -objectDef->extents.b.x,
+        center->z + objectDef->extents.t.y
+    };
+    C3Vector half;
+
+    mapObjectDef->sphere.c.x = (mapObjectDef->bbox.b.x + mapObjectDef->bbox.t.x) * 0.5f;
+    mapObjectDef->sphere.c.y = (mapObjectDef->bbox.b.y + mapObjectDef->bbox.t.y) * 0.5f;
+    mapObjectDef->sphere.c.z = (mapObjectDef->bbox.b.z + mapObjectDef->bbox.t.z) * 0.5f;
+    half.x = mapObjectDef->bbox.t.x - mapObjectDef->sphere.c.x;
+    half.y = mapObjectDef->bbox.t.y - mapObjectDef->sphere.c.y;
+    half.z = mapObjectDef->bbox.t.z - mapObjectDef->sphere.c.z;
+    mapObjectDef->sphere.r = sqrtf(half.x * half.x +
+                          half.y * half.y +
+                          half.z * half.z);
+	//mapObjectDef->TSGrowableArray__m_count = 0;
+    mapObjectDef->owner = CMapObj::Create(fileName);
+    return mapObjectDef;
 }
 
 // OFFSET: 0x7BECD0
@@ -517,7 +609,7 @@ CMapDoodadDef* CMap::CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3V
     mapDoodadDef->position = {
         -doodadDef->position.z + position->x,
         -doodadDef->position.x + position->y,
-        -doodadDef->position.y + position->z,
+        doodadDef->position.y + position->z,
     };
     mapDoodadDef->sphere.c = mapDoodadDef->position;
     mapDoodadDef->sphere.r = 0.0f;
@@ -525,14 +617,14 @@ CMapDoodadDef* CMap::CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3V
     mapDoodadDef->bboxStaticEntity.t = mapDoodadDef->position;
     mapDoodadDef->scale = doodadDef->scale / 1024.0f;
 
-    mapDoodadDef->unk_C = 1;
+    mapDoodadDef->flags = MAPOBJ_FLAG_UNPLACED;
     if ((doodadDef->flags & 1) != 0)
-        mapDoodadDef->unk_C = 2049;
+        mapDoodadDef->flags = MAPOBJ_FLAG_BIODOME | MAPOBJ_FLAG_UNPLACED;
     mapDoodadDef->model = nullptr;
     mapDoodadDef->mat = C44Matrix();
-    mapDoodadDef->mat.a0 = mapDoodadDef->position.x;
-    mapDoodadDef->mat.a1 = mapDoodadDef->position.y;
-    mapDoodadDef->mat.a2 = mapDoodadDef->position.z;
+    mapDoodadDef->mat.d0 = mapDoodadDef->position.x;
+    mapDoodadDef->mat.d1 = mapDoodadDef->position.y;
+    mapDoodadDef->mat.d2 = mapDoodadDef->position.z;
     mapDoodadDef->mat.RotateAroundZ(doodadDef->rotation.z * kDegToRad + kPi);
     mapDoodadDef->mat.RotateAroundY(doodadDef->rotation.y * kDegToRad);
     mapDoodadDef->mat.RotateAroundX(doodadDef->rotation.x * kDegToRad);
@@ -576,7 +668,7 @@ CMapArea* CMap::PrepareArea(int32_t areaIndexX, int32_t areaIndexY) {
 
     area->tileChunkIndex = { 16 * areaIndexX, 16 * areaIndexY };
     area->index = { areaIndexX, areaIndexY };
-    area->unk_C = 0;
+    area->flags = 0;
     area->topLeft2 = { 17066.666f - area->tileChunkIndex.y * 33.333332f, area->tileChunkIndex.x * -33.333332f + 17066.666f, 0.0f };
     area->bounds.b = { area->topLeft2.x - 533.33331f, area->topLeft2.y - 533.33331f, 0.0f };
     area->bounds.t = { area->topLeft2.x, area->topLeft2.y, 0.0f };
@@ -603,7 +695,7 @@ void CMap::PrepareUpdate(bool a1) {
     // sub_7B9560();
     CMap::PreUpdateAreas(a1);
     CMap::PrepareMapObjDefs(a1);
-    // sub_7B5630();
+    CMap::PrepareMapDoodadDefs();
     // sub_7B5590(a1);
     if (CMap::bPreload) {
         //    if (CMap::s_isStreamingMode) {
@@ -751,30 +843,6 @@ void CMap::PurgeMaps() {
     //} while (v5);
 }
 
-float sub_7B4830(CAaBox* box, C2Vector* point) {
-    float clampedX;
-    float diffX;
-    float diffY;
-
-    if (box->b.x > point->x)
-        clampedX = box->b.x;
-    else if (box->t.x >= point->x)
-        clampedX = point->x;
-    else
-        clampedX = box->t.x;
-
-    diffX = clampedX - point->x;
-
-    if (box->b.y > point->y)
-        diffY = box->b.y - point->y;
-    else if (box->t.y >= point->y)
-        diffY = point->y - point->y;
-    else
-        diffY = box->t.y - point->y;
-
-    return diffX * diffX + diffY * diffY;
-}
-
 int32_t sub_7B47F0(const void* aa, const void* bb) {
     float distA = static_cast<const CMapAreaEntry*>(aa)->dist;
     float distB = static_cast<const CMapAreaEntry*>(bb)->dist;
@@ -812,7 +880,7 @@ void CMap::PreUpdateAreas(bool a1) {
 
         if (area->index.x >= cellXMin && area->index.x <= cellXMax &&
             area->index.y >= cellYMin && area->index.y <= cellYMax) {
-            areas[numAreas].dist = sub_7B4830(&area->bounds, &worldPos);
+            areas[numAreas].dist = area->bounds.DistanceSqXY(worldPos);
             areas[numAreas].area = area;
             numAreas++;
         } else if (!area->asyncObject || !area->asyncObject->isCurrent) {
@@ -832,7 +900,7 @@ void CMap::PreUpdateAreas(bool a1) {
             if ((info.flags & 1) != 0 && !area) {
                 area = CMap::PrepareArea(cellX, cellY);
                 areas[numAreas].area = area;
-                areas[numAreas].dist = sub_7B4830(&area->bounds, &worldPos);
+                areas[numAreas].dist = area->bounds.DistanceSqXY(worldPos);
                 numAreas++;
             }
         }
@@ -866,15 +934,16 @@ void CMap::PreUpdateAreas(bool a1) {
                     tileYMin <= CWorld::s_chunkRectHigh.maxY &&
                     tileXMax >= CWorld::s_chunkRectHigh.minX &&
                     tileYMax >= CWorld::s_chunkRectHigh.minY &&
-                    shouldWaitForAsync &&
-                    area->asyncObject) {
-                    AsyncFileReadWait(area->asyncObject);
+                        shouldWaitForAsync &&
+                        area->asyncObject) {
+                            AsyncFileReadWait(area->asyncObject);
                 }
 
                 if (area->asyncObject) {
                     //if (CMap::s_isStreamingMode && Base[LODWORD(v23)].dist < 71111.109)
                     //    v43.y = v23;
-                } else {
+                }
+                else {
                     chunkRect.minX = area->tileChunkIndex.x;
                     chunkRect.minY = area->tileChunkIndex.y;
                     chunkRect.maxX = area->tileChunkIndex.x + 15;
@@ -962,7 +1031,24 @@ void CMap::PrepareMapDoodadDefs() {
     for (auto mapDoodadDef = CMap::doodadDefList.Head(); mapDoodadDef;) {
         auto next = CMap::doodadDefList.Next(mapDoodadDef);
 
-
+        // m_next = mapDoodadDef
+        CM2Model* model = mapDoodadDef->model;
+        if (!model || model->IsLoaded(0, 0)) {
+            if ((mapDoodadDef->unk_07C & 0x10) == 0) {
+                mapDoodadDef->UpdateBounds();
+                //if ((mapDoodadDef->unk_C & 2) == 0 && CMap::QueryShadow(&mapDoodadDef->position))
+                //    mapDoodadDef->unk_08C = 0.5;
+                //sub_7B55E0(mapDoodadDef);
+                mapDoodadDef->flags |= MAPOBJ_FLAG_PREPARED | MAPOBJ_FLAG_UNPLACED;
+            }
+            mapDoodadDef->doodadDefLink.Unlink();
+        } else {
+        //    if (!SFile::IsStreamingMode() || (mapDoodadDef->unk_07C & 0x10000) == 0)
+        //        goto LABEL_22;
+        //    AsyncFileReadAddStreamingObject(mapDoodadDef->model, 1);
+        //    mapDoodadDef->unk_07C &= ~0x10000u;
+        //    mapDoodadDef = v3;
+        }
 
         mapDoodadDef = next;
     }

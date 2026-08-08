@@ -55,6 +55,7 @@ class CMapArea : public CMapBaseObj {
     void PurgeChunks(CiRect* chunkRect);
     void PurgeChunk(CMapChunk* chunk);
     void Update(bool a1, CiRect* chunkRect);
+    void BatchChunks(C2iVector pos);
 };
 
 struct CMapAreaEntry {

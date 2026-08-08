@@ -23,6 +23,16 @@ int16_t CMapRenderChunk::s_maxVertexOffset;
 int32_t CMapRenderChunk::s_pnEstimateVertex;
 int32_t CMapRenderChunk::s_pnEstimateIndex;
 uint16_t CMapRenderChunk::s_defaultTex[64 * 64];
+uint8_t CMapRenderChunk::s_defaultShadowRow[64];
+uint8_t CMapRenderChunk::s_defaultAlphaRow[64];
+
+const uint32_t s_nibbleMask[2] = { 0x0F, 0xF0 };
+const uint32_t s_nibbleShift[2] = { 4, 0 };
+const uint32_t s_nibbleShiftReverse[2] = { 0, 4 };
+const uint32_t s_bitMask[8] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80 };
+const uint32_t s_bitShift[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+const uint8_t s_shadowLut[2] = { 0xFF, 0x00 };
+
 
 RENDER_LAYER_FUNC* CMapRenderChunk::s_renderLayersFunc;
 
@@ -40,8 +50,8 @@ void CMapRenderChunk::Initialize() {
     CMapRenderChunk::s_gxVertexPool = nullptr;
     CMapRenderChunk::s_gxIndexPool = nullptr;
     CMapRenderChunk::s_chunkBlockArray.SetCount(0);
-    //memset(&unk_D1D018, 0, 0x40u);
-    //memset(&unk_D1CFD8, 0, 0x40u);
+    memset(&CMapRenderChunk::s_defaultAlphaRow, 0, sizeof(CMapRenderChunk::s_defaultAlphaRow));
+    memset(&CMapRenderChunk::s_defaultShadowRow, 0, sizeof(CMapRenderChunk::s_defaultShadowRow));
 }
 
 // OFFSET: 0x7B7AF0
@@ -450,13 +460,145 @@ void CMapRenderChunk::UpdateShaderGxTexture(EGxTexCommand cmd, uint32_t w, uint3
     CMapRenderChunk* renderChunk = static_cast<CMapRenderChunk*>(userArg);
 
     if (cmd == GxTex_Latch) {
-        // CMapRenderChunk::CreateShaderTexture(renderChunk);
-        //*texels = CMapRenderChunk::s_defaultTex;
-        // v8 = 4 * w;
-        // if ((CMap::header.flags & 4) == 0)
-        //     v8 = 2 * w;
-        //*texelStrideInBytes = v8;
+        renderChunk->CreateShaderTexture();
+        texels = CMapRenderChunk::s_defaultTex;
+        auto v8 = 4 * w;
+        if ((CMap::header.flags & 4) == 0)
+            v8 = 2 * w;
+        texelStrideInBytes = v8;
     }
+}
+
+// OFFSET: 0x007B99B0 - Created via AI DOUBLE CHECK!!!
+void CMapRenderChunk::CreateShaderTexture() {
+    int genFormat = GENFORMAT_4444;
+    if (CMap::header.flags & MapHeaderFlag_BigAlpha)
+        genFormat = GENFORMAT_8888;
+
+    CMapChunk* const chunk = this->mapChunkPtrs[0];
+    const uint32_t nLayers = chunk->header->nLayers;
+
+    TextureLayerInfo cursors[4];
+    cursors[0].alphaData = nullptr;
+    cursors[1].alphaData = nullptr;
+    cursors[2].alphaData = nullptr;
+    cursors[3].alphaData = nullptr;
+
+    if (nLayers) {
+        SMLayer* layer = chunk->layers;
+        uint32_t i = 0;
+        do {
+            const uint32_t layerFlags = layer->flags;
+            if (layerFlags & LayerFlag_UseAlphaMap)
+                cursors[i].alphaData = &chunk->additionalShadowmap[layer->offsetInMCAL];
+            cursors[i].flags = layerFlags;
+
+            ++i;
+            ++layer;
+        } while (i < nLayers);
+    }
+
+    const uint32_t chunkFlags = chunk->header->flags;
+
+    uint8_t* shadowMap = nullptr;
+    if ((chunkFlags & ChunkFlag_HasShadowMap) && (CWorld::s_enables & WorldEnable_TerrainShadows)) {
+        shadowMap = chunk->shadowMap;
+    }
+
+    CMapBaseObjLink* areaLink = chunk->parentLinkList.Head();
+
+    const uint8_t mampValue = reinterpret_cast<CMapArea*>(areaLink->ref)->header->mamp_value;
+
+    const uint32_t size = 64u >> mampValue;
+    int destPitch = static_cast<int>(64u >> mampValue);
+    if (this->unkFlags & 0x02)
+        destPitch = 2 * static_cast<int>(size);
+    if (this->unk_0A & 0x08)
+        destPitch >>= 1;
+
+    this->UnpackAlphaShadowBits(CMapRenderChunk::s_defaultTex,
+                                0,
+                                destPitch,
+                                size,
+                                cursors,
+                                0,
+                                shadowMap,
+                                genFormat,
+                                chunkFlags & ChunkFlag_DoNotFixAlphaMap);
+    // Human AI review until here. Continue uwu
+    CMapChunk* const chunk2 = this->mapChunkPtrs[1];
+    if (!chunk2)
+        return;
+
+    SMChunk* const header2 = chunk2->header;
+    const uint32_t nLayers2 = header2->nLayers;
+
+    uint32_t alphaSlot = 0;
+    cursors[0].alphaData = nullptr;
+    cursors[1].alphaData = nullptr;
+    cursors[2].alphaData = nullptr;
+    cursors[3].alphaData = nullptr;
+
+    if (nLayers2) {
+        const uint32_t layersCount = this->layersCount;
+        SMLayer* const layers2 = chunk2->layers;
+
+        for (uint32_t i = 0; i < nLayers2; ++i) {
+            SMLayer* const srcLayer = &layers2[i];
+
+            if (layersCount == 0)
+                continue;
+
+            uint32_t slot = 0;
+            while (this->layers[slot].textureId !=
+                   static_cast<int32_t>(srcLayer->textureId)) {
+                ++slot;
+                if (slot >= layersCount)
+                    break;
+            }
+            if (slot >= layersCount)
+                continue; // this texture is not used by the render chunk
+
+            const uint32_t layerFlags = srcLayer->flags;
+            if (layerFlags & LayerFlag_UseAlphaMap)
+                cursors[slot].alphaData =
+                    &this->mapChunkPtrs[1]->additionalShadowmap[srcLayer->offsetInMCAL];
+            cursors[slot].flags = layerFlags;
+
+            if (i == 0)
+                alphaSlot = slot;
+        }
+    }
+
+    const uint32_t chunk2Flags = header2->flags;
+
+    uint8_t* shadowMap2 = nullptr;
+    if ((chunk2Flags & ChunkFlag_HasShadowMap) &&
+        (CWorld::s_enables & WorldEnable_TerrainShadows)) {
+        shadowMap2 = this->mapChunkPtrs[1]->shadowMap;
+    }
+
+    int destOffset = 0;
+    const uint8_t flags = this->unkFlags;
+    if (flags & 0x01) {
+        destOffset = static_cast<int>(size * size);
+        if (this->unk_0A & 0x08)
+            destOffset >>= 2;
+    } else if (flags & 0x02) {
+        destOffset = static_cast<int>(size);
+        if (this->unk_0A & 0x08)
+            destOffset = static_cast<int>(size) >> 1;
+    }
+
+    this->UnpackAlphaShadowBits(s_defaultTex,
+                                0,
+                                destPitch,
+                                size,
+                                cursors,
+                                alphaSlot,
+                                shadowMap2,
+                                genFormat,
+                                chunk2Flags & ChunkFlag_DoNotFixAlphaMap);
 }
 
 // OFFSET: 0x7B9BC0
@@ -497,6 +639,180 @@ void CMapRenderChunk::CreateChunkLayerTex(CMapRenderChunkLayer* layer) {
     this->UnpackAlphaBits(CMapRenderChunk::s_defaultTex, texSize, &layerInfo, shadowMap, layerMode, chunkHeaderFlags & 0x8000);
 }
 
+// OFFSET: 0x007B7530 - Created via AI DOUBLE CHECK!!!
+void FetchAlphaShadowRows(const uint8_t** outShadowRow,
+                          const uint8_t** outAlphaRows,
+                          TextureLayerInfo* cursors,
+                          uint32_t size,
+                          const uint8_t** shadowCursor) {
+    if (*shadowCursor) {
+        *outShadowRow = *shadowCursor;
+        *shadowCursor += size >> 3;
+    } else {
+        *outShadowRow = CMapRenderChunk::s_defaultShadowRow;
+    }
+
+    if (cursors[0].alphaData) {
+        outAlphaRows[0] = cursors[0].alphaData;
+        cursors[0].alphaData += size >> 1;
+    } else {
+        outAlphaRows[0] = CMapRenderChunk::s_defaultAlphaRow;
+    }
+
+    if (cursors[1].alphaData) {
+        outAlphaRows[1] = cursors[1].alphaData;
+        cursors[1].alphaData += size >> 1;
+    } else {
+        outAlphaRows[1] = CMapRenderChunk::s_defaultAlphaRow;
+    }
+
+    if (cursors[2].alphaData) {
+        outAlphaRows[2] = cursors[2].alphaData;
+        cursors[2].alphaData += size >> 1;
+    } else {
+        outAlphaRows[2] = CMapRenderChunk::s_defaultAlphaRow;
+    }
+
+    if (cursors[3].alphaData) {
+        outAlphaRows[3] = cursors[3].alphaData;
+        cursors[3].alphaData += size >> 1;
+    } else {
+        outAlphaRows[3] = CMapRenderChunk::s_defaultAlphaRow;
+    }
+}
+
+// OFFSET: 0x007B84A0 - Created via AI DOUBLE CHECK!!!
+void EmitRow4444Unfixed(uint16_t* dst, const uint8_t* const* alphaRows, const uint8_t* shadowRow, uint32_t size) {
+    uint32_t x = 0;
+    const uint32_t lastColumn = size - 1;
+
+    if (size == 1) {
+        *dst = static_cast<uint16_t>(reinterpret_cast<uintptr_t>(dst));
+        return;
+    }
+
+    uint16_t pixel = 0;
+    do {
+        const uint32_t mask = s_nibbleMask[x & 1];
+        const uint32_t shift = s_nibbleShift[x & 1];
+        const uint32_t shadowBit = (shadowRow[x >> 3] & s_bitMask[x & 7]) >> s_bitShift[x & 7];
+
+        const uint32_t a1 = static_cast<uint8_t>((alphaRows[1][x >> 1] & mask) << shift);
+        const uint32_t a2 = static_cast<uint8_t>((alphaRows[2][x >> 1] & mask) << shift);
+        const uint32_t a3 = static_cast<uint8_t>((alphaRows[3][x >> 1] & mask) << shift);
+
+        ++x;
+
+        pixel = static_cast<uint16_t>(((s_shadowLut[shadowBit] & 0xF0) << 8) | (a1 << 4) | a2 | (a3 >> 4));
+        *dst++ = pixel;
+    } while (x < lastColumn);
+
+    *dst++ = pixel;
+}
+
+// OFFSET: 0x7B87F0 - Created via AI DOUBLE CHECK!!!
+void CMapRenderChunk::UnpackAlphaShadowBits(uint16_t* outputTexture, int32_t dstOffset, int32_t dstPitch, uint32_t size, TextureLayerInfo* layerInfo, uint32_t alphaSlot, uint8_t* shadowMap, int32_t genFormat, bool doNotFixAlphaMap) {
+    bool v1 = (this->unk_0A & 0x8) != 0;
+
+    if (doNotFixAlphaMap) {
+        if (genFormat == 3) {
+            if (v1)
+                this->UnpackAlphaShadowBitsFixed4444Mip1(outputTexture, dstOffset, dstPitch, size, layerInfo, shadowMap);
+            else
+                this->UnpackAlphaShadowBitsFixed4444Mip0(outputTexture, dstOffset, dstPitch, size, layerInfo, shadowMap);
+            return;
+        } else if (v1) {
+            this->UnpackAlphaShadowBitsFixed8888Mip0(outputTexture, size, shadowMap);
+        } else {
+            this->UnpackAlphaShadowBitsFixed8888Mip0(outputTexture, size, shadowMap);
+        }
+    } else {
+        if (genFormat != 3)
+            SErrDisplayAppFatal("CMapChunk::UnpackAlphaShadowBits(): Bad genformat.");
+
+        if (v1)
+            this->UnpackAlphaShadowBitsUnfixed4444Mip1(outputTexture, size, layerInfo);
+        else
+            this->UnpackAlphaShadowBitsUnfixed4444Mip0(outputTexture, dstOffset, dstPitch, size, layerInfo, shadowMap);
+    }
+}
+
+// OFFSET: 0x7B8620
+void CMapRenderChunk::UnpackAlphaShadowBitsUnfixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsUnfixed4444Mip1(): Not implemented.");
+}
+
+// OFFSET: 0x7B85A0 - Created via AI DOUBLE CHECK!!!
+void CMapRenderChunk::UnpackAlphaShadowBitsUnfixed4444Mip0(uint16_t* dstBase, int32_t dstOffset, int32_t dstPitch, uint32_t size, TextureLayerInfo* cursors, const uint8_t* shadowMap) {
+    uint16_t* dst = dstBase + dstOffset;
+    
+    const uint8_t* alphaRows[4] = {};
+    const uint8_t* shadowRow = nullptr;
+    const uint8_t* lastShadowRow = nullptr;
+    
+    if (size != 1) {
+        uint32_t rowsRemaining = size - 1;
+        do {
+            FetchAlphaShadowRows(&shadowRow, alphaRows, cursors, size, &shadowMap);
+            lastShadowRow = shadowRow;
+    
+            EmitRow4444Unfixed(dst, alphaRows, lastShadowRow, size);
+    
+            //dst += dstPitch;
+            --rowsRemaining;
+        } while (rowsRemaining);
+    }
+    
+    EmitRow4444Unfixed(dst, alphaRows, lastShadowRow, size);
+}
+
+// OFFSET: 0x7B7DC0
+void CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip1(): Not implemented.");
+}
+
+// OFFSET: 0x7B7C60
+void CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip0(): Not implemented.");
+}
+
+// OFFSET: 0x7B8190
+void CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip1(uint16_t* dstBase, int32_t dstOffset, int32_t dstPitch, uint32_t size, TextureLayerInfo* cursors, const uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip1(): Not implemented.");
+}
+
+// OFFSET: 0x7B8070 - Created via AI DOUBLE CHECK!!!
+void CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip0(uint16_t* dstBase, int32_t dstOffset, int32_t dstPitch, uint32_t size, TextureLayerInfo* cursors, const uint8_t* shadowMap) {
+    uint16_t* dst = dstBase + dstOffset;
+
+    if (size == 0)
+        return;
+
+    const int rowStride = dstPitch;
+    uint32_t rowsRemaining = size;
+
+    do {
+        const uint8_t* shadowRow;
+        const uint8_t* alphaRows[4];
+        FetchAlphaShadowRows(&shadowRow, alphaRows, cursors, size, &shadowMap);
+
+        for (uint32_t x = 0; x < size; ++x) {
+            const uint32_t mask = s_nibbleMask[x & 1];
+            const uint32_t shift = s_nibbleShift[x & 1];
+            const uint32_t shadowBit = (shadowRow[x >> 3] & s_bitMask[x & 7]) >> s_bitShift[x & 7];
+
+            const uint32_t a1 = static_cast<uint8_t>((alphaRows[1][x >> 1] & mask) << shift);
+            const uint32_t a2 = static_cast<uint8_t>((alphaRows[2][x >> 1] & mask) << shift);
+            const uint32_t a3 = static_cast<uint8_t>((alphaRows[3][x >> 1] & mask) << shift);
+
+            *dst++ = static_cast<uint16_t>(((s_shadowLut[shadowBit] & 0xF0) << 8) | (a1 << 4) | a2 | (a3 >> 4));
+        }
+
+        //dst += rowStride;
+        --rowsRemaining;
+    } while (rowsRemaining);
+}
+
 // OFFSET: 0x7B8E20
 void CMapRenderChunk::UnpackAlphaBits(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo, uint8_t* shadowMap, int32_t layerMode, bool bigAlpha) {
     bool v1 = (this->unk_0A & 0x8) != 0;
@@ -504,9 +820,9 @@ void CMapRenderChunk::UnpackAlphaBits(uint16_t* outputTexture, uint32_t texSize,
     if (bigAlpha) {
         if (layerMode == 3) {
             if (v1)
-                this->UnpackAlphaShadowBitsFixed4444Mip1(outputTexture, texSize, layerInfo);
+                this->UnpackAlphaBitsFixed4444Mip1(outputTexture, texSize, layerInfo);
             else
-                this->UnpackAlphaShadowBitsFixed4444Mip0(outputTexture, texSize, layerInfo);
+                this->UnpackAlphaBitsFixed4444Mip0(outputTexture, texSize, layerInfo);
             return;
         }
         if (layerMode == 2) {
@@ -516,9 +832,9 @@ void CMapRenderChunk::UnpackAlphaBits(uint16_t* outputTexture, uint32_t texSize,
                 else
                     this->RecreateAlphaBitsFixed8888Mip0(outputTexture, texSize, layerInfo, shadowMap);
             } else if (v1) {
-                this->UnpackAlphaShadowBitsFixed8888Mip0(outputTexture, texSize, shadowMap);
+                this->UnpackAlphaBitsFixed8888Mip0(outputTexture, texSize, shadowMap);
             } else {
-                this->UnpackAlphaShadowBitsFixed8888Mip0(outputTexture, texSize, shadowMap);
+                this->UnpackAlphaBitsFixed8888Mip0(outputTexture, texSize, shadowMap);
             }
             return;
         }
@@ -545,16 +861,13 @@ void CMapRenderChunk::UnpackAlphaBitsUnfixed4444Mip0(uint16_t* outputTexture, ui
     if (texSize == 1)
         return;
 
-    const uint32_t NIBBLE_MASKS[2] = { 0x0F, 0xF0 };
-    const uint32_t NIBBLE_SHIFTS[2] = { 0, 4 };
-
     uint32_t nibbleIndex = 0;
     uint16_t lastPixel = 0x0FFF;
 
     for (int32_t i = 0; i < texSize - 1; i++) {
         for (int32_t j = 0; j < texSize - 1; j++) {
             uint8_t rawByte = layerInfo->alphaData[nibbleIndex >> 1];
-            uint8_t alpha4 = (rawByte & NIBBLE_MASKS[nibbleIndex & 1]) >> NIBBLE_SHIFTS[nibbleIndex & 1];
+            uint8_t alpha4 = (rawByte & s_nibbleMask[nibbleIndex & 1]) >> s_nibbleShiftReverse[nibbleIndex & 1];
             lastPixel = (uint16_t)((alpha4 << 12) | 0x0FFF);
             *outputTexture++ = lastPixel;
             ++nibbleIndex;
@@ -568,7 +881,7 @@ void CMapRenderChunk::UnpackAlphaBitsUnfixed4444Mip0(uint16_t* outputTexture, ui
     for (int32_t col = 0; col < texSize - 1; col++) {
         unsigned int idx = finalStart + col;
         uint8_t rawByte = layerInfo->alphaData[idx >> 1];
-        uint8_t alpha4 = (rawByte & NIBBLE_MASKS[idx & 1]) >> NIBBLE_SHIFTS[idx & 1];
+        uint8_t alpha4 = (rawByte & s_nibbleMask[idx & 1]) >> s_nibbleShiftReverse[idx & 1];
         lastPixel = (uint16_t)((alpha4 << 12) | 0x0FFF);
         *outputTexture++ = lastPixel;
     }
@@ -576,13 +889,13 @@ void CMapRenderChunk::UnpackAlphaBitsUnfixed4444Mip0(uint16_t* outputTexture, ui
 }
 
 // OFFSET: 0x7B8C70
-void CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap) {
-    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip1(): Not implemented.");
+void CMapRenderChunk::UnpackAlphaBitsFixed8888Mip1(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaBitsFixed8888Mip1(): Not implemented.");
 }
 
 // OFFSET: 0x7B8B80
-void CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap) {
-    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed8888Mip0(): Not implemented.");
+void CMapRenderChunk::UnpackAlphaBitsFixed8888Mip0(uint16_t* outputTexture, uint32_t texSize, uint8_t* shadowMap) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaBitsFixed8888Mip0(): Not implemented.");
 }
 
 // OFFSET: 0x7B89C0
@@ -596,30 +909,26 @@ void CMapRenderChunk::RecreateAlphaBitsFixed8888Mip0(uint16_t* outputTexture, ui
 }
 
 // OFFSET: 0x7B7620
-void CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
-    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip1(): Not implemented.");
+void CMapRenderChunk::UnpackAlphaBitsFixed4444Mip1(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
+    SErrDisplayAppFatal("CMapRenderChunk::UnpackAlphaBitsFixed4444Mip1(): Not implemented.");
 }
 
 // OFFSET: 0x7B75B0
-void CMapRenderChunk::UnpackAlphaShadowBitsFixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
+void CMapRenderChunk::UnpackAlphaBitsFixed4444Mip0(uint16_t* outputTexture, uint32_t texSize, TextureLayerInfo* layerInfo) {
     if (!texSize)
         return;
-
-    const uint32_t NIBBLE_MASKS[2] = { 0x0F, 0xF0 };
-    const uint32_t NIBBLE_SHIFTS[2] = { 0, 4 };
 
     unsigned int nibbleIndex = 0;
 
     for (unsigned int row = 0; row < texSize; ++row) {
         for (unsigned int col = 0; col < texSize; ++col) {
             uint8_t rawByte = layerInfo->alphaData[nibbleIndex >> 1];
-            uint8_t alpha4 = (rawByte & NIBBLE_MASKS[nibbleIndex & 1]) >> NIBBLE_SHIFTS[nibbleIndex & 1];
+            uint8_t alpha4 = (rawByte & s_nibbleMask[nibbleIndex & 1]) >> s_nibbleShiftReverse[nibbleIndex & 1];
             *outputTexture++ = (uint16_t)((alpha4 << 12) | 0x0FFF);
             ++nibbleIndex;
         }
     }
 }
-
 
 // OFFSET: 0x7B9C20
 void CMapRenderChunk::UpdateShadowGxTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint32_t d, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels) {
@@ -845,7 +1154,7 @@ void CMapRenderChunk::SetVertexShader(int32_t a1, int32_t a2) {
 }
 
 // OFFSET: 0x7D0D70
-void sub_7D0D70(CMapRenderChunk* renderChunk) {
+void CMapRenderChunk::RenderMultiPassAlpha(CMapRenderChunk* renderChunk) {
     C44Matrix tex0Matrix = C44Matrix();
     C44Matrix tex1Matrix = C44Matrix();
     C3Vector viewVector = {
@@ -941,7 +1250,7 @@ void sub_7D0D70(CMapRenderChunk* renderChunk) {
         //GxRsSet(GxRs_BlendingMode, 2);
         //SyncAlphaRef();
         //
-        //GxRsSet(GxRs_Texture0, TextureGetGxTex(texturepointer, 1, 0));
+        //GxRsSet(GxRs_Texture0, TextureGetGxTex(CWorld::shadowModTexture, 1, 0));
         //GxRsSet(GxRs_Texture1, TextureGetGxTex(renderChunk->shadowTexture, 1, 0));
         //g_theGxDevicePtr->Draw(&renderChunk->batch, 1);
     }
@@ -950,6 +1259,274 @@ void sub_7D0D70(CMapRenderChunk* renderChunk) {
     g_theGxDevicePtr->RsSet(GxRs_Texture1, nullptr);
 }
 
+// OFFSET: 0x7D0760
+void CMapRenderChunk::RenderMultiPassAdditive(CMapRenderChunk* renderChunk) {
+    //a1.a0 = 1.0;
+    //v1 = arg0;
+    //a1.a1 = 0.0;
+    //a1.a2 = 0.0;
+    //a1.a3 = 0.0;
+    //a1.b0 = 0.0;
+    //a1.b2 = 0.0;
+    //a1.b3 = 0.0;
+    //a1.c0 = 0.0;
+    //a1.c1 = 0.0;
+    //a1.c3 = 0.0;
+    //a1.d0 = 0.0;
+    //a1.d1 = 0.0;
+    //a1.d2 = 0.0;
+    //a2.a1 = 0.0;
+    //a2.a2 = 0.0;
+    //a2.a3 = 0.0;
+    //a2.b0 = 0.0;
+    //a2.b2 = 0.0;
+    //a2.b3 = 0.0;
+    //a2.c0 = 0.0;
+    //a2.c1 = 0.0;
+    //a2.c3 = 0.0;
+    //a2.d0 = 0.0;
+    //a2.d1 = 0.0;
+    //a2.d2 = 0.0;
+    //a1.b1 = 1.0;
+    //a1.c2 = 1.0;
+    //a1.d3 = 1.0;
+    //a2.a0 = 1.0;
+    //a2.b1 = 1.0;
+    //a2.c2 = 1.0;
+    //a2.d3 = 1.0;
+    //v48.x = CWorldScene::s_activeWorldView.x - arg0->vec1.x;
+    //v48.y = CWorldScene::s_activeWorldView.y - arg0->vec1.y;
+    //v48.z = CWorldScene::s_activeWorldView.z - arg0->vec1.z;
+    //a4 = -CMapChunk::s_geoToTex;
+    //sub_7D06B0(&a1, &a2, &v48, a4);
+    //m_xforms = g_theGxDevicePtr->m_xforms;
+    //v3 = &g_theGxDevicePtr->m_xforms[0].m_flags[g_theGxDevicePtr->m_xforms[0].m_level];
+    //g_theGxDevicePtr->m_xforms[0].m_dirty = 1;
+    //*v3 &= ~1u;
+    //C44Matrix::Copy(&m_xforms->m_mtx[m_xforms->m_level], &a1);
+    //v4 = &g_theGxDevicePtr->m_xforms[1];
+    //v5 = &g_theGxDevicePtr->m_xforms[1].m_flags[g_theGxDevicePtr->m_xforms[1].m_level];
+    //g_theGxDevicePtr->m_xforms[1].m_dirty = 1;
+    //*v5 &= ~1u;
+    //C44Matrix::Copy(&v4->m_mtx[v4->m_level], &a2);
+    //v6 = g_theGxDevicePtr;
+    //if (g_theGxDevicePtr->m_context) {
+    //    v7 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
+    //    if (v7->m_value.m_data.i[0]) {
+    //        CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
+    //        v7->m_value.m_data.i[0] = 0;
+    //        v6 = g_theGxDevicePtr;
+    //    }
+    //    if (v6->m_context) {
+    //        m_data = v6->m_appRenderStates.m_data;
+    //        v9 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
+    //        p_m_data = &v6->m_appRenderStates.m_data;
+    //        if (m_data[7].m_value.m_data.i[0] != v9) {
+    //            CGxDevice::IRsDirty(v6, GxRs_AlphaRef);
+    //            (*p_m_data)[7].m_value.m_data.i[0] = v9;
+    //            v6 = g_theGxDevicePtr;
+    //        }
+    //    }
+    //}
+    //v11 = 0;
+    //v51 = (arg0->unk_0A & 4) != 0;
+    //v12 = arg0->layersCount == 0;
+    //v53 = 0;
+    //if (!v12) {
+    //    while (1) {
+    //        texture = v1->layers[v11].texture;
+    //        v14 = &v1->layers[v11];
+    //        GxTex = CTexture::GetGxTex(texture, 0, 0);
+    //        CGxDevice::RsSet(g_theGxDevicePtr, GxRs_Texture0, GxTex);
+    //        GxTexSetWrap(GxTex, 1, 1u);
+    //        if (v11 || !v51)
+    //            goto LABEL_18;
+    //        v16 = g_theGxDevicePtr;
+    //        if (g_theGxDevicePtr->m_context) {
+    //            v17 = g_theGxDevicePtr->m_appRenderStates.m_data + 53;
+    //            if (v17->m_value.m_data.i[0] != 4) {
+    //                CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_TexGen0);
+    //                v17->m_value.m_data.i[0] = 4;
+    //                v16 = g_theGxDevicePtr;
+    //            }
+    //            if (v16->m_context) {
+    //                v18 = v16->m_appRenderStates.m_data + 61;
+    //                if (v18->m_value.m_data.i[0])
+    //                    break;
+    //            }
+    //        }
+//LABEL_19:
+    //        if (SLOBYTE(v14->flags) < 0) {
+    //            if (v16->m_context) {
+    //                v19 = v16->m_appRenderStates.m_data + 11;
+    //                if (v19->m_value.m_data.i[0]) {
+    //                    CGxDevice::IRsDirty(v16, GxRs_Lighting);
+    //                    v19->m_value.m_data.i[0] = 0;
+    //                    v16 = g_theGxDevicePtr;
+    //                }
+    //            }
+    //        }
+    //        if ((v14->flags & 0x40) != 0) {
+    //            C3Vector__C3Vector(&a3, (C3Vector*)&World::texVect[v14->flags & 7]);
+    //            v20 = 1.0 / CMapChunk::s_geoToTex / flt_AF14F8[(LOBYTE(v14->flags) >> 3) & 7];
+    //            v21 = g_theGxDevicePtr->m_xforms;
+    //            a3.x = a3.x * v20;
+    //            a3.y = a3.y * v20;
+    //            a3.z = v20 * a3.z;
+    //            v22 = &g_theGxDevicePtr->m_xforms[0].m_flags[g_theGxDevicePtr->m_xforms[0].m_level];
+    //            g_theGxDevicePtr->m_xforms[0].m_dirty = 1;
+    //            *v22 &= ~1u;
+    //            C44Matrix::Translate(&v21->m_mtx[v21->m_level], &a3);
+    //            v16 = g_theGxDevicePtr;
+    //        }
+    //        if (v11 == 1) {
+    //            if (v16->m_context) {
+    //                v23 = v16->m_appRenderStates.m_data + 6;
+    //                if (v23->m_value.m_data.i[0] != 10) {
+    //                    CGxDevice::IRsDirty(v16, GxRs_BlendingMode);
+    //                    v23->m_value.m_data.i[0] = 10;
+    //                    v16 = g_theGxDevicePtr;
+    //                }
+    //                if (v16->m_context) {
+    //                    v24 = v16->m_appRenderStates.m_data;
+    //                    v25 = CGxDevice::s_alphaRef[v24[6].m_value.m_data.i[0]];
+    //                    v26 = &v16->m_appRenderStates.m_data;
+    //                    if (v24[7].m_value.m_data.i[0] != v25) {
+    //                        CGxDevice::IRsDirty(v16, GxRs_AlphaRef);
+    //                        (*v26)[7].m_value.m_data.i[0] = v25;
+    //                        v16 = g_theGxDevicePtr;
+    //                    }
+    //                    v11 = v53;
+    //                }
+    //            }
+    //            v12 = v16->m_context == 0;
+    //            v52 = 0;
+    //            if (!v12) {
+    //                v27 = v16->m_appRenderStates.m_data;
+    //                v28 = v27[10].m_value.m_data.i[0];
+    //                v29 = v52;
+    //                i = v27[10].m_value.m_data.i;
+    //                if (v28 != v52) {
+    //                    CGxDevice::IRsDirty(v16, GxRs_FogColor);
+    //                    *i = v29;
+    //                    v16 = g_theGxDevicePtr;
+    //                }
+    //                v11 = v53;
+    //            }
+    //        }
+    //        layerTexture = (CTexture*)v14->layerTexture;
+    //        if (layerTexture) {
+    //            v32 = CTexture::GetGxTex(layerTexture, 1, 0);
+    //            CGxDevice::RsSet(g_theGxDevicePtr, GxRs_Texture1, v32);
+//LABEL_42:
+    //            v16 = g_theGxDevicePtr;
+    //            goto LABEL_43;
+    //        }
+    //        if (v16->m_context) {
+    //            v33 = v16->m_appRenderStates.m_data + 22;
+    //            if (v33->m_value.m_data.i[0]) {
+    //                CGxDevice::IRsDirty(v16, GxRs_Texture1);
+    //                v33->m_value.m_data.i[0] = 0;
+    //                goto LABEL_42;
+    //            }
+    //        }
+//LABEL_43:
+    //        v16->Draw(v16, &arg0->batch, 1);
+    //        if (v11 || !v51)
+    //            goto LABEL_51;
+    //        v6 = g_theGxDevicePtr;
+    //        if (g_theGxDevicePtr->m_context) {
+    //            v34 = g_theGxDevicePtr->m_appRenderStates.m_data + 53;
+    //            if (v34->m_value.m_data.i[0] != 2) {
+    //                CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_TexGen0);
+    //                v34->m_value.m_data.i[0] = 2;
+    //                v6 = g_theGxDevicePtr;
+    //            }
+    //            if (v6->m_context) {
+    //                v35 = v6->m_appRenderStates.m_data + 61;
+    //                if (v35->m_value.m_data.i[0] != 1) {
+    //                    CGxDevice::IRsDirty(v6, GxRs_TextureShader0);
+    //                    v35->m_value.m_data.i[0] = 1;
+//LABEL_51:
+    //                    v6 = g_theGxDevicePtr;
+    //                }
+    //            }
+    //        }
+    //        if (SLOBYTE(v14->flags) < 0) {
+    //            if (v6->m_context) {
+    //                v36 = v6->m_appRenderStates.m_data + 11;
+    //                if (v36->m_value.m_data.i[0] != 1) {
+    //                    CGxDevice::IRsDirty(v6, GxRs_Lighting);
+    //                    v36->m_value.m_data.i[0] = 1;
+    //                    v6 = g_theGxDevicePtr;
+    //                }
+    //            }
+    //        }
+    //        if ((v14->flags & 0x40) != 0) {
+    //            v6->m_xforms[0].m_dirty = 1;
+    //            v37 = v6->m_xforms;
+    //            v37->m_flags[v6->m_xforms[0].m_level] &= ~1u;
+    //            v38 = v6->m_xforms[0].m_level << 6;
+    //            *(float*)((char*)&v37->m_mtx[0].a0 + v38) = a1.a0;
+    //            v39 = (float*)((char*)&v6->m_xforms[0].m_mtx[0].a0 + v38);
+    //            v39[1] = a1.a1;
+    //            v39[2] = a1.a2;
+    //            v39[3] = a1.a3;
+    //            v39[4] = a1.b0;
+    //            v39[5] = a1.b1;
+    //            v39[6] = a1.b2;
+    //            v39[7] = a1.b3;
+    //            v39[8] = a1.c0;
+    //            v39[9] = a1.c1;
+    //            v39[10] = a1.c2;
+    //            v39[11] = a1.c3;
+    //            v39[12] = a1.d0;
+    //            v39[13] = a1.d1;
+    //            v39[14] = a1.d2;
+    //            v39[15] = a1.d3;
+    //            v6 = g_theGxDevicePtr;
+    //        }
+    //        layersCount = arg0->layersCount;
+    //        v53 = ++v11;
+    //        if (v11 >= layersCount)
+    //            goto LABEL_59;
+    //        v1 = arg0;
+    //    }
+    //    CGxDevice::IRsDirty(v16, GxRs_TextureShader0);
+    //    v18->m_value.m_data.i[0] = 0;
+//LABEL_18:
+    //    v16 = g_theGxDevicePtr;
+    //    goto LABEL_19;
+    //}
+//LABEL_59:
+    //result = dword_D2509C;
+    //v42 = dword_D2509C;
+    //if (v6->m_context) {
+    //    v43 = v6->m_appRenderStates.m_data + 10;
+    //    if (v43->m_value.m_data.i[0] != dword_D2509C) {
+    //        result = CGxDevice::IRsDirty(v6, GxRs_FogColor);
+    //        v43->m_value.m_data.i[0] = v42;
+    //        v6 = g_theGxDevicePtr;
+    //    }
+    //    if (v6->m_context) {
+    //        v44 = v6->m_appRenderStates.m_data + 21;
+    //        if (v44->m_value.m_data.i[0]) {
+    //            result = CGxDevice::IRsDirty(v6, GxRs_Texture0);
+    //            v44->m_value.m_data.i[0] = 0;
+    //            v6 = g_theGxDevicePtr;
+    //        }
+    //        if (v6->m_context) {
+    //            v45 = v6->m_appRenderStates.m_data + 22;
+    //            if (v45->m_value.m_data.i[0]) {
+    //                result = CGxDevice::IRsDirty(v6, GxRs_Texture1);
+    //                v45->m_value.m_data.i[0] = 0;
+    //            }
+    //        }
+    //    }
+    //}
+}
+
+// OFFSET: 0x7D3E10
 void CMapRenderChunk::SetShaders(int32_t a1, int32_t a2) {
     //dword_D1D094 = 0;
     //dword_D1D090 = 0;
@@ -962,7 +1539,7 @@ void CMapRenderChunk::SetShaders(int32_t a1, int32_t a2) {
     //dword_D1D078 = 0;
     //dword_D1D07C = 0;
     //if (CMap::gTerrainPixelShadersValid) {
-    //    v2 = (CMap::header.flags >> 2) & 1;
+    //    auto v2 = (CMap::header.flags >> 2) & 1;
     //    v3 = a1;
     //    v6 = sub_873FF0();
     //    dword_D1D094 = CMap::GetPixelShader(v2, 1, a1);
@@ -992,9 +1569,9 @@ void CMapRenderChunk::SetShaders(int32_t a1, int32_t a2) {
     //            CMapRenderChunk::s_renderLayersFunc = sub_7D1AD0;
     //    }
     //} else if ((CMap::header.flags & 4) != 0) {
-    //    CMapRenderChunk::s_renderLayersFunc = sub_7D0760;
+    //    CMapRenderChunk::s_renderLayersFunc = CMapRenderChunk::RenderMultiPassAdditive;
     //} else {
-        CMapRenderChunk::s_renderLayersFunc = sub_7D0D70;
+        CMapRenderChunk::s_renderLayersFunc = CMapRenderChunk::RenderMultiPassAlpha;
     //}
 }
 

@@ -127,7 +127,7 @@ void CMapArea::PrepareChunk(int32_t chunkX, int32_t chunkY) {
     this->chunkLinkList.LinkToTail(link);
 
     chunk->aIndex.x = chunkX;
-    chunk->unk_C = 0;
+    chunk->flags = 0;
     chunk->aIndex.y = chunkY;
     chunk->cOffset.x = chunkX + this->tileChunkIndex.x;
     chunk->cOffset.y = chunkY + this->tileChunkIndex.y;
@@ -180,5 +180,62 @@ void CMapArea::Update(bool a1, CiRect* chunkRect) {
                 //sub_7C5B20(chunk);
             }
         }
+    }
+}
+
+// OFFSET: 0x7D6810
+void CMapArea::BatchChunks(C2iVector pos) {
+    int32_t x = pos.x;
+    int32_t y = pos.y;
+
+    CMapChunk* topLeft = this->mapChunks[16 * y + x];
+    CMapChunk* bottomLeft = this->mapChunks[16 * y + x + 16];
+    CMapChunk* topRight = this->mapChunks[16 * y + x + 1];
+    CMapChunk* bottomRight = this->mapChunks[16 * y + x + 17];
+
+    CMapChunk* chunks[4] = { topLeft, bottomLeft, topRight, bottomRight };
+
+    for (int i = 0; i < 4; ++i) {
+        if (!chunks[i])
+            return;
+    }
+
+    bool canMergeLeftColumn = CMapChunk::CanMergeChunkLayers(bottomLeft, topLeft);
+    bool canMergeRightColumn = CMapChunk::CanMergeChunkLayers(bottomRight, topRight);
+    bool canMergeTopRow = CMapChunk::CanMergeChunkLayers(topRight, topLeft);
+    bool canMergeBottomRow = CMapChunk::CanMergeChunkLayers(bottomRight, bottomLeft);
+
+    int verticalMergeCount = canMergeLeftColumn + canMergeRightColumn;
+    int horizontalMergeCount = canMergeTopRow + canMergeBottomRow;
+
+    if (verticalMergeCount || horizontalMergeCount) {
+        bool useVertical = verticalMergeCount > horizontalMergeCount;
+
+        int firstPartnerIdx = useVertical ? 1 : 2;
+        int secondPartnerIdx = useVertical ? 2 : 1;
+        bool firstCanMerge = useVertical ? canMergeLeftColumn : canMergeTopRow;
+        bool secondCanMerge = useVertical ? canMergeRightColumn : canMergeBottomRow;
+        uint8_t orientation = useVertical ? 1 : 2;
+
+        if (firstCanMerge) {
+            CMapRenderChunk* renderChunk = CMap::AllocRenderChunk();
+            CMapChunk* partner = chunks[firstPartnerIdx];
+            topLeft->renderChunk = renderChunk;
+            renderChunk->AddBatch(topLeft, partner, &topLeft->topLeftCoords, orientation);
+            partner->renderChunk = topLeft->renderChunk;
+        }
+
+        if (secondCanMerge) {
+            CMapRenderChunk* renderChunk = CMap::AllocRenderChunk();
+            CMapChunk* first = chunks[secondPartnerIdx];
+            first->renderChunk = renderChunk;
+            renderChunk->AddBatch(first, bottomRight, &first->topLeftCoords, orientation);
+            bottomRight->renderChunk = first->renderChunk;
+        }
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        if (!chunks[i]->renderChunk)
+            chunks[i]->AllocRenderChunkAndBatch();
     }
 }

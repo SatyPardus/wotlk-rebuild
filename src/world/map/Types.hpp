@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include <tempest/Vector.hpp>
+#include <tempest/Quaternion.hpp>
+#include <tempest/Plane.hpp>
 #include <tempest/Box.hpp>
 #include <tempest/sphere/CAaSphere.hpp>
 
@@ -24,12 +26,47 @@ struct SIffChunk {
     }
 };
 
+enum EAlphaGenFormat {
+    GENFORMAT_8888 = 2, // 32-bit A8R8G8B8
+    GENFORMAT_4444 = 3, // 16-bit A4R4G4B4
+};
+
+enum CWorldEnables : uint32_t {
+    WorldEnable_TerrainShadows = 0x00000040,
+};
+
+enum MapObjFlag : uint32_t {
+    MAPOBJ_FLAG_UNPLACED = 0x00000001,
+    MAPOBJ_FLAG_INTERIOR = 0x00000002,
+    MAPOBJ_FLAG_EXTERIOR = 0x00000004,
+    MAPOBJ_FLAG_REFS_CREATED = 0x00000008,
+    MAPOBJ_FLAG_GROUP_INIT = 0x00000010,
+    MAPOBJ_FLAG_DISABLED = 0x00000020,
+    MAPOBJ_FLAG_IMPASSABLE = 0x00000040,
+    MAPOBJ_FLAG_PREPARED = 0x00000080,
+    MAPOBJ_FLAG_NO_HITTEST = 0x00000100,
+    MAPOBJ_FLAG_IN_MAPOBJ = 0x00000200,
+    MAPOBJ_FLAG_NO_DEPTH_SORT = 0x00000400,
+    MAPOBJ_FLAG_BIODOME = 0x00000800,
+    MAPOBJ_FLAG_PROJ_TEX = 0x00001000,
+    MAPOBJ_FLAG_NO_MAPOBJ_LINK = 0x00002000,
+    MAPOBJ_FLAG_INT_FOG = 0x00008000,
+    MAPOBJ_FLAG_MAPOBJDEF = 0x00010000,
+    MAPOBJ_FLAG_SHADOW_20000 = 0x00020000,
+};
+
 enum WorldCullStatus {
     WorldCull_outside = 0x0,
     WorldCull_inside = 0x1,
     WorldCull_intersect = 0x2,
     WorldCull_notOutside = 0x3,
     WorldCull_count = 0x4,
+};
+
+enum SMMapHeaderFlags : uint32_t {
+    // Alpha maps are stored as 4096 uncompressed bytes (8 bits per texel)
+    // instead of 2048 packed nibbles.  Selects the 8888 unpack path.
+    MapHeaderFlag_BigAlpha = 0x00000004,
 };
 
 struct SMMapHeader {
@@ -92,6 +129,11 @@ struct SMMapObjDef {
     uint16_t scale;     // Legion+: scale, 1024 means 1 (same as MDDF). Padding in 0.5.3 alpha.
 };
 
+enum SMChunkFlags : uint32_t {
+    ChunkFlag_HasShadowMap = 0x00000001,     // MCSH present
+    ChunkFlag_DoNotFixAlphaMap = 0x00008000, // alpha map is already 64x64
+};
+
 struct SMChunk {
     uint32_t flags;
     C2iVector index;
@@ -120,6 +162,11 @@ struct SMChunk {
     uint32_t ofsMCCV;
     uint32_t unused1;
     uint32_t unused2;
+};
+
+enum SMLayerFlags : uint32_t {
+    LayerFlag_UseAlphaMap = 0x00000100,        // layer has an MCAL slice
+    LayerFlag_AlphaMapCompressed = 0x00000200, // that slice is RLE encoded
 };
 
 struct SMLayer {
@@ -184,6 +231,101 @@ struct CWSoundEmitter {
     uint32_t entry_id;
     C3Vector position;
     C3Vector size;
+};
+
+struct SMOHeader {
+    uint32_t nTextures;
+    uint32_t nGroups;
+    uint32_t nPortals;
+    uint32_t nLights;
+    uint32_t nDoodadNames;
+    uint32_t nDoodadDefs;
+    uint32_t nDoodadSets;
+    uint32_t ambColor;
+    uint32_t wmoID;
+    CAaBox bounding_box;
+    uint16_t flags;
+    uint16_t numLod;
+};
+
+struct SMOMaterial {
+    uint32_t flags;
+    uint32_t shader;
+    uint32_t blendMode;
+    uint32_t texture1;
+    CImVector sidnColor;
+    CImVector frameSidnColor;
+    uint32_t texture2;
+    CImVector diffColor;
+    uint32_t groundType;
+    uint32_t texture3;
+    uint32_t color2;
+    uint32_t flags2;
+    uint32_t runTimeData[4];
+};
+
+struct SMOGroupInfo {
+    uint32_t flags;
+    CAaBox boundingBox;
+    uint32_t nameoffset;
+};
+
+struct SMODoodadSet {
+    char name[20];
+    uint32_t startIdx;
+    uint32_t count;
+    uint32_t pad;
+};
+
+struct SMODoodadDef {
+    uint32_t flags;
+    C3Vector position;
+    C4Quaternion orientation;
+    float scale;
+    CImVector color;
+};
+
+struct SMOFog {
+    uint32_t flags;
+    C3Vector position;
+    float smallerRadius;
+    float largerRadius;
+    float fogEnd;
+    float fogStartScalar;
+    CImVector fogColor;
+    float uwFogEnd;
+    float uwFogStartScalar;
+    CImVector uwFogColor;
+};
+
+struct SMOLight {
+    uint8_t type;
+    uint8_t atten;
+    uint8_t pad[2];
+    CImVector color;
+    C3Vector position;
+    float intensity;
+    C4Quaternion rotation;
+    float attenStart;
+    float attenEnd;
+};
+
+struct SMOPortal {
+    uint16_t startVertex;
+    uint16_t count;
+    C4Plane plane;
+};
+
+struct SMOPortalRef {
+    uint16_t portalIndex;
+    uint16_t groupIndex;
+    int16_t side;
+    uint16_t filler;
+};
+
+struct SMOVisibleBlock {
+    uint16_t firstVertex;
+    uint16_t count;
 };
 
 

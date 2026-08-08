@@ -19,6 +19,19 @@ WorldCullStatus CFrustum::Cull(CAaBox* box) {
     return WorldCull_notOutside;
 }
 
+WorldCullStatus CFrustum::Cull(CAaSphere* sphere) {
+    for (int i = 0; i < 6; ++i) {
+        const C4Plane& p = this->planes[i];
+
+        float dist = p.n.x * sphere->c.x + p.n.y * sphere->c.y + p.n.z * sphere->c.z + p.d;
+
+        if (dist < -sphere->r)
+            return WorldCull_notOutside;
+    }
+
+    return WorldCull_outside;
+}
+
 // OFFSET: 0x984240
 void CFrustum::CalcPlanesFromCorners(C3Vector* corners) {
     for (int32_t i = 0; i < 8; i++) {

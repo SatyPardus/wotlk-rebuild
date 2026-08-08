@@ -64,10 +64,9 @@ void CWorld::Initialize() {
     //CWorld::prepareAll = 0i64;
     //CWorld::bShowSimpleDoodads = 0;
     //CWorld::bLoadSimpleDoodads = 0;
-    //Scene = M2CreateScene();
     //World::texVect[0].x = 0.0;
     //World::texVect[0].y = 0.0;
-    //s_m2Scene = Scene;
+    CWorldScene::s_m2Scene = M2CreateScene();
     //World::texVect[0].z = 0.0;
     //dword_CD7658 = 1;
     //CWorld::shadowColor = -1;
@@ -201,6 +200,11 @@ void CWorld::LoadMap(const char* mapName, C3Vector* position, int32_t zoneID) {
     CWorld::prevFarClip = CWorld::s_farClip;
     //if (IsStreamingAndTrial())
     //    sub_420AA0(mapid);
+
+    //###DEBUG
+    CGWorldFrame::s_currentWorldFrame->m_camera->m_position = *position;
+    //###
+
     CWorld::PrepareAreaOfInterest(position);
     //CMap::gbPrevChunkRect = CWorld::gbChunkRect;
     CMap::Load(mapName, zoneID);
