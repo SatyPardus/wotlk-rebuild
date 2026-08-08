@@ -415,7 +415,7 @@ CMapArea* CMap::AllocArea() {
     if (ObjectAlloc(*CMap::areaHeap, &memHandle, &object, 0)) {
         CMapArea* area = new (object) CMapArea();
 
-        area->objectIndex = memHandle;
+        area->m_memHandle = memHandle;
         // HashTable::AddEntry(&stru_AEED8C, (char *)v1);
         return area;
     }
@@ -432,7 +432,7 @@ CMapChunk* CMap::AllocMapChunk() {
     if (ObjectAlloc(*CMap::chunkHeap, &memHandle, &object, 0)) {
         CMapChunk* area = new (object) CMapChunk();
 
-        area->objectIndex = memHandle;
+        area->m_memHandle = memHandle;
         // HashTable::AddEntry(&CMap::s_mapChunkList, (char *)v1);
         return area;
     }
@@ -487,7 +487,7 @@ CMapDoodadDef* CMap::AllocDoodadDef() {
     if (ObjectAlloc(*CMap::doodadDefHeap, &memHandle, &object, 0)) {
         CMapDoodadDef* mapDoodadDef = new (object) CMapDoodadDef();
 
-        mapDoodadDef->objectIndex = memHandle;
+        mapDoodadDef->m_memHandle = memHandle;
         return mapDoodadDef;
     }
 
@@ -501,7 +501,7 @@ CMapObjDef* CMap::AllocMapObjDef() {
     if (ObjectAlloc(*CMap::mapObjDefHeap, &memHandle, &object, 0)) {
         CMapObjDef* def = new (object) CMapObjDef();
 
-        def->objectIndex = memHandle;
+        def->m_memHandle = memHandle;
         return def;
     }
 

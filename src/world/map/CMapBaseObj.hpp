@@ -5,10 +5,10 @@
 #include "world/map/CMapBaseObjLink.hpp"
 #include "storm/list/TSLink.hpp"
 #include "storm/list/TSExplicitList.hpp"
+#include "world/map/CMapHandle.hpp"
 
-class CMapBaseObj {
+class CMapBaseObj : public CMapHandle {
     public:
-    int32_t objectIndex;
     uint16_t type;
     uint16_t refCount;
     uint32_t flags;

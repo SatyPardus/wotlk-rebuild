@@ -89,6 +89,7 @@ class CMap {
     static CMapDoodadDef* AllocDoodadDef();
     static CMapObjDef* AllocMapObjDef();
     static CMapObj* AllocMapObj();
+    static CMapObjGroup* AllocMapObjGroup();
     static CMapDoodadDef* CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3Vector* position);
     static CMapObjDef* CreateMapObjDef(char* fileName, SMMapObjDef* mapObjectDef, C3Vector* center, bool cached);
     static void FreeBaseObjLink(CMapBaseObjLink* link);
