@@ -171,15 +171,11 @@ void CMapObj::PostloadCallback(void* arg) {
     //a1->bbox.max = *(C3Vector*)&header->nLights;
     //result = (CMapObjGroup*)a1->groupInfoCount;
     //v4 = 0;
-    //a1->mapObjGroupCount = (int32_t)result;
-    //if (result) {
-    //    mapObjGroupArray = a1->mapObjGroupArray;
-    //    do {
-    //        result = (CMapObjGroup*)bn_CMap_AllocMapObjGroup();
-    //        *mapObjGroupArray = result;
-    //        ++v4;
-    //        ++mapObjGroupArray;
-    //    } while (v4 < a1->groupInfoCount);
-    //}
-    //a1->isGroupLoaded = 1;
+    mapObj->mapObjGroupCount = mapObj->groupInfoCount;
+    if (mapObj->groupInfoCount) {
+        for (int32_t i = 0; i < mapObj->groupInfoCount; i++) {
+            mapObj->mapObjGroupArray[i] = CMap::AllocMapObjGroup();
+        }
+    }
+    mapObj->isGroupLoaded = 1;
 }

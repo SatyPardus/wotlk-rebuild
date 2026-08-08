@@ -522,6 +522,20 @@ CMapObj* CMap::AllocMapObj() {
     return nullptr;
 }
 
+CMapObjGroup* CMap::AllocMapObjGroup() {
+    uint32_t memHandle;
+    void* object = nullptr;
+
+    if (ObjectAlloc(*CMap::mapObjGroupHeap, &memHandle, &object, 0)) {
+        CMapObjGroup* def = new (object) CMapObjGroup();
+
+        def->m_memHandle = memHandle;
+        return def;
+    }
+
+    return nullptr;
+}
+
 void CMapDoodadLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
     lighting->AddAmbient({ 1.0f, 1.0f, 1.0f });
     lighting->AddDiffuse({ 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f });
