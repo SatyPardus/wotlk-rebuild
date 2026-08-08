@@ -29,6 +29,6 @@ void StormInitialize();
 
 void WowClientInit();
 
-void ClientInitializeGame(int32_t continentID, C3Vector* position);
+void ClientInitializeGame(int32_t zoneId, C3Vector* position);
 
 #endif

@@ -13,6 +13,7 @@ class RealmResponse;
 class ClientServices : public LoginResponse {
     public:
         // Static variables
+        static ClientConnection* g_clientConnection;
         static char s_accountName[1280];
         static RealmResponse* s_clientRealmResponse;
         static ClientConnection* s_currentConnection;

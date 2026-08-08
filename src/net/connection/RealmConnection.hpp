@@ -6,6 +6,7 @@
 
 class CDataStore;
 class RealmResponse;
+class ObjectMgr;
 
 class RealmConnection : public NetClient {
     public:
@@ -32,6 +33,7 @@ class RealmConnection : public NetClient {
         uint32_t m_billingTimeRested = 0;
         uint8_t m_billingFlags = 0;
         uint8_t m_accountExpansion = 0;
+        ObjectMgr* m_ObjectMgr = nullptr;
 
         // Virtual member functions
         virtual int32_t HandleAuthChallenge(AuthenticationChallenge* challenge);

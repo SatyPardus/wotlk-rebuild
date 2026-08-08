@@ -7,6 +7,7 @@
 #include "world/World.hpp"
 #include "db/Db.hpp"
 #include "event/Timer.hpp"
+#include <clientobject/ObjectMgrClient.hpp>
 
 
 int32_t NewWorldHandler(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
@@ -51,7 +52,7 @@ int32_t LoginVerifyWorldHandler(void* param, NETMESSAGE msgId, uint32_t time, CD
     float facing;
     msg->Get(facing);
 
-    if (true /* zoneID != ClntObjMgrGetMapID() */) {
+    if (zoneID != ClntObjMgrGetMapID()) {
         s_newFacing = facing;
         s_newPosition = position;
         s_newZoneID = zoneID;

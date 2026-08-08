@@ -5,6 +5,7 @@
 #include <util/Unimplemented.hpp>
 #include <db/StaticDb.hpp>
 #include <gx/RenderState.hpp>
+#include <clientobject/ObjectMgrClient.hpp>
 
 void LoadingScreenInitialize() {
     g_theGxDevicePtr->ShaderCreate(&s_vertexShader, GxSh_Vertex, "Shaders\\Vertex", "UI", 2);
@@ -173,7 +174,7 @@ void ProgressBarSendKeepAlive(int time) {
 // OFFSET: 0x40A270
 void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visible, float elapsedSec) {
     // TODO
-    if (g_theGxDevicePtr /* && CGxDevice::CapsHasContext(-1) && g_theGxDevicePtr && CGxDevice::CapsIsWindowVisible(-1) */ && (s_progress <= 0.99000001 || IsStillLoading())) {
+    if (g_theGxDevicePtr && g_theGxDevicePtr->CapsHasContext(-1) && g_theGxDevicePtr->CapsIsWindowVisible(-1) && (s_progress <= 0.99000001 || IsStillLoading())) {
         if (!s_simpleBackgroundTexture && s_simpleMapID != -1 && !LoadSimpleBackgroundTexture())
             s_simpleMapID = -1;
         C3Vector saveMin;
@@ -689,13 +690,12 @@ void PaintDynamicLoadingBar() {
 
 // OFFSET: 0x409800
 bool IsStillLoading() {
-    //ActivePlayer = ClntObjMgrGetActivePlayer();
-    //v1 = ClntObjMgrObjectPtr(ActivePlayer, TYPEMASK_PLAYER);
-    //if (!v1)
+    auto activePlayerObj = ClntObjMgrGetActivePlayerObj();
+    if (!activePlayerObj)
+        return true;
+    //if (!((__int64(__thiscall*)(CGUnit_C*))activePlayerObj->ObjectBase.GetTransportGUID)(activePlayerObj))
     //    return 1;
-    //if (!((__int64(__thiscall*)(CGUnit_C*))v1->ObjectBase.GetTransportGUID)(v1))
-    //    return 1;
-    //v2 = ((__int64(__thiscall*)(CGUnit_C*))v1->ObjectBase.GetTransportGUID)(v1);
+    //v2 = ((__int64(__thiscall*)(CGUnit_C*))activePlayerObj->ObjectBase.GetTransportGUID)(activePlayerObj);
     //v3 = ClntObjMgrObjectPtr(v2, TYPEMASK_GAMEOBJECT);
     //if (v3) {
     //    v5 = (*(int(__thiscall**)(DWORD))(*(_DWORD*)v3->data0D4[51] + 112))(v3->data0D4[51]);

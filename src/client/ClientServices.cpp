@@ -116,7 +116,7 @@ static const char* s_errorCodeTokens[] = {
     "CHAR_NAME_DECLENSION_DOESNT_MATCH_BASE_NAME",
 };
 
-ClientConnection* g_clientConnection;
+ClientConnection* ClientServices::g_clientConnection;
 
 char ClientServices::s_accountName[1280];
 RealmResponse* ClientServices::s_clientRealmResponse;

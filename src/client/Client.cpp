@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <world/LoadingScreen.hpp>
 #include <async/AsyncFileRead.hpp>
+#include <clientobject/ObjectMgrClient.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -784,7 +785,7 @@ void WowClientInit() {
 }
 
 // OFFSET: 0x405540
-void ClientInitializeGame(int32_t continentID, C3Vector* position) {
+void ClientInitializeGame(int32_t zoneId, C3Vector* position) {
     //if (IsStreamingAndTrial())
     //    sub_41E4E0(0);
     //(*(void(__thiscall**)(int, int, int))(*(_DWORD*)g_theGxDevicePtr + 204))(g_theGxDevicePtr, 1, 1);
@@ -809,8 +810,8 @@ void ClientInitializeGame(int32_t continentID, C3Vector* position) {
     //}
 //LABEL_15:
     //AccountDataInitialize(0);
-    //ClntObjMgrInitializeShared();
-    //ClntObjMgrInitializeStd(zoneId);
+    ClntObjMgrInitializeShared();
+    ClntObjMgrInitializeStd(zoneId);
     //CGUnit_C::ClientInitialize();
     //SI2::InitZoneSoundsHandler();
     //SI2::InitZoneIntros();
@@ -878,7 +879,7 @@ void ClientInitializeGame(int32_t continentID, C3Vector* position) {
     //ClientServices::SetMessageHandler(SMSG_KICK_REASON, (int)Packet_Group_0, 0);
 
     // Is this correct? Compare with the one below
-    auto record = g_mapDB.GetRecord(continentID);
+    auto record = g_mapDB.GetRecord(zoneId);
     if (!record) {
         return;
     }
@@ -896,7 +897,7 @@ void ClientInitializeGame(int32_t continentID, C3Vector* position) {
     CWorld::SetLoadProgressCallback(LoadingScreenWorldCallback, nullptr);
     //if (IsStreamingAndTrial())
     //    sub_41E4E0(1);
-    CWorld::LoadMap(record->m_directory, position, continentID);
+    CWorld::LoadMap(record->m_directory, position, zoneId);
     AsyncFileReadSetProgressCallback(nullptr, nullptr);
     CWorld::SetLoadProgressCallback(nullptr, nullptr);
     //dword_B2F9E4 = OsGetAsyncTimeMs();
