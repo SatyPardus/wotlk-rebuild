@@ -556,6 +556,20 @@ const CGxCaps& CGxDevice::Caps() const {
     return this->m_caps;
 }
 
+bool CGxDevice::CapsHasContext(int32_t a2) {
+    if (a2 < 0)
+        return this->m_context;
+    this->m_context = a2 > 0;
+    return a2 > 0;
+}
+
+bool CGxDevice::CapsIsWindowVisible(int32_t a2) {
+    if (a2 < 0)
+        return this->m_windowVisible;
+    this->m_windowVisible = a2 > 0;
+    return a2 > 0;
+}
+
 EGxApi CGxDevice::DeviceApi() {
     return this->m_api;
 }
