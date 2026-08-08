@@ -1271,7 +1271,7 @@ int32_t CM2Model::IsLoaded(int32_t a2, int32_t attachments) {
             this->WaitForLoad(nullptr);
         }
 
-        return this->m_loaded && this->m_shared->m_m2DataLoaded && this->m_shared->m_skinProfileLoaded;
+        return this->m_loaded || (this->m_shared->m_m2DataLoaded && this->m_shared->m_skinProfileLoaded);
     }
 
     if (!this->m_loaded && a2) {
