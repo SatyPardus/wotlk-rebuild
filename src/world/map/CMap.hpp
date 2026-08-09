@@ -78,7 +78,7 @@ class CMap {
     static void MapMemInitialize();
     static void Load(const char* mapName, int32_t zoneID);
     static void LoadWdt();
-    static void LoadTextureBlob();
+    static void LoadTex();
     static HTEXTURE LoadTexture(const char* fileName);
     static void LoadTerrainTexture(CMapArea* area, CMapAreaTexture* areaTexture, int32_t textureId);
     static bool SafeOpen(const char* fileName, SFile** file);

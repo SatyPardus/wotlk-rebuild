@@ -145,9 +145,9 @@ void CMap::Initialize() {
     }
 
     g_theGxDevicePtr->ShaderCreate(&CMap::pixelShader_TerrainSM, GxSh_Pixel, "Shaders\\Pixel", "TerrainSM", 1);
-    //    dword_CDFFFC = (int)CGxDevice::PoolCreate(g_theGxDevicePtr, 1, 1, 6144, 0, (int)"CMap::lowDetailIndexPool");
-    //    dword_CDFFF8 = (int)CGxDevice::BufCreate(dword_CDFFFC, 2, 3072, 0);
-    //    sub_7D58B0(dword_ADFBCC, 0, 1, 16, 545, 0x18u);
+    //    CMap::lowDetailIndexPool = (int)CGxDevice::PoolCreate(g_theGxDevicePtr, 1, 1, 6144, 0, (int)"CMap::lowDetailIndexPool");
+    //    CMap::lowDetailIndexBuf = (int)CGxDevice::BufCreate(dword_CDFFFC, 2, 3072, 0);
+    //    VBBList::Initialize(CMapObjGroup::vertexVBList, 0, 1, 16, 545, 0x18u);
     CMap::MapMemInitialize();
     //}
 }
@@ -294,7 +294,7 @@ void CMap::Load(const char* mapName, int32_t zoneID) {
     CMap::bIsStreamingMode = false; // IsStreamingAndTrial() || SFile::IsStreamingMode();
     // CMap::LoadWdl((int)&dword_CF0900, CMap::mapPath, CMap::mapName);
     CMap::LoadWdt();
-    CMap::LoadTextureBlob();
+    CMap::LoadTex();
     DayNight::LoadMap(zoneID);
     CMap::PrepareUpdate(false);
     if (!CMap::bIsStreamingMode)
@@ -356,7 +356,8 @@ void CMap::LoadWdt() {
     SFile::Close(file);
 }
 
-void CMap::LoadTextureBlob() {
+// OFFSET: 0x7BD540
+void CMap::LoadTex() {
     char path[STORM_MAX_PATH];
     SStrCopy(path, CMap::wdtFilename, STORM_MAX_STR);
     char* suffix = SStrChrR(path, '.');
@@ -396,6 +397,7 @@ void CMap::LoadTerrainTexture(CMapArea* area, CMapAreaTexture* areaTexture, int3
     }
 }
 
+// OFFSET: 0x7BD480
 bool CMap::SafeOpen(const char* fileName, SFile** file) {
     int32_t v2 = 10;
     while (!SFile::Open(fileName, file)) {
@@ -494,6 +496,7 @@ CMapDoodadDef* CMap::AllocDoodadDef() {
     return nullptr;
 }
 
+// OFFSET: 0x7C03E0
 CMapObjDef* CMap::AllocMapObjDef() {
     uint32_t memHandle;
     void* object = nullptr;
@@ -508,6 +511,7 @@ CMapObjDef* CMap::AllocMapObjDef() {
     return nullptr;
 }
 
+// OFFSET: 0x7BFF20
 CMapObj* CMap::AllocMapObj() {
     uint32_t memHandle;
     void* object = nullptr;
@@ -522,6 +526,7 @@ CMapObj* CMap::AllocMapObj() {
     return nullptr;
 }
 
+// OFFSET: 0x7BFFE0
 CMapObjGroup* CMap::AllocMapObjGroup() {
     uint32_t memHandle;
     void* object = nullptr;
@@ -536,12 +541,14 @@ CMapObjGroup* CMap::AllocMapObjGroup() {
     return nullptr;
 }
 
+// Debug function
 void CMapDoodadLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
     lighting->AddAmbient({ 1.0f, 1.0f, 1.0f });
     lighting->AddDiffuse({ 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f });
     lighting->AddSpecular({ 0.0f, 0.0f, 0.0f });
 }
 
+// OFFSET: 0x7BF460
 CMapObjDef* CMap::CreateMapObjDef(char* fileName, SMMapObjDef* objectDef, C3Vector* center, bool cached) {
     constexpr float kDegToRad = 0.017453292f;
     constexpr float kPi = 3.1415927;
@@ -691,6 +698,7 @@ CMapArea* CMap::PrepareArea(int32_t areaIndexX, int32_t areaIndexY) {
     return area;
 }
 
+// OFFSET: 0x7D9A20
 void CMap::LoadArea(CMapArea* area) {
     char buffer[STORM_MAX_PATH];
     SStrPrintf(buffer, STORM_MAX_PATH, "%s\\%s_%d_%d.adt", CMap::mapPath, CMap::mapName, area->index.x, area->index.y);

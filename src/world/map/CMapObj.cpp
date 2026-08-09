@@ -161,16 +161,8 @@ void CMapObj::PostloadCallback(void* arg) {
     //savedregs = v10;
     mapObj->Load();
     //bn_CMapObj_CreateMaterials(a1);
-    //a1->argb_color = a1->header->ambColor;
-    //header = a1->header;
-    //x = header->bounding_box.min.x;
-    //header = (SMOHeader*)((char*)header + 36);
-    //a1->bbox.min.x = x;
-    //LODWORD(a1->bbox.min.y) = header->nGroups;
-    //LODWORD(a1->bbox.min.z) = header->nPortals;
-    //a1->bbox.max = *(C3Vector*)&header->nLights;
-    //result = (CMapObjGroup*)a1->groupInfoCount;
-    //v4 = 0;
+    mapObj->argb_color = mapObj->header->ambColor;
+    mapObj->bbox = mapObj->header->bounding_box;
     mapObj->mapObjGroupCount = mapObj->groupInfoCount;
     if (mapObj->groupInfoCount) {
         for (int32_t i = 0; i < mapObj->groupInfoCount; i++) {
