@@ -20,8 +20,8 @@ struct TextureInfo {
     CRect rect;
 };
 
-static CGxShader *s_vertexShader;
-static CGxShader *s_pixelShader;
+static CGxShader *s_vertexShader[2];
+static CGxShader *s_pixelShader[1];
 static HTEXTFONT s_textFont;
 static CGxString *s_tipStr;
 static CGxStringBatch *s_batch;

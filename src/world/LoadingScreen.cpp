@@ -7,9 +7,10 @@
 #include <gx/RenderState.hpp>
 #include <clientobject/ObjectMgrClient.hpp>
 
+// OFFSET: 0x40B2B0
 void LoadingScreenInitialize() {
-    g_theGxDevicePtr->ShaderCreate(&s_vertexShader, GxSh_Vertex, "Shaders\\Vertex", "UI", 2);
-    g_theGxDevicePtr->ShaderCreate(&s_pixelShader, GxSh_Pixel, "Shaders\\Pixel", "UI", 1);
+    g_theGxDevicePtr->ShaderCreate(s_vertexShader, GxSh_Vertex, "Shaders\\Vertex", "UI", 2);
+    g_theGxDevicePtr->ShaderCreate(s_pixelShader, GxSh_Pixel, "Shaders\\Pixel", "UI", 1);
     // sub_40B0B0(&g_TaxiPathNodeDB, stru_AD4BEC.maxIndex + 1);
     // sub_407C50();
 }
@@ -230,9 +231,9 @@ void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visible, fl
             C4Vector(0.0, 1.0, 0.0, 0.0),
             C4Vector(0.0, 0.0, 1.0, 0.0),
             C4Vector(0.0, 0.0, 0.0, 1.0));
-        if (s_vertexShader->Valid() && s_pixelShader->Valid()) {
-            g_theGxDevicePtr->RsSet(GxRs_VertexShader, s_vertexShader);
-            g_theGxDevicePtr->RsSet(GxRs_PixelShader, s_pixelShader);
+        if (s_vertexShader[0]->Valid() && s_pixelShader[0]->Valid()) {
+            g_theGxDevicePtr->RsSet(GxRs_VertexShader, s_vertexShader[0]);
+            g_theGxDevicePtr->RsSet(GxRs_PixelShader, s_pixelShader[0]);
             GxXformViewProjNativeTranspose(viewProjMat);
             GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<C4Vector*>(&viewProjMat), 4);
         } else {
@@ -241,7 +242,7 @@ void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visible, fl
         GxRsSet(GxRs_Fog, 0);
         if (!PaintBackgroundImage()) {
             PaintSimpleBackground();
-            if (s_vertexShader->Valid() && s_pixelShader->Valid()) {
+            if (s_vertexShader[0]->Valid() && s_pixelShader[0]->Valid()) {
                 GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<C4Vector*>(&viewProjMat), 4);
             }
             PaintLoadingBar(s_textureInfo, 2, s_textures);
