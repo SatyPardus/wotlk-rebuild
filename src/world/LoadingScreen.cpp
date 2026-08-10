@@ -234,7 +234,7 @@ void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visible, fl
             g_theGxDevicePtr->RsSet(GxRs_VertexShader, s_vertexShader);
             g_theGxDevicePtr->RsSet(GxRs_PixelShader, s_pixelShader);
             GxXformViewProjNativeTranspose(viewProjMat);
-            GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<float*>(&viewProjMat), 4);
+            GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<C4Vector*>(&viewProjMat), 4);
         } else {
             //         sub_408BF0(11, 0);
         }
@@ -242,7 +242,7 @@ void LoadingScreenPaint(void* param, const RECTF* rect, const RECTF* visible, fl
         if (!PaintBackgroundImage()) {
             PaintSimpleBackground();
             if (s_vertexShader->Valid() && s_pixelShader->Valid()) {
-                GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<float*>(&viewProjMat), 4);
+                GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<C4Vector*>(&viewProjMat), 4);
             }
             PaintLoadingBar(s_textureInfo, 2, s_textures);
         }

@@ -9,7 +9,7 @@
 
 char* GxShaderConstantsLock(EGxShTarget target);
 
-void GxShaderConstantsSet(EGxShTarget, uint32_t, const float*, uint32_t);
+void GxShaderConstantsSet(EGxShTarget, uint32_t, const C4Vector*, uint32_t);
 
 void GxShaderConstantsUnlock(EGxShTarget target, uint32_t index, uint32_t count);
 

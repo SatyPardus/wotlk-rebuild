@@ -265,7 +265,7 @@ void CGxStringBatch::RenderBatch() {
 
         C44Matrix viewProjMat;
         GxXformViewProjNativeTranspose(viewProjMat);
-        GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<float*>(&viewProjMat), 4);
+        GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<C4Vector*>(&viewProjMat), 4);
 
         for (auto fontBatch = this->m_fontBatch.Head(); fontBatch; fontBatch = this->m_fontBatch.Next(fontBatch)) {
             if (fontBatch->m_strings.Head()) {

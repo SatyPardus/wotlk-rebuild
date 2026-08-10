@@ -161,7 +161,7 @@ class CGxDevice {
         virtual int32_t TexCreate(EGxTexTarget target, uint32_t width, uint32_t height, uint32_t depth, EGxTexFormat format, EGxTexFormat dataFormat, CGxTexFlags flags, void* userArg, void (*)(EGxTexCommand, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint32_t&, const void*&), const char* name, CGxTex*& texId);
         virtual void TexDestroy(CGxTex* texId);
         virtual void ShaderCreate(CGxShader* shaders[], EGxShTarget target, const char* a4, const char* a5, int32_t permutations);
-        virtual void ShaderConstantsSet(EGxShTarget target, uint32_t index, const float* constants, uint32_t count);
+        virtual void ShaderConstantsSet(EGxShTarget target, uint32_t index, const C4Vector* constants, uint32_t count);
         virtual void IShaderCreate(CGxShader* shader) = 0;
         virtual int32_t StereoEnabled() = 0;
         virtual void CursorSetVisible(int32_t visible);

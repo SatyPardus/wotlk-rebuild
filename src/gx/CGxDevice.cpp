@@ -738,7 +738,7 @@ void CGxDevice::ICursorDraw() {
 
         C44Matrix transposition;
         GxXformProjNativeTranspose(transposition);
-        GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<float*>(&transposition), 0);
+        GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<C4Vector*>(&transposition), 0);
     }
 
     auto buffer = GxBufStream(GxPoolTarget_Vertex, sizeof(CGxVertexPCT), 4);
@@ -1360,7 +1360,7 @@ char* CGxDevice::ShaderConstantsLock(EGxShTarget target) {
         : reinterpret_cast<char*>(&CGxDevice::s_shadowConstants[0].constants);
 }
 
-void CGxDevice::ShaderConstantsSet(EGxShTarget target, uint32_t index, const float* constants, uint32_t count) {
+void CGxDevice::ShaderConstantsSet(EGxShTarget target, uint32_t index, const C4Vector* constants, uint32_t count) {
     STORM_ASSERT((index + count - 1) <= 255);
 
     if (!count) {
@@ -1377,29 +1377,29 @@ void CGxDevice::ShaderConstantsSet(EGxShTarget target, uint32_t index, const flo
         STORM_ASSERT(false);
     }
 
-    const float* c = constants;
+    const C4Vector* c = constants;
 
-    for (int32_t i = index; i < index + count; i++, c += 4) {
+    for (int32_t i = index; i < index + count; i++, c++) {
         int32_t dirty = 0;
 
-        if (dst->constants[i].x != c[0]) {
+        if (dst->constants[i].x != c->x) {
             dirty = 1;
-            dst->constants[i].x = c[0];
+            dst->constants[i].x = c->x;
         }
 
-        if (dst->constants[i].y != c[1]) {
+        if (dst->constants[i].y != c->y) {
             dirty = 1;
-            dst->constants[i].y = c[1];
+            dst->constants[i].y = c->y;
         }
 
-        if (dst->constants[i].z != c[2]) {
+        if (dst->constants[i].z != c->z) {
             dirty = 1;
-            dst->constants[i].z = c[2];
+            dst->constants[i].z = c->z;
         }
 
-        if (dst->constants[i].w != c[3]) {
+        if (dst->constants[i].w != c->w) {
             dirty = 1;
-            dst->constants[i].w = c[3];
+            dst->constants[i].w = c->w;
         }
 
         if (dirty) {

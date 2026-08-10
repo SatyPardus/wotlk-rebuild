@@ -26,7 +26,7 @@ void CSimpleRender::DrawBatch(CRenderBatch* batch) {
 
             C44Matrix viewProjMat;
             GxXformViewProjNativeTranspose(viewProjMat);
-            GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<float*>(&viewProjMat), 4);
+            GxShaderConstantsSet(GxSh_Vertex, 0, reinterpret_cast<C4Vector*>(&viewProjMat), 4);
         } else {
             GxRsSet(GxRs_Lighting, 0);
         }

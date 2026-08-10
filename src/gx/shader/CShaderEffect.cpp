@@ -40,13 +40,13 @@ void CShaderEffect::SetAlphaRef(float alphaRef) {
     if (CShaderEffect::s_useAlphaRef) {
         GxRsSet(GxRs_AlphaRef, static_cast<int32_t>(alphaRef * 255.0f));
     } else {
-        GxShaderConstantsSet(GxSh_Pixel, 2, reinterpret_cast<float*>(&CShaderEffect::s_fogColorAlphaRef), 1);
+        GxShaderConstantsSet(GxSh_Pixel, 2, reinterpret_cast<C4Vector*>(&CShaderEffect::s_fogColorAlphaRef), 1);
     }
 }
 
 void CShaderEffect::SetDiffuse(const C4Vector& diffuse) {
     if (CShaderEffect::s_enableShaders) {
-        GxShaderConstantsSet(GxSh_Vertex, 28, reinterpret_cast<const float*>(&diffuse), 1);
+        GxShaderConstantsSet(GxSh_Vertex, 28, reinterpret_cast<const C4Vector*>(&diffuse), 1);
         return;
     }
 
@@ -56,7 +56,7 @@ void CShaderEffect::SetDiffuse(const C4Vector& diffuse) {
 
 void CShaderEffect::SetEmissive(const C4Vector& emissive) {
     if (CShaderEffect::s_enableShaders) {
-        GxShaderConstantsSet(GxSh_Vertex, 29, reinterpret_cast<const float*>(&emissive), 1);
+        GxShaderConstantsSet(GxSh_Vertex, 29, reinterpret_cast<const C4Vector*>(&emissive), 1);
         return;
     }
 
@@ -66,14 +66,14 @@ void CShaderEffect::SetEmissive(const C4Vector& emissive) {
 void CShaderEffect::SetFogEnabled(int32_t fogEnabled) {
     if (fogEnabled && GxMasterEnable(GxMasterEnable_Fog)) {
         if (CShaderEffect::s_enableShaders && !GxCaps().int138) {
-            GxShaderConstantsSet(GxSh_Vertex, 30, reinterpret_cast<float*>(&CShaderEffect::s_fogParams), 1);
+            GxShaderConstantsSet(GxSh_Vertex, 30, reinterpret_cast<C4Vector*>(&CShaderEffect::s_fogParams), 1);
         } else {
             GxRsSet(GxRs_Fog, 1);
         }
     } else {
         if (CShaderEffect::s_enableShaders && !GxCaps().int138) {
-            float fogParams[] = { 0.0f, 1.0f, 1.0f, 0.0f };
-            GxShaderConstantsSet(GxSh_Vertex, 30, fogParams, 1);
+            C4Vector fogParams = { 0.0f, 1.0f, 1.0f, 0.0f };
+            GxShaderConstantsSet(GxSh_Vertex, 30, &fogParams, 1);
         } else {
             GxRsSet(GxRs_Fog, 0);
         }
@@ -93,7 +93,7 @@ void CShaderEffect::SetFogParams(float fogStart, float fogEnd, float fogRate, co
         CShaderEffect::s_fogParams.w = 0.0f;
 
         if (!GxCaps().int134) {
-            GxShaderConstantsSet(GxSh_Pixel, 2, reinterpret_cast<float*>(&CShaderEffect::s_fogColorAlphaRef), 1);
+            GxShaderConstantsSet(GxSh_Pixel, 2, reinterpret_cast<C4Vector*>(&CShaderEffect::s_fogColorAlphaRef), 1);
             return;
         }
     } else {
@@ -132,9 +132,9 @@ void CShaderEffect::SetLocalLighting(CM2Lighting* lighting, int32_t lightEnabled
             std::min(lighting->m_sunDiffuse.z, 1.0f)
         };
 
-        GxShaderConstantsSet(GxSh_Vertex, 10, reinterpret_cast<float*>(&CShaderEffect::s_sunDiffuse), 1);
-        GxShaderConstantsSet(GxSh_Vertex, 11, reinterpret_cast<float*>(&CShaderEffect::s_sunAmbient), 1);
-        GxShaderConstantsSet(GxSh_Vertex, 12, reinterpret_cast<float*>(&CShaderEffect::s_sunDir), 1);
+        GxShaderConstantsSet(GxSh_Vertex, 10, &C4Vector(CShaderEffect::s_sunDiffuse), 1);
+        GxShaderConstantsSet(GxSh_Vertex, 11, &C4Vector(CShaderEffect::s_sunAmbient), 1);
+        GxShaderConstantsSet(GxSh_Vertex, 12, &C4Vector(CShaderEffect::s_sunDir), 1);
 
         if (CShaderEffect::s_localLightCount) {
             CShaderEffect::ComputeLocalLights(
@@ -144,7 +144,7 @@ void CShaderEffect::SetLocalLighting(CM2Lighting* lighting, int32_t lightEnabled
                 a3
             );
 
-            GxShaderConstantsSet(GxSh_Vertex, 17, reinterpret_cast<float*>(&CShaderEffect::s_localLights), 11);
+            GxShaderConstantsSet(GxSh_Vertex, 17, reinterpret_cast<C4Vector*>(&CShaderEffect::s_localLights), 11);
         }
 
         // TODO
@@ -170,7 +170,7 @@ void CShaderEffect::SetShaders(uint32_t vertexPermute, uint32_t pixelPermute) {
         if (useAlphaRef) {
             GxRsSet(GxRs_AlphaRef, static_cast<uint8_t>(CShaderEffect::s_fogColorAlphaRef.w * 255.0f));
         } else {
-            GxShaderConstantsSet(GxSh_Pixel, 2, reinterpret_cast<float*>(&CShaderEffect::s_fogColorAlphaRef), 1);
+            GxShaderConstantsSet(GxSh_Pixel, 2, reinterpret_cast<C4Vector*>(&CShaderEffect::s_fogColorAlphaRef), 1);
             GxRsSet(GxRs_AlphaRef, 0);
         }
     }
@@ -183,7 +183,7 @@ void CShaderEffect::SetTexMtx_Identity(uint32_t a1) {
             0.0f, 1.0f, 0.0f, 0.0f
         };
 
-        GxShaderConstantsSet(GxSh_Vertex, 2 * a1 + 6, matrix, 2);
+        GxShaderConstantsSet(GxSh_Vertex, 2 * a1 + 6, reinterpret_cast<C4Vector*>(matrix), 2);
     } else {
         // TODO
         // - non-shader code path
@@ -201,7 +201,7 @@ void CShaderEffect::SetTexMtx_SphereMap(uint32_t a1) {
             0.0f, 1.0f, 0.0f, 0.0f
         };
 
-        GxShaderConstantsSet(GxSh_Vertex, 2 * a1 + 6, matrix, 2);
+        GxShaderConstantsSet(GxSh_Vertex, 2 * a1 + 6, reinterpret_cast<C4Vector*>(matrix), 2);
     } else {
         // TODO
         // - non-shader code path
@@ -216,7 +216,7 @@ void CShaderEffect::UpdateProjMatrix() {
     C44Matrix proj;
     GxXformProjNativeTranspose(proj);
 
-    GxShaderConstantsSet(GxSh_Vertex, 2, reinterpret_cast<float*>(&proj), 4);
+    GxShaderConstantsSet(GxSh_Vertex, 2, reinterpret_cast<C4Vector*>(&proj), 4);
 }
 
 void CShaderEffect::InitEffect(const char* vsName, const char* psName) {

@@ -5,7 +5,7 @@ char* GxShaderConstantsLock(EGxShTarget target) {
     return g_theGxDevicePtr->ShaderConstantsLock(target);
 }
 
-void GxShaderConstantsSet(EGxShTarget target, uint32_t index, const float* constants, uint32_t count) {
+void GxShaderConstantsSet(EGxShTarget target, uint32_t index, const C4Vector* constants, uint32_t count) {
     g_theGxDevicePtr->ShaderConstantsSet(target, index, constants, count);
 }
 
