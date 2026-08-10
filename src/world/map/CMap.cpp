@@ -231,10 +231,10 @@ void CMap::MapMemInitialize() {
     *CMap::cacheLightHeap = ObjectAllocAddHeap(132, 256, "WCACHELIGHT", true);
 
     CMap::mapObjGroupHeap = NEW(uint32_t);
-    *CMap::mapObjGroupHeap = ObjectAllocAddHeap(444, 128, "WMAPOBJGROUP", true);
+    *CMap::mapObjGroupHeap = ObjectAllocAddHeap(sizeof(CMapObjGroup), 128, "WMAPOBJGROUP", true);
 
     CMap::mapObjHeap = NEW(uint32_t);
-    *CMap::mapObjHeap = ObjectAllocAddHeap(2552, 32, "WMAPOBJ", true);
+    *CMap::mapObjHeap = ObjectAllocAddHeap(sizeof(CMapObj), 32, "WMAPOBJ", true);
 
     CMap::baseObjLinkHeap = NEW(uint32_t);
     *CMap::baseObjLinkHeap = ObjectAllocAddHeap(sizeof(CMapBaseObjLink), 10000, "WBASEOBJLINK", true);
@@ -252,16 +252,16 @@ void CMap::MapMemInitialize() {
     *CMap::chunkHeap = ObjectAllocAddHeap(sizeof(CMapChunk), 256, "WCHUNK", true);
 
     CMap::doodadDefHeap = NEW(uint32_t);
-    *CMap::doodadDefHeap = ObjectAllocAddHeap(368, 5000, "WDOODADDEF", true);
+    *CMap::doodadDefHeap = ObjectAllocAddHeap(sizeof(CMapDoodadDef), 5000, "WDOODADDEF", true);
 
     CMap::entityHeap = NEW(uint32_t);
     *CMap::entityHeap = ObjectAllocAddHeap(208, 128, "WENTITY", true);
 
     CMap::mapObjDefGroupHeap = NEW(uint32_t);
-    *CMap::mapObjDefGroupHeap = ObjectAllocAddHeap(192, 128, "WMAPOBJDEFGROUP", true);
+    *CMap::mapObjDefGroupHeap = ObjectAllocAddHeap(sizeof(CMapObjDefGroup), 128, "WMAPOBJDEFGROUP", true);
 
     CMap::mapObjDefHeap = NEW(uint32_t);
-    *CMap::mapObjDefHeap = ObjectAllocAddHeap(344, 64, "WMAPOBJDEF", true);
+    *CMap::mapObjDefHeap = ObjectAllocAddHeap(sizeof(CMapObjDef), 64, "WMAPOBJDEF", true);
 
     CMap::chunkLiquidHeap = NEW(uint32_t);
     *CMap::chunkLiquidHeap = ObjectAllocAddHeap(1092, 64, "WCHUNKLIQUID", true);
