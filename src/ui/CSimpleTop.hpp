@@ -63,8 +63,10 @@ class CSimpleTop : public CLayoutFrame {
 
         // Member functions
         CSimpleTop();
+        ~CSimpleTop();
         void CompressStrata(int32_t strata);
         void EnableEvents();
+        void DisableEvents();
         void HideFrame(CSimpleFrame* frame, int32_t a4);
         void MoveOrResizeFrame(const CMouseEvent& evt);
         void NotifyFrameLayerChanged(CSimpleFrame* frame, uint32_t layer);

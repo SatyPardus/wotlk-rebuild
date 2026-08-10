@@ -15,6 +15,114 @@
 CSimpleTop* CSimpleTop::s_instance;
 uint32_t CSimpleTop::m_eventTime;
 
+// OFFSET: 0x496170
+CSimpleTop::~CSimpleTop() {
+    //v1 = this;
+    //this->__vftable = (CLayoutFrame_vtbl*)&off_9EBBE0;
+    //while (1) {
+    //    m_next = v1->m_destroyed.m_terminator.m_next;
+    //    if (((unsigned __int8)m_next & 1) != 0 || !m_next)
+    //        break;
+    //    m_linkoffset = v1->m_destroyed.m_linkoffset;
+    //    v4 = *(int*)((char*)&m_next->__vftable + m_linkoffset);
+    //    v5 = (FrameScript_Object_vtbl**)((char*)&m_next->__vftable + m_linkoffset);
+    //    if (v4) {
+    //        v6 = v5[1];
+    //        if ((v6 & 1) == 0 && v6) {
+    //            v1 = this;
+    //            v7 = (_DWORD*)((char*)v5 + v6 - *(_DWORD*)(v4 + 4));
+    //        } else {
+    //            v7 = (_DWORD*)(v6 & 0xFFFFFFFE);
+    //        }
+    //        *v7 = v4;
+    //        *(_DWORD*)(*v5 + 4) = v5[1];
+    //        *v5 = 0;
+    //        v5[1] = 0;
+    //    }
+    //}
+    //while (1) {
+    //    v8 = v1->m_frames.m_terminator.m_next;
+    //    if (((unsigned __int8)v8 & 1) != 0 || !v8)
+    //        break;
+    //    v9 = v1->m_frames.m_linkoffset;
+    //    v10 = *(int*)((char*)&v8->__vftable + v9);
+    //    v11 = (FrameScript_Object_vtbl**)((char*)&v8->__vftable + v9);
+    //    if (v10) {
+    //        v12 = v11[1];
+    //        if ((v12 & 1) == 0 && v12)
+    //            v13 = (_DWORD*)((char*)v11 + v12 - *(_DWORD*)(v10 + 4));
+    //        else
+    //            v13 = (_DWORD*)(v12 & 0xFFFFFFFE);
+    //        *v13 = v10;
+    //        *(_DWORD*)(*v11 + 4) = v11[1];
+    //        *v11 = 0;
+    //        v11[1] = 0;
+    //    }
+    //    ((void(__thiscall*)(CSimpleFrame*, int))v8->Destroy)(v8, 1);
+    //    v1 = this;
+    //}
+    //frameStratas = v1->frameStratas;
+    //v15 = 9;
+    //do {
+    //    v16 = *frameStratas;
+    //    if (*frameStratas) {
+    //        maybe_CSimpleTop__FreeFrameStrataNodes(*frameStratas);
+    //        SMemFree(v16, (int)"delete", -1, 0);
+    //    }
+    //    *frameStratas++ = 0;
+    //    --v15;
+    //} while (v15);
+    //sub_4858B0();
+    //sub_4964C0();
+    //maybe_CSimpleFontRender__DestroyShaders();
+    //maybe_CSimpleRender__DestroyShaders();
+    this->DisableEvents();
+    HandleClose(this->m_screenLayer);
+    CSimpleTop::s_instance = nullptr;
+    //p_m_checkFocus = &this->m_checkFocus;
+    //v18 = 44;
+    //do {
+    //    v19 = (void*)*(p_m_checkFocus - 5);
+    //    p_m_checkFocus -= 7;
+    //    if (v19)
+    //        SMemFree(v19, (int)".PAVFRAMEPRIORITY@@", -2, 0);
+    //    --v18;
+    //    *p_m_checkFocus = 0;
+    //    p_m_checkFocus[1] = 0;
+    //    p_m_checkFocus[2] = 0;
+    //} while (v18 >= 0);
+    //bn_TSList_TSGetExplicitLink_UnlinkAll(&this->m_destroyed.m_linkoffset);
+    //p_m_terminator = &this->m_destroyed.m_terminator;
+    //m_prevlink = this->m_destroyed.m_terminator.m_prevlink;
+    //if (m_prevlink) {
+    //    v22 = this->m_destroyed.m_terminator.m_next;
+    //    if (((unsigned __int8)v22 & 1) == 0 && v22)
+    //        v23 = (FrameScript_Object_vtbl**)((char*)&v22->__vftable + (char*)p_m_terminator - (char*)m_prevlink->m_next);
+    //    else
+    //        v23 = (_DWORD*)((unsigned int)v22 & 0xFFFFFFFE);
+    //    *v23 = m_prevlink;
+    //    this->m_destroyed.m_terminator.m_prevlink->m_next = this->m_destroyed.m_terminator.m_next;
+    //    p_m_terminator->m_prevlink = 0;
+    //    this->m_destroyed.m_terminator.m_next = 0;
+    //}
+    //bn_TSList_TSGetExplicitLink_UnlinkAll(&this->m_frames.m_linkoffset);
+    //v24 = &this->m_frames.m_terminator;
+    //v25 = this->m_frames.m_terminator.m_prevlink;
+    //if (v25) {
+    //    v26 = this->m_frames.m_terminator.m_next;
+    //    if (((unsigned __int8)v26 & 1) == 0 && v26)
+    //        v27 = (FrameScript_Object_vtbl**)((char*)&v26->__vftable + (char*)v24 - (char*)v25->m_next);
+    //    else
+    //        v27 = (_DWORD*)((unsigned int)v26 & 0xFFFFFFFE);
+    //    *v27 = v25;
+    //    this->m_frames.m_terminator.m_prevlink->m_next = this->m_frames.m_terminator.m_next;
+    //    v24->m_prevlink = 0;
+    //    this->m_frames.m_terminator.m_next = 0;
+    //}
+
+    CLayoutFrame::~CLayoutFrame();
+}
+
 void PaintScreen(void* param, const RECTF* rect, const RECTF* visible, float elapsedSec) {
     CSimpleTop::s_instance->OnLayerUpdate(elapsedSec);
     CSimpleTop::s_instance->OnLayerRender();
@@ -465,6 +573,21 @@ void CSimpleTop::EnableEvents() {
     EventRegisterEx(EVENT_ID_MOUSEWHEEL, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnMouseWheel), this, 1.0);
     EventRegisterEx(EVENT_ID_SIZE, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnDisplaySizeChanged), this, 1.0);
     EventRegisterEx(EVENT_ID_FOCUS, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnFocusChanged), this, 1.0);
+}
+
+void CSimpleTop::DisableEvents() {
+    EventUnregisterEx(EVENT_ID_CHAR, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnChar), this, -1);
+    EventUnregisterEx(EVENT_ID_IME, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnIme), this, -1);
+    EventUnregisterEx(EVENT_ID_KEYDOWN, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnKeyDown), this, -1);
+    EventUnregisterEx(EVENT_ID_KEYUP, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnKeyUp), this, -1);
+    EventUnregisterEx(EVENT_ID_KEYDOWN_REPEATING, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnKeyDownRepeat), this, -1);
+    EventUnregisterEx(EVENT_ID_MOUSEMOVE, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnMouseMove), this, -1);
+    EventUnregisterEx(EVENT_ID_MOUSEMOVE_RELATIVE, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnMouseMoveRelative), this, -1);
+    EventUnregisterEx(EVENT_ID_MOUSEDOWN, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnMouseDown), this, -1);
+    EventUnregisterEx(EVENT_ID_MOUSEUP, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnMouseUp), this, -1);
+    EventUnregisterEx(EVENT_ID_MOUSEWHEEL, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnMouseWheel), this, -1);
+    EventUnregisterEx(EVENT_ID_SIZE, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnDisplaySizeChanged), this, -1);
+    EventUnregisterEx(EVENT_ID_FOCUS, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnFocusChanged), this, -1);
 }
 
 void CSimpleTop::HideFrame(CSimpleFrame* frame, int32_t a4) {
