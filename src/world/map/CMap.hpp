@@ -11,6 +11,7 @@
 #include <tempest/Rect.hpp>
 #include <gx/shader/CGxShader.hpp>
 #include "world/map/CMapObjDef.hpp"
+#include "world/map/CMapObjDefGroup.hpp"
 #include "world/map/CMapObj.hpp"
 
 class CMap {
@@ -28,7 +29,7 @@ class CMap {
     static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkUpdateList;
     static STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) doodadDefList;
     static TSHashTable<CMapDoodadDef, uint32_t> doodadDefHashtable;
-    static TSHashTable<CMapObjDef, uint32_t> objDefHashtable;
+    static TSHashTable<CMapObjDef, uint32_t> mapObjDefHashtable;
     static int32_t uniqueId;
     static int32_t bDungeon;
     static int32_t counts[11];
@@ -90,6 +91,7 @@ class CMap {
     static CMapObjDef* AllocMapObjDef();
     static CMapObj* AllocMapObj();
     static CMapObjGroup* AllocMapObjGroup();
+    static CMapObjDefGroup* AllocMapObjDefGroup();
     static CMapDoodadDef* CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3Vector* position);
     static CMapObjDef* CreateMapObjDef(char* fileName, SMMapObjDef* mapObjectDef, C3Vector* center, bool cached);
     static void FreeBaseObjLink(CMapBaseObjLink* link);
@@ -101,6 +103,8 @@ class CMap {
     static void PreUpdateAreas(bool a1);
     static void UpdateArea(bool a1, CMapArea* area, CiRect* chunkRect, int32_t a4);
     static void PrepareMapObjDefs(bool a1);
+    static void PrepareMapObjDef(CMapObjDef* mapObjDef, CMapObj* mapObj);
+    static void CreateMapObjDefGroups(CMapObjDef* mapObjDef, CMapObj* mapObj);
     static void PrepareMapDoodadDefs();
     static void ProcessRenderChunkUpdateList();
 };

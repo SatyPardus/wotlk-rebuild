@@ -57,16 +57,27 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     CAsyncObject* asyncObject;
     int32_t isGroupLoaded;
     //int32_t unk_1E4;
-    //TSExplicitList_CMapObjGroup mapObjGroupList;
+    STORM_EXPLICIT_LIST(CMapObjGroup, groupLink) mapObjGroupList;
     int32_t mapObjGroupCount;
     CMapObjGroup* mapObjGroupArray[512];
 
     bool Read(char* fileName);
+    void ReadGroup(uint32_t index, bool preLoad);
     void Load();
+    void WaitLoad();
+    void WaitLoadGroup(uint32_t index);
+    void GetBounds(CAaSphere* sphere);
+    void GetBounds(CAaBox* box);
+    void GetGroupBounds(CAaSphere* sphere, int32_t index);
+    void GetGroupBounds(CAaBox* box, int32_t index);
+    CMapObjGroup* GetGroup(int32_t index, bool a3);
+    uint32_t GetGroupFlags(int32_t index);
 
     static void PrepareUpdate();
     static CMapObj* Create(char* fileName);
     static void PostloadCallback(void* arg);
+    static void RenderGroupCollidable(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t a3);
+    static void RenderGroupCollidableFaces(CMapObjGroup* mapObjGroup);
 };
 
 #endif

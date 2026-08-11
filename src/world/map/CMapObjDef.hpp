@@ -4,6 +4,7 @@
 #include "storm/list/TSLink.hpp"
 #include "world/map/CMapBaseObj.hpp"
 #include "world/map/CMapObj.hpp"
+#include "world/map/CMapObjDefGroup.hpp"
 #include "world/map/Types.hpp"
 #include "storm/Hash.hpp"
 
@@ -23,7 +24,7 @@ class CMapObjDef : public CMapBaseObj, public TSHashObject<CMapObjDef, uint32_t>
     int32_t unk_108;
     int32_t unk_10C;
     int32_t unk_110;
-    //TSExplicitList_CMapObjDefMapObjDefGroupLink mapObjDefGroupLinkList;
+    STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) mapObjDefGroupLinkList;
     //TSGrowableArray_CMapObjDefGroup defGroups;
     uint32_t groupCount;
     //TSGrowableArray unk;

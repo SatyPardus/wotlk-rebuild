@@ -328,5 +328,64 @@ struct SMOVisibleBlock {
     uint16_t count;
 };
 
+struct SMOPoly {
+    uint8_t flags;
+    uint8_t materialId;
+};
+
+struct SMOBatch {
+    int8_t unused[12];
+    uint32_t indexStart;
+    uint16_t indexCount;
+    uint16_t vertexStart;
+    uint16_t vertexEnd;
+    uint8_t flags;
+    uint8_t texture;
+};
+
+struct SMOWVert {
+    uint8_t flow1;
+    uint8_t flow2;
+    uint8_t flow1Pct;
+    uint8_t filler;
+    float height;
+};
+
+struct SMOMVert {
+    int16_t s;
+    int16_t t;
+    float height;
+};
+
+
+struct SMOLiquidVert {
+    union {
+        SMOWVert waterVert;
+        SMOMVert magmaVert;
+    };
+};
+
+struct SMOLTile {
+    uint8_t flags;
+};
+
+struct SMOGroupHeader {
+    uint32_t groupName;
+    uint32_t descriptiveGroupName;
+    uint32_t flags;
+    CAaBox boundingBox;
+    uint16_t portalStart;
+    uint16_t portalCount;
+    uint16_t transBatchCount;
+    uint16_t intBatchCount;
+    uint16_t extBatchCount;
+    uint16_t padding_or_batch_type_d;
+    uint8_t fogIds[4];
+    uint32_t groupLiquid;
+    uint32_t uniqueID;
+    uint32_t unk;
+};
+
+
 
 #endif
