@@ -81,7 +81,7 @@ void CMap::Initialize() {
     //NOP();
     CMapChunk::Initialize();
     //CMapObjRender::Initialize();
-    //sub_7CB990();
+    CMapObjGroup::Initialize();
     //CDetailDoodad::Initialize();
     //sub_7A03C0();
     memset(&CMap::counts, 0, sizeof(CMap::counts));
@@ -1063,48 +1063,48 @@ void CMap::PrepareMapObjDefs(bool a1) {
     if (CMap::bIsStreamingMode || CMap::bPreload)
         v23 = false;
 
-	for (auto mapObjDef = CMap::mapObjDefHashtable.Head(); mapObjDef;) {
+    for (auto mapObjDef = CMap::mapObjDefHashtable.Head(); mapObjDef;) {
         auto next = CMap::mapObjDefHashtable.Next(mapObjDef);
 
         if (mapObjDef->bbox.t.x >= CWorld::s_objectAreaOfInterest.b.x
-          && mapObjDef->bbox.t.y >= CWorld::s_objectAreaOfInterest.b.y
-          && mapObjDef->bbox.t.z >= CWorld::s_objectAreaOfInterest.b.z
-          && mapObjDef->bbox.b.x <= CWorld::s_objectAreaOfInterest.t.x
-          && mapObjDef->bbox.b.y <= CWorld::s_objectAreaOfInterest.t.y
-		  && mapObjDef->bbox.b.z <= CWorld::s_objectAreaOfInterest.t.z) {
+            && mapObjDef->bbox.t.y >= CWorld::s_objectAreaOfInterest.b.y
+            && mapObjDef->bbox.t.z >= CWorld::s_objectAreaOfInterest.b.z
+            && mapObjDef->bbox.b.x <= CWorld::s_objectAreaOfInterest.t.x
+            && mapObjDef->bbox.b.y <= CWorld::s_objectAreaOfInterest.t.y
+            && mapObjDef->bbox.b.z <= CWorld::s_objectAreaOfInterest.t.z) {
             if (v23 && !mapObjDef->owner->isGroupLoaded)
                 mapObjDef->owner->WaitLoad();
             if ((mapObjDef->flags & 0x80) == 0 && mapObjDef->owner->isGroupLoaded)
                 CMap::PrepareMapObjDef(mapObjDef, mapObjDef->owner);
-		}
+        }
         float dist = mapObjDef->bbox.DistanceSq(CWorld::s_currentWorldPos);
         if (dist < mapObjDef->owner->distToCamera)
             mapObjDef->owner->distToCamera = dist;
 
-		for (auto mapObjDefGroupLink = mapObjDef->mapObjDefGroupLinkList.Head(); mapObjDefGroupLink;) {
+        for (auto mapObjDefGroupLink = mapObjDef->mapObjDefGroupLinkList.Head(); mapObjDefGroupLink;) {
             auto next = mapObjDef->mapObjDefGroupLinkList.Next(mapObjDefGroupLink);
 
-			CMapObjDefGroup* mapObjDefGroup = reinterpret_cast<CMapObjDefGroup*>(mapObjDefGroupLink->owner);
+            CMapObjDefGroup* mapObjDefGroup = reinterpret_cast<CMapObjDefGroup*>(mapObjDefGroupLink->owner);
             CMapObjGroup* mapObjGroup = mapObjDef->owner->GetGroup(mapObjDefGroup->groupNum, true);
             if (mapObjDefGroup->bbox.t.x >= CWorld::s_objectAreaOfInterest.b.x
-			  && mapObjDefGroup->bbox.t.y >= CWorld::s_objectAreaOfInterest.b.y
-			  && mapObjDefGroup->bbox.t.z >= CWorld::s_objectAreaOfInterest.b.z
-			  && mapObjDefGroup->bbox.b.x <= CWorld::s_objectAreaOfInterest.t.x
-			  && mapObjDefGroup->bbox.b.y <= CWorld::s_objectAreaOfInterest.t.y
-			  && mapObjDefGroup->bbox.b.z <= CWorld::s_objectAreaOfInterest.t.z) {
+                && mapObjDefGroup->bbox.t.y >= CWorld::s_objectAreaOfInterest.b.y
+                && mapObjDefGroup->bbox.t.z >= CWorld::s_objectAreaOfInterest.b.z
+                && mapObjDefGroup->bbox.b.x <= CWorld::s_objectAreaOfInterest.t.x
+                && mapObjDefGroup->bbox.b.y <= CWorld::s_objectAreaOfInterest.t.y
+                && mapObjDefGroup->bbox.b.z <= CWorld::s_objectAreaOfInterest.t.z) {
                 if ((mapObjGroup->unkLoadedFlag & 1) == 0) {
                     if (!mapObjGroup->asyncObjPtr)
                         mapObjDef->owner->ReadGroup(mapObjDefGroup->groupNum, false);
 
-					if (v23
-					  && mapObjDefGroup->bbox.t.x >= CWorld::s_groupAreaOfInterest.b.x
-					  && mapObjDefGroup->bbox.t.y >= CWorld::s_groupAreaOfInterest.b.y
-					  && mapObjDefGroup->bbox.t.z >= CWorld::s_groupAreaOfInterest.b.z
-					  && mapObjDefGroup->bbox.b.x <= CWorld::s_groupAreaOfInterest.t.x
-					  && mapObjDefGroup->bbox.b.y <= CWorld::s_groupAreaOfInterest.t.y
-					  && mapObjDefGroup->bbox.b.z <= CWorld::s_groupAreaOfInterest.t.z) {
+                    if (v23
+                        && mapObjDefGroup->bbox.t.x >= CWorld::s_groupAreaOfInterest.b.x
+                        && mapObjDefGroup->bbox.t.y >= CWorld::s_groupAreaOfInterest.b.y
+                        && mapObjDefGroup->bbox.t.z >= CWorld::s_groupAreaOfInterest.b.z
+                        && mapObjDefGroup->bbox.b.x <= CWorld::s_groupAreaOfInterest.t.x
+                        && mapObjDefGroup->bbox.b.y <= CWorld::s_groupAreaOfInterest.t.y
+                        && mapObjDefGroup->bbox.b.z <= CWorld::s_groupAreaOfInterest.t.z) {
                         mapObjDef->owner->WaitLoadGroup(mapObjDefGroup->groupNum);
-					}
+                    }
                 }
 
                 //*(float*)&v12->unk_194 = 0.0;
@@ -1116,38 +1116,38 @@ void CMap::PrepareMapObjDefs(bool a1) {
                         //CMap::FreeBaseObjLinksInBounds(&v9->bbox);
                     }
                 }
-			}
+            }
 
             dist = mapObjDefGroup->bbox.DistanceSq(CWorld::s_currentWorldPos);
             if (dist < mapObjGroup->distToCamera)
                 mapObjGroup->distToCamera = dist;
-            //if (a1) {
-            //    flags = i->flags;
-            //    if ((flags & 0x80u) != 0) {
-            //        if ((v12->unkLoadedFlag & 1) != 0) {
-            //            if ((flags & 0x20) == 0) {
-            //                if (CAaBox::Intersects(&CWorldScene::boundingBox.b.x, &v9->bbox.b.x))
-            //                    CWorldScene::AddMapObjDefGroup(i, v9);
-            //                TSExplicitList__ptr2 = (char*)v12->TSExplicitList__ptr2;
-            //                if (((unsigned __int8)TSExplicitList__ptr2 & 1) == 0 && TSExplicitList__ptr2) {
-            //                    v17 = TSExplicitList__ptr2;
-            //                    p_mat = &i->mat;
-            //                    while (1) {
-            //                        C44Matrix::Translate((C3Vector*)v20, (C3Vector*)(v17 + 4), p_mat);
-            //                        C44Matrix::Translate((C3Vector*)v21, (C3Vector*)(v17 + 16), p_mat);
-            //                        CWorldView::AddOccluder(v20, v21);
-            //                        v19 = *((_DWORD*)v17 + 8);
-            //                        if ((v19 & 1) != 0 || !v19)
-            //                            break;
-            //                        v17 = (char*)*((_DWORD*)v17 + 8);
-            //                    }
-            //                }
-            //            }
-            //        } else {
-            //            CBarrier::AddBarrierMapObjDefGroup(&CWorldScene::s_barrier, v9, 50.0);
-            //        }
-            //    }
-            //}
+
+            if (a1 && (mapObjDef->flags & MAPOBJ_FLAG_PREPARED) != 0) {
+                if ((mapObjGroup->unkLoadedFlag & 0x1) != 0) {
+                    if ((mapObjDef->flags & MAPOBJ_FLAG_DISABLED) == 0) {
+                        if (CWorldScene::boundingBox.Intersects(&mapObjDefGroup->bbox)) {
+                            CWorldScene::AddMapObjDefGroup(mapObjDef, mapObjDefGroup);
+                        }
+
+                        //TSExplicitList__ptr2 = v12->TSExplicitList__ptr2;
+                        //if ((TSExplicitList__ptr2 & 1) == 0 && TSExplicitList__ptr2) {
+                        //    v17 = TSExplicitList__ptr2;
+                        //    p_mat = &i->mat;
+                        //    while (1) {
+                        //        C44Matrix::Translate(v20, (v17 + 4), p_mat);
+                        //        C44Matrix::Translate(v21, (v17 + 16), p_mat);
+                        //        CWorldView::AddOccluder(v20, v21);
+                        //        v19 = *(v17 + 8);
+                        //        if ((v19 & 1) != 0 || !v19)
+                        //            break;
+                        //        v17 = *(v17 + 8);
+                        //    }
+                        //}
+                    }
+                } else {
+                    //CBarrier::AddBarrierMapObjDefGroup(&CWorldScene::s_barrier, mapObjDefGroup, 50.0);
+                }
+            }
 
 			mapObjDefGroupLink = next;
 		}
@@ -1191,25 +1191,13 @@ void CMap::PrepareMapObjDef(CMapObjDef* mapObjDef, CMapObj* mapObj) {
 
 // OFFSET: 0x7BDE50
 void CMap::CreateMapObjDefGroups(CMapObjDef* mapObjDef, CMapObj* mapObj) {
-    //v2 = mapObjDef;
-    //groupInfoCount = mapObj->groupInfoCount;
-    //if (mapObjDef->groupCount == -1) {
-    //    TSGrowableArray_CMapObjDefGroup__SetCount(&mapObjDef->defGroups.m_alloc, mapObj->groupInfoCount);
-    //} else if (groupInfoCount <= 4) {
-    //    mapObjDef->groupCount = groupInfoCount;
-    //} else {
-    //    CMapObjDef::ConvertInlineGroupsToArray(&mapObjDef->defGroups.m_alloc);
-    //    TSGrowableArray_CMapObjDefGroup__SetCount(&mapObjDef->defGroups.m_alloc, groupInfoCount);
-    //}
+    mapObjDef->ReserveGroups(mapObj->groupInfoCount);
     for (int32_t i = 0; i < mapObj->groupInfoCount; i++) {
         CMapObjDefGroup* mapObjDefGroup = CMap::AllocMapObjDefGroup();
         CMapBaseObjLink* link = CMap::AllocBaseObjLink(mapObjDefGroup);
         link->ref = mapObjDef;
         mapObjDef->mapObjDefGroupLinkList.LinkToTail(link);
-        //v12 = v2->groupCount == -1
-        //          ? (CMapObjDefGroup**)((char*)v2->defGroups.m_data + 4 * i)
-        //          : (CMapObjDefGroup**)((char*)&v2->defGroups + 4 * i);
-        //*v12 = v5;
+        mapObjDef->Groups()[i] = mapObjDefGroup;
         CAaBox box;
         mapObj->GetGroupBounds(&mapObjDefGroup->sphere, i);
         mapObjDefGroup->sphere.c = mapObjDefGroup->sphere.c * mapObjDef->mat;

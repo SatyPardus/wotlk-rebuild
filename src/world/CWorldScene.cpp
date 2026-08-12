@@ -15,6 +15,7 @@
 #include "world/map/CMap.hpp"
 #include "world/map/CMapChunk.hpp"
 #include "world/map/CWorldOcclusion.hpp"
+#include <os/Debug.hpp>
 
 CM2Scene* CWorldScene::s_m2Scene;
 HTEXTURE CWorldScene::s_defaultTexture;
@@ -39,6 +40,8 @@ CAaBox CWorldScene::boundingBox;
 
 uint32_t CWorldScene::s_chunksRendered;
 uint32_t CWorldScene::s_doodadsRendered;
+
+STORM_EXPLICIT_LIST(CFrustum, sceneLink) CWorldScene::s_frustumFreeList;
 
 void CWorldSceneLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
     lighting->AddAmbient({ 1.0f, 1.0f, 1.0f });
@@ -302,6 +305,32 @@ void CWorldScene::AddMapChunk(CMapChunk* mapChunk) {
     CWorldScene::AddMapChunkToRenderList(mapChunk, &chunkPos);
 }
 
+// OFFSET: 0x792AD0
+void CWorldScene::AddMapObjDefGroup(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup) {
+    if ((mapObjDef->owner->GetGroupFlags(mapObjDefGroup->groupNum) & 0x10008) == 0)
+        return;
+
+    if ((mapObjDef->flags & 0x400) != 0) {
+        CWorldScene::sortTable.pendingExteriorGroupList.LinkToTail(mapObjDefGroup);
+    } else {
+        C3Vector nearest;
+        CWorldScene::GetNearestCornerToCamera(&mapObjDefGroup->bbox, &nearest);
+        mapObjDefGroup->distanceToCamera = CWorldScene::camPlane.n.x * nearest.x
+                                             + CWorldScene::camPlane.n.y * nearest.y
+                                             + CWorldScene::camPlane.n.z * nearest.z
+                                             + CWorldScene::camPlane.d;
+
+        auto planeDist = nearest.y * CWorldScene::camPlaneXY.n.y
+               + nearest.z * CWorldScene::camPlaneXY.n.z
+               + nearest.x * CWorldScene::camPlaneXY.n.x
+               + CWorldScene::camPlaneXY.d;
+        int index = (int)(planeDist * 0.03f - 0.5f);
+        if (planeDist <= 0.0f || index < 64) {
+            CWorldScene::sortTable.table[planeDist <= 0.0f ? 0 : index].exteriorGroupList.LinkToTail(mapObjDefGroup);
+        }
+    }
+}
+
 // OFFSET: 0x792D80
 void CWorldScene::AddMapChunkToRenderList(CMapChunk* mapChunk, C3Vector* pos) {
     float planeDist = C3Vector::Dot(*pos, CWorldScene::camPlaneXY.n) + CWorldScene::camPlaneXY.d;
@@ -309,6 +338,44 @@ void CWorldScene::AddMapChunkToRenderList(CMapChunk* mapChunk, C3Vector* pos) {
     if (planeDist <= 0.0f || index < 64) {
         CWorldScene::sortTable.table[planeDist <= 0.0f ? 0 : index].mapChunkList.LinkToTail(mapChunk);
     }
+}
+
+// OFFSET: 0x799310
+void CWorldScene::AddMapObjDefGroupToSortTable(uint32_t groupNum, CMapObjDef* mapObjDef) {
+    CMapObjDefGroup* mapObjDefGroup = mapObjDef->Groups()[groupNum];
+    CMapObjGroup* group = mapObjDef->owner->GetGroup(mapObjDefGroup->groupNum, 0);
+    if (!mapObjDefGroup->sortTableLink.Next()) {
+        CWorldScene::sortTable.mapObjDefGroup.LinkToTail(mapObjDefGroup);
+        if (group && (group->flags & 0x1000) != 0 && (CWorld::s_enables & CWorld::Enables::Enable_1000000) != 0) {
+            //CWorldScene::sortTable.interiorLiquidGroupList.LinkToTail(mapObjDefGroup);
+        }
+        C3Vector outCorner;
+        CWorldScene::GetNearestCornerToCamera(&mapObjDefGroup->bbox, &outCorner);
+        mapObjDefGroup->distanceToCamera = CWorldScene::camPlane.n.z * outCorner.z + CWorldScene::camPlane.n.y * outCorner.y + CWorldScene::camPlane.n.x * outCorner.x + CWorldScene::camPlane.d;
+        //    if ((group->flags & 0x40) != 0)
+        //        dword_CD8778 = 1;
+        mapObjDefGroup->flags &= ~0x8000u;
+    }
+    //if (dword_CFBEB8)
+    //    mapObjDefGroup->flags |= 0x8000u;
+    CFrustum* frustum = CWorldScene::AllocFrustum();
+    CWorldScene::FrustumPush(frustum, &CWorldScene::frustumStack[CWorldScene::frustumIndex]);
+    mapObjDefGroup->frustumList.LinkToTail(frustum);
+}
+
+// OFFSET: 0x7983B0
+CFrustum* CWorldScene::AllocFrustum() {
+    CFrustum* frustum = CWorldScene::s_frustumFreeList.Head();
+    if (!frustum) {
+        auto m = STORM_ALLOC(sizeof(CFrustum));
+        frustum = new (m) CFrustum();
+        frustum->sceneLink.Unlink();
+
+        CWorldScene::s_frustumFreeList.LinkToTail(frustum);
+    }
+
+    frustum->sceneLink.Unlink();
+    return frustum;
 }
 
 // OFFSET: 0x78FB20
@@ -346,6 +413,108 @@ void CWorldScene::FrustumSet(CRect* rect) {
     CWorldScene::frustumStack[CWorldScene::frustumIndex].CalcPlanesFromCorners(corners);
 }
 
+// OFFSET: 0x791100
+void CWorldScene::FrustumSet(CFrustum* frustum) {
+    CWorldScene::FrustumPush(&CWorldScene::frustumStack[CWorldScene::frustumIndex], frustum);
+}
+
+void CWorldScene::FrustumSet(C3Vector* corners, CRect* rect) {
+    C3Vector sub[8] = {};
+
+    for (int quad = 0; quad < 2; ++quad)
+    {
+        const C3Vector* in = corners + quad * 4;
+        C3Vector* out = sub + quad * 4;
+
+        const C3Vector dBottom(in[3].x - in[0].x, in[3].y - in[0].y, in[3].z - in[0].z);
+        const C3Vector dTop(in[2].x - in[1].x, in[2].y - in[1].y, in[2].z - in[1].z);
+
+        const C3Vector loBottom(in[0].x + dBottom.x * rect->minX,
+                                in[0].y + dBottom.y * rect->minX,
+                                in[0].z + dBottom.z * rect->minX);
+        const C3Vector loTop(in[1].x + dTop.x * rect->minX,
+                             in[1].y + dTop.y * rect->minX,
+                             in[1].z + dTop.z * rect->minX);
+        const C3Vector hiBottom(in[0].x + dBottom.x * rect->maxX,
+                                in[0].y + dBottom.y * rect->maxX,
+                                in[0].z + dBottom.z * rect->maxX);
+        const C3Vector hiTop(in[1].x + dTop.x * rect->maxX,
+                             in[1].y + dTop.y * rect->maxX,
+                             in[1].z + dTop.z * rect->maxX);
+
+        const C3Vector dLo(loTop.x - loBottom.x, loTop.y - loBottom.y, loTop.z - loBottom.z);
+        const C3Vector dHi(hiTop.x - hiBottom.x, hiTop.y - hiBottom.y, hiTop.z - hiBottom.z);
+
+        out[0].x = loBottom.x + dLo.x * rect->minY;
+        out[0].y = loBottom.y + dLo.y * rect->minY;
+        out[0].z = loBottom.z + dLo.z * rect->minY;
+
+        out[1].x = loBottom.x + dLo.x * rect->maxY;
+        out[1].y = loBottom.y + dLo.y * rect->maxY;
+        out[1].z = loBottom.z + dLo.z * rect->maxY;
+
+        out[2].x = hiBottom.x + dHi.x * rect->maxY;
+        out[2].y = hiBottom.y + dHi.y * rect->maxY;
+        out[2].z = hiBottom.z + dHi.z * rect->maxY;
+
+        out[3].x = hiBottom.x + dHi.x * rect->minY;
+        out[3].y = hiBottom.y + dHi.y * rect->minY;
+        out[3].z = hiBottom.z + dHi.z * rect->minY;
+    }
+
+    CWorldScene::frustumStack[CWorldScene::frustumIndex].CalcPlanesFromCorners(sub);
+}
+
+// OFFSET: 0x790020
+void CWorldScene::FrustumPush(CFrustum* a1, CFrustum* a2) {
+    if (a1 != a2) {
+        a1->planes[0].n.x = a2->planes[0].n.x;
+        a1->planes[0].n.y = a2->planes[0].n.y;
+        a1->planes[0].n.z = a2->planes[0].n.z;
+        a1->planes[0].d = a2->planes[0].d;
+        a1->planes[1] = a2->planes[1];
+        a1->planes[2] = a2->planes[2];
+        a1->planes[3] = a2->planes[3];
+        a1->planes[4] = a2->planes[4];
+        a1->planes[5] = a2->planes[5];
+        a1->corners[0].x = a2->corners[0].x;
+        a1->corners[0].y = a2->corners[0].y;
+        a1->corners[0].z = a2->corners[0].z;
+        a1->corners[1] = a2->corners[1];
+        a1->corners[2] = a2->corners[2];
+        a1->corners[3] = a2->corners[3];
+        a1->corners[4] = a2->corners[4];
+        a1->corners[5] = a2->corners[5];
+        a1->corners[6] = a2->corners[6];
+        a1->corners[7] = a2->corners[7];
+        a1->lookPos = a2->lookPos;
+        a1->lookAt = a2->lookAt;
+        a1->lookUp = a2->lookUp;
+        a1->fovy = a2->fovy;
+        a1->aspect = a2->aspect;
+        a1->minz = a2->minz;
+        a1->maxz = a2->maxz;
+    }
+}
+
+// OFFSET: 0x791950
+void CWorldScene::FrustumPush() {
+    ++CWorldScene::frustumIndex;
+    CWorldScene::FrustumPush(
+        &CWorldScene::frustumStack[CWorldScene::frustumIndex],
+        &CWorldScene::frustumStack[CWorldScene::frustumIndex - 1]);
+}
+
+// OFFSET: 0x78FB50
+void CWorldScene::FrustumPop() {
+    CWorldScene::frustumIndex--;
+}
+
+// OFFSET: 0x78FB00
+void CWorldScene::FrustumXform(C44Matrix& mat) {
+    CWorldScene::frustumStack[CWorldScene::frustumIndex].Transform(mat);
+}
+
 // OFFSET: 0x7D6690
 bool CWorldScene::InsideFrustumRect(CiRect* rect) {
     return rect->minX <= CWorldScene::s_frustumChunkRect.maxX && rect->minY <= CWorldScene::s_frustumChunkRect.maxY && rect->maxX >= CWorldScene::s_frustumChunkRect.minX && rect->maxY >= CWorldScene::s_frustumChunkRect.minY;
@@ -354,14 +523,13 @@ bool CWorldScene::InsideFrustumRect(CiRect* rect) {
 // OFFSET: 0x79A790
 void CWorldScene::CullSortTable(CRect* a1) {
     // CWorldScene::CreateOcclusionVolumes(&CWorldScene::s_activeWorldView.x, stru_CDB108, 0);
-    ++CWorldScene::frustumIndex;
-    CWorldScene::frustumStack[CWorldScene::frustumIndex].FrustumPush(&CWorldScene::frustumStack[CWorldScene::frustumIndex - 1]);
+    CWorldScene::FrustumPush();
     CWorldScene::FrustumSet(a1);
     for (int32_t i = 0; i < 64; i++) {
         CSortEntry* entry = &CWorldScene::sortTable.table[i];
 
         CWorldScene::CullChunks(entry, i);
-        // CWorldScene::CullMapObjDefGroups(entry, a1, v1);
+        CWorldScene::CullMapObjDefGroups(entry, a1, i);
         // CWorldScene::CullLiquid(entry);
         // sub_793060(entry);
         float v4 = (float)i * 33.333332f;
@@ -370,7 +538,7 @@ void CWorldScene::CullSortTable(CRect* a1) {
         // sub_793760(entry);
     }
     // CWorldScene::CullHorizon(a1);
-    --CWorldScene::frustumIndex;
+    CWorldScene::FrustumPop();
 }
 
 // OFFSET: 0x7987A0
@@ -479,6 +647,76 @@ void CWorldScene::CullDoodadsExterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLi
     }
 }
 
+// OFFSET: 0x79A160
+void CWorldScene::CullMapObjDefGroups(CSortEntry* entry, CRect* a2, uint32_t a3) {
+    for (auto mapObjDefGroup = entry->exteriorGroupList.Head(); mapObjDefGroup;) {
+        auto next = entry->exteriorGroupList.Next(mapObjDefGroup);
+
+        //m_prevlink = m_next->unk_A4.m_terminator.m_prevlink;
+        //p_m_terminator = &m_next->unk_A4.m_terminator;
+        //v10 = *(&m_next->objectIndex + a1->exteriorGroupList.m_linkoffset);
+        //if (m_prevlink) {
+        //    v6 = m_next->unk_A4.m_terminator.m_next;
+        //    if ((v6 & 1) == 0 && v6)
+        //        v7 = (p_m_terminator - m_prevlink->m_next + v6);
+        //    else
+        //        v7 = (v6 & 0xFFFFFFFE);
+        //    *v7 = m_prevlink;
+        //    p_m_terminator->m_prevlink->m_next = m_next->unk_A4.m_terminator.m_next;
+        //    p_m_terminator->m_prevlink = 0;
+        //    m_next->unk_A4.m_terminator.m_next = 0;
+        //}
+
+        auto parent = mapObjDefGroup->parentLinkList.Head();
+        auto mapObjDef = reinterpret_cast<CMapObjDef*>(parent->ref);
+
+        if (!CWorldScene::FrustumCull(&mapObjDefGroup->bbox)
+            && !CWorldOcclusion::QueryVolumes(&mapObjDefGroup->sphere)
+            && !CWorldOcclusion::QueryBuffer(&mapObjDefGroup->bbox, 1)) {
+            CWorldScene::CullMapObjDefGroupFromExterior(mapObjDef, mapObjDefGroup, a2, 0);
+            //CWorldScene::AddDoodadDefs(&m_next->unk_78, a3);
+        }
+
+        mapObjDefGroup = next;
+    }
+}
+
+// OFFSET: 0x7B3A10
+void CWorldScene::CullMapObjDefGroupFromExterior(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, CRect* a3, uint32_t a4) {
+    CMapObj::SetGroupRenderCallback(reinterpret_cast<RENDER_CALLBACK>(CWorldScene::AddMapObjDefGroupToSortTable), mapObjDef);
+    //dword_D1C420 = mapObjDef;
+    CWorldScene::FrustumPush();
+    CWorldScene::FrustumSet(CWorldScene::s_frustumCorners, a3);
+    auto groupFlags = mapObjDef->owner->GetGroupFlags(mapObjDefGroup->groupNum);
+    if (!CWorldScene::FrustumCull(&mapObjDefGroup->bbox) && (a4 || !CWorldOcclusion::QueryBuffer(&mapObjDefGroup->bbox, 1))) {
+        if ((groupFlags & 0x10000) != 0) {
+            CMapObj::InvokeGroupRenderCallback(mapObjDef->owner, mapObjDefGroup->groupNum);
+            CWorldScene::FrustumPop();
+            return;
+        }
+        if ((groupFlags & 8) != 0) {
+    //        groupNum = a2->groupNum;
+    //        minX = a3->minX;
+    //        v7 = a3->maxY * 2.0;
+    //        owner = mapObjDef->owner;
+    //        v9 = 2.0 * a3->maxX;
+    //        v11[0] = a3->minY * 2.0 - 1.0;
+    //        v11[1] = minX * 2.0 - 1.0;
+    //        v11[2] = v7 - 1.0;
+    //        v11[3] = v9 - 1.0;
+    //        maybe_CMapObj__RenderThruPortalsExterior(
+    //            owner,
+    //            &mapObjDef->mat,
+    //            &mapObjDef->invMat,
+    //            &CWorldScene::s_activeWorldView,
+    //            &CWorldScene::camTarget,
+    //            v11,
+    //            groupNum);
+        }
+    }
+    CWorldScene::FrustumPop();
+}
+
 // OFFSET: 0x799D40
 void CWorldScene::CullChunks(CSortEntry* entry, int32_t index) {
     bool v19 = true;
@@ -558,7 +796,7 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     CWorldScene::s_chunksRendered = 0;
     CWorldScene::s_doodadsRendered = 0;
     // dword_CD8624 = 0;
-    // CFrustum::CalcPlanesFromCorners(&flt_CDB168[63 * dword_CD8798], &stru_CDB108[0].x);
+    CWorldScene::frustumStack[CWorldScene::frustumIndex].CalcPlanesFromCorners(CWorldScene::s_frustumCorners);
     // flt_CD8784 = World::s_farClip - 33.333332;
     // dword_CD8778 = ((int)stru_CD9048.unkList1.m_terminator.m_next & 1) == 0 && stru_CD9048.unkList1.m_terminator.m_next;
     // ActiveCamera = CGWorldFrame::GetActiveCamera();
@@ -625,9 +863,9 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //    dword_ADF5A4 = 0;
     CWorldScene::CullSortTable(&CWorldScene::frustumRect);
     //}
-    // sub_79A260();
-    // sub_793450();
-    // sub_7CECD0(&stru_CD9048.unkList1.m_linkoffset);
+    //CWorldScene::CullMapObjDefGroup();
+    //maybe_CWorldScene__UpdateSortedModels();
+    CWorldScene::sortTable.pendingExteriorGroupList.UnlinkAll();
     // ActiveDayNight = DayNight::GetActiveDayNight();
     // if (sub_683100(8)) {
     //    if (flt_ADF580 >= 0.0) {
@@ -655,26 +893,6 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //}
 
     if (CWorldScene::s_m2Scene) {
-        /*for (size_t i = 0; i < 10; ++i) {
-            if (!g_models[i])
-                continue;
-            g_models[i]->SetAnimating(1);
-            g_models[i]->SetVisible(1);
-        }*/
-
-        /*uint32_t count = 0;
-        for (auto mapDoodadDef = CMap::doodadDefList.Head(); mapDoodadDef;) {
-            auto next = CMap::doodadDefList.Next(mapDoodadDef);
-
-            if (mapDoodadDef->model) {
-                mapDoodadDef->model->SetAnimating(1);
-                mapDoodadDef->model->SetVisible(1);
-                count++;
-            }
-
-            mapDoodadDef = next;
-        }*/
-
         CWorldScene::s_m2Scene->m_flags |= 1u;
         CWorldScene::s_m2Scene->AdvanceTime(static_cast<uint32_t>(time * 1000.0f));
         CWorldScene::s_m2Scene->Animate(cameraPos);
@@ -687,6 +905,36 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     CShaderEffect::UpdateProjMatrix();
     // sub_781610();
     CWorldScene::RenderChunks();
+    CWorldScene::RenderMapObjDefGroups();
+    //CWorldScene::RenderHorizon();
+
+    //############# DEBUG CODE NOT REAL ############
+    //for (auto mapObjDef = CMap::mapObjDefHashtable.Head(); mapObjDef;) {
+    //    auto next = CMap::mapObjDefHashtable.Next(mapObjDef);
+
+    //    for (auto mapObjDefGroupLink = mapObjDef->mapObjDefGroupLinkList.Head(); mapObjDefGroupLink;) {
+    //        auto next = mapObjDef->mapObjDefGroupLinkList.Next(mapObjDefGroupLink);
+
+    //        CMapObjDefGroup* mapObjDefGroup = reinterpret_cast<CMapObjDefGroup*>(mapObjDefGroupLink->owner);
+    //        CMapObjGroup* mapObjGroup = mapObjDef->owner->GetGroup(mapObjDefGroup->groupNum, true);
+    //        if (mapObjDefGroup->bbox.t.x >= CWorld::s_objectAreaOfInterest.b.x && mapObjDefGroup->bbox.t.y >= CWorld::s_objectAreaOfInterest.b.y && mapObjDefGroup->bbox.t.z >= CWorld::s_objectAreaOfInterest.b.z && mapObjDefGroup->bbox.b.x <= CWorld::s_objectAreaOfInterest.t.x && mapObjDefGroup->bbox.b.y <= CWorld::s_objectAreaOfInterest.t.y && mapObjDefGroup->bbox.b.z <= CWorld::s_objectAreaOfInterest.t.z) {
+    //            if ((mapObjGroup->unkLoadedFlag & 1) != 0) {
+    //                C44Matrix mat = mapObjDef->mat;
+    //                C44Matrix camTranslate; // identity by default
+    //                C3Vector vec = { -CWorldScene::s_activeWorldView.x, -CWorldScene::s_activeWorldView.y, -CWorldScene::s_activeWorldView.z };
+    //                camTranslate.Translate(vec); // camTranslate = Identity * T(vec) — NOT rotated by anything
+    //                mat *= camTranslate;         // mat = mapObjDef->mat * T(vec), matches the real Multiply() call exactly
+    //                g_theGxDevicePtr->XformSet(GxXform_World, mat);
+    //                CMapObj::RenderGroupCollidable(mapObjDef->owner, mapObjGroup, 0);
+    //            }
+    //        }
+
+    //        mapObjDefGroupLink = next;
+    //    }
+
+    //    mapObjDef = next;
+    //}
+    //###################################
 
     DayNight::Update();
     DayNight::RenderSky();
@@ -733,7 +981,9 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     CursorResetCursor();
 
     if (CWorld::GetEnables() & 0x200000) {
-        // TODO
+        //maybe_CWorldSceneRender__RenderFootprints();
+        //bn_TSGrowableArray_CGxVertexPC_SetCount(&dword_CF4938, 0);
+        //dword_CF494C = 0;
     }
 }
 
@@ -911,6 +1161,73 @@ void CWorldScene::RenderChunks() {
     //     }
     // }
     GxRsPop();
+}
+
+// OFFSET: 0x7964A0
+void CWorldScene::RenderMapObjDefGroups() {
+    g_theGxDevicePtr->RsPush();
+    CWorldScene::FrustumPush();
+    uint32_t groupRenders = 0;
+    //bn_CShadowCache_SetShadowMapGenericGlobal();
+    for (auto mapObjDefGroup = CWorldScene::sortTable.mapObjDefGroup.Head(); mapObjDefGroup;) {
+        auto next = CWorldScene::sortTable.mapObjDefGroup.Next(mapObjDefGroup);
+
+        mapObjDefGroup->sortTableLink.Unlink();
+        auto v8 = mapObjDefGroup->parentLinkList.Head();
+        CMapObjDef* mapObjDef = reinterpret_cast<CMapObjDef*>(v8->ref);
+
+        if ((CWorld::s_enables & CWorld::Enables::Enable_100) != 0) {
+            C44Matrix mat = mapObjDef->mat;
+            C44Matrix camTranslate;
+            C3Vector vec = { -CWorldScene::s_activeWorldView.x, -CWorldScene::s_activeWorldView.y, -CWorldScene::s_activeWorldView.z };
+            camTranslate.Translate(vec);
+            mat *= camTranslate;
+            CWorldScene::SetWorldProjection(mat);
+            //unk_68 = mapObjDefGroup->unk_68;
+            //v13 = (mapObjDefGroup->flags >> 15) & 1;
+            //if (unk_68 && *(unk_68 + 16))
+            //    (*(**(unk_68 + 16) + 8))(*(unk_68 + 16), (mapObjDefGroup->flags >> 15) & 1);
+            //maybe_CM2Lighting__Clear(v29, &mapObjDefGroup->sphere);
+            //CM2Scene::SelectLights(s_m2Scene, v29);
+            //(mapObjDefGroup->__vftable[1].unk)(mapObjDefGroup, v29);
+            //ActiveDayNight = DayNight::GetActiveDayNight();
+            //CWorldScene::SetupLighting(v29, &CWorldScene::s_activeWorldView.x);
+            //if (*&ref->unk_148 && ref->unk_148 == dword_CD7770 && ref->unk_14C == dword_CD7774)
+            //    sub_7A8430(ActiveDayNight->unk107);
+            //dword_CFBEB8 = v13;
+            mapObjDef->owner->RenderGroup(mapObjDefGroup->groupNum, mapObjDef->invMat, &mapObjDefGroup->frustumList);
+            groupRenders++;
+        }
+        for (auto frustum = mapObjDefGroup->frustumList.Head(); frustum;) {
+            auto nextFrustum = mapObjDefGroup->frustumList.Next(frustum);
+
+            frustum->sceneLink.Unlink();
+            CWorldScene::s_frustumFreeList.LinkToTail(frustum);
+
+            frustum = nextFrustum;
+        }
+
+        mapObjDefGroup = next;
+    }
+
+    OsOutputDebugString("Groups: %i\n", groupRenders);
+
+    CWorldScene::FrustumPop();
+    g_theGxDevicePtr->RsPop();
+}
+
+// OFFSET: 0x7A8320
+void CWorldScene::SetWorldProjection(C44Matrix& mat) {
+    if (CShaderEffect::s_enableShaders) {
+        C44Matrix v9;
+        g_theGxDevicePtr->XformView(v9);
+        v9 *= mat;
+        v9.Transpose();
+        g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 31, reinterpret_cast<C4Vector*>(&v9), 4);
+        g_theGxDevicePtr->XformSet(GxXform_World, mat);
+    } else {
+        g_theGxDevicePtr->XformSet(GxXform_World, mat);
+    }
 }
 
 void CWorldScene::RenderChunksSinglePass() {

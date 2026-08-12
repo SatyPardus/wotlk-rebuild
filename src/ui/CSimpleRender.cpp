@@ -79,11 +79,11 @@ void CSimpleRender::DrawBatch(CRenderBatch* batch) {
             posCount = mesh->posCount;
             idxCount = mesh->idxCount;
 
-            CGxBuf* vertexStream = g_theGxDevicePtr->BufStream(GxPoolTarget_Vertex, 24, posCount);
+            CGxBuf* vertexStream = g_theGxDevicePtr->BufStream(GxPoolTarget_Vertex, sizeof(CGxVertexPCT), posCount);
             char* vertexData = g_theGxDevicePtr->BufLock(vertexStream);
             CGxVertexPCT* vertexBuf = reinterpret_cast<CGxVertexPCT*>(vertexData);
 
-            CGxBuf* indexStream = g_theGxDevicePtr->BufStream(GxPoolTarget_Index, 2, idxCount);
+            CGxBuf* indexStream = g_theGxDevicePtr->BufStream(GxPoolTarget_Index, sizeof(uint16_t), idxCount);
             char* indexData = g_theGxDevicePtr->BufLock(indexStream);
             uint16_t* indexBuf = reinterpret_cast<uint16_t*>(indexData);
 

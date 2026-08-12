@@ -6,10 +6,19 @@
 #include "storm/Hash.hpp"
 #include "async/CAsyncObject.hpp"
 #include "world/map/CMapObjGroup.hpp"
+#include "world/map/CFrustum.hpp"
+
+typedef void (*RENDER_FUNC)(CMapObj*, CMapObjGroup*, uint32_t);
+typedef void (*RENDER_CALLBACK)(uint32_t groupNum, void* param);
 
 class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     public:
     static TSHashTable<CMapObj, HASHKEY_STRI> mapObjHashtable;
+    static uint32_t s_renderMode;
+    static RENDER_FUNC s_renderGroupExteriorFunc;
+    static RENDER_FUNC s_renderGroupInteriorFunc;
+    static RENDER_CALLBACK gRenderCallback;
+    static void* gRenderUserParam;
 
     char m_wmoName[260];
     SMOHeader* header;
@@ -72,12 +81,18 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     void GetGroupBounds(CAaBox* box, int32_t index);
     CMapObjGroup* GetGroup(int32_t index, bool a3);
     uint32_t GetGroupFlags(int32_t index);
+    void RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_LIST(CFrustum, sceneLink)* frustumList);
 
     static void PrepareUpdate();
     static CMapObj* Create(char* fileName);
     static void PostloadCallback(void* arg);
     static void RenderGroupCollidable(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t a3);
     static void RenderGroupCollidableFaces(CMapObjGroup* mapObjGroup);
+    static void ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t a3);
+    static void InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t a3);
+    static void UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t a3);
+    static void InvokeGroupRenderCallback(CMapObj* mapObj, uint32_t groupNum);
+    static void SetGroupRenderCallback(RENDER_CALLBACK callback, void* param);
 };
 
 #endif

@@ -2,6 +2,9 @@
 #include "async/AsyncFile.hpp"
 #include "world/map/CMapObj.hpp"
 
+VBBList CMapObjGroup::vertexVBList;
+VBBList CMapObjGroup::indexVBList;
+
 // OFFSET: 0x7D82E0
 void CMapObjGroup::Create() {
     this->parent->mapObjGroupList.LinkToTail(this);
@@ -123,6 +126,137 @@ void CMapObjGroup::CreateOptionalDataPointers(SIffChunk* dataChunk) {
     
 }
 
+// OFFSET: 0x7CBCB0
+void CMapObjGroup::AllocVB() {
+    if (!this->vertsBlock) {
+        uint32_t size = 36;
+        if ((this->unkLoadedFlag & 0x8) != 0)
+            size = 48;
+        CMapObjGroup::vertexVBList.AllocVBB(&this->vertsBlock, size, this->vertexListCount);
+    }
+    if (!CShaderEffect::s_enableShaders && (this->parent->header->flags & 2) != 0) {
+        if (this->colorVertexList) {
+            if (this->transparencyBatchesCount) {
+                if (!this->transparencyVertsBlock) {
+                    //v6 = this->batchList[transparencyBatchesCount - 1].vertexEnd + 1;
+                    //v5 = bn_GxVertexSize(4);
+                    //VBBList::AllocVBB(&CMapObjGroup::vertexVBList, &this->transparencyVertsBlock, v5, v6);
+                }
+            }
+        }
+    }
+    if (!this->indicesBlock)
+        CMapObjGroup::indexVBList.AllocVBB(&this->indicesBlock, sizeof(uint16_t), this->indicesCount);
+}
+
+// OFFSET: 0x7C9D80
+void CMapObjGroup::SetIndexVB() {
+    CGxBuf* buffer;
+    if (this->indicesBlock)
+        buffer = this->indicesBlock->buffer;
+    else
+        buffer = g_theGxDevicePtr->BufStream(GxPoolTarget_Index, sizeof(uint16_t), this->indicesCount);
+
+    if (!buffer->unk1C || !buffer->unk1D)
+        this->UploadIndexBuffer(buffer);
+    GxPrimIndexPtr(buffer);
+}
+
+// OFFSET: 0x7C8B90
+void CMapObjGroup::UploadIndexBuffer(CGxBuf* buf) {
+    char* buffer = g_theGxDevicePtr->BufLock(buf);
+    memcpy(buffer, this->indices, sizeof(int16_t) * this->indicesCount);
+    g_theGxDevicePtr->BufUnlock(buf, 0);
+    buf->unk1C = 1;
+}
+
+// OFFSET: 0x7C9CB0
+void CMapObjGroup::SetVertexVB() {
+    EGxVertexBufferFormat format = GxVBF_PNCT;
+    uint32_t size = sizeof(CGxVertexPNCT);
+    if ((this->unkLoadedFlag & 0x8) != 0) {
+        format = GxVBF_PNC2T2;
+        size = sizeof(CGxVertexPNC2T2);
+    }
+
+    CGxBuf* buf;
+    if (this->vertsBlock)
+        buf = this->vertsBlock->buffer;
+    else
+        buf = g_theGxDevicePtr->BufStream(GxPoolTarget_Vertex, size, this->vertexListCount);
+
+    if (!buf->unk1C || !buf->unk1D)
+        this->FillVertexVB(buf, format);
+    GxPrimVertexPtr(buf, format);
+}
+
+// OFFSET: 0x7C8560
+void CMapObjGroup::FillVertexVB(CGxBuf* buf, EGxVertexBufferFormat format) {
+    CImVector defaultColor = { 255, 127, 127, 127 };
+    const CImVector zeroColor = { 0, 0, 0, 0 };
+    const C2Vector zeroUV = { 0.0f, 0.0f };
+
+    if ((this->parent->header->flags & 2) != 0) {
+        defaultColor.b = 0;
+        defaultColor.g = 0;
+        defaultColor.r = 0;
+    }
+
+    if (format == GxVBF_PNCT) {
+        CGxVertexPNCT* buffer = (CGxVertexPNCT*)g_theGxDevicePtr->BufLock(buf);
+        for (int32_t i = 0; i < this->vertexListCount; i++) {
+            buffer->position = this->vertexList[i];
+            buffer->normal = this->normalList[i];
+            CImVector color = this->colorVertexList ? this->colorVertexList[i] : defaultColor;
+            if (g_theGxDevicePtr->Caps().m_colorFormat == GxCF_rgba) {
+                buffer->color.b = color.r;
+                buffer->color.g = color.g;
+                buffer->color.r = color.b;
+                buffer->color.a = color.a;
+            } else {
+                buffer->color = color;
+            }
+            buffer->texture = this->textureVertexList[i];
+
+            buffer++;
+        }
+
+        g_theGxDevicePtr->BufUnlock(buf, 0);
+        buf->unk1C = 1;
+    } else if (format == GxVBF_PNC2T2) {
+        CGxVertexPNC2T2* buffer = (CGxVertexPNC2T2*)g_theGxDevicePtr->BufLock(buf);
+        for (int32_t i = 0; i < this->vertexListCount; i++) {
+            buffer->position = this->vertexList[i];
+            buffer->normal = this->normalList[i];
+            CImVector color = this->colorVertexList ? this->colorVertexList[i] : defaultColor;
+            if (g_theGxDevicePtr->Caps().m_colorFormat == GxCF_rgba) {
+                buffer->color[0].b = color.r;
+                buffer->color[0].g = color.g;
+                buffer->color[0].r = color.b;
+                buffer->color[0].a = color.a;
+            } else {
+                buffer->color[0] = color;
+            }
+            color = this->colorVertexListExtra ? this->colorVertexListExtra[i] : zeroColor;
+            if (g_theGxDevicePtr->Caps().m_colorFormat == GxCF_rgba) {
+                buffer->color[1].b = color.r;
+                buffer->color[1].g = color.g;
+                buffer->color[1].r = color.b;
+                buffer->color[1].a = color.a;
+            } else {
+                buffer->color[1] = color;
+            }
+            buffer->texture[0] = this->textureVertexList[i];
+            buffer->texture[1] = this->textureVertexListExtra ? this->textureVertexListExtra[i] : zeroUV;
+
+            buffer++;
+        }
+
+        g_theGxDevicePtr->BufUnlock(buf, 0);
+        buf->unk1C = 1;
+    }
+}
+
 // OFFSET: 0x7D8570
 void CMapObjGroup::AsyncPostloadCallback(void* arg) {
     CMapObjGroup* mapObjGroup = static_cast<CMapObjGroup*>(arg);
@@ -144,4 +278,16 @@ void CMapObjGroup::AsyncPostloadCallback(void* arg) {
     //}
 
     mapObjGroup->Create();
+}
+
+// OFFSET: 0x7CB990
+void CMapObjGroup::Initialize() {
+    CMapObjGroup::vertexVBList.singlePool = 0;
+    CMapObjGroup::vertexVBList.target = GxPoolTarget_Vertex;
+    CMapObjGroup::vertexVBList.usage = GxPoolUsage_Dynamic;
+    CMapObjGroup::vertexVBList.pool = 0;
+    CMapObjGroup::indexVBList.singlePool = 0;
+    CMapObjGroup::indexVBList.target = GxPoolTarget_Index;
+    CMapObjGroup::indexVBList.usage = GxPoolUsage_Dynamic;
+    CMapObjGroup::indexVBList.pool = 0;
 }

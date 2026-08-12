@@ -6,12 +6,13 @@
 #include "world/map/CMapBaseObj.hpp"
 #include "world/map/Types.hpp"
 #include <tempest/Vector.hpp>
+#include "world/map/CFrustum.hpp"
 
 class CMapObjDefGroup : public CMapBaseObj {
     public:
     CAaBox bbox;
     CAaSphere sphere;
-    float unk_4C;
+    float distanceToCamera;
     uint32_t groupNum;
     uint32_t unkFlags;
     int32_t unk_58;
@@ -19,9 +20,21 @@ class CMapObjDefGroup : public CMapBaseObj {
     int32_t unk_60;
     int32_t unk_64;
     int32_t unk_68;
-    int32_t TSExplicitList__m_linkoffset_unk_6C;
-    void* TSExplicitList__m_ptr1_unk_70;
-    void* TSExplicitList__m_ptr2_unk_74;
+    STORM_EXPLICIT_LIST(CFrustum, sceneLink) frustumList;
+    //TSList unk_78;
+    //DWORD unk_84;
+    //DWORD unk_88;
+    //DWORD unk_8C;
+    //DWORD unk_90;
+    //DWORD unk_94;
+    //DWORD unk_98;
+    //DWORD unk_9C;
+    //DWORD unk_A0;
+    //DWORD unk_A4;
+    TSLink<CMapObjDefGroup> sortEntryLink;
+    TSLink<CMapObjDefGroup> sortTableLink;
+    //DWORD unk_B8;
+    //DWORD unk_BC;
 
     void MarkPrepared();
 };

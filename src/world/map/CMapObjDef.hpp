@@ -8,6 +8,17 @@
 #include "world/map/Types.hpp"
 #include "storm/Hash.hpp"
 
+union CMapObjDefGroupStorage {
+    CMapObjDefGroup* m_inline[4];
+    TSGrowableArray<CMapObjDefGroup*> m_array;
+
+    CMapObjDefGroupStorage()
+        : m_inline {} {}         // activate the trivial member
+    ~CMapObjDefGroupStorage() {} // deliberately empty
+    CMapObjDefGroupStorage(const CMapObjDefGroupStorage&) = delete;
+    CMapObjDefGroupStorage& operator=(const CMapObjDefGroupStorage&) = delete;
+};
+
 class CMapObjDef : public CMapBaseObj, public TSHashObject<CMapObjDef, uint32_t> {
     public:
     C3Vector position;
@@ -25,7 +36,7 @@ class CMapObjDef : public CMapBaseObj, public TSHashObject<CMapObjDef, uint32_t>
     int32_t unk_10C;
     int32_t unk_110;
     STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) mapObjDefGroupLinkList;
-    //TSGrowableArray_CMapObjDefGroup defGroups;
+    CMapObjDefGroupStorage defGroups;
     uint32_t groupCount;
     //TSGrowableArray unk;
     uint32_t argbColor;
@@ -33,6 +44,12 @@ class CMapObjDef : public CMapBaseObj, public TSHashObject<CMapObjDef, uint32_t>
     int32_t unk_14C;
     int32_t unk_150;
     int32_t unk_154;
+
+    CMapObjDef();
+    void ConvertInlineGroupsToArray();
+    CMapObjDefGroup** Groups();
+    int32_t GroupCount() const;
+    void ReserveGroups(int32_t n);
 };
 
 #endif

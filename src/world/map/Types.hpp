@@ -386,6 +386,4 @@ struct SMOGroupHeader {
     uint32_t unk;
 };
 
-
-
 #endif

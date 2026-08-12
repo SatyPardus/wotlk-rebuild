@@ -23,7 +23,7 @@ class CFrustum {
     WorldCullStatus Cull(CAaSphere* box);
     void CalcPlanesFromCorners(C3Vector* corners);
     void CalcPlanesFromCorners();
-    void FrustumPush(CFrustum* other);
+    void Transform(C44Matrix& mat);
 };
 
 #endif

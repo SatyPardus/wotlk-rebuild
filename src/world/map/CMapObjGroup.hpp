@@ -8,16 +8,20 @@
 #include <tempest/Box.hpp>
 #include "world/map/CMapBaseObj.hpp"
 #include "async/CAsyncObject.hpp"
+#include "world/map/VBBList.hpp"
 
 class CMapObj;
 
 class CMapObjGroup : public CMapBaseObj {
     public:
-    //VBBList_Block* vertsBlock;
-    //VBBList_Block* transparencyVertsBlock;
-    //VBBList_Block* indicesBlock;
-    //VBBList_Block* liquidVertsBlock;
-    //VBBList_Block* liquidIndicesBlock;
+    static VBBList vertexVBList;
+    static VBBList indexVBList;
+
+    VBBList_Block* vertsBlock;
+    VBBList_Block* transparencyVertsBlock;
+    VBBList_Block* indicesBlock;
+    VBBList_Block* liquidVertsBlock;
+    VBBList_Block* liquidIndicesBlock;
     float timer;
     void* unk_1C;
     int32_t unk_20;
@@ -64,7 +68,7 @@ class CMapObjGroup : public CMapBaseObj {
     C3Vector* vertexList;
     C3Vector* normalList;
     C2Vector* textureVertexList;
-    int32_t unk_F8;
+    C2Vector* textureVertexListExtra;
     SMOBatch* batchList;
     int32_t unk_100;
     int32_t unk_104;
@@ -115,7 +119,14 @@ class CMapObjGroup : public CMapBaseObj {
     void CreateDataPointers(SIffChunk* dataChunk);
     void CreateOptionalDataPointers(SIffChunk* dataChunk);
 
+    void AllocVB();
+    void SetIndexVB();
+    void UploadIndexBuffer(CGxBuf* buf);
+    void SetVertexVB();
+    void FillVertexVB(CGxBuf* buf, EGxVertexBufferFormat format);
+
     static void AsyncPostloadCallback(void* arg);
+    static void Initialize();
 };
 
 #endif

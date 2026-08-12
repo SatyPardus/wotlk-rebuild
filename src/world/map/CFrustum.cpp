@@ -54,35 +54,12 @@ void CFrustum::CalcPlanesFromCorners() {
     planes[5].d = -(planes[5].n.x * corners[2].x + planes[5].n.y * corners[2].y + planes[5].n.z * corners[2].z);
 }
 
-// OFFSET: 0x790020
-void CFrustum::FrustumPush(CFrustum* other) {
-    if (this == other)
-        return;
-
-    this->planes[0].n.x = other->planes[0].n.x;
-    this->planes[0].n.y = other->planes[0].n.y;
-    this->planes[0].n.z = other->planes[0].n.z;
-    this->planes[0].d = other->planes[0].d;
-    this->planes[1] = other->planes[1];
-    this->planes[2] = other->planes[2];
-    this->planes[3] = other->planes[3];
-    this->planes[4] = other->planes[4];
-    this->planes[5] = other->planes[5];
-    this->corners[0].x = other->corners[0].x;
-    this->corners[0].y = other->corners[0].y;
-    this->corners[0].z = other->corners[0].z;
-    this->corners[1] = other->corners[1];
-    this->corners[2] = other->corners[2];
-    this->corners[3] = other->corners[3];
-    this->corners[4] = other->corners[4];
-    this->corners[5] = other->corners[5];
-    this->corners[6] = other->corners[6];
-    this->corners[7] = other->corners[7];
-    this->lookPos = other->lookPos;
-    this->lookAt = other->lookAt;
-    this->lookUp = other->lookUp;
-    this->fovy = other->fovy;
-    this->aspect = other->aspect;
-    this->minz = other->minz;
-    this->maxz = other->maxz;
+// OFFSET: 0x983F40
+void CFrustum::Transform(C44Matrix& mat) {
+    for (int32_t i = 0; i < 8; i++) {
+        this->corners[i] = this->corners[i] * mat;
+    }
+    this->CalcPlanesFromCorners();
+    this->lookPos = this->lookPos * mat;
+    this->lookAt = this->lookAt * mat;
 }
