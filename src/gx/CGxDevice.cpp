@@ -541,6 +541,14 @@ CGxBuf* CGxDevice::BufStream(EGxPoolTarget target, uint32_t itemSize, uint32_t i
     return buf;
 }
 
+// OFFSET: 0x6831A0
+void CGxDevice::BufSizeSet(CGxBuf* buf, uint32_t itemSize, uint32_t itemCount) {
+    buf->m_itemSize = itemSize;
+    buf->m_itemCount = itemCount;
+    buf->m_size = itemCount * itemSize;
+    buf->unk1C = 0;
+}
+
 int32_t CGxDevice::BufUnlock(CGxBuf* buf, uint32_t size) {
     this->m_bufLocked[buf->m_pool->m_target] = nullptr;
 

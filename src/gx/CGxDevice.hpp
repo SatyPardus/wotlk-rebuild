@@ -173,6 +173,7 @@ class CGxDevice {
         const CGxCaps& Caps() const;
         CGxBuf* BufCreate(CGxPool* pool, uint32_t itemSize, uint32_t itemCount, uint32_t index);
         CGxBuf* BufStream(EGxPoolTarget target, uint32_t itemSize, uint32_t itemCount);
+        void BufSizeSet(CGxBuf* buf, uint32_t itemSize, uint32_t itemCount);
         bool CapsHasContext(int32_t a2);
         bool CapsIsWindowVisible(int32_t a2);
         EGxApi DeviceApi();
