@@ -99,4 +99,18 @@ struct CGxVertexPNC {
     CImVector color;
 };
 
+struct CGxVertexPNCT {
+    C3Vector position;
+    C3Vector normal;
+    CImVector color;
+    C2Vector texture;
+};
+
+struct CGxVertexPNC2T2 {
+    C3Vector position;
+    C3Vector normal;
+    CImVector color[2];
+    C2Vector texture[2];
+};
+
 #endif
