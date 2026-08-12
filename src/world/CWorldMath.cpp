@@ -7,11 +7,11 @@ void CWorldMath::TransformAABox(C44Matrix& m, CAaBox& src, CAaBox& dst) {
     dst.t = dst.b;
 
     for (int axis = 0; axis < 3; axis++) {
-        const float* row = &m.a0 + axis * 4;
-
         for (int component = 0; component < 3; component++) {
-            float a = row[component] * src.b[component];
-            float b = row[component] * src.t[component];
+            float e = (&m.a0)[component * 4 + axis];
+
+            float a = e * src.b[component];
+            float b = e * src.t[component];
 
             dst.b[axis] += std::min(a, b);
             dst.t[axis] += std::max(a, b);
