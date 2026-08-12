@@ -146,7 +146,7 @@ void CSimpleCamera::SetGxProjectionAndView(const CRect& projectionRect) {
     this->m_aspect = (projectionRect.maxX - projectionRect.minX) / (projectionRect.maxY - projectionRect.minY);
 
     C44Matrix mProj;
-    GxuXformCreateProjection_SG(this->FOV(), this->m_aspect, this->m_nearZ, this->m_farZ, mProj);
+    GxuXformCreateProjection_Exact(this->FOV() * 0.60000002, this->m_aspect, this->m_nearZ, this->m_farZ, mProj);
     GxXformSetProjection(mProj);
 
     C44Matrix mView;
