@@ -82,6 +82,8 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     CMapObjGroup* GetGroup(int32_t index, bool a3);
     uint32_t GetGroupFlags(int32_t index);
     void RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_LIST(CFrustum, sceneLink)* frustumList);
+    void CreateMaterial(uint8_t texture);
+    void CreateMaterials();
 
     static void PrepareUpdate();
     static CMapObj* Create(char* fileName);
@@ -93,6 +95,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     static void UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t a3);
     static void InvokeGroupRenderCallback(CMapObj* mapObj, uint32_t groupNum);
     static void SetGroupRenderCallback(RENDER_CALLBACK callback, void* param);
+    static void SetRenderModeLight();
 };
 
 #endif

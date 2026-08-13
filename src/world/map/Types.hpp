@@ -7,6 +7,7 @@
 #include <tempest/Plane.hpp>
 #include <tempest/Box.hpp>
 #include <tempest/sphere/CAaSphere.hpp>
+#include <gx/Texture.hpp>
 
 struct SIffChunk {
     uint32_t token;
@@ -261,7 +262,13 @@ struct SMOMaterial {
     uint32_t texture3;
     uint32_t color2;
     uint32_t flags2;
-    uint32_t runTimeData[4];
+    union {
+        uint32_t runTimeData[4]; // on-disk scratch, 16 bytes
+        struct {
+            HTEXTURE runTimeData_2;
+            HTEXTURE runTimeData_3;
+        };
+    };
 };
 
 struct SMOGroupInfo {

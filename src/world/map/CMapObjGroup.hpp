@@ -124,6 +124,7 @@ class CMapObjGroup : public CMapBaseObj {
     void UploadIndexBuffer(CGxBuf* buf);
     void SetVertexVB();
     void FillVertexVB(CGxBuf* buf, EGxVertexBufferFormat format);
+    void FixColorVertexAlpha();
 
     static void AsyncPostloadCallback(void* arg);
     static void Initialize();

@@ -6,6 +6,7 @@
 #include "gx/Device.hpp"
 #include "world/CWorld.hpp"
 #include "world/CWorldScene.hpp"
+#include <gx/RenderState.hpp>
 
 TSHashTable<CMapObj, HASHKEY_STRI> CMapObj::mapObjHashtable;
 uint32_t CMapObj::s_renderMode = 5;
@@ -375,7 +376,7 @@ void CMapObj::PostloadCallback(void* arg) {
     //}
     //savedregs = v10;
     mapObj->Load();
-    //bn_CMapObj_CreateMaterials(a1);
+    mapObj->CreateMaterials();
     mapObj->argb_color = mapObj->header->ambColor;
     mapObj->bbox = mapObj->header->bounding_box;
     mapObj->mapObjGroupCount = mapObj->groupInfoCount;
@@ -415,6 +416,49 @@ void CMapObj::RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_
     //    (bn_CMapObj_RenderPortals)(Group);
 }
 
+// OFFSET: 0x7D7710
+void CMapObj::CreateMaterial(uint8_t texture) {
+    SMOMaterial* material = &this->materialList[texture];
+    if (!material->runTimeData_2) {
+        char* textureName1 = &this->textureNameList[material->texture1];
+        char* textureName2 = &this->textureNameList[material->texture2];
+        if (!*textureName1)
+            textureName1 = "createcrappygreentexture.blp";
+        if (!CShaderEffect::s_enableShaders)
+            textureName2 = nullptr;
+
+        switch (material->shader) {
+        case 0:
+        case 1:
+        case 2:
+        case 4:
+            textureName2 = nullptr;
+            break;
+        case 3:
+        case 5:
+        case 6:
+            if (!*textureName2) {
+                material->shader = 4;
+                textureName2 = nullptr;
+            }
+        }
+
+        material->runTimeData_2 = CMap::LoadTexture(textureName1);
+        if (textureName2)
+            material->runTimeData_3 = CMap::LoadTexture(textureName2);
+        else
+            material->runTimeData_3 = nullptr;
+    }
+}
+
+// OFFSET: 0x7D72D0
+void CMapObj::CreateMaterials() {
+    for (int32_t i = 0; i < this->materialsCount; i++) {
+        this->materialList[i].runTimeData_2 = nullptr;
+        this->materialList[i].runTimeData_3 = nullptr;
+    }
+}
+
 // OFFSET: 0x7AB1E0
 void CMapObj::RenderGroupCollidable(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t a3) {
     if (a3)
@@ -423,7 +467,7 @@ void CMapObj::RenderGroupCollidable(CMapObj* mapObj, CMapObjGroup* mapObjGroup, 
     g_theGxDevicePtr->RsPush();
     int32_t polyFillOriginal = g_theGxDevicePtr->MasterEnable(GxMasterEnable_PolygonFill);
     g_theGxDevicePtr->RsSet(GxRs_Fog, 0);
-    //SetRenderModeLight();
+    CMapObj::SetRenderModeLight();
     g_theGxDevicePtr->RsSet(GxRs_VertexShader, nullptr);
     g_theGxDevicePtr->RsSet(GxRs_PixelShader, nullptr);
     g_theGxDevicePtr->MasterEnableSet(GxMasterEnable_PolygonFill, 1);
@@ -655,13 +699,13 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
     //dword_CFBEAC = -1;
     //dword_D1BEF8 = -1;
     //dword_CFBEA8 = -1;
-    /*if (!CShaderEffect::s_enableShaders) {
+    if (!CShaderEffect::s_enableShaders) {
         g_theGxDevicePtr->RsSet(GxRs_ColorMaterial, 2);
-    }*/
+    }
     //v67 = 2 - (dword_CFBEB8 != 0);
     CGxTex* GxTex = nullptr;
     //if (CMap::s_isStreamingMode)
-        GxTex = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, 0);
+    //    GxTex = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, 0);
     auto batchList = mapObjGroup->batchList;
     for (int32_t i = 0; i < mapObjGroup->batchListCount; i++) {
         if (!a3)
@@ -673,8 +717,24 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
 
         batchList->flags |= 0xF0u;
         //########## TESTING
-        g_theGxDevicePtr->RsSet(GxRs_Texture0, GxTex);
-        g_theGxDevicePtr->RsSet(GxRs_Texture1, GxTex);
+        g_theGxDevicePtr->RsSet(GxRs_Fog, 0);
+        g_theGxDevicePtr->RsSet(GxRs_ColorMaterial, 2);
+        CMapObj::SetRenderModeLight();
+        // SetRenderModeLight();
+        // m_data = v7->m_appRenderStates.m_data;
+        // v10 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
+        // p_m_data = &v7->m_appRenderStates.m_data;
+        // if (m_data[7].m_value.m_data.i[0] != v10) {
+        //     CGxDevice::IRsDirty(v7, GxRs_AlphaRef);
+        //     (*p_m_data)[7].m_value.m_data.i[0] = v10;
+        //     v7 = g_theGxDevicePtr;
+        // }
+        g_theGxDevicePtr->RsSet(GxRs_MatDiffuse, 0x80CCCCCC);
+        g_theGxDevicePtr->RsSet(GxRs_DepthWrite, 1);
+        SMOMaterial* material = &mapObj->materialList[batchList->texture];
+        g_theGxDevicePtr->RsSet(GxRs_Texture0, TextureGetGxTex(material->runTimeData_2, 0, 0));
+        if (material->runTimeData_3)
+            g_theGxDevicePtr->RsSet(GxRs_Texture1, TextureGetGxTex(material->runTimeData_3, 0, 0));
         CGxBatch v26;
         v26.m_count = batchList->indexCount;
         v26.m_start = batchList->indexStart;
@@ -961,4 +1021,28 @@ void CMapObj::InvokeGroupRenderCallback(CMapObj* mapObj, uint32_t groupNum) {
 void CMapObj::SetGroupRenderCallback(RENDER_CALLBACK callback, void* param) {
     CMapObj::gRenderCallback = callback;
     CMapObj::gRenderUserParam = param;
+}
+
+// OFFSET: 0x7A8800
+void CMapObj::SetRenderModeLight() {
+    CGxLight light;
+    light.m_flags |= 0x1;
+
+    float d = 1.0f / sqrtf(3.0f);
+    light.m_dir = { d, d, d };
+    light.m_ambientColor = { 0.33f, 0.33f, 0.33f };
+    light.m_dirColor = { 0.75f, 0.75f, 0.75f };
+    light.m_specularColor = { 0.0f, 0.0f, 0.0f };
+    light.m_constantAttenuation = 0.0f;
+    light.m_linearAttenuation = 0.0f;
+    light.m_quadraticAttenuation = 0.0f;
+
+    C3Vector origin = { 0.0f, 0.0f, 0.0f };
+    g_theGxDevicePtr->LightSet(0, light, origin);
+    g_theGxDevicePtr->LightEnable(0, 1);
+
+    for (int i = 1; i < 4; i++)
+        g_theGxDevicePtr->LightEnable(i, 0);
+
+    GxRsSet(GxRs_Lighting, 1);
 }

@@ -37,16 +37,9 @@ void CMapObjGroup::Create() {
     //}
     //this->liquidType = LiquidType;
     this->CreateDataPointers(reinterpret_cast<SIffChunk*>(static_cast<char*>(this->filePtr) + 0x58));
-    //v12 = 0;
-    //v23 = this->parent;
-    //if (this->batchListCount) {
-    //    v13 = 0;
-    //    do {
-    //        CMapObj::CreateMaterial(v23, this->batchList[v13].texture);
-    //        ++v12;
-    //        ++v13;
-    //    } while (v12 < this->batchListCount);
-    //}
+    for (int32_t i = 0; i < this->batchListCount; i++) {
+        this->parent->CreateMaterial(this->batchList[i].texture);
+    }
     this->unkLoadedFlag = (this->unkLoadedFlag & ~0x3) | 1;
     if ((this->parent->header->flags & 1) != 0)
         this->unkLoadedFlag |= 2;
@@ -123,7 +116,103 @@ void CMapObjGroup::CreateDataPointers(SIffChunk* polyListChunk) {
 
 // OFFSET: 0x7D7C30
 void CMapObjGroup::CreateOptionalDataPointers(SIffChunk* dataChunk) {
-    
+    if ((this->flags & 0x200) != 0) {
+        //this->unk_104 = &a2->data;
+        //this->unk_174 = a2->size >> 1;
+        dataChunk = dataChunk->Next();
+    }
+    if ((this->flags & 0x800) != 0) {
+        this->doodadRefList = dataChunk->Data<uint16_t>();
+        this->doodadRefListCount = dataChunk->size / sizeof(uint16_t);
+        dataChunk = dataChunk->Next();
+    }
+    if ((this->flags & 1) != 0) {
+        //size = v2->size;
+        //v8 = &v2->data;
+        dataChunk = dataChunk->Next();
+        //v10 = size;
+        //v11 = *(v9 + 1);
+        //v33 = (v9 + 8);
+        dataChunk = dataChunk->Next();
+        //CAaBsp::sub_79ADC0(&this->CAaBspNodePtr1, v8, v10 >> 4, v33, v11 >> 1, &this->bbox.b.x);
+    }
+    if ((this->flags & 0x400) != 0) {
+        //v13 = &v2[2] + v2->size + *(&v2[1].token + v2->size) + *(&v2[1].data + v2->size + *(&v2[1].token + v2->size));
+        //v2 = &v13[*(v13 + 1) + 8];
+
+        dataChunk = dataChunk->Next();
+        dataChunk = dataChunk->Next();
+        dataChunk = dataChunk->Next();
+        dataChunk = dataChunk->Next();
+    }
+    if ((this->flags & 4) != 0) {
+        parent = this->parent;
+        this->colorVertexList = dataChunk->Data<CImVector>();
+        this->colorVertexListSize = dataChunk->size / sizeof(CImVector);
+        dataChunk = dataChunk->Next();
+        if ((parent->header->flags & 8) == 0)
+            this->FixColorVertexAlpha();
+    }
+    if ((this->flags & 0x1000) != 0) {
+        //data = v2->data;
+        //v18 = &v2->data;
+        //this->liquidVerts.x = data;
+        //v19 = v18[1];
+        //v18 += 2;
+        //this->liquidVerts.y = v19;
+        //this->liquidTiles.x = *v18;
+        //v20 = v18[1];
+        //v18 += 2;
+        //this->liquidTiles.y = v20;
+        //LODWORD(this->liquidCorner.x) = *v18;
+        //LODWORD(this->liquidCorner.y) = v18[1];
+        //v21 = this->liquidVerts.x * this->liquidVerts.y;
+        //LODWORD(this->liquidCorner.z) = v18[2];
+        //LOWORD(v19) = *(v18 + 6);
+        //v22 = this->liquidTiles.x * this->liquidTiles.y;
+        //v18 = (v18 + 14);
+        //this->liquidVertexList = v18;
+        //v23 = &v18[2 * v21];
+        //this->liquidTileList = v23;
+        //v2 = &v23[v22];
+        //v24 = this->liquidType == 0;
+        //LOWORD(this->luquidMaterialId) = v19;
+        //if (v24) {
+        //    v25 = WMOGroup::sub_7C8D80(this);
+        //    this->liquidType = CMapObjGroup::GetLiquidType(this, v25);
+        //}
+        //bn_CMapObjGroup_AllocVertArray(&this->unk_1C, this->liquidVerts.x * this->liquidVerts.y);
+        //bn_CMapObjGroup_GenLiquidVerts(this);
+    }
+    if ((this->flags & 0x20000) != 0) {
+        //v26 = v2;
+        //v27 = &v2->data;
+        //this->unk_E8 = v27;
+        //this->unk_15C = v26->size >> 1;
+        //v2 = (v27 + v26->size + 8);
+        //this->unk_100 = v2;
+        //if (byte_CE049C) {
+        //    v28 = 0;
+        //    if (this->batchListCount) {
+        //        v29 = 0;
+        //        do {
+        //            this->batchList[v29].indexStart = *(this->unk_100 + 8 * v28);
+        //            this->batchList[v29++].indexCount = *(this->unk_100 + 8 * v28++ + 4);
+        //        } while (v28 < this->batchListCount);
+        //    }
+        //}
+    }
+    if ((this->flags & 0x2000000) != 0) {
+        //v31 = v2;
+        //v32 = &v2->data;
+        //this->unk_F8 = v32;
+        //this->unk_16C = v31->size >> 3;
+        dataChunk = dataChunk->Next();
+    }
+    if ((this->flags & 0x1000000) != 0) {
+        this->colorVertexListExtra = dataChunk->Data<CImVector>();
+        this->colorVertexListExtraSize = dataChunk->size / sizeof(CImVector);
+    }
 }
 
 // OFFSET: 0x7CBCB0
@@ -254,6 +343,33 @@ void CMapObjGroup::FillVertexVB(CGxBuf* buf, EGxVertexBufferFormat format) {
 
         g_theGxDevicePtr->BufUnlock(buf, 0);
         buf->unk1C = 1;
+    }
+}
+
+// OFFSET: 0x7D7380
+void CMapObjGroup::FixColorVertexAlpha() {
+    uint32_t beginSecondFixup = 0;
+    if (this->transparencyBatchesCount) {
+        beginSecondFixup = this->batchList[this->transparencyBatchesCount - 1].vertexEnd + 1;
+    }
+
+    for (uint32_t i = 0; i < this->colorVertexListSize; i++) {
+        CImVector& c = this->colorVertexList[i];
+
+        if (i >= beginSecondFixup) {
+            uint32_t a = c.a;
+            uint32_t r = (c.r + ((a * c.r) >> 6)) >> 1;
+            uint32_t g = (c.g + ((a * c.g) >> 6)) >> 1;
+            uint32_t b = (c.b + ((a * c.b) >> 6)) >> 1;
+            c.r = r > 255 ? 255 : r;
+            c.g = g > 255 ? 255 : g;
+            c.b = b > 255 ? 255 : b;
+            c.a = 255;
+        } else {
+            c.r >>= 1;
+            c.g >>= 1;
+            c.b >>= 1;
+        }
     }
 }
 
