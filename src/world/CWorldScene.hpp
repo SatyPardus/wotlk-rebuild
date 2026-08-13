@@ -9,6 +9,7 @@
 #include "gx/Texture.hpp"
 #include "world/map/CMapObjDef.hpp"
 #include "world/map/CMapObjDefGroup.hpp"
+#include "world/map/CPortalView.hpp"
 
 class CM2Scene;
 class CMapDoodadDef;
@@ -49,7 +50,7 @@ class CWorldScene {
 
     static int32_t frustumIndex;
     static CFrustum frustumStack[32];
-    static CRect frustumRect;
+    static CPortalView frustumPortalView;
     static CiRect s_frustumChunkRect;
     static C3Vector s_frustumCorners[8];
 

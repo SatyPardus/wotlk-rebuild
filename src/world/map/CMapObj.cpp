@@ -9,7 +9,7 @@
 #include <gx/RenderState.hpp>
 
 TSHashTable<CMapObj, HASHKEY_STRI> CMapObj::mapObjHashtable;
-uint32_t CMapObj::s_renderMode = 5;
+uint32_t CMapObj::s_renderMode = 4;
 RENDER_FUNC CMapObj::s_renderGroupExteriorFunc;
 RENDER_FUNC CMapObj::s_renderGroupInteriorFunc;
 RENDER_CALLBACK CMapObj::gRenderCallback;
@@ -542,7 +542,7 @@ void CMapObj::RenderGroupCollidableFaces(CMapObjGroup* mapObjGroup) {
                 batch.m_count = 3000;
                 batch.m_minIndex = 0;
                 g_theGxDevicePtr->Draw(&batch, 1);
-                indexBuf = g_theGxDevicePtr->BufStream(GxPoolTarget_Index, 2, 3000);
+                indexBuf = g_theGxDevicePtr->BufStream(GxPoolTarget_Index, sizeof(uint16_t), 3000);
                 indexBuffer = (uint16_t*)g_theGxDevicePtr->BufLock(indexBuf);
             }
         }
