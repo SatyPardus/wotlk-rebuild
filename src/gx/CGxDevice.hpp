@@ -9,6 +9,7 @@
 #include "gx/CGxStateBom.hpp"
 #include "gx/Types.hpp"
 #include "gx/Shader.hpp"
+#include "gx/light/CGxApiLight.hpp"
 #include "cursor/Cursor.hpp"
 #include <cstdint>
 #include <cstdarg>
@@ -88,52 +89,56 @@ class CGxDevice {
         static CGxDevice* NewOpenGl();
 
         // Member variables
-        TSGrowableArray<CGxPushedRenderState> m_pushedStates;
-        TSGrowableArray<size_t> m_stackOffsets;
-        TSGrowableArray<EGxRenderState> m_dirtyStates;
-        CRect m_defWindowRect;
-        CRect m_curWindowRect;
-        EGxApi m_api = GxApis_Last;
-        CGxFormat m_format;
-        CGxCaps m_caps;
-        TSHashTable<CGxShader, HASHKEY_STRI> m_shaderList[GxShTargets_Last];
-        int32_t (*m_windowProc)(void* window, uint32_t message, uintptr_t wparam, intptr_t lparam) = nullptr;
-        int32_t m_context = 0;
-        int32_t intF5C = 0;
-        int32_t m_windowVisible = 0;
-        int32_t intF64 = 0;
-        int32_t m_needsReset = 1;
-        CBoundingBox m_viewport;
-        C44Matrix m_projection;
-        C44Matrix m_projNative;
-        CGxMatrixStack m_xforms[GxXforms_Last];
-        CGxMatrixStack m_texGen[8];
-        uint32_t m_appMasterEnables = 0;
-        uint32_t m_hwMasterEnables = 0;
-        TSList<CGxPool, TSGetLink<CGxPool>> m_poolList;
-        CGxBuf* m_bufLocked[GxPoolTargets_Last];
-        CGxPool* m_vertexPool = nullptr;
-        CGxPool* m_indexPool = nullptr;
-        CGxBuf* m_streamBufs[GxPoolTargets_Last];
-        CGxVertexAttrib m_primVertexFormatAttrib[GxVertexBufferFormats_Last];
-        CGxBuf* m_primVertexFormatBuf[GxVertexBufferFormats_Last];
-        uint32_t m_primVertexMask = 0;
-        uint32_t m_primVertexDirty = 0;
-        EGxVertexBufferFormat m_primVertexFormat = GxVertexBufferFormats_Last;
-        CGxBuf* m_primVertexBuf = nullptr;
-        uint32_t m_primVertexSize;
-        CGxBuf* m_primIndexBuf = nullptr;
-        int32_t m_primIndexDirty = 0;
-        TSFixedArray<CGxAppRenderState> m_appRenderStates;
-        TSFixedArray<CGxStateBom> m_hwRenderStates;
-        uint32_t m_baseMipLevel = 0; // TODO placeholder
-        int32_t m_cursorVisible = 0;
-        int32_t m_hwCursor = 0;
-        uint32_t m_cursorHotspotX = 0;
-        uint32_t m_cursorHotspotY = 0;
-        uint32_t m_cursor[CURSOR_IMAGE_SIZE] = { 0 };
-        CGxTex* m_cursorTexture = nullptr;
-        float m_cursorDepth = 0.0f;
+        /* 0x0004 */ TSGrowableArray<CGxPushedRenderState> m_pushedStates;
+        /* 0x0014 */ TSGrowableArray<size_t> m_stackOffsets;
+        /* 0x0024 */ TSGrowableArray<EGxRenderState> m_dirtyStates;
+        /* 0x0034 */ EGxPrim m_primType;
+
+        // #### SORT THESE
+        /* 0x2548 */ CGxApiLight m_lights[4];
+        /* 0x0000 */ CRect m_defWindowRect;
+        /* 0x0000 */ CRect m_curWindowRect;
+        /* 0x0000 */ EGxApi m_api = GxApis_Last;
+        /* 0x0000 */ CGxFormat m_format;
+        /* 0x0000 */ CGxCaps m_caps;
+        /* 0x0000 */ TSHashTable<CGxShader, HASHKEY_STRI> m_shaderList[GxShTargets_Last];
+        /* 0x0000 */ int32_t (*m_windowProc)(void* window, uint32_t message, uintptr_t wparam, intptr_t lparam) = nullptr;
+        /* 0x0000 */ int32_t m_context = 0;
+        /* 0x0000 */ int32_t intF5C = 0;
+        /* 0x0000 */ int32_t m_windowVisible = 0;
+        /* 0x0000 */ int32_t intF64 = 0;
+        /* 0x0000 */ int32_t m_needsReset = 1;
+        /* 0x0000 */ CBoundingBox m_viewport;
+        /* 0x0000 */ C44Matrix m_projection;
+        /* 0x0000 */ C44Matrix m_projNative;
+        /* 0x0000 */ CGxMatrixStack m_xforms[GxXforms_Last];
+        /* 0x0000 */ CGxMatrixStack m_texGen[8];
+        /* 0x0000 */ uint32_t m_appMasterEnables = 0;
+        /* 0x0000 */ uint32_t m_hwMasterEnables = 0;
+        /* 0x0000 */ TSList<CGxPool, TSGetLink<CGxPool>> m_poolList;
+        /* 0x0000 */ CGxBuf* m_bufLocked[GxPoolTargets_Last];
+        /* 0x0000 */ CGxPool* m_vertexPool = nullptr;
+        /* 0x0000 */ CGxPool* m_indexPool = nullptr;
+        /* 0x0000 */ CGxBuf* m_streamBufs[GxPoolTargets_Last];
+        /* 0x0000 */ CGxVertexAttrib m_primVertexFormatAttrib[GxVertexBufferFormats_Last];
+        /* 0x0000 */ CGxBuf* m_primVertexFormatBuf[GxVertexBufferFormats_Last];
+        /* 0x0000 */ uint32_t m_primVertexMask = 0;
+        /* 0x0000 */ uint32_t m_primVertexDirty = 0;
+        /* 0x0000 */ EGxVertexBufferFormat m_primVertexFormat = GxVertexBufferFormats_Last;
+        /* 0x0000 */ CGxBuf* m_primVertexBuf = nullptr;
+        /* 0x0000 */ uint32_t m_primVertexSize;
+        /* 0x0000 */ CGxBuf* m_primIndexBuf = nullptr;
+        /* 0x0000 */ int32_t m_primIndexDirty = 0;
+        /* 0x0000 */ TSFixedArray<CGxAppRenderState> m_appRenderStates;
+        /* 0x0000 */ TSFixedArray<CGxStateBom> m_hwRenderStates;
+        /* 0x0000 */ uint32_t m_baseMipLevel = 0; // TODO placeholder
+        /* 0x0000 */ int32_t m_cursorVisible = 0;
+        /* 0x0000 */ int32_t m_hwCursor = 0;
+        /* 0x0000 */ uint32_t m_cursorHotspotX = 0;
+        /* 0x0000 */ uint32_t m_cursorHotspotY = 0;
+        /* 0x0000 */ uint32_t m_cursor[CURSOR_IMAGE_SIZE] = { 0 };
+        /* 0x0000 */ CGxTex* m_cursorTexture = nullptr;
+        /* 0x0000 */ float m_cursorDepth = 0.0f;
 
         // Virtual member functions
         virtual void ITexMarkAsUpdated(CGxTex* texId) = 0;
@@ -220,6 +225,8 @@ class CGxDevice {
         void XformSetViewport(float minX, float maxX, float minY, float maxY, float minZ, float maxZ);
         void XformView(C44Matrix& matrix);
         void XformViewport(float& minX, float& maxX, float& minY, float& maxY, float& minZ, float& maxZ);
+        void LightSet(int32_t slot, CGxLight& light, C3Vector& p);
+        void LightEnable(int index, int32_t enable);
 };
 
 #endif

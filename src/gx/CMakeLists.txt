@@ -4,6 +4,7 @@ file(GLOB GX_SOURCES
     "font/*.cpp"
     "shader/*.cpp"
     "texture/*.cpp"
+    "light/*.cpp"
 )
 
 if (WHOA_SYSTEM_WIN)

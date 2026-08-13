@@ -217,6 +217,8 @@ class CGxDeviceD3d : public CGxDevice {
     static D3DTEXTUREADDRESS s_wrapModes[];
     static D3DTEXTUREOP s_texOp[];
     static int32_t s_texArgs[];
+    static D3DLIGHT9 s_d3dLight;
+    static D3DMATERIAL9 s_d3dMaterial;
 
     // Static functions
     static int32_t ILoadD3dLib(HINSTANCE& d3dLib, LPDIRECT3D9& d3d);
@@ -236,6 +238,7 @@ class CGxDeviceD3d : public CGxDevice {
     LPDIRECT3DVERTEXDECLARATION9 m_d3dVertexDecl[GxVertexBufferFormats_Last] = { 0 };
     D3DDISPLAYMODE m_desktopDisplayMode;
     int32_t m_inScene;
+    int32_t m_ambientOnlyMode;
     D3DFORMAT m_devAdapterFormat;
     LPDIRECT3DSURFACE9 m_defColorSurface = nullptr;
     LPDIRECT3DSURFACE9 m_defDepthSurface = nullptr;
@@ -302,6 +305,7 @@ class CGxDeviceD3d : public CGxDevice {
     void ISetTexGen(uint32_t a1, int32_t a2);
     void ISetAlphaOp(uint32_t a1, int32_t a2);
     void ISetColorOp(uint32_t a1, int32_t a2);
+    void ISetMaterial(uint32_t diffuse, uint32_t emissive, uint32_t specular, float power);
     void ISetVertexBuffer(uint32_t stream, LPDIRECT3DVERTEXBUFFER9 buffer, uint32_t offset, uint32_t stride);
     void IShaderBindPixel(CGxShader* shader);
     void IShaderBindVertex(CGxShader* shader);

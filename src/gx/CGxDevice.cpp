@@ -1662,3 +1662,26 @@ void CGxDevice::CursorUnlock(uint32_t x, uint32_t y) {
     this->m_cursorHotspotX = x;
     this->m_cursorHotspotY = y;
 }
+
+// OFFSET: 0x6847D0
+void CGxDevice::LightSet(int32_t index, CGxLight& light, C3Vector& origin) {
+    CGxApiLight& dst = this->m_lights[index];
+
+    dst = light;
+
+    if ((light.m_flags & 0x2) != 0 && (origin.x != 0.0f || origin.y != 0.0f || origin.z != 0.0f)) {
+
+        dst.flags |= 0x2;
+
+        dst.m_dir.x -= origin.x;
+        dst.m_dir.y -= origin.y;
+        dst.m_dir.z -= origin.z;
+    }
+}
+
+void CGxDevice::LightEnable(int index, int32_t enable) {
+    if (this->m_lights[index].m_enable != enable) {
+        this->m_lights[index].flags |= 1u;
+        this->m_lights[index].m_enable = enable;
+    }
+}

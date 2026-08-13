@@ -9,6 +9,8 @@
 int32_t CGxDeviceD3d::s_clientAdjustWidth;
 int32_t CGxDeviceD3d::s_clientAdjustHeight;
 float CGxDeviceD3d::s_normalizeNormals;
+D3DLIGHT9 CGxDeviceD3d::s_d3dLight;
+D3DMATERIAL9 CGxDeviceD3d::s_d3dMaterial;
 
 D3DCMPFUNC CGxDeviceD3d::s_cmpFunc[] = {
     D3DCMP_LESSEQUAL,
@@ -1246,27 +1248,17 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
     case GxRs_MatEmissive:
     case GxRs_MatSpecular:
     case GxRs_MatSpecularExp: {
-        //sub_6A4250(
-        //    m_data[1].m_value.m_data.i[0],
-        //    m_data[2].m_value.m_data.i[0],
-        //    m_data[3].m_value.m_data.i[0],
-        //    m_data[4].m_value.m_data.f[0]);
-        //v6 = 0;
-        //this->m_appRenderStates.m_data[1].m_dirty = 0;
-        //this->m_appRenderStates.m_data[2].m_dirty = 0;
-        //this->m_appRenderStates.m_data[3].m_dirty = 0;
-        //this->m_appRenderStates.m_data[4].m_dirty = 0;
-        //v7 = this->m_appRenderStates.m_data;
-        //if (v7[4].m_value.m_data.f[0] > 0.0 && v7[3].m_value.m_data.i[0])
-        //    v6 = 1;
-        //if (*(_DWORD*)&this[1].m_gammaRamp.red[44] != v6) {
-        //    ((void(__stdcall*)(LPDIRECT3DDEVICE9, int, int))this->m_d3dDevice->v_table->v_fn_57_SetRenderState)(
-        //        this->m_d3dDevice,
-        //        29,
-        //        v6);
-        //    *(_DWORD*)&this[1].m_gammaRamp.red[44] = v6;
-        //}
+        this->ISetMaterial(
+            this->m_appRenderStates[GxRs_MatDiffuse].m_value.m_data.i[0],
+            this->m_appRenderStates[GxRs_MatEmissive].m_value.m_data.i[0],
+            this->m_appRenderStates[GxRs_MatSpecular].m_value.m_data.i[0],
+            this->m_appRenderStates[GxRs_MatSpecularExp].m_value.m_data.f[0]
+        );
 
+        this->m_appRenderStates[GxRs_MatDiffuse].m_dirty = 0;
+        this->m_appRenderStates[GxRs_MatEmissive].m_dirty = 0;
+        this->m_appRenderStates[GxRs_MatSpecular].m_dirty = 0;
+        this->m_appRenderStates[GxRs_MatSpecularExp].m_dirty = 0;
         break;
     }
 
@@ -2218,12 +2210,212 @@ void CGxDeviceD3d::IStateSyncIndexPtr() {
     }
 }
 
+// OFFSET: 0x6A43D0
 void CGxDeviceD3d::IStateSyncLights() {
-    // TODO
+    uint32_t index = 0;
+
+    if (this->m_appRenderStates[GxRs_Lighting].m_value != 0) {
+
+        this->m_ambientOnlyMode = 0;
+
+        int32_t lightingEnable = this->MasterEnable(GxMasterEnable_Lighting) ? 1 : 0;
+
+        if (this->m_deviceStates[Ds_Lighting] != lightingEnable) {
+            this->m_d3dDevice->SetRenderState(D3DRS_LIGHTING, lightingEnable);
+            this->m_deviceStates[Ds_Lighting] = lightingEnable;
+        }
+
+        if (this->m_deviceStates[Ds_Ambient] != 0) {
+            this->m_d3dDevice->SetRenderState(D3DRS_AMBIENT, 0);
+            this->m_deviceStates[Ds_Ambient] = 0;
+        }
+
+        for (index = 0; index < 4; index++) {
+            CGxApiLight& light = this->m_lights[index];
+
+            if (light.flags == 0) {
+                continue;
+            }
+
+            bool enabledOnDevice = (light.flags & 0x1) != 0;
+
+            if (enabledOnDevice && !light.m_enable) {
+                light.flags &= ~0x1;
+                this->m_d3dDevice->LightEnable(index, FALSE);
+                continue;
+            }
+
+            if (!enabledOnDevice && !light.m_enable) {
+                continue;
+            }
+
+            if (enabledOnDevice && light.m_enable) {
+                this->m_d3dDevice->LightEnable(index, TRUE);
+            }
+
+            D3DLIGHT9& d3d = s_d3dLight;
+
+            if (light.m_dir.w == 1.0f) {
+                d3d.Type = D3DLIGHT_POINT;
+                d3d.Position.x = light.m_dir.x;
+                d3d.Position.y = light.m_dir.y;
+                d3d.Position.z = light.m_dir.z;
+            } else {
+                d3d.Type = D3DLIGHT_DIRECTIONAL;
+                d3d.Direction.x = light.m_dir.x;
+                d3d.Direction.y = light.m_dir.y;
+                d3d.Direction.z = light.m_dir.z;
+            }
+
+            d3d.Diffuse.r = light.m_dirColor.x;
+            d3d.Diffuse.g = light.m_dirColor.y;
+            d3d.Diffuse.b = light.m_dirColor.z;
+            d3d.Diffuse.a = 1.0f;
+
+            d3d.Specular.r = light.m_specColor.x;
+            d3d.Specular.g = light.m_specColor.y;
+            d3d.Specular.b = light.m_specColor.z;
+            d3d.Specular.a = 0.0f;
+
+            d3d.Ambient.r = light.m_ambColor.x;
+            d3d.Ambient.g = light.m_ambColor.y;
+            d3d.Ambient.b = light.m_ambColor.z;
+            d3d.Ambient.a = 0.0f;
+
+            d3d.Range = 10000.0f;
+            d3d.Falloff = 1.0f;
+            d3d.Attenuation0 = light.m_constantAttenuation;
+            d3d.Attenuation1 = light.m_linearAttenuation;
+            d3d.Attenuation2 = light.m_quadraticAttenuation;
+
+            this->m_d3dDevice->SetLight(index, &d3d);
+
+            light.flags = 0;
+        }
+
+        return;
+    }
+
+    bool vertexHasColor = (this->m_primVertexMask & GxPrim_Color0) != 0;
+    bool matDiffuseWhite =
+        this->m_appRenderStates[GxRs_MatDiffuse].m_value == 0xFFFFFFFF;
+
+    if (vertexHasColor || matDiffuseWhite) {
+        this->m_ambientOnlyMode = 0;
+
+        if (this->m_deviceStates[Ds_Lighting] != 0) {
+            this->m_d3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+            this->m_deviceStates[Ds_Lighting] = 0;
+        }
+        if (this->m_deviceStates[Ds_Ambient] != 0) {
+            this->m_d3dDevice->SetRenderState(D3DRS_AMBIENT, 0);
+            this->m_deviceStates[Ds_Ambient] = 0;
+        }
+        return;
+    }
+
+    if (!this->m_ambientOnlyMode) {
+        this->m_ambientOnlyMode = 1;
+
+        for (index = 0; index < 4; index++) {
+            CGxApiLight& light = this->m_lights[index];
+
+            this->m_d3dDevice->LightEnable(index, FALSE);
+
+            if (light.m_enable) {
+                light.flags |= 0x1;
+            } else {
+                light.flags &= ~0x1;
+            }
+        }
+    }
+
+    if (this->m_deviceStates[Ds_Lighting] != 1) {
+        this->m_d3dDevice->SetRenderState(D3DRS_LIGHTING, TRUE);
+        this->m_deviceStates[Ds_Lighting] = 1;
+    }
+    if (this->m_deviceStates[Ds_Ambient] != 0xFFFFFFFF) {
+        this->m_d3dDevice->SetRenderState(D3DRS_AMBIENT, 0xFFFFFFFF);
+        this->m_deviceStates[Ds_Ambient] = 0xFFFFFFFF;
+    }
 }
 
+// OFFSET: 0x6A4700
 void CGxDeviceD3d::IStateSyncMaterial() {
-    // TODO
+    uint32_t emissiveSource = 0;
+
+    if ((this->m_primVertexMask & GxPrim_Color0) != 0) {
+        int32_t colorMaterial = this->m_appRenderStates[GxRs_ColorMaterial].m_value.m_data.i[0];
+
+        uint32_t useVertexColor = (colorMaterial == 0);
+
+        if (this->m_deviceStates[Ds_AmbientMaterialSource] != useVertexColor) {
+            this->m_d3dDevice->SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, useVertexColor);
+            this->m_deviceStates[Ds_AmbientMaterialSource] = useVertexColor;
+        }
+
+        if (this->m_deviceStates[Ds_DiffuseMaterialSource] != useVertexColor) {
+            this->m_d3dDevice->SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, useVertexColor);
+            this->m_deviceStates[Ds_DiffuseMaterialSource] = useVertexColor;
+        }
+
+        uint32_t specularSource = (colorMaterial == 1);
+        if (this->m_deviceStates[Ds_SpecularMaterialSource] != specularSource) {
+            this->m_d3dDevice->SetRenderState(D3DRS_SPECULARMATERIALSOURCE, specularSource);
+            this->m_deviceStates[Ds_SpecularMaterialSource] = specularSource;
+        }
+
+        emissiveSource = (colorMaterial == 2);
+
+    } else {
+        if (this->m_deviceStates[Ds_AmbientMaterialSource] != 0) {
+            this->m_d3dDevice->SetRenderState(D3DRS_AMBIENTMATERIALSOURCE, 0);
+            this->m_deviceStates[Ds_AmbientMaterialSource] = 0;
+        }
+        if (this->m_deviceStates[Ds_DiffuseMaterialSource] != 0) {
+            this->m_d3dDevice->SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, 0);
+            this->m_deviceStates[Ds_DiffuseMaterialSource] = 0;
+        }
+        if (this->m_deviceStates[Ds_SpecularMaterialSource] != 0) {
+            this->m_d3dDevice->SetRenderState(D3DRS_SPECULARMATERIALSOURCE, 0);
+            this->m_deviceStates[Ds_SpecularMaterialSource] = 0;
+        }
+        emissiveSource = 0;
+    }
+
+    if (this->m_deviceStates[Ds_EmissiveMaterialSource] != emissiveSource) {
+        this->m_d3dDevice->SetRenderState(D3DRS_EMISSIVEMATERIALSOURCE, emissiveSource);
+        this->m_deviceStates[Ds_EmissiveMaterialSource] = emissiveSource;
+    }
+}
+
+// OFFSET: 0x0x006A4250
+void CGxDeviceD3d::ISetMaterial(uint32_t diffuse, uint32_t emissive, uint32_t specular, float power) {
+    constexpr float k = 1.0f / 255.0f;
+
+    s_d3dMaterial.Diffuse.r = ((diffuse >> 16) & 0xFF) * k;
+    s_d3dMaterial.Diffuse.g = ((diffuse >> 8) & 0xFF) * k;
+    s_d3dMaterial.Diffuse.b = (diffuse & 0xFF) * k;
+    s_d3dMaterial.Diffuse.a = (diffuse >> 24) * k;
+
+    s_d3dMaterial.Ambient.r = s_d3dMaterial.Diffuse.r;
+    s_d3dMaterial.Ambient.g = s_d3dMaterial.Diffuse.g;
+    s_d3dMaterial.Ambient.b = s_d3dMaterial.Diffuse.b;
+    s_d3dMaterial.Ambient.a = s_d3dMaterial.Diffuse.a;
+
+    s_d3dMaterial.Emissive.r = ((emissive >> 16) & 0xFF) * k;
+    s_d3dMaterial.Emissive.g = ((emissive >> 8) & 0xFF) * k;
+    s_d3dMaterial.Emissive.b = (emissive & 0xFF) * k;
+    s_d3dMaterial.Emissive.a = (emissive >> 24) * k;
+
+    s_d3dMaterial.Specular.r = ((specular >> 16) & 0xFF) * k;
+    s_d3dMaterial.Specular.g = ((specular >> 8) & 0xFF) * k;
+    s_d3dMaterial.Specular.b = (specular & 0xFF) * k;
+    s_d3dMaterial.Specular.a = (specular >> 24) * k;
+
+    s_d3dMaterial.Power = power;
+
+    this->m_d3dDevice->SetMaterial(&s_d3dMaterial); // vtable +196 = slot 49
 }
 
 void CGxDeviceD3d::IStateSyncVertexPtrs() {
