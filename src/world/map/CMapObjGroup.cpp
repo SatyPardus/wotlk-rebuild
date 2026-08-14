@@ -281,7 +281,7 @@ void CMapObjGroup::SetVertexVB() {
 
 // OFFSET: 0x7C8560
 void CMapObjGroup::FillVertexVB(CGxBuf* buf, EGxVertexBufferFormat format) {
-    CImVector defaultColor = { 255, 127, 127, 127 };
+    CImVector defaultColor = { 127, 127, 127, 255 };
     const CImVector zeroColor = { 0, 0, 0, 0 };
     const C2Vector zeroUV = { 0.0f, 0.0f };
 

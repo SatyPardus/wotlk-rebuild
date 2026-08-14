@@ -869,7 +869,7 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     //CWorldScene::CullMapObjDefGroup();
     //maybe_CWorldScene__UpdateSortedModels();
     CWorldScene::sortTable.pendingExteriorGroupList.UnlinkAll();
-    CImVector color = { 0xFF, 0x00, 0x00, 0x00 };
+    CImVector color = { 0x00, 0x00, 0x00, 0xFF };
     // ActiveDayNight = DayNight::GetActiveDayNight();
     // if (sub_683100(8)) {
     //    if (flt_ADF580 >= 0.0) {
