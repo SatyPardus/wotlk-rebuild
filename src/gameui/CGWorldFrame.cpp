@@ -9,13 +9,18 @@
 #include "world/CWorldScene.hpp"
 #include "gameui/camera/CGCamera.hpp"
 #include "event/EvtKeyDown.hpp"
+#include "event/Event.hpp"
+#include "event/Input.hpp"
+#include "event/Types.hpp"
 #include "console/Console.hpp"
 
 #include "model/Model2.hpp"
 
 #include <bc/Memory.hpp>
 #include <tempest/Matrix.hpp>
+#include <tempest/Vector.hpp>
 #include <common/Time.hpp>
+#include <cmath>
 
 
 CGWorldFrame* CGWorldFrame::s_currentWorldFrame = nullptr;
@@ -45,80 +50,6 @@ int32_t CGWorldFrame::OnLayerKeyDown(const CKeyEvent& evt) {
         return 1;
     }
 
-    // WORKAROUND: Camera testing
-    C3Vector& position = this->m_camera->m_position;
-
-    float step = 0.1f;
-    float astep = 0.1f;
-
-    static float pitch = 0.0f;
-    static float yaw = 0.0f;
-    static float roll = 0.0f;
-
-    switch (evt.key) {
-    case KEY_W:
-        position.z -= step * 10;
-        break;
-    case KEY_A:
-        position.y -= step * 10;
-        break;
-    case KEY_S:
-        position.z += step * 10;
-        break;
-    case KEY_D:
-        position.y += step * 10;
-        break;
-    case KEY_Q:
-        position.x += step * 10;
-        break;
-    case KEY_E:
-        position.x -= step * 10;
-        break;
-
-    case KEY_P:
-        position.Set(0.0f, 0.0f, 0.0f);
-        break;
-
-    case KEY_R:
-        pitch = 0.0f;
-        yaw = 0.0f;
-        roll = 0.0f;
-        break;
-
-    case KEY_Z:
-        position.Set(0.0f, 0.0f, 0.0f);
-        pitch = 0.0f;
-        yaw = 0.0f;
-        roll = 0.0f;
-        break;
-
-    case KEY_LEFT:
-        roll -= astep;
-        break;
-    case KEY_RIGHT:
-        roll += astep;
-        break;
-
-    case KEY_DOWN:
-        pitch -= astep;
-        break;
-    case KEY_UP:
-        pitch += astep;
-        break;
-
-    case KEY_PAGEUP:
-        yaw += astep;
-        break;
-    case KEY_PAGEDOWN:
-        yaw -= astep;
-        break;
-
-
-    default:
-        break;
-    }
-
-    this->m_camera->SetFacing(yaw, pitch, roll);
 
     return 1;
 }
@@ -127,8 +58,6 @@ int32_t CGWorldFrame::OnLayerKeyDownRepeat(const CKeyEvent& evt) {
     if (CSimpleFrame::OnLayerKeyDownRepeat(evt)) {
         return 1;
     }
-
-    this->OnLayerKeyDown(evt);
 
     return 1;
 }
@@ -161,9 +90,111 @@ void CGWorldFrame::RenderWorld(void* param) {
     CShaderEffect::UpdateProjMatrix();
 }
 
+// DEBUG: free-fly camera.
+//   hold RMB   look
+//   W/S        forward / back along camera forward
+//   A/D        strafe along camera right
+//   Q/E        down / up along camera up
+//   LSHIFT     x5 speed        LCONTROL  x0.2 speed
+//   R          reset position and orientation
+//
+// Polled once per frame rather than driven from key events, so movement is
+// smooth and multiple keys combine. Delete this whole function and its call in
+// OnWorldUpdate when the real camera lands.
+static void UpdateDebugCamera(CGCamera* cam) {
+    static float s_yaw = 0.0f;
+    static float s_pitch = 0.0f;
+    static C2iVector s_lastMouse(0, 0);
+    static bool s_looking = false;
+    static uint64_t s_lastMs = 0;
+
+    // ---- frame time ----
+    uint64_t now = OsGetAsyncTimeMs();
+    float dt = static_cast<float>(now - s_lastMs) / 1000.0f;
+    s_lastMs = now;
+
+    // first frame, and anything after a breakpoint, must not teleport
+    if (dt <= 0.0f || dt > 0.25f) {
+        dt = 1.0f / 60.0f;
+    }
+
+    if (EventIsKeyDown(KEY_R)) {
+        s_yaw = 0.0f;
+        s_pitch = 0.0f;
+        cam->m_position.Set(0.0f, 0.0f, 0.0f);
+    }
+
+    // ---- look: hold right mouse button ----
+    bool rmb = (Input::s_buttonState & MOUSE_BUTTON_RIGHT) != 0;
+
+    if (rmb) {
+        if (!s_looking) {
+            // first frame of the drag: capture the anchor, do not move
+            s_looking = true;
+            s_lastMouse = Input::s_currentMouse;
+        } else {
+            const float SENSITIVITY = 0.0035f; // radians per pixel
+
+            int32_t dx = Input::s_currentMouse.x - s_lastMouse.x;
+            int32_t dy = Input::s_currentMouse.y - s_lastMouse.y;
+            s_lastMouse = Input::s_currentMouse;
+
+            s_yaw -= static_cast<float>(dx) * SENSITIVITY;
+            s_pitch += static_cast<float>(dy) * SENSITIVITY;
+
+            // clamp just short of straight up/down so the basis never degenerates
+            const float PITCH_LIMIT = 1.5533f; // ~89 degrees
+            if (s_pitch > PITCH_LIMIT) {
+                s_pitch = PITCH_LIMIT;
+            }
+            if (s_pitch < -PITCH_LIMIT) {
+                s_pitch = -PITCH_LIMIT;
+            }
+        }
+    } else {
+        s_looking = false;
+    }
+
+    cam->SetFacing(s_yaw, s_pitch, 0.0f);
+
+    // ---- move ----
+    float speed = 40.0f; // world units per second
+    if (EventIsKeyDown(KEY_LSHIFT)) {
+        speed *= 5.0f;
+    }
+    if (EventIsKeyDown(KEY_LCONTROL)) {
+        speed *= 0.2f;
+    }
+
+    // read the basis AFTER SetFacing so it matches this frame's orientation
+    C3Vector fwd = cam->Forward();
+    C3Vector right = cam->Right();
+    C3Vector up = cam->Up();
+
+    C3Vector move(0.0f, 0.0f, 0.0f);
+    if (EventIsKeyDown(KEY_W)) { move = move + fwd; }
+    if (EventIsKeyDown(KEY_S)) { move = move - fwd; }
+    if (EventIsKeyDown(KEY_D)) { move = move - right; }
+    if (EventIsKeyDown(KEY_A)) { move = move + right; }
+    if (EventIsKeyDown(KEY_E)) { move = move + up; }
+    if (EventIsKeyDown(KEY_Q)) { move = move - up; }
+
+    // normalise so diagonal input is not faster
+    float len2 = move.x * move.x + move.y * move.y + move.z * move.z;
+    if (len2 > 0.0001f) {
+        float scale = speed * dt / sqrtf(len2);
+        cam->m_position.x += move.x * scale;
+        cam->m_position.y += move.y * scale;
+        cam->m_position.z += move.z * scale;
+    }
+}
+
 // OFFSET: 0x4FA5F0
 void CGWorldFrame::OnWorldUpdate() {
     CGCamera* cam = CGWorldFrame::GetActiveCamera();
+
+    UpdateDebugCamera(cam);
+
     C3Vector camPos = cam->m_position;
     C3Vector camForward = cam->Forward();
     C3Vector camTarget = camPos + camForward;

@@ -115,6 +115,7 @@ void PostKeyUp(EvtContext* context, int32_t key, int32_t repeat, int32_t time) {
 
 void PostMouseDown(EvtContext* context, MOUSEBUTTON button, int32_t x, int32_t y, int32_t time) {
     Input::s_buttonState |= button;
+    Input::s_currentMouse = C2iVector(x, y);
 
     EVENT_DATA_MOUSE data;
 
@@ -135,6 +136,8 @@ void PostMouseModeChanged(EvtContext* context, MOUSEMODE mode) {
 }
 
 void PostMouseMove(EvtContext* context, int32_t x, int32_t y, int32_t time) {
+    Input::s_currentMouse = C2iVector(x, y);
+
     EVENT_DATA_MOUSE data;
 
     data.mode = Input::s_mouseMode;
@@ -151,6 +154,7 @@ void PostMouseMove(EvtContext* context, int32_t x, int32_t y, int32_t time) {
 
 void PostMouseUp(EvtContext* context, MOUSEBUTTON button, int32_t x, int32_t y, uint32_t flags, int32_t time) {
     Input::s_buttonState &= ~button;
+    Input::s_currentMouse = C2iVector(x, y);
 
     EVENT_DATA_MOUSE data;
 
