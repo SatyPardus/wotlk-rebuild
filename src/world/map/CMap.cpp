@@ -660,9 +660,9 @@ CMapDoodadDef* CMap::CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3V
     mapDoodadDef->mat.d0 = mapDoodadDef->position.x;
     mapDoodadDef->mat.d1 = mapDoodadDef->position.y;
     mapDoodadDef->mat.d2 = mapDoodadDef->position.z;
-    mapDoodadDef->mat.RotateAroundZ(doodadDef->rotation.z * kDegToRad + kPi);
-    mapDoodadDef->mat.RotateAroundY(doodadDef->rotation.y * kDegToRad);
-    mapDoodadDef->mat.RotateAroundX(doodadDef->rotation.x * kDegToRad);
+    mapDoodadDef->mat.RotateAroundZ(doodadDef->rotation.y * kDegToRad + kPi);
+    mapDoodadDef->mat.RotateAroundY(doodadDef->rotation.x * kDegToRad);
+    mapDoodadDef->mat.RotateAroundX(doodadDef->rotation.z * kDegToRad);
     mapDoodadDef->mat.Scale(mapDoodadDef->scale);
     mapDoodadDef->identity = C44Matrix();
 
