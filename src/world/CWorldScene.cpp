@@ -61,6 +61,7 @@ CMapObjDef* CWorldScene::s_stampedMapObjDef;
 SPortalExt CWorldScene::s_portalExt[2048];
 TSGrowableArray<CPortalView> CWorldScene::s_pendingPortalViews;
 TSGrowableArray<CRect> CWorldScene::s_coveredRects;
+int32_t CWorldScene::s_curGroupIsInterior;
 
 STORM_EXPLICIT_LIST(CFrustum, sceneLink) CWorldScene::s_frustumFreeList;
 
@@ -576,10 +577,10 @@ void CWorldScene::CullDoodads(CSortEntry* entry, uint8_t fadeLevel) {
 void CWorldScene::AddDoodadDefModelToModelScene(CMapDoodadDef* a1) {
     a1->doodadDefLink.Unlink();
 
-    if ((a1->flags & MAPOBJ_FLAG_DISABLED) == 0 && (CWorld::s_enables & CWorld::Enables::Enable_1) != 0) {
+    if ((a1->flags & MAPOBJ_FLAG_DISABLED) == 0 && (CWorld::s_enables & CWorld::Enables::Enable_Doodads) != 0) {
         //a1->unk_030 = a1->sphere.n.y * CWorldScene::camPlane.n.y + a1->sphere.n.z * CWorldScene::camPlane.n.z + a1->sphere.n.x * CWorldScene::camPlane.n.x + CWorldScene::camPlane.d - a1->sphere.d;
         //v15 = 1.0;
-        //if ((CWorld::enables & Enable_4000) != 0 && (unk_C & 0x800) == 0) {
+        //if ((CWorld::enables & Enable_Occluders) != 0 && (unk_C & 0x800) == 0) {
         //    v6 = a1->sphere.n.z - CWorldScene::s_activeWorldView.z;
         //    v7 = a1->sphere.n.y - CWorldScene::s_activeWorldView.y;
         //    v8 = v7 * v7 + v6 * v6;
@@ -1148,7 +1149,7 @@ void CWorldScene::RenderMapObjDefGroups() {
         auto v8 = mapObjDefGroup->parentLinkList.Head();
         CMapObjDef* mapObjDef = reinterpret_cast<CMapObjDef*>(v8->ref);
 
-        if ((CWorld::s_enables & CWorld::Enables::Enable_100) != 0) {
+        if ((CWorld::s_enables & CWorld::Enables::Enable_WMO) != 0) {
             C44Matrix mat = mapObjDef->mat;
             C44Matrix camTranslate;
             C3Vector vec = { -CWorldScene::s_activeWorldView.x, -CWorldScene::s_activeWorldView.y, -CWorldScene::s_activeWorldView.z };
@@ -1224,7 +1225,7 @@ void CWorldScene::RenderChunksSinglePass() {
             for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[layerIndex].Head(); renderChunk;) {
                 auto next = CWorldScene::sortTable.renderChunkLists[layerIndex].Next(renderChunk);
                 renderChunk->RenderSetup(1);
-                // if ((CWorld::enables & Enable_2) != 0) {
+                // if ((CWorld::enables & Enable_Terrain) != 0) {
                 //     if (*v36) {
                 //         if (CMap::enableTerrainShaderVertex)
                 //             sub_7D2D70((int)v2);
@@ -1367,7 +1368,7 @@ void CWorldScene::RenderThruPortals(CMapObj* mapObj, uint32_t groupNum, uint32_t
     if (interior && (group->flags & 0x48) != 0) {
         interior = 0;
     }
-    //s_curGroupIsInterior = interior;
+    s_curGroupIsInterior = interior;
     //if (s_interiorPass && (v7->flags & 0x40000) != 0)
     //    CWorldScene::s_interiorSkybox = p_objectIndex->skybox;
 

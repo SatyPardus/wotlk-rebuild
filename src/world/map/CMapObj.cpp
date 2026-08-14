@@ -296,10 +296,10 @@ void CMapObj::PrepareUpdate() {
         break;
     }
 
-    if ((CWorld::s_enables & CWorld::Enables::Enable_800) == 0) {
+    if ((CWorld::s_enables & CWorld::Enables::Enable_WMOTextures) == 0) {
         // CMapObj::s_renderGroupInteriorFunc = CMapObj::RenderGroupLightmapTex;
     }
-    if ((CWorld::s_enables & CWorld::Enables::Enable_200) == 0) {
+    if ((CWorld::s_enables & CWorld::Enables::Enable_WMOLighting) == 0) {
         // CMapObj::s_renderGroupInteriorFunc = CMapObj::RenderGroupColorTex;
     }
     //m_next = CMapObj::mapObjHash.m_fulllist.m_terminator.m_next;
@@ -413,7 +413,7 @@ void CMapObj::RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_
     }
     //if ((CWorld::enables & 0x40000000) != 0)
     //    bn_CMapObj_RenderNormals(Group);
-    //if ((CWorld::enables & Enable_1000) != 0)
+    //if ((CWorld::enables & Enable_WMOPortals) != 0)
     //    (bn_CMapObj_RenderPortals)(Group);
 }
 

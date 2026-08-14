@@ -29,15 +29,15 @@ int32_t CWorld::terrainAlphaBitDepth;
 
 void CWorld::Initialize() {
     CWorld::s_enables |=
-          Enables::Enable_1
-        | Enables::Enable_2
+          Enables::Enable_Doodads
+        | Enables::Enable_Terrain
         | Enables::Enable_10
         | Enables::Enable_Culling
         | Enables::Enable_Shadow
-        | Enables::Enable_100
-        | Enables::Enable_200
-        | Enables::Enable_800
-        | Enables::Enable_4000
+        | Enables::Enable_WMO
+        | Enables::Enable_WMOLighting
+        | Enables::Enable_WMOTextures
+        | Enables::Enable_Occluders
         | Enables::Enable_DetailDoodads
         | Enables::Enable_1000000
         | Enables::Enable_Particulates

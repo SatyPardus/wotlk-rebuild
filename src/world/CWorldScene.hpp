@@ -94,6 +94,7 @@ class CWorldScene {
     static SPortalExt s_portalExt[2048];
     static TSGrowableArray<CPortalView> s_pendingPortalViews;
     static TSGrowableArray<CRect> s_coveredRects;
+    static int32_t s_curGroupIsInterior;
 
     static STORM_EXPLICIT_LIST(CFrustum, sceneLink) s_frustumFreeList;
 
