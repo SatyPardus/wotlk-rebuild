@@ -580,7 +580,7 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
     //dword_CFBEAC = -1;
     //dword_D1BEF8 = -1;
     //dword_CFBEA8 = -1;
-    //GxTex = 0;
+    CGxTex* gxTex = nullptr;
     //if (CMap::s_isStreamingMode)
     //    GxTex = CTexture::GetGxTex(CWorldScene::s_defaultTexture, 1, 0);
     SMOBatch* batch = mapObjGroup->batchList;
@@ -588,95 +588,83 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         if (!a3)
             batch->flags &= 0xF;
         if ((batch->flags & 0xF0) != 0 /*|| mapObj->CullBatch(batch)*/) {
-            batch->flags |= 0xF0u;
-            //v10 = &v28->materialList[batch->texture];
-            //v33 = v10->runTimeData[2];
-            //v31 = CTexture::GetGxTex(v33, 0, 0);
-            //if (!v31) {
-            //    if (!GxTex)
-            //        goto LABEL_37;
-            //    v31 = GxTex;
-            //}
-            //v11 = v10->runTimeData[3];
-            //v32 = GxTex;
-            //if (!v11)
-            //    goto LABEL_17;
-            //v32 = CTexture::GetGxTex(v11, 0, 0);
-            //if (v32)
-            //    goto LABEL_17;
-            //if (GxTex) {
-            //    v32 = GxTex;
-//LABEL_17:   
-            //    shader = v10->shader;
-            //    if (!shader && !v10->blendMode && !maybe_IsSceneObjectEnabled(v33))
-            //        shader = 4;
-            //    SetShaderFogFromDayNight(~v10->flags & 2);
-            //    maybe_SetWorldLightingMode(v6, (v10->flags & 1) == 0);
-            //    if ((v6->flags & 0x48) != 0) {
-            //        if (dword_CFBEA8) {
-            //            dword_CFBEA8 = 0;
-            //            bn_CShadowCache_SetShadowMapGenericInterior(0);
-            //            ShadowValue = CShadowCache::GetShadowValue();
-//LABEL_26:   
-            //            dword_D43010 = ShadowValue;
-            //        }
-            //    } else if (dword_CFBEA8 != 1) {
-            //        dword_CFBEA8 = 1;
-            //        bn_CShadowCache_SetShadowMapGenericInterior(1);
-            //        ShadowValue = CShadowCache::GetShadowValue() != 0;
-            //        goto LABEL_26;
-            //    }
-            //    v13 = (v10->flags & 4) == 0;
-            //    if (g_theGxDevicePtr->m_context) {
-            //        v7 = g_theGxDevicePtr->m_appRenderStates.m_data[17].m_value.m_data.i[0] == v13;
-            //        v33 = g_theGxDevicePtr->m_appRenderStates.m_data + 17;
-            //        if (!v7) {
-            //            CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_Culling);
-            //            v33->m_value.m_data.i[0] = v13;
-            //        }
-            //    }
-            //    if ((v10->flags & 0x10) != 0) {
-            //        p_frameSidnColor = &v10->frameSidnColor;
-            //    } else {
-            //        v27 = 0;
-            //        p_frameSidnColor = &v27;
-            //    }
-            //    v15 = dword_D1BEFC + *p_frameSidnColor;
-            //    v16 = (*p_frameSidnColor ^ dword_D1BEFC ^ v15) & 0x1010100;
-            //    v33 = ((v15 - v16) | (v16 - (v16 >> 8)));
-            //    BYTE1(v33) >>= 1;
-            //    LOBYTE(v33) = v33 >> 1;
-            //    BYTE2(v33) = (((v15 - v16) | (v16 - (v16 >> 8))) >> 16) >> 1;
-            //    v25.color = v33;
-            //    maybe_SetShaderAmbientAndFog(v25);
-            //    blendMode = v10->blendMode;
-            //    if (g_theGxDevicePtr->m_context) {
-            //        v7 = g_theGxDevicePtr->m_appRenderStates.m_data[6].m_value.m_data.i[0] == blendMode;
-            //        v33 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
-            //        if (!v7) {
-            //            CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-            //            v33->m_value.m_data.i[0] = blendMode;
-            //        }
-            //    }
-            //    bn_CShaderEffect_SetAlphaRefDefault();
-            //    flags = v10->flags;
-            //    v19 = v31;
-            //    GxTexSetWrap(v31, (flags & 0x40) == 0, (flags & 0x80) == 0);
-            //    v20 = CMapObjRender::s_unifiedShaders[shader + 7];
-            //    CGxDevice::RsSet(g_theGxDevicePtr, GxRs_Texture0, v19);
-            //    CGxDevice::RsSet(g_theGxDevicePtr, GxRs_Texture1, v32);
-            //    bn_CShaderEffect_SetCurrent(v20);
-            //    maybe_SelectWorldShaders();
-                CGxBatch v26;
-                v26.m_count = batch->indexCount;
-                v26.m_start = batch->indexStart;
-                v26.m_minIndex = batch->vertexStart;
-                v26.m_maxIndex = batch->vertexEnd;
-                v26.m_primType = GxPrim_Triangles;
-                g_theGxDevicePtr->Draw(&v26, 1);
-            //    v6 = a3;
-            //}
+            batch++;
+            continue;
         }
+
+        batch->flags |= 0xF0u;
+
+        auto material = &mapObj->materialList[batch->texture];
+        auto texture1 = TextureGetGxTex(material->runTimeData_2, 0, nullptr);
+        if (!texture1) {
+            if (!gxTex) {
+                batch++;
+                continue;
+            }
+            texture1 = gxTex;
+        }
+        CGxTex* texture2 = nullptr;
+        if (material->runTimeData_3) {
+            texture2 = TextureGetGxTex(material->runTimeData_3, 0, nullptr);
+            if (!texture2) {
+                texture2 = gxTex;
+            }
+        }
+
+        auto shader = material->shader;
+        //if (!shader && !material->blendMode && !maybe_IsSceneObjectEnabled(material->runTimeData_2))
+        //    shader = 4;
+        
+        //    SetShaderFogFromDayNight(~v10->flags & 2);
+        //    maybe_SetWorldLightingMode(v6, (v10->flags & 1) == 0);
+        //    if ((v6->flags & 0x48) != 0) {
+        //        if (dword_CFBEA8) {
+        //            dword_CFBEA8 = 0;
+        //            bn_CShadowCache_SetShadowMapGenericInterior(0);
+        //            ShadowValue = CShadowCache::GetShadowValue();
+//LABEL_26:   
+        //            dword_D43010 = ShadowValue;
+        //        }
+        //    } else if (dword_CFBEA8 != 1) {
+        //        dword_CFBEA8 = 1;
+        //        bn_CShadowCache_SetShadowMapGenericInterior(1);
+        //        ShadowValue = CShadowCache::GetShadowValue() != 0;
+        //        goto LABEL_26;
+        //    }
+        GxRsSet(GxRs_Culling, (material->flags & 4) == 0);
+        //    if ((v10->flags & 0x10) != 0) {
+        //        p_frameSidnColor = &v10->frameSidnColor;
+        //    } else {
+        //        v27 = 0;
+        //        p_frameSidnColor = &v27;
+        //    }
+        //    v15 = dword_D1BEFC + *p_frameSidnColor;
+        //    v16 = (*p_frameSidnColor ^ dword_D1BEFC ^ v15) & 0x1010100;
+        //    v33 = ((v15 - v16) | (v16 - (v16 >> 8)));
+        //    BYTE1(v33) >>= 1;
+        //    LOBYTE(v33) = v33 >> 1;
+        //    BYTE2(v33) = (((v15 - v16) | (v16 - (v16 >> 8))) >> 16) >> 1;
+        //    v25.color = v33;
+        //    maybe_SetShaderAmbientAndFog(v25);
+        GxRsSet(GxRs_BlendingMode, material->blendMode);
+        //    bn_CShaderEffect_SetAlphaRefDefault();
+        
+        GxTexSetWrap(texture1, (material->flags & 0x40) == 0 ? GxTex_Wrap : GxTex_Clamp, (material->flags & 0x80) == 0 ? GxTex_Wrap : GxTex_Clamp);
+        //    v20 = CMapObjRender::s_unifiedShaders[shader + 7];
+        g_theGxDevicePtr->RsSet(GxRs_Texture0, texture1);
+        g_theGxDevicePtr->RsSet(GxRs_Texture1, texture2);
+        //    bn_CShaderEffect_SetCurrent(v20);
+        //    maybe_SelectWorldShaders();
+
+        CGxBatch v26;
+        v26.m_count = batch->indexCount;
+        v26.m_start = batch->indexStart;
+        v26.m_minIndex = batch->vertexStart;
+        v26.m_maxIndex = batch->vertexEnd;
+        v26.m_primType = GxPrim_Triangles;
+        g_theGxDevicePtr->Draw(&v26, 1);
+
+        batch++;
     }
     g_theGxDevicePtr->RsPop();
 }
