@@ -107,6 +107,13 @@ class CMap {
     static void CreateMapObjDefGroups(CMapObjDef* mapObjDef, CMapObj* mapObj);
     static void PrepareMapDoodadDefs();
     static void ProcessRenderChunkUpdateList();
+
+    static bool VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);
+    static bool VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);
+    static void VectorIntersectSY(CiRect& rect);
+    static void VectorIntersectSX(CiRect& rect);
+    static void VectorIntersectDY(C3Vector& a1, C3Vector& a2, CiRect& rect);
+    static void VectorIntersectDX(C3Vector& a1, C3Vector& a2, CiRect& rect);
 };
 
 #endif

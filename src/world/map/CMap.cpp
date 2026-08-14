@@ -1252,3 +1252,149 @@ void CMap::ProcessRenderChunkUpdateList() {
         renderChunk = next;
     }
 }
+
+// OFFSET: 0x7A39F0
+bool CMap::VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk) {
+    C3Vector s = { 17066.666f - start->y, 17066.666f - start->x, 0.0f };
+    C3Vector e = { 17066.666f - end->y, 17066.666f - end->x, 0.0f };
+
+    float dX = e.x - s.x;
+    float dY = e.y - s.y;
+
+    CiRect cell;
+    cell.minX = (int32_t)floorf(s.x * 0.24f);
+    cell.minY = (int32_t)floorf(s.y * 0.24f);
+    cell.maxX = (int32_t)floorf(e.x * 0.24f);
+    cell.maxY = (int32_t)floorf(e.y * 0.24f);
+
+    CMap::cCount = 0;
+
+    if (fabsf(dX) < 2.384e-7f || cell.minX == cell.maxX)
+        CMap::VectorIntersectSY(cell);
+    else if (fabsf(dY) < 2.384e-7f || cell.minY == cell.maxY)
+        CMap::VectorIntersectSX(cell);
+    else if (fabsf(dY) >= fabsf(dX))
+        CMap::VectorIntersectDY(s, e, cell);
+    else
+        CMap::VectorIntersectDX(s, e, cell);
+
+    return CMap::VectorIntersectSubChunkList(start, end, distance, flags, hitChunk);
+}
+
+// OFFSET: 0x7A3570
+bool CMap::VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk) {
+    return 0;
+}
+
+// OFFSET: 0x7A2180
+void CMap::VectorIntersectSY(CiRect& rect) {
+    if (rect.minY <= rect.maxY) {
+        for (int32_t i = rect.minY; i <= rect.maxY; i++) {
+            CMap::scCollideList[CMap::cCount++] = rect.minX;
+            CMap::scCollideList[CMap::cCount++] = i;
+        }
+    } else {
+        for (int32_t i = rect.maxY; i >= rect.minY; i--) {
+            CMap::scCollideList[CMap::cCount++] = rect.minX;
+            CMap::scCollideList[CMap::cCount++] = i;
+        }
+    }
+}
+
+// OFFSET: 0x7A20E0
+void CMap::VectorIntersectSX(CiRect& rect) {
+    if (rect.minX <= rect.maxX) {
+        for (int32_t i = rect.minX; i <= rect.maxX; i++) {
+            CMap::scCollideList[CMap::cCount++] = i;
+            CMap::scCollideList[CMap::cCount++] = rect.minY;
+        }
+    } else {
+        for (int32_t i = rect.maxX; i >= rect.minX; i--) {
+            CMap::scCollideList[CMap::cCount++] = i;
+            CMap::scCollideList[CMap::cCount++] = rect.minY;
+        }
+    }
+}
+
+// OFFSET: 0x7A23E0
+void CMap::VectorIntersectDY(C3Vector& start, C3Vector& end, CiRect& cells) {
+    const float slope = (end.y - start.y) / (end.x - start.x);
+    const float intercept = start.y - start.x * slope;
+    const float invSlope = 1.0f / slope;
+
+    const int32_t step = (cells.maxY <= cells.minY) ? -1 : +1;
+
+    float edge = (float)(cells.minY + (step > 0 ? 1 : 0)) * 4.1666665f;
+
+    int32_t x = cells.minX;
+    int32_t y = cells.minY;
+
+    CMap::scCollideList.m_data[CMap::cCount++] = x;
+    CMap::scCollideList.m_data[CMap::cCount++] = y;
+
+    while (y != cells.maxY + step) {
+        if (CMap::cCount >= 0x7FC)
+            return;
+
+        const int32_t xAtEdge =
+            (int32_t)floorf((edge - intercept) * invSlope * 0.23999999f);
+
+        if (xAtEdge != x) {
+            CMap::scCollideList.m_data[CMap::cCount++] = xAtEdge;
+            CMap::scCollideList.m_data[CMap::cCount++] = y;
+        }
+
+        y += step;
+        edge += step * 4.1666665f;
+
+        CMap::scCollideList.m_data[CMap::cCount++] = xAtEdge;
+        CMap::scCollideList.m_data[CMap::cCount++] = y;
+
+        x = xAtEdge;
+    }
+
+    if (x != cells.maxX) {
+        CMap::scCollideList.m_data[CMap::cCount++] = cells.maxX;
+        CMap::scCollideList.m_data[CMap::cCount++] = cells.maxY;
+    }
+}
+
+// OFFSET: 0x7A2230
+void CMap::VectorIntersectDX(C3Vector& start, C3Vector& end, CiRect& cells) {
+    const float slope = (end.y - start.y) / (end.x - start.x);
+    const float intercept = start.y - start.x * slope;
+
+    const int32_t step = (cells.maxX <= cells.minX) ? -1 : +1;
+    float edge = (float)(cells.minX + (step > 0 ? 1 : 0)) * 4.1666665f;
+
+    int32_t x = cells.minX;
+    int32_t y = cells.minY;
+
+    CMap::scCollideList.m_data[CMap::cCount++] = x;
+    CMap::scCollideList.m_data[CMap::cCount++] = y;
+
+    while (x != cells.maxX + step) {
+        if (CMap::cCount >= 0x7FC)
+            return;
+
+        const int32_t yAtEdge = (int32_t)floorf((slope * edge + intercept) * 0.23999999f);
+
+        if (yAtEdge != y) {
+            CMap::scCollideList.m_data[CMap::cCount++] = x;
+            CMap::scCollideList.m_data[CMap::cCount++] = yAtEdge;
+        }
+
+        x += step;
+        edge += step * 4.1666665f;
+
+        CMap::scCollideList.m_data[CMap::cCount++] = x;
+        CMap::scCollideList.m_data[CMap::cCount++] = yAtEdge;
+
+        y = yAtEdge;
+    }
+
+    if (y != cells.maxY) {
+        CMap::scCollideList.m_data[CMap::cCount++] = cells.maxX;
+        CMap::scCollideList.m_data[CMap::cCount++] = cells.maxY;
+    }
+}
