@@ -1,6 +1,7 @@
 #include "world/map/CMapChunk.hpp"
 #include "world/map/CMap.hpp"
 #include <os/Debug.hpp>
+#include <tempest/Intersect.hpp>
 
 C3Vector CMapChunk::vertexList[145];
 int32_t CMapChunk::cornerVertexIndex[4] = { 0, 8, 0x88, 0x90 };
@@ -501,6 +502,36 @@ void CMapChunk::CreateVerticesLocal(CGxVertexPN* v) {
             normals += 24; // 8 vertices * 3 components
         }
     }
+}
+
+// OFFSET: 0x7D8730
+bool CMapChunk::Intersect(int32_t subX, int32_t subY, CRay ray, float* distance) {
+    if ((this->header->holes & CMap::s_holeMask[4 * (subY >> 1) + (subX >> 1)]) != 0)
+        return false;
+
+    const int base = subX + 17 * subY;
+
+    int hit = 0;
+
+    for (int32_t i = 0; i < 8; i += 2) {
+        int idx[3];
+        idx[0] = base + 9;
+        idx[1] = base + CMap::s_fanIndices[i + 1];
+        idx[2] = base + CMap::s_fanIndices[i];
+
+        CMapChunk::vertexList[idx[0]].z = this->height[idx[0]];
+        CMapChunk::vertexList[idx[1]].z = this->height[idx[1]];
+        CMapChunk::vertexList[idx[2]].z = this->height[idx[2]];
+
+        float t = 0.0f;
+        if (NTempest::Intersect(&ray, CMapChunk::vertexList, idx, distance, nullptr, 0.01f)) {
+            hit = 1;
+            if (t < *distance && t >= 0.0f)
+                *distance = t;
+        }
+    }
+
+    return hit;
 }
 
 // OFFSET: 0x7D66D0

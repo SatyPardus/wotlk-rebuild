@@ -15,6 +15,8 @@
 #include "model/Model2.hpp"
 #include <world/CWorldMath.hpp>
 #include "world/map/CMapObjDefGroup.hpp"
+#include <tempest/Intersect.hpp>
+#include <tempest/ray/CRay.hpp>
 
 char CMap::mapPath[STORM_MAX_PATH];
 char CMap::mapName[STORM_MAX_PATH];
@@ -24,6 +26,12 @@ uint32_t CMap::s_holeMask[16] = {
     1 << 4, 1 << 5, 1 << 6, 1 << 7,
     1 << 8, 1 << 9, 1 << 10, 1 << 11,
     1 << 12, 1 << 13, 1 << 14, 1 << 15,
+};
+uint32_t CMap::s_fanIndices[8] = {
+    17, 0,
+    0, 1,
+    18, 17,
+    1, 18
 };
 uint32_t CMap::version;
 SMMapHeader CMap::header;
@@ -1283,7 +1291,138 @@ bool CMap::VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distanc
 
 // OFFSET: 0x7A3570
 bool CMap::VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk) {
-    return 0;
+    const uint32_t m2Flags = flags & 0x40F0000F;
+    //if (m2Flags)
+    //    CM2Scene::BeginHitTest(s_m2Scene);
+
+    const float dx = end->x - start->x;
+    const float dy = end->y - start->y;
+    const float dz = end->z - start->z;
+    const float invLength = 1.0f / sqrtf(dx * dx + dy * dy + dz * dz);
+
+    C3Vector dirN;
+    dirN.x = dx * invLength;
+    dirN.y = dy * invLength;
+    dirN.z = dz * invLength;
+
+    float tBest = *distance;
+    CMapChunk* winner = nullptr;
+    CMapChunk* chunk = nullptr;
+
+    C3Vector localOrigin = *start;
+
+    uint32_t prevChunkX = CMap::scCollideList.m_data[1] & 0x2000;
+    uint32_t prevChunkY = CMap::scCollideList.m_data[0] & 0x2000;
+
+    uint32_t* cell = CMap::scCollideList.m_data;
+    int32_t remaining = CMap::cCount;
+
+    while (remaining) {
+        const uint32_t x = cell[0];
+        const uint32_t y = cell[1];
+        remaining -= 2;
+        cell += 2;
+
+        if (x > 0x2000 || y > 0x2000)
+            break;
+
+        if ((x & 0x1FF8) != prevChunkX || (y & 0x1FF8) != prevChunkY) {
+            CMapArea* area = CMap::areaTable[64 * ((y >> 7) & 0x3F) + ((x >> 7) & 0x3F)];
+            if (!area || area->asyncObject)
+                break;
+
+            chunk = area->mapChunks[16 * ((y >> 3) & 0xF) + ((x >> 3) & 0xF)];
+            if (!chunk)
+                break;
+
+            prevChunkX = x & 0x1FF8;
+            prevChunkY = y & 0x1FF8;
+
+            localOrigin.x = start->x - chunk->topLeftCoords.x;
+            localOrigin.y = start->y - chunk->topLeftCoords.y;
+            localOrigin.z = start->z - chunk->topLeftCoords.z;
+
+            //if (m2Flags)
+            //    CMap::VectorIntersectDoodadDefs(&chunk->doodadDefLinkList, flags);
+            //if (flags & 0x40F00000)
+            //    CMap::VectorIntersectEntitys(&chunk->TSExplicitList__m_linkoffset_DC, flags);
+        }
+
+        const int32_t subX = x & 7;
+        const int32_t subY = y & 7; 
+
+        CRay ray;
+        ray.origin = localOrigin;
+        ray.dir = dirN;
+
+        if (flags & 0x100) {
+            float t = FLT_MAX;
+            if (chunk->Intersect(subX, subY, ray, &t)) {
+                const float hit = t * invLength;
+                if (tBest > hit && hit >= 0.0f) {
+                    tBest = hit;
+                    winner = chunk;
+                }
+            }
+        }
+
+        if (flags & 0x30000) {
+            //const bool filterByType = (flags & 0x30000) == 0x10000;
+            //
+            //for (CChunkLiquid* liquid = chunk->liquidChunkLinkList.Head();
+            //     liquid;
+            //     liquid = chunk->liquidChunkLinkList.Next(liquid)) {
+            //
+            //    if (filterByType) {
+            //        LiquidTypeRec* rec = g_liquidTypeDB.GetRecord(liquid->unk_004);
+            //        if (!(rec->m_flags & 4))
+            //            continue;
+            //    }
+            //
+            //    if (!liquid->TileExists(subX, subY))
+            //        continue;
+            //
+            //    const int32_t vertsPerRow = liquid->tileEnd.y - liquid->tileBegin.y + 1;
+            //    const int32_t corner = (subX - liquid->tileBegin.y) + (subY - liquid->tileBegin.x) * vertsPerRow;
+            //
+            //    const int32_t tri[2][3] = {
+            //        { corner, corner + vertsPerRow + 1, corner + vertsPerRow },
+            //        { corner, corner + 1, corner + vertsPerRow + 1 }
+            //    };
+            //
+            //    for (int32_t i = 0; i < 2; i++) {
+            //        float t = 0.0f;
+            //        if (Intersect(&ray[0].x, liquid->verts, tri[i], &t, 0, 0.0099999998f)) {
+            //            const float hit = t * invLength;
+            //            if (tBest > hit && hit >= 0.0f) {
+            //                tBest = hit;
+            //                winner = chunk;
+            //            }
+            //        }
+            //    }
+            //}
+        }
+    }
+
+    if (m2Flags) {
+        //if (flags & 0x016000AE) {
+        //    C3Vector m2Start;
+        //    C3Vector m2End;
+        //    C44Matrix::TransformPoint(&m2Start, start, (C44Matrix*)&flt_ADF530);
+        //    C44Matrix::TransformPoint(&m2End, end, (C44Matrix*)&flt_ADF530);
+        //    CM2Scene::EndHitTest(s_m2Scene, &m2Start.x, &m2End, &tBest, 0);
+        //} else {
+        //    CM2Scene::EndHitTestCollisionWorld(start, end, &tBest);
+        //}
+    }
+
+    if (tBest >= *distance)
+        return false;
+
+    *distance = tBest;
+    if (hitChunk)
+        *hitChunk = winner;
+    return true;
 }
 
 // OFFSET: 0x7A2180

@@ -20,6 +20,7 @@ class CMap {
     static char mapName[STORM_MAX_PATH];
     static char wdtFilename[STORM_MAX_PATH];
     static uint32_t s_holeMask[16];
+    static uint32_t s_fanIndices[8];
     static uint32_t version;
     static SMMapHeader header;
     static SMAreaInfo areaInfo[64 * 64];

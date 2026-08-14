@@ -31,7 +31,7 @@ class CWorld {
             Enable_40000 = 0x40000,
             Enable_80000 = 0x80000,
             Enable_DetailDoodads = 0x100000,
-            Enable_200000 = 0x200000,
+            Enable_Collisions = 0x200000,
             Enable_400000 = 0x400000,
             Enable_800000 = 0x800000,
             Enable_1000000 = 0x1000000,

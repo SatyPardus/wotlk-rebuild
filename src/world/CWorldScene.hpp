@@ -96,6 +96,9 @@ class CWorldScene {
     static TSGrowableArray<CRect> s_coveredRects;
     static int32_t s_curGroupIsInterior;
 
+    static char s_debugMapName[260];
+    static char s_debugMapChunk[64];
+
     static STORM_EXPLICIT_LIST(CFrustum, sceneLink) s_frustumFreeList;
 
     static void Initialize();
@@ -138,6 +141,7 @@ class CWorldScene {
     static uint32_t TransformAndClipVerts(CMapObj* mapObj, uint32_t a2, C3Vector* verts, uint32_t vertCount, C3Vector& a5, C3Vector*& clippedVerts, uint32_t& clippedCount);
     static void ClipVerts(C3Vector* verts, uint32_t count, C3Vector** outVerts, uint32_t* outCount);
     static void CalcScreenRectFromVerts(CRect& rect, C3Vector* clippedVerts, uint32_t clippedCount);
+    static void LocateViewer3();
 };
 
 #endif // WORLD_C_WORLDSCENE_HPP

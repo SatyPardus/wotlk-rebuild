@@ -63,6 +63,9 @@ TSGrowableArray<CPortalView> CWorldScene::s_pendingPortalViews;
 TSGrowableArray<CRect> CWorldScene::s_coveredRects;
 int32_t CWorldScene::s_curGroupIsInterior;
 
+char CWorldScene::s_debugMapName[260];
+char CWorldScene::s_debugMapChunk[64];
+
 STORM_EXPLICIT_LIST(CFrustum, sceneLink) CWorldScene::s_frustumFreeList;
 
 void CWorldSceneLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
@@ -1548,7 +1551,7 @@ void CWorldScene::TransformPortal(CMapObj* mapObj, SMOPortal* portal, SPortalExt
 void CWorldScene::ClassifyPortalPlane(CMapObj* mapObj, SMOPortal* portal, SPortalExt* portalExt) {
     auto sq = portal->plane.n.y * s_camPosLocal.y + portal->plane.n.z * s_camPosLocal.z + portal->plane.n.x * s_camPosLocal.x + portal->plane.d;
     if (sq > -0.0099999998 && sq < 0.0099999998) {
-        if (Intersect(s_camPosLocal, &mapObj->portalVertexList[portal->startVertex], portal->count, portal->plane.n.MajorAxis()))
+        if (NTempest::Intersect(s_camPosLocal, &mapObj->portalVertexList[portal->startVertex], portal->count, portal->plane.n.MajorAxis()))
             portalExt->flags |= 2u;
     }
 }
@@ -1733,4 +1736,65 @@ void CWorldScene::CalcScreenRectFromVerts(CRect& rect, C3Vector* clippedVerts, u
         if (rect.maxY < clippedVerts[i].y)
             rect.maxY = clippedVerts[i].y;
     }
+}
+
+// OFFSET: 0x795D40
+void CWorldScene::LocateViewer3() {
+    //dword_CD87A4 = 0;
+    //dword_CD87A0 = 0;
+    //dword_CDB0D8 = 0;
+    //dword_CDB0E8 = 0;
+    s_debugMapName[0] = 0;
+    s_debugMapChunk[0] = 0;
+    //if ((CWorld::enables & Enable_100) != 0) {
+    C3Vector end = CWorldScene::s_activeWorldView;
+    end.z -= 1760.0f;
+    float    v17 = 1.0f;
+    CMapChunk*    v16 = nullptr;
+    bool v0 = CMap::VectorIntersectTerrain(&CWorldScene::s_activeWorldView, &end, &v17, 0x100u, &v16);
+    //    if (bn_CMap_LocateViewerMapObjs(&v12, &v13, v17, &v14, &v8)) {
+    //        dword_CD87A4 = v14;
+    //        if (v14) {
+    //            owner = v14->owner;
+    //            m_wmoName = owner->m_wmoName;
+    //            GroupName = bn_CMapObj_GetGroupName(owner, v8);
+    //            if (m_wmoName)
+    //                SStrCopy(s_debugMapName, m_wmoName, 260);
+    //            if (GroupName)
+    //                SStrCopy(s_debugMapChunk, GroupName, 64);
+    //            bn_CWorldScene_AddViewerGroup(&dword_CDB0D4, v8);
+    //            v4 = v9;
+    //            if (v9 != 0xFFFF) {
+    //                bn_CWorldScene_AddViewerGroup(&dword_CDB0D4, v9);
+    //                v4 = v9;
+    //            }
+    //            GroupFlags = 0;
+    //            if (v8 != 0xFFFF) {
+    //                GroupFlags = CMapObj::GetGroupFlags(dword_CD87A4->owner, v8);
+    //                v4 = v9;
+    //            }
+    //            if (v4 != 0xFFFF)
+    //                GroupFlags |= CMapObj::GetGroupFlags(dword_CD87A4->owner, v4);
+    //            if ((GroupFlags & 0x40140) != 0) {
+    //                v7.minY = 0.0;
+    //                v7.minX = 0.0;
+    //                v7.maxY = 1.0;
+    //                v7.maxX = 1.0;
+    //                CPortalView::CPortalView(&v6, &v7, 0.0);
+    //                maybe_CWorldScene__MergeViewerEntry(&stru_ADF570, &v6);
+    //                maybe_CWorldScene__PushPortalView(&v6);
+    //            }
+    //        }
+    //        dword_CD87A0 = v15;
+    //        if (v15) {
+    //            bn_CWorldScene_AddViewerGroup(&dword_CDB0E4, v10);
+    //            if (v11 != 0xFFFF)
+    //                bn_CWorldScene_AddViewerGroup(&dword_CDB0E4, v11);
+    //        }
+    //    } else if (v0) {
+    if (v0) {
+        SStrCopy(s_debugMapName, CMap::mapName, 260);
+        SStrPrintf(s_debugMapChunk, 0x40u, "%i, %i", v16->cOffset.x / 16, v16->cOffset.y / 16);
+    }
+    //}
 }

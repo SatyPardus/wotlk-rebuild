@@ -282,7 +282,7 @@ void CWorld::Update(C3Vector* camPos, C3Vector* camTarget, C3Vector* position) {
     //    AsyncFile::ProgressCallback(0, 0);
     //    LoadingScreenDisable();
     //}
-    //sub_795D40();
+    CWorldScene::LocateViewer3();
     //sub_7816F0(HIDWORD(CWorld::prepareAll) | CWorld::prepareAll, &camPos->x);
     //CWorld::farFog = DayNight::GetActiveDayNight()->fogInfo.end;
     //if (!CGxDevice::MasterEnable(g_theGxDevicePtr, 1))
