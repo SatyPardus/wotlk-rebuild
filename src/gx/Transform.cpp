@@ -65,6 +65,11 @@ void GxXformView(C44Matrix& matrix) {
     g_theGxDevicePtr->XformView(matrix);
 }
 
+void GxXformViewProj(C44Matrix& matrix) {
+    g_theGxDevicePtr->XformView(matrix);
+    matrix = matrix * g_theGxDevicePtr->m_projection;
+}
+
 void GxXformViewport(float& minX, float& maxX, float& minY, float& maxY, float& minZ, float& maxZ) {
     g_theGxDevicePtr->XformViewport(minX, maxX, minY, maxY, minZ, maxZ);
 }

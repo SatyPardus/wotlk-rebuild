@@ -65,7 +65,8 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     float flushTimer;
     CAsyncObject* asyncObject;
     int32_t isGroupLoaded;
-    //int32_t unk_1E4;
+    int16_t unk_1E4;
+    int16_t unk_1E6;
     STORM_EXPLICIT_LIST(CMapObjGroup, groupLink) mapObjGroupList;
     int32_t mapObjGroupCount;
     CMapObjGroup* mapObjGroupArray[512];

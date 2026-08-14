@@ -6,8 +6,18 @@ void CWorldOcclusion::ClearVolumes() {
     //TSGrowableArray_CClipVolume__SetCount(&CWorldOcclusion::clipVolumeArray, 0);
 }
 
+// OFFSET: 0x7CCDF0
+uint32_t CWorldOcclusion::GetClipVolumeCount() {
+    return 0;
+}
+
 // OFFSET: 0x7CCE00
 uint32_t CWorldOcclusion::QueryVolumes(CAaSphere* sphere) {
+    return 0;
+}
+
+// OFFSET: 0x7CCFA0
+uint32_t CWorldOcclusion::QueryVolumes(C3Vector* sphere, uint32_t count) {
     return 0;
 }
 

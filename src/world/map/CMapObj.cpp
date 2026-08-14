@@ -7,9 +7,10 @@
 #include "world/CWorld.hpp"
 #include "world/CWorldScene.hpp"
 #include <gx/RenderState.hpp>
+#include <gx/Transform.hpp>
 
 TSHashTable<CMapObj, HASHKEY_STRI> CMapObj::mapObjHashtable;
-uint32_t CMapObj::s_renderMode = 4;
+uint32_t CMapObj::s_renderMode = 5;
 RENDER_FUNC CMapObj::s_renderGroupExteriorFunc;
 RENDER_FUNC CMapObj::s_renderGroupInteriorFunc;
 RENDER_CALLBACK CMapObj::gRenderCallback;

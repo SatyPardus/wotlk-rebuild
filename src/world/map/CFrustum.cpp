@@ -26,10 +26,10 @@ WorldCullStatus CFrustum::Cull(CAaSphere* sphere) {
         float dist = p.n.x * sphere->c.x + p.n.y * sphere->c.y + p.n.z * sphere->c.z + p.d;
 
         if (dist < -sphere->r)
-            return WorldCull_notOutside;
+            return WorldCull_outside;
     }
 
-    return WorldCull_outside;
+    return WorldCull_notOutside;
 }
 
 // OFFSET: 0x984240

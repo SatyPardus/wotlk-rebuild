@@ -41,6 +41,13 @@ struct CSortTable {
     //TSList horizonMapObjList;
 };
 
+struct SPortalExt {
+    uint32_t flags;
+    CRect rect;
+    uint32_t stamp;
+    uint32_t pad;
+};
+
 
 class CWorldScene {
     public:
@@ -50,6 +57,7 @@ class CWorldScene {
 
     static int32_t frustumIndex;
     static CFrustum frustumStack[32];
+    static CFrustum s_clipFrustum;
     static CPortalView frustumPortalView;
     static CiRect s_frustumChunkRect;
     static C3Vector s_frustumCorners[8];
@@ -68,6 +76,25 @@ class CWorldScene {
     static uint32_t s_chunksRendered;
     static uint32_t s_doodadsRendered;
 
+    static C3Vector s_camPosLocal;
+    static C3Vector s_camTargetLocal;
+    static C4Plane s_camPlaneLocal;
+    static C44Matrix s_viewProj;
+    static C44Matrix s_modelView;
+    static C44Matrix s_modelViewProj;
+    static C44Matrix s_mapObjToWorld;
+    static bool s_cullStateValid;
+
+    static uint32_t s_interiorPass;
+    static uint32_t s_portalStamp;
+    static uint32_t s_maxPortalDepth;
+    static CMapObjDef* s_curMapObjDef;
+    static CMapObjDef* s_stampedMapObjDef;
+
+    static SPortalExt s_portalExt[2048];
+    static TSGrowableArray<CPortalView> s_pendingPortalViews;
+    static TSGrowableArray<CRect> s_coveredRects;
+
     static STORM_EXPLICIT_LIST(CFrustum, sceneLink) s_frustumFreeList;
 
     static void Initialize();
@@ -79,6 +106,7 @@ class CWorldScene {
     static void AddMapObjDefGroupToSortTable(uint32_t groupNum, CMapObjDef* mapObjDef);
     static CFrustum* AllocFrustum();
     static bool FrustumCull(CAaBox* box);
+    static bool FrustumCull(CAaSphere* box);
     static void FrustumSet(CRect* rect);
     static void FrustumSet(CFrustum* frustum);
     static void FrustumSet(C3Vector* corners, CRect* rect);
@@ -100,6 +128,15 @@ class CWorldScene {
     static void RenderChunksSinglePass();
     static void RenderChunksSolid();
     static void SetWorldProjection(C44Matrix& mat);
+    static void SetupMapObjDefCull(CMapObj* mapObj, C44Matrix& a2, C44Matrix& a3, C3Vector& a4, C3Vector& a5);
+    static void RenderThruPortalsExterior(CMapObj* mapObj, C44Matrix& mat, C44Matrix& invMat, C3Vector& worldPos, C3Vector& camTarget, CRect& a6, int32_t a7);
+    static void RenderThruPortals(CMapObj* mapObj, uint32_t groupNum, uint32_t fromGroup, CRect& ndcRect, uint32_t depth, int32_t interior);
+    static void PushPortalView(CPortalView* portalView);
+    static void TransformPortal(CMapObj* mapObj, SMOPortal* portal, SPortalExt* portalExt);
+    static void ClassifyPortalPlane(CMapObj* mapObj, SMOPortal* portal, SPortalExt* portalExt);
+    static uint32_t TransformAndClipVerts(CMapObj* mapObj, uint32_t a2, C3Vector* verts, uint32_t vertCount, C3Vector& a5, C3Vector*& clippedVerts, uint32_t& clippedCount);
+    static void ClipVerts(C3Vector* verts, uint32_t count, C3Vector** outVerts, uint32_t* outCount);
+    static void CalcScreenRectFromVerts(CRect& rect, C3Vector* clippedVerts, uint32_t clippedCount);
 };
 
 #endif // WORLD_C_WORLDSCENE_HPP

@@ -15,6 +15,8 @@
 #include "world/map/CMap.hpp"
 #include "world/map/CMapChunk.hpp"
 #include "world/map/CWorldOcclusion.hpp"
+#include <tempest/Intersect.hpp>
+#include <tempest/math/CMath.hpp>
 
 CM2Scene* CWorldScene::s_m2Scene;
 HTEXTURE CWorldScene::s_defaultTexture;
@@ -22,6 +24,7 @@ HTEXTURE CWorldScene::s_defaultBlendTexture;
 
 int32_t CWorldScene::frustumIndex;
 CFrustum CWorldScene::frustumStack[32];
+CFrustum CWorldScene::s_clipFrustum;
 CPortalView CWorldScene::frustumPortalView;
 CiRect CWorldScene::s_frustumChunkRect;
 C3Vector CWorldScene::s_frustumCorners[8];
@@ -39,6 +42,25 @@ CAaBox CWorldScene::boundingBox;
 
 uint32_t CWorldScene::s_chunksRendered;
 uint32_t CWorldScene::s_doodadsRendered;
+
+C3Vector CWorldScene::s_camPosLocal;
+C3Vector CWorldScene::s_camTargetLocal;
+C4Plane CWorldScene::s_camPlaneLocal;
+C44Matrix CWorldScene::s_viewProj;
+C44Matrix CWorldScene::s_modelView;
+C44Matrix CWorldScene::s_modelViewProj;
+C44Matrix CWorldScene::s_mapObjToWorld;
+bool CWorldScene::s_cullStateValid;
+
+uint32_t CWorldScene::s_interiorPass;
+uint32_t CWorldScene::s_portalStamp;
+uint32_t CWorldScene::s_maxPortalDepth = 10;
+CMapObjDef* CWorldScene::s_curMapObjDef;
+CMapObjDef* CWorldScene::s_stampedMapObjDef;
+
+SPortalExt CWorldScene::s_portalExt[2048];
+TSGrowableArray<CPortalView> CWorldScene::s_pendingPortalViews;
+TSGrowableArray<CRect> CWorldScene::s_coveredRects;
 
 STORM_EXPLICIT_LIST(CFrustum, sceneLink) CWorldScene::s_frustumFreeList;
 
@@ -153,7 +175,7 @@ void CWorldScene::Update(C3Vector* camPos, C3Vector* camTarget) {
     for (int32_t i = 0; i < 8; i++) {
         CWorldScene::s_frustumCorners[i] += CWorldScene::s_activeWorldView;
     }
-    // CFrustum::CalcPlanesFromCorners(&stru_CDD108, CWorldScene::s_frustumCorners);
+    CWorldScene::s_clipFrustum.CalcPlanesFromCorners(CWorldScene::s_frustumCorners);
     CWorldScene::viewMatrix.Translate(-CWorldScene::s_activeWorldView);
     C44Matrix v23 = CWorldScene::viewMatrix * CWorldScene::projMatrix;
     // stru_ADF5A8.M11 = v23->M11;
@@ -382,6 +404,11 @@ bool CWorldScene::FrustumCull(CAaBox* box) {
     return CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(box) == WorldCull_outside;
 }
 
+// OFFSET: 0x791120
+bool CWorldScene::FrustumCull(CAaSphere* sphere) {
+    return CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(sphere) == WorldCull_outside;
+}
+
 // OFFSET: 0x790AF0
 void CWorldScene::FrustumSet(CRect* rect) {
     C3Vector corners[8] = {};
@@ -600,7 +627,7 @@ void CWorldScene::CullDoodadsExterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLi
 
                 bool visible = false;
 
-                if (!CWorldScene::frustumStack[CWorldScene::frustumIndex].Cull(&mapDoodadDef->sphere)) {
+                if (!CWorldScene::FrustumCull(&mapDoodadDef->sphere)) {
                     mapDoodadDef->unk_025 = 0;
                     visible = true; //(CWorldOcclusion::QueryBuffer_0(&mapDoodadDef->sphere, 16) < 2);
                 }
@@ -670,7 +697,7 @@ void CWorldScene::CullMapObjDefGroups(CSortEntry* entry, CRect* a2, uint32_t a3)
 // OFFSET: 0x7B3A10
 void CWorldScene::CullMapObjDefGroupFromExterior(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, CRect* a3, uint32_t a4) {
     CMapObj::SetGroupRenderCallback(reinterpret_cast<RENDER_CALLBACK>(CWorldScene::AddMapObjDefGroupToSortTable), mapObjDef);
-    //dword_D1C420 = mapObjDef;
+    s_curMapObjDef = mapObjDef;
     CWorldScene::FrustumPush();
     CWorldScene::FrustumSet(CWorldScene::s_frustumCorners, a3);
     auto groupFlags = mapObjDef->owner->GetGroupFlags(mapObjDefGroup->groupNum);
@@ -681,23 +708,12 @@ void CWorldScene::CullMapObjDefGroupFromExterior(CMapObjDef* mapObjDef, CMapObjD
             return;
         }
         if ((groupFlags & 8) != 0) {
-    //        groupNum = a2->groupNum;
-    //        minX = a3->minX;
-    //        v7 = a3->maxY * 2.0;
-    //        owner = mapObjDef->owner;
-    //        v9 = 2.0 * a3->maxX;
-    //        v11[0] = a3->minY * 2.0 - 1.0;
-    //        v11[1] = minX * 2.0 - 1.0;
-    //        v11[2] = v7 - 1.0;
-    //        v11[3] = v9 - 1.0;
-    //        maybe_CMapObj__RenderThruPortalsExterior(
-    //            owner,
-    //            &mapObjDef->mat,
-    //            &mapObjDef->invMat,
-    //            &CWorldScene::s_activeWorldView,
-    //            &CWorldScene::camTarget,
-    //            v11,
-    //            groupNum);
+            CRect rect;
+            rect.minY = a3->minY * 2.0f - 1.0f;
+            rect.minX = a3->minX * 2.0f - 1.0f;
+            rect.maxY = a3->maxY * 2.0f - 1.0f;
+            rect.maxX = a3->maxX * 2.0 - 1.0f;
+            CWorldScene::RenderThruPortalsExterior(mapObjDef->owner, mapObjDef->mat, mapObjDef->invMat, CWorldScene::s_activeWorldView, CWorldScene::camTarget, rect, mapObjDefGroup->groupNum);
         }
     }
     CWorldScene::FrustumPop();
@@ -1278,5 +1294,442 @@ void CWorldScene::RenderChunksSolid() {
         renderChunk->renderChunkLink.Unlink();
         CMap::s_mapRenderChunkUpdateList.LinkToTail(renderChunk);
         renderChunk = next;
+    }
+}
+
+// OFFSET: 0x7A6E00
+void CWorldScene::SetupMapObjDefCull(CMapObj* mapObj, C44Matrix& a2, C44Matrix& a3, C3Vector& a4, C3Vector& a5) {
+    C44Matrix mat;
+    C3Vector vec = { -a4.x, -a4.y, -a4.z };
+    mat.Translate(vec);
+    mat = a2 * mat;
+    g_theGxDevicePtr->XformSet(GxXform_World, mat);
+
+    CWorldScene::s_camPosLocal = a3.TransformPoint(a4);
+    CWorldScene::s_camTargetLocal = a3.TransformPoint(a5);
+
+    C3Vector vec2 = {
+        CWorldScene::s_camTargetLocal.x - CWorldScene::s_camPosLocal.x,
+        CWorldScene::s_camTargetLocal.y - CWorldScene::s_camPosLocal.y,
+        CWorldScene::s_camTargetLocal.z - CWorldScene::s_camPosLocal.z
+    };
+    float sq = vec2.x * vec2.x + vec2.y * vec2.y + vec2.z * vec2.z;
+    if (sq > 0.000099999997) {
+        float v13 = 1.0f / sqrt(sq);
+        vec2.x *= v13;
+        vec2.y *= v13;
+        vec2.z *= v13;
+    }
+
+    CWorldScene::s_camPlaneLocal.n = vec2;
+    CWorldScene::s_camPlaneLocal.d = -(s_camPosLocal.x * vec2.x + s_camPosLocal.y * vec2.y + s_camPosLocal.z * vec2.z);
+
+    GxXformViewProj(CWorldScene::s_viewProj);
+
+    C44Matrix viewMat;
+    g_theGxDevicePtr->XformView(viewMat);
+    CWorldScene::s_modelView = mat * viewMat;
+    CWorldScene::s_modelViewProj = mat * CWorldScene::s_viewProj;
+    CWorldScene::s_mapObjToWorld = a2;
+    if (mapObj->unk_1E4 == 0xFFFF) {
+        for (int32_t i = 0; i < mapObj->groupInfoCount; i++) {
+            if ((mapObj->groupInfo[i].flags & 0x10008) == 0) {
+                mapObj->unk_1E4++;
+            }
+        }
+    }
+    CWorldScene::s_cullStateValid = true;
+}
+
+// OFFSET: 0x7AD350
+void CWorldScene::RenderThruPortalsExterior(CMapObj* mapObj, C44Matrix& mat, C44Matrix& invMat, C3Vector& worldPos, C3Vector& camTarget, CRect& a6, int32_t a7) {
+    CWorldScene::SetupMapObjDefCull(mapObj, mat, invMat, worldPos, camTarget);
+    s_interiorPass = 0;
+    if (s_curMapObjDef != s_stampedMapObjDef) {
+        ++s_portalStamp;
+        s_stampedMapObjDef = s_curMapObjDef;
+    }
+    CWorldScene::RenderThruPortals(mapObj, a7, 0xFFFF, a6, 0, 0);
+}
+
+// OFFSET: 0x7AC060
+void CWorldScene::RenderThruPortals(CMapObj* mapObj, uint32_t groupNum, uint32_t fromGroup, CRect& ndcRect, uint32_t depth, int32_t interior) {
+    if (depth > s_maxPortalDepth)
+        return;
+
+    CMapObjGroup* group = mapObj->GetGroup(groupNum, false);
+    if (!group)
+        return;
+
+    if ((group->flags & 0x10000) != 0)
+        return;
+
+    if (interior && (group->flags & 0x48) != 0) {
+        interior = 0;
+    }
+    //s_curGroupIsInterior = interior;
+    //if (s_interiorPass && (v7->flags & 0x40000) != 0)
+    //    CWorldScene::s_interiorSkybox = p_objectIndex->skybox;
+
+    if (CMapObj::gRenderCallback)
+        CMapObj::gRenderCallback(groupNum, CMapObj::gRenderUserParam);
+
+    if (!group->portalCount)
+        return;
+
+    //if ((dword_D1C3D0 & 1) == 0) {
+    //    dword_D1C3D0 |= 1u;
+    //    s_pendingPortalViews.m_alloc = 0;
+    //    s_pendingPortalViews.m_count = 0;
+    //    s_pendingPortalViews.m_data = 0;
+    //    s_pendingPortalViews.m_chunk = 0;
+    //    atexit(maybe_StaticDtor_at_9DBE20);
+    //}
+    //if ((dword_D1C3D0 & 2) == 0) {
+    //    dword_D1C3D0 |= 2u;
+    //    s_coveredRects.m_alloc = 0;
+    //    s_coveredRects.m_count = 0;
+    //    s_coveredRects.m_data = 0;
+    //    s_coveredRects.m_chunk = 0;
+    //    atexit(maybe_StaticDtor_CRect);
+    //}
+    if (!s_interiorPass && !depth) {
+        s_pendingPortalViews.SetCount(0);
+        s_coveredRects.SetCount(0);
+    }
+
+    SMOPortalRef* portalRef = &mapObj->portalRefList[group->portalStart];
+
+    for (int32_t i = 0; i < group->portalCount; i++) {
+        if (portalRef->groupIndex == 0xFFFF || portalRef->groupIndex == fromGroup) {
+            portalRef++;
+            continue;
+        }
+
+        SMOPortal* portal = &mapObj->portalList[portalRef->portalIndex];
+
+        uint32_t groupFlags = mapObj->GetGroupFlags(portalRef->groupIndex);
+        SPortalExt* portalExt = &s_portalExt[portalRef->portalIndex];
+        if (portalExt->stamp != s_portalStamp) {
+            portalExt->stamp = s_portalStamp;
+            portalExt->flags = 0;
+            if ((groupFlags & 8) == 0 && (group->flags & 8) == 0)
+                portalExt->flags = 16;
+            CWorldScene::TransformPortal(mapObj, portal, portalExt);
+        }
+
+        auto v16 = portal->plane.n.y * s_camPosLocal.y + portal->plane.n.z * s_camPosLocal.z + portal->plane.n.x * s_camPosLocal.x + portal->plane.d;
+        if (portalRef->side < 0)
+            v16 = -v16;
+
+        //if (v16 < 0.0) {
+        //    if (!s_interiorPass && !depth) {
+        //        CRect rect;
+        //        rect.minY = 0.0;
+        //        rect.minX = 0.0;
+        //        rect.maxY = 1.0;
+        //        rect.maxX = 1.0;
+        //        s_coveredRects.Add(1, &rect);
+        //    }
+        //
+        //    portalRef++;
+        //    continue;
+        //}
+
+        //if ((portalExt->flags & 2) == 0 && (portalExt->flags & 1) != 0
+        //    || ndcRect.maxX < portalExt->rect.minX
+        //    || ndcRect.minX > portalExt->rect.maxX
+        //    || ndcRect.maxY < portalExt->rect.minY
+        //    || ndcRect.minY > portalExt->rect.maxY) {
+        //    portalRef++;
+        //    continue;
+        //}
+
+        CRect clip = portalExt->rect;
+        if (clip.minX < ndcRect.minX)
+            clip.minX = ndcRect.minX;
+        if (clip.maxX > ndcRect.maxX)
+            clip.maxX = ndcRect.maxX;
+        if (clip.minY < ndcRect.minY)
+            clip.minY = ndcRect.minY;
+
+        //if (CMath::fequalz(clip.minX, clip.maxX, 0.001) || CMath::fequalz(clip.minY, clip.maxY, 0.001)) {
+        //    portalRef++;
+        //    continue;
+        //}
+
+        //if (!s_interiorPass && (groupFlags & 0x10008) == 0) {
+        //    if (!depth && s_cullStateValid && (groupFlags & 0x140) == 0) {
+        //        maybe_CMapObj__PushPortalViewClipped(
+        //            mapObj,
+        //            &portal->startVertex,
+        //            portalRef,
+        //            v15,
+        //            &s_pendingPortalViews.m_alloc);
+        //    }
+        //} else if ((groupFlags & 0x50148) != 0) {
+        //    maybe_CMapObj__TestPortalVisibility(
+        //        mapObj,
+        //        &portal->startVertex,
+        //        portalRef,
+        //        v15,
+        //        groupFlags & 0x10008);
+        //    if ((groupFlags & 0x10008) != 0) {
+        //        portalRef++;
+        //        continue;
+        //    }
+        //}
+
+        CRect v40 = { 2.0f, 2.0f, 2.0f, 2.0f };
+        CRect v39 = { 1.0f, 1.0f, 1.0f, 1.0f };
+        CRect v27 = clip + v39;
+        v27 /= v40;
+        CWorldScene::FrustumPush();
+        CWorldScene::FrustumSet(CWorldScene::s_frustumCorners, &v27);
+        CWorldScene::RenderThruPortals(mapObj, portalRef->groupIndex, groupNum, clip, depth + 1, interior);
+        CWorldScene::FrustumPop();
+
+        portalRef++;
+    }
+
+    if (depth || !s_pendingPortalViews.Count())
+        return;
+
+    for (int32_t i = 0; i < s_pendingPortalViews.Count(); i++) {
+        CPortalView* portalView = &s_pendingPortalViews[i];
+
+        uint32_t j = 0;
+        uint32_t n = s_coveredRects.Count();
+
+        while (j < n && !s_coveredRects[j].Intersects(portalView->rect))
+            ++j;
+
+         if (j >= n)
+            CWorldScene::PushPortalView(portalView);
+    }
+    s_pendingPortalViews.SetCount(0);
+    s_coveredRects.SetCount(0);
+}
+
+// OFFSET: 0x795D20
+void CWorldScene::PushPortalView(CPortalView* portalView) {
+    //bn_TSGrowableArray_CPortalView_Add(&stru_CDD0F8.m_alloc, 1, a1);
+}
+
+// OFFSET: 0x7A9090
+void CWorldScene::TransformPortal(CMapObj* mapObj, SMOPortal* portal, SPortalExt* portalExt) {
+    CWorldScene::ClassifyPortalPlane(mapObj, portal, portalExt);
+
+    C3Vector* clippedVerts = nullptr;
+    uint32_t clippedCount = 0;
+
+    if (!(portalExt->flags & 2)) {
+        C3Vector offset = { 0.0f, 0.0f, 0.0f };
+        portalExt->flags |= CWorldScene::TransformAndClipVerts(mapObj, (portalExt->flags >> 4) & 1, &mapObj->portalVertexList[portal->startVertex], portal->count, offset, clippedVerts, clippedCount);
+    }
+
+    if ((portalExt->flags & 2) != 0) {
+        portalExt->rect.minX = -1.0;
+        portalExt->rect.maxX = 1.0;
+        portalExt->rect.maxY = 1.0;
+        portalExt->rect.minY = -1.0;
+    } else if ((portalExt->flags & 1) != 0) {
+        portalExt->rect.minX = 3.4028235e38;
+        portalExt->rect.maxX = -3.4028235e38;
+        portalExt->rect.maxY = -3.4028235e38;
+        portalExt->rect.minY = 3.4028235e38;
+    } else {
+        CWorldScene::CalcScreenRectFromVerts(portalExt->rect, clippedVerts, clippedCount);
+    }
+}
+
+// OFFSET: 0x7A7210
+void CWorldScene::ClassifyPortalPlane(CMapObj* mapObj, SMOPortal* portal, SPortalExt* portalExt) {
+    auto sq = portal->plane.n.y * s_camPosLocal.y + portal->plane.n.z * s_camPosLocal.z + portal->plane.n.x * s_camPosLocal.x + portal->plane.d;
+    if (sq > -0.0099999998 && sq < 0.0099999998) {
+        if (Intersect(s_camPosLocal, &mapObj->portalVertexList[portal->startVertex], portal->count, portal->plane.n.MajorAxis()))
+            portalExt->flags |= 2u;
+    }
+}
+
+// OFFSET: 0x7A85E0
+uint32_t CWorldScene::TransformAndClipVerts(CMapObj* mapObj, uint32_t a2, C3Vector* verts, uint32_t count, C3Vector& offset, C3Vector*& clippedVerts, uint32_t& clippedCount) {
+    static C3Vector s_worldVerts[12]; // MAX_CLIP_VERTS = 12
+    static bool s_worldVertsInit = false;
+    if (!s_worldVertsInit) {
+        s_worldVertsInit = true;
+        for (uint32_t i = 0; i < 12; i++) {
+            s_worldVerts[i] = C3Vector(0.0f, 0.0f, 0.0f);
+        }
+    }
+
+    if (count > 12) {
+        count = 12;
+    }
+
+    for (uint32_t i = 0; i < count; i++) {
+        C3Vector v = {
+            verts[i].x + offset.x,
+            verts[i].y + offset.y,
+            verts[i].z + offset.z
+        };
+        s_worldVerts[i] = s_mapObjToWorld.TransformPoint(v);
+    }
+
+    if (CWorldOcclusion::GetClipVolumeCount() && !a2 && CWorldOcclusion::QueryVolumes(s_worldVerts, count)) {
+        clippedVerts = nullptr;
+        clippedCount = 0;
+        return 1;
+    }
+
+    CWorldScene::ClipVerts(s_worldVerts, count, &clippedVerts, &clippedCount);
+
+    if (clippedCount < 3) {
+        clippedVerts = nullptr;
+        clippedCount = 0;
+        return 1;
+    }
+
+    for (uint32_t i = 0; i < clippedCount; i++) {
+        C4Vector p = {
+            clippedVerts[i].x - CWorldScene::s_activeWorldView.x,
+            clippedVerts[i].y - CWorldScene::s_activeWorldView.y,
+            clippedVerts[i].z - CWorldScene::s_activeWorldView.z,
+            1.0f
+        };
+
+        p = s_viewProj.TransformPoint(p);
+
+        float w = 0.0001f;
+        if (p.w >= 0.0001f) {
+            w = p.w;
+        } else {
+            p.w = 0.0001f;
+        }
+
+        float invW = 1.0f / w;
+
+        clippedVerts[i].x = p.x * invW;
+        clippedVerts[i].y = p.y * invW;
+        clippedVerts[i].z = p.z;
+    }
+
+    return 0;
+}
+
+// OFFSET: 0x7A72A0
+void CWorldScene::ClipVerts(C3Vector* verts, uint32_t count, C3Vector** outVerts, uint32_t* outCount) {
+    static C3Vector s_buffers[2][16];
+    static bool s_init = false;
+    if (!s_init) {
+        s_init = true;
+        for (uint32_t b = 0; b < 2; b++) {
+            for (uint32_t i = 0; i < 16; i++) {
+                s_buffers[b][i] = C3Vector(0.0f, 0.0f, 0.0f);
+            }
+        }
+    }
+
+    static int32_t s_code[16];
+    static float s_dist[16];
+
+    uint32_t bufCount[2] = { count, 0 };
+    for (uint32_t i = 0; i < count; i++) {
+        s_buffers[0][i] = verts[i];
+    }
+
+    uint32_t src = 0;
+    uint32_t dst = 1;
+
+    for (uint32_t plane = 0; plane < 5; plane++) {
+
+        const C4Plane& p = CWorldScene::s_clipFrustum.planes[plane];
+
+        src = plane & 1;
+        dst = (plane - 1) & 1;
+
+        const C3Vector* in = s_buffers[src];
+        const uint32_t inCnt = bufCount[src];
+
+        for (uint32_t i = 0; i < inCnt; i++) {
+            float d = in[i].x * p.n.x + in[i].y * p.n.y + in[i].z * p.n.z + p.d;
+            s_dist[i] = d;
+            if (d > 0.0001f) {
+                s_code[i] = 1;
+            } else if (d >= -0.0001f) {
+                s_code[i] = 0;
+            } else {
+                s_code[i] = 2;
+            }
+        }
+
+        s_code[inCnt] = s_code[0];
+        s_dist[inCnt] = s_dist[0];
+
+        if (inCnt == 0) {
+            break;
+        }
+
+        C3Vector* out = s_buffers[dst];
+        uint32_t outCnt = 0;
+
+        for (uint32_t i = 0; i < inCnt; i++) {
+
+            int32_t code = s_code[i];
+
+            if (code == 0) {
+                out[outCnt++] = in[i];
+                continue;
+            }
+
+            if (code == 1) {
+                out[outCnt++] = in[i];
+            }
+
+            int32_t next = s_code[i + 1];
+            if (next != 0 && next != code) {
+                uint32_t j = (i + 1) % inCnt;
+                float t = s_dist[i] / (s_dist[i] - s_dist[j]);
+
+                out[outCnt].x = (in[j].x - in[i].x) * t + in[i].x;
+                out[outCnt].y = (in[j].y - in[i].y) * t + in[i].y;
+                out[outCnt].z = (in[j].z - in[i].z) * t + in[i].z;
+                outCnt++;
+            }
+        }
+
+        bufCount[dst] = outCnt;
+        *outCount = outCnt;
+
+        if (outCnt == 0) {
+            break;
+        }
+    }
+
+    if (bufCount[dst] == 0) {
+        *outVerts = nullptr;
+        *outCount = 0;
+        return;
+    }
+
+    *outVerts = s_buffers[dst];
+}
+
+// OFFSET: 0x7A6B90
+void CWorldScene::CalcScreenRectFromVerts(CRect& rect, C3Vector* clippedVerts, uint32_t clippedCount) {
+    rect.minX = 3.4028235e38;
+    rect.maxX = -3.4028235e38;
+    rect.maxY = -3.4028235e38;
+    rect.minY = 3.4028235e38;
+
+    for (uint32_t i = 0; i < clippedCount; i++) {
+        if (rect.minX > clippedVerts[i].x)
+            rect.minX = clippedVerts[i].x;
+        if (rect.maxX < clippedVerts[i].x)
+            rect.maxX = clippedVerts[i].x;
+        if (rect.minY > clippedVerts[i].y)
+            rect.minY = clippedVerts[i].y;
+        if (rect.maxY < clippedVerts[i].y)
+            rect.maxY = clippedVerts[i].y;
     }
 }
