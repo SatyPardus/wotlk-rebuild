@@ -19,6 +19,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     static RENDER_FUNC s_renderGroupInteriorFunc;
     static RENDER_CALLBACK gRenderCallback;
     static void* gRenderUserParam;
+    static CImVector s_lastSidnColor;
 
     char m_wmoName[260];
     SMOHeader* header;
@@ -97,6 +98,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     static void InvokeGroupRenderCallback(CMapObj* mapObj, uint32_t groupNum);
     static void SetGroupRenderCallback(RENDER_CALLBACK callback, void* param);
     static void SetRenderModeLight();
+    static void SetEmissiveColor(CImVector color);
 };
 
 #endif

@@ -15,6 +15,7 @@ RENDER_FUNC CMapObj::s_renderGroupExteriorFunc;
 RENDER_FUNC CMapObj::s_renderGroupInteriorFunc;
 RENDER_CALLBACK CMapObj::gRenderCallback;
 void* CMapObj::gRenderUserParam;
+CImVector CMapObj::s_lastSidnColor;
 
 // OFFSET: 0x7D80C0
 bool CMapObj::Read(char* fileName) {
@@ -578,7 +579,7 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
     g_theGxDevicePtr->RsPush();
     //dword_CFBEB0 = -1;
     //dword_CFBEAC = -1;
-    //dword_D1BEF8 = -1;
+    s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
     //dword_CFBEA8 = -1;
     CGxTex* gxTex = nullptr;
     //if (CMap::s_isStreamingMode)
@@ -632,20 +633,19 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         //        goto LABEL_26;
         //    }
         GxRsSet(GxRs_Culling, (material->flags & 4) == 0);
-        //    if ((v10->flags & 0x10) != 0) {
-        //        p_frameSidnColor = &v10->frameSidnColor;
-        //    } else {
-        //        v27 = 0;
-        //        p_frameSidnColor = &v27;
-        //    }
-        //    v15 = dword_D1BEFC + *p_frameSidnColor;
-        //    v16 = (*p_frameSidnColor ^ dword_D1BEFC ^ v15) & 0x1010100;
-        //    v33 = ((v15 - v16) | (v16 - (v16 >> 8)));
-        //    BYTE1(v33) >>= 1;
-        //    LOBYTE(v33) = v33 >> 1;
-        //    BYTE2(v33) = (((v15 - v16) | (v16 - (v16 >> 8))) >> 16) >> 1;
-        //    v25.color = v33;
-        //    maybe_SetShaderAmbientAndFog(v25);
+        CImVector color = { 0x00, 0x00, 0x00, 0x00 };
+        if ((material->flags & 0x10) != 0)
+            color = material->frameSidnColor;
+
+        // TODO
+        CImVector dword_D1BEFC = { 0x00, 0x00, 0x00, 0x00 };
+
+        uint32_t sum = dword_D1BEFC.value + color.value;
+        uint32_t carry = (color.value ^ dword_D1BEFC.value ^ sum) & 0x01010100;
+        uint32_t sat = (sum - carry) | (carry - (carry >> 8));
+        color.value = ((sat >> 1) & 0x007F7F7F) | (sat & 0xFF000000);
+
+        CMapObj::SetEmissiveColor(color);
         GxRsSet(GxRs_BlendingMode, material->blendMode);
         //    bn_CShaderEffect_SetAlphaRefDefault();
         
@@ -686,7 +686,7 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
     g_theGxDevicePtr->RsPush();
     //dword_CFBEB0 = -1;
     //dword_CFBEAC = -1;
-    //dword_D1BEF8 = -1;
+    s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
     //dword_CFBEA8 = -1;
     if (!CShaderEffect::s_enableShaders) {
         g_theGxDevicePtr->RsSet(GxRs_ColorMaterial, 2);
@@ -1034,4 +1034,33 @@ void CMapObj::SetRenderModeLight() {
         g_theGxDevicePtr->LightEnable(i, 0);
 
     GxRsSet(GxRs_Lighting, 1);
+}
+
+// OFFSET: 0x7A8940
+void CMapObj::SetEmissiveColor(CImVector color) {
+    color.a = 0;
+    if (color == s_lastSidnColor)
+        return;
+    s_lastSidnColor = color;
+
+    CImVector grey = { 0x7F, 0x7F, 0x7F, 0xFF };
+    //if (CShaderEffect::s_enableShaders) {
+    //    x = s_mapLight->unk14.m_specularColor.x;
+    //    y = s_mapLight->unk14.m_specularColor.y;
+    //    v11.w = 14.0;
+    //    z = s_mapLight->unk14.m_specularColor.z;
+    //    v12 = x;
+    //    v11.x = x;
+    //    v13 = y;
+    //    v11.y = y;
+    //    v14 = z;
+    //    v11.z = z;
+    //    maybe_C4Vector__C4Vector(&v9, &v15);
+    //    maybe_C4Vector__C4Vector(&v10, &a1);
+    //    g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 28, &v9, 2);
+    //    g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 13, &v11, 1);
+    //} else {
+    GxRsSet(GxRs_MatDiffuse, grey.value);
+    GxRsSet(GxRs_MatEmissive, color.value);
+    //}
 }
