@@ -29,13 +29,13 @@ namespace World {
             CMapObjDef* def;
         };
 
-        static uint16_t faceIndexPool[0x4000];
-        static uint16_t indexPool[0xC000];
-        static uint32_t indexCursor;
-        static uint32_t faceIndexCursor;
-        static uint32_t statusFlags;
-        static uint32_t nBatches;
-        static Batch batches[32];
+        extern uint16_t faceIndexPool[0x4000];
+        extern uint16_t indexPool[0xC000];
+        extern uint32_t indexCursor;
+        extern uint32_t faceIndexCursor;
+        extern uint32_t statusFlags;
+        extern uint32_t nBatches;
+        extern Batch batches[32];
 
         Batch* AllocBatch(uint32_t indexCount, uint32_t faceCount);
     }

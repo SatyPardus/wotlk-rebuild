@@ -62,6 +62,18 @@ int32_t LoadNewWorld(const void* eventData) {
     return 1;
 }
 
+namespace World {
+    namespace TriData {
+        uint16_t faceIndexPool[0x4000];
+        uint16_t indexPool[0xC000];
+        uint32_t indexCursor;
+        uint32_t faceIndexCursor;
+        uint32_t statusFlags;
+        uint32_t nBatches;
+        Batch batches[32];
+    } // namespace TriData
+} // namespace World
+
 World::TriData::Batch* World::TriData::AllocBatch(uint32_t indexCount, uint32_t faceCount) {
     if ((World::TriData::nBatches + 1) >= 0x20 || (indexCount + World::TriData::indexCursor) >= 0xC000 || (faceCount + World::TriData::faceIndexCursor) >= 0x4000) {
         World::TriData::statusFlags |= 1u;
