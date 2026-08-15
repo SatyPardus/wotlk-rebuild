@@ -92,6 +92,16 @@ if (WHOA_SYSTEM_WIN AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-static-libgcc -static-libstdc++ -static")
 endif ()
 
+option(WHOA_ASAN "Enable AddressSanitizer (MSVC/Clang)" OFF)
+
+if (WHOA_ASAN AND MSVC)
+    add_compile_options(/fsanitize=address /Zi)
+    foreach (flagvar CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS_DEBUG)
+        string(REGEX REPLACE "/RTC(su|[1su])" "" ${flagvar} "${${flagvar}}")
+    endforeach ()
+    add_link_options(/INCREMENTAL:NO /DEBUG)
+endif ()
+
 # OS defines
 if (WHOA_SYSTEM_WIN)
     # Avoid win32 header hell
