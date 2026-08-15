@@ -90,7 +90,7 @@ void CGWorldFrame::RenderWorld(void* param) {
     CShaderEffect::UpdateProjMatrix();
 }
 
-// DEBUG: free-fly camera.
+// DEBUG: free-fly camera. (Obviously AI made)
 //   hold RMB   look
 //   W/S        forward / back along camera forward
 //   A/D        strafe along camera right
@@ -191,6 +191,7 @@ static void UpdateDebugCamera(CGCamera* cam) {
 
 // OFFSET: 0x4FA5F0
 void CGWorldFrame::OnWorldUpdate() {
+    // TODO
     CGCamera* cam = CGWorldFrame::GetActiveCamera();
 
     UpdateDebugCamera(cam);

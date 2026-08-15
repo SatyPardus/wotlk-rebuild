@@ -41,7 +41,9 @@ void CWorld::Initialize() {
         | Enables::Enable_DetailDoodads
         | Enables::Enable_1000000
         | Enables::Enable_Particulates
-        | Enables::Enable_LowDetail;
+        | Enables::Enable_LowDetail
+        // TODO DEBUGGING
+        | Enables::Enable_Collisions;
 
     //flt_CD769C = 0.0;
     //CWorld::frameCnt = 0;

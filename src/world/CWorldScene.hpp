@@ -142,6 +142,7 @@ class CWorldScene {
     static void ClipVerts(C3Vector* verts, uint32_t count, C3Vector** outVerts, uint32_t* outCount);
     static void CalcScreenRectFromVerts(CRect& rect, C3Vector* clippedVerts, uint32_t clippedCount);
     static void LocateViewer3();
+    static void RenderCollisionDebug();
 };
 
 #endif // WORLD_C_WORLDSCENE_HPP

@@ -9,8 +9,12 @@
 #include "world/map/CMapBaseObj.hpp"
 #include "async/CAsyncObject.hpp"
 #include "world/map/VBBList.hpp"
+#include "bsp/AaBsp.hpp"
+#include "tempest/segment/C3Segment.hpp"
+#include <bsp/BspQuery.hpp>
 
 class CMapObj;
+class CMapObjDef;
 
 class CMapObjGroup : public CMapBaseObj {
     public:
@@ -37,27 +41,7 @@ class CMapObjGroup : public CMapBaseObj {
     uint16_t transparencyBatchesCount;
     uint16_t intBatchCount;
     uint16_t extBatchCount;
-    void* CAaBspNodePtr1;
-    void* CAaBspNodePtr2;
-    uint16_t* nodeFaceIndices;
-    int32_t bspNodesCount;
-    int32_t nodeFaceIndicesCount;
-    int32_t unk_7C;
-    int32_t unk_80;
-    int32_t unk_84;
-    int32_t unk_88;
-    int32_t unk_8C;
-    int32_t unk_90;
-    int32_t unk_94;
-    int32_t unk_98;
-    int32_t unk_9C;
-    int32_t unk_A0;
-    int32_t unk_A4;
-    int32_t unk_A8;
-    int32_t unk_AC;
-    int32_t unk_B0;
-    CAaBox bbox2;
-    int32_t unk_CC;
+    CAaBsp CAaBspNodePtr1;
     int32_t unkFlags;
     int32_t unk_D4;
     int32_t minimapTag;
@@ -125,6 +109,8 @@ class CMapObjGroup : public CMapBaseObj {
     void SetVertexVB();
     void FillVertexVB(CGxBuf* buf, EGxVertexBufferFormat format);
     void FixColorVertexAlpha();
+    bool GetTris(C3Segment& seg, float* dist, uint32_t a4, uint16_t faceIgnoreFlags, uint32_t a6, CMapObjDef* mapObjDef);
+    void GetTrisFromQuery(uint32_t a2, BspQuery_Segment* a3, CMapObjDef* mapObjDef, uint32_t a5);
 
     static void AsyncPostloadCallback(void* arg);
     static void Initialize();

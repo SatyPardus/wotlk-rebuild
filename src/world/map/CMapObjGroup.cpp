@@ -1,6 +1,13 @@
 #include "world/map/CMapObjGroup.hpp"
 #include "async/AsyncFile.hpp"
 #include "world/map/CMapObj.hpp"
+#include <bsp/CAaBspQuery.hpp>
+#include <bsp/BspQuery.hpp>
+#include <world/CWorld.hpp>
+#include "world/map/CMapObjDef.hpp"
+#include "world/World.hpp"
+#include <tempest/facet/CFacet.hpp>
+#include "world/map/CMap.hpp"
 
 VBBList CMapObjGroup::vertexVBList;
 VBBList CMapObjGroup::indexVBList;
@@ -127,14 +134,13 @@ void CMapObjGroup::CreateOptionalDataPointers(SIffChunk* dataChunk) {
         dataChunk = dataChunk->Next();
     }
     if ((this->flags & 1) != 0) {
-        //size = v2->size;
-        //v8 = &v2->data;
+        CAaBspNode* nodes = dataChunk->Data<CAaBspNode>();
+        uint32_t nodesSize = dataChunk->size / sizeof(CAaBspNode);
         dataChunk = dataChunk->Next();
-        //v10 = size;
-        //v11 = *(v9 + 1);
-        //v33 = (v9 + 8);
+        uint16_t* indices = dataChunk->Data<uint16_t>();
+        uint32_t indicesCount = dataChunk->size / sizeof(uint16_t);
         dataChunk = dataChunk->Next();
-        //CAaBsp::sub_79ADC0(&this->CAaBspNodePtr1, v8, v10 >> 4, v33, v11 >> 1, &this->bbox.b.x);
+        this->CAaBspNodePtr1.Set(nodes, nodesSize, indices, indicesCount, this->bbox);
     }
     if ((this->flags & 0x400) != 0) {
         //v13 = &v2[2] + v2->size + *(&v2[1].token + v2->size) + *(&v2[1].data + v2->size + *(&v2[1].token + v2->size));
@@ -371,6 +377,124 @@ void CMapObjGroup::FixColorVertexAlpha() {
             c.b >>= 1;
         }
     }
+}
+
+// OFFSET: 0x7CB0C0
+bool CMapObjGroup::GetTris(C3Segment& seg, float* dist, uint32_t a4, uint16_t faceIgnoreFlags, uint32_t a6, CMapObjDef* mapObjDef) {
+    auto v16 = World::TriData::nBatches;
+
+    BspQuery_Segment v14;
+    BuildTriQuery(&v14, this->polyList, this->vertexList, this->indices, &seg, dist, faceIgnoreFlags, this->parent->materialList);
+    CAaBsp_Query_Segment<BspQuery_Segment> v15 = {};
+    v15.aaBsp = &this->CAaBspNodePtr1;
+    v15.f = &v14;
+    v15.GetFaceIndices(0, seg, this->CAaBspNodePtr1.aaBox);
+    this->GetTrisFromQuery(a6, &v14, mapObjDef, 0);
+    //if ((a4 & 0x30000) != 0 && (this->flags & 0x1000) != 0)
+    //    CMapObjGroup::VectorIntersectLiquid((int)this, *(float*)&seg, dist, a4, a6, a7);
+    auto v11 = World::TriData::nBatches != v16;
+    v14.ClearTestFaces();
+    return v11;
+}
+
+// OFFSET: 0x7C7AE0
+void CMapObjGroup::GetTrisFromQuery(uint32_t a2, BspQuery_Segment* a3, CMapObjDef* mapObjDef, uint32_t statusFlags) {
+    if (CWorld::s_enables & 0x200000) {
+        for (uint32_t i = 0; i < BspQuery::testFaceSub; i++) {
+            uint32_t face = BspQuery::testFaces[i];
+            uint32_t base = 3 * face;
+    
+            C3Vector v2, v1, v0;
+            v2 = mapObjDef->mat.TransformPoint(this->vertexList[this->indices[base + 2]]);
+            v1 = mapObjDef->mat.TransformPoint(this->vertexList[this->indices[base + 1]]);
+            v0 = mapObjDef->mat.TransformPoint(this->vertexList[this->indices[base + 0]]);
+    
+            CFacet facet(v0, v1, v2);
+            C44Matrix mat;
+            CImVector color = { 0x00, 0x00, 0xFF, 0x7F };
+            CMap::TestQueryAdd(facet, color, mat);
+        }
+    
+        for (uint32_t i = 0; i < BspQuery::hitFaceSub; i++) {
+            uint32_t face = BspQuery::hitFaces[i];
+            uint32_t base = 3 * face;
+    
+            C3Vector v2, v1, v0;
+            v2 = mapObjDef->mat.TransformPoint(this->vertexList[this->indices[base + 2]]);
+            v1 = mapObjDef->mat.TransformPoint(this->vertexList[this->indices[base + 1]]);
+            v0 = mapObjDef->mat.TransformPoint(this->vertexList[this->indices[base + 0]]);
+    
+            CFacet facet(v0, v1, v2);
+            C44Matrix mat;
+            CImVector color = { 0x00, 0xFF, 0x00, 0x7F };
+            CMap::TestQueryAdd(facet, color, mat);
+        }
+    }
+
+    World::TriData::statusFlags |= statusFlags;
+
+    uint32_t nFaces = BspQuery::hitFaceSub;
+
+    if (nFaces == 0)
+        return;
+
+    if (nFaces > 0x2000)
+        return;
+
+    World::TriData::Batch* batch = World::TriData::AllocBatch(3 * nFaces, nFaces);
+
+    if (!batch)
+        return;
+
+    uint16_t* indexSlice;
+    uint16_t* faceSlice;
+
+    if (World::TriData::indexCursor + 3 * nFaces < 0xC000) {
+        indexSlice = &World::TriData::indexPool[World::TriData::indexCursor];
+        World::TriData::indexCursor += 3 * nFaces;
+    } else {
+        World::TriData::statusFlags |= 1;
+        indexSlice = 0;
+    }
+
+    if (World::TriData::faceIndexCursor + nFaces < 0x4000) {
+        faceSlice = &World::TriData::faceIndexPool[World::TriData::faceIndexCursor];
+        World::TriData::faceIndexCursor += nFaces;
+    } else {
+        World::TriData::statusFlags |= 1;
+        faceSlice = 0;
+    }
+
+    batch->matrix = &mapObjDef->mat;
+    batch->vertexList = this->vertexList;
+    batch->normalList = this->normalList;
+    batch->def = mapObjDef;
+
+    batch->faceCount = (uint16_t)nFaces;
+    batch->indexCount = (uint16_t)(3 * nFaces);
+
+    for (uint32_t i = 0; i < BspQuery::hitFaceSub; i++) {
+        uint16_t face = BspQuery::hitFaces[i];
+
+        faceSlice[i] = face;
+
+        uint32_t base = 3 * face;
+
+        for (int k = 0; k < 3; k++) {
+            uint16_t index = this->indices[base + k];
+
+            indexSlice[3 * i + k] = index;
+
+            if (index < batch->minVertexIndex)
+                batch->minVertexIndex = index;
+
+            if (index > batch->maxVertexIndex)
+                batch->maxVertexIndex = index;
+        }
+    }
+
+    batch->indices = indexSlice;
+    batch->faceIndices = faceSlice;
 }
 
 // OFFSET: 0x7D8570

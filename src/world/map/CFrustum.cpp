@@ -32,6 +32,23 @@ WorldCullStatus CFrustum::Cull(CAaSphere* sphere) {
     return WorldCull_notOutside;
 }
 
+// OFFSET: 0x983D70
+void CFrustum::Cull(C3Vector& a2, uint8_t* a3) {
+    *a3 = 0;
+    if (this->planes[0].n.z * a2.z + this->planes[0].n.y * a2.y + a2.x * this->planes[0].n.x + this->planes[0].d < -0.019444443)
+        *a3 = 1;
+    if (this->planes[1].n.z * a2.z + this->planes[1].n.y * a2.y + this->planes[1].n.x * a2.x + this->planes[1].d < -0.019444443)
+        *a3 |= 2u;
+    if (this->planes[2].n.z * a2.z + this->planes[2].n.y * a2.y + this->planes[2].n.x * a2.x + this->planes[2].d < -0.019444443)
+        *a3 |= 4u;
+    if (this->planes[3].n.z * a2.z + this->planes[3].n.y * a2.y + this->planes[3].n.x * a2.x + this->planes[3].d < -0.019444443)
+        *a3 |= 8u;
+    if (this->planes[4].n.z * a2.z + this->planes[4].n.y * a2.y + this->planes[4].n.x * a2.x + this->planes[4].d < -0.019444443)
+        *a3 |= 0x10u;
+    if (this->planes[5].n.z * a2.z + this->planes[5].n.y * a2.y + this->planes[5].n.x * a2.x + this->planes[5].d < -0.019444443)
+        *a3 |= 0x20u;
+}
+
 // OFFSET: 0x984240
 void CFrustum::CalcPlanesFromCorners(C3Vector* corners) {
     for (int32_t i = 0; i < 8; i++) {

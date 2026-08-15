@@ -82,6 +82,11 @@ struct CGxVertexPBNT2 {
     C2Vector tc[2];
 };
 
+struct CGxVertexPC {
+    C3Vector p;
+    CImVector c;
+};
+
 struct CGxVertexPCT {
     C3Vector p;
     CImVector c;

@@ -8,6 +8,8 @@
 #include "world/CWorldScene.hpp"
 #include <gx/RenderState.hpp>
 #include <gx/Transform.hpp>
+#include <world/CWorldMath.hpp>
+#include <tempest/Intersect.hpp>
 
 TSHashTable<CMapObj, HASHKEY_STRI> CMapObj::mapObjHashtable;
 uint32_t CMapObj::s_renderMode = 5;
@@ -253,6 +255,13 @@ uint32_t CMapObj::GetGroupFlags(int32_t index) {
     return 0;
 }
 
+// OFFSET: 0x7AEB10
+SMOGroupInfo* CMapObj::GetGroupInfo(int32_t index) {
+    if (this->isGroupLoaded)
+        return &this->groupInfo[index];
+    return nullptr;
+}
+
 // OFFSET: 0x7AEA80
 CMapObjGroup* CMapObj::GetGroup(int32_t index, bool a3) {
     if (!this->isGroupLoaded)
@@ -349,7 +358,7 @@ CMapObj* CMapObj::Create(char* fileName) {
 
     mapObj = CMap::AllocMapObj();
     if (!mapObj->Read(fileName)) {
-        //NOP();
+        //NOP("CMapObj::Create(): mapObj->Read(\"%s\") failed", fileName);
     }
     uint32_t hashval = SStrHashHT(fileName);
     CMapObj::mapObjHashtable.Insert(mapObj, hashval, fileName);
@@ -459,6 +468,111 @@ void CMapObj::CreateMaterials() {
         this->materialList[i].runTimeData_2 = nullptr;
         this->materialList[i].runTimeData_3 = nullptr;
     }
+}
+
+// OFFSET: 0x7AE840
+bool CMapObj::TestBounds(C3Vector& start, C3Vector& end) {
+    return this->isGroupLoaded && CWorldMath::VectorIntersectAABox2(this->bbox, start, end);
+}
+
+// OFFSET: 0x7AE880
+bool CMapObj::TestGroupBounds(C3Vector& start, C3Vector& end, uint32_t groupNum) {
+    return this->isGroupLoaded && (this->mapObjGroupArray[groupNum]->unkLoadedFlag & 1) != 0 && CWorldMath::VectorIntersectAABox2(this->groupInfo[groupNum].boundingBox, start, end) != 0;
+}
+
+// OFFSET: 0x7AE970
+bool CMapObj::GroupBoundingBoxIntersectsSphere(C3Vector& pos, uint32_t groupNum, float radius) {
+    if (!this->isGroupLoaded)
+        return false;
+
+    if ((this->mapObjGroupArray[groupNum]->unkLoadedFlag & 1) == 0)
+        return false;
+
+    const CAaBox *bounds = &this->groupInfo[groupNum].boundingBox;
+
+    return pos.x + radius >= bounds->b.x && pos.x - radius <= bounds->t.x
+        && pos.y + radius >= bounds->b.y && pos.y - radius <= bounds->t.y
+        && pos.z + radius >= bounds->b.z && pos.z - radius <= bounds->t.z;
+}
+
+// OFFSET: 0x7AF280
+bool CMapObj::VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, int useSphereTest) {
+    C3Vector d;
+    d.x = seg.t.x - seg.b.x;
+    d.y = seg.t.y - seg.b.y;
+    d.z = seg.t.z - seg.b.z;
+
+    float segLen = sqrtf(d.x * d.x + d.y * d.y + d.z * d.z);
+    float ooSegLen = 1.0f / segLen;
+
+    CRay ray;
+    ray.origin = seg.b;
+    ray.dir = { d.x * ooSegLen, d.y * ooSegLen, d.z * ooSegLen };
+
+    bool found = false;
+    float bestT = *t * segLen; // caller's fraction -> ray parameter
+
+    for (int i = 0; i < this->groupInfoCount; i++) {
+        bool reached;
+
+        if (useSphereTest) {
+            reached = this->GroupBoundingBoxIntersectsSphere(seg.b, i, 0.01f);
+        } else {
+            reached = this->TestGroupBounds(seg.b, seg.t, i);
+        }
+
+        if (!reached)
+            continue;
+
+        if (!this->isGroupLoaded)
+            continue;
+
+        CMapObjGroup* group = this->mapObjGroupArray[i];
+
+        if (!(group->unkLoadedFlag & 1))
+            continue;
+
+        if (group->portalCount <= 0)
+            continue;
+
+        for (int j = 0; j < group->portalCount; j++) {
+            SMOPortalRef* ref = &this->portalRefList[group->portalStart + j];
+
+            C3Vector hitPoint = { 0.0f, 0.0f, 0.0f };
+            float hitT;
+            SMOPortal* portal = &this->portalList[ref->portalIndex];
+
+            if (!NTempest::Intersect(ray, portal->plane, &hitT, &hitPoint, 0.1f))
+                continue;
+
+            if (hitT < 0.0f)
+                continue;
+
+            if (hitT > bestT)
+                continue;
+
+            if (!NTempest::Intersect(hitPoint, &this->portalVertexList[portal->startVertex], portal->count, portal->plane.n.MajorAxis()))
+                continue;
+
+            bestT = hitT;
+            found = true;
+
+            float side = portal->plane.n.y * seg.b.y + portal->plane.n.z * seg.b.z + portal->plane.n.x * seg.b.x + portal->plane.d;
+
+            if ((side >= 0.0f) == (ref->side > 0)) {
+                outGroups[0] = i;
+                outGroups[1] = ref->groupIndex;
+            } else {
+                outGroups[0] = ref->groupIndex;
+                outGroups[1] = i;
+            }
+        }
+    }
+
+    if (found)
+        *t = bestT * ooSegLen;
+
+    return found;
 }
 
 // OFFSET: 0x7AB1E0

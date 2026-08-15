@@ -61,3 +61,22 @@ int32_t LoadNewWorld(const void* eventData) {
     //}
     return 1;
 }
+
+World::TriData::Batch* World::TriData::AllocBatch(uint32_t indexCount, uint32_t faceCount) {
+    if ((World::TriData::nBatches + 1) >= 0x20 || (indexCount + World::TriData::indexCursor) >= 0xC000 || (faceCount + World::TriData::faceIndexCursor) >= 0x4000) {
+        World::TriData::statusFlags |= 1u;
+        return nullptr;
+    }
+
+    World::TriData::Batch* batch = &World::TriData::batches[World::TriData::nBatches++];
+    batch->matrix = nullptr;
+    batch->vertexList = nullptr;
+    batch->normalList = nullptr;
+    batch->unk_08 = 0;
+    batch->indices = nullptr;
+    batch->indexCount = 0;
+    batch->minVertexIndex = 0;
+    batch->def = nullptr;
+    batch->minVertexIndex = -1;
+    return batch;
+}

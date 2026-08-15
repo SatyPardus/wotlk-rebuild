@@ -957,10 +957,10 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
 
     CursorResetCursor();
 
-    if (CWorld::GetEnables() & 0x200000) {
-        //maybe_CWorldSceneRender__RenderFootprints();
-        //bn_TSGrowableArray_CGxVertexPC_SetCount(&dword_CF4938, 0);
-        //dword_CF494C = 0;
+    if (CWorld::GetEnables() & CWorld::Enables::Enable_Collisions) {
+        CWorldScene::RenderCollisionDebug();
+        CMap::debugVertexArray.SetCount(0);
+        CMap::debugIndexArray.SetCount(0);
     }
 }
 
@@ -1751,50 +1751,91 @@ void CWorldScene::LocateViewer3() {
     end.z -= 1760.0f;
     float    v17 = 1.0f;
     CMapChunk*    v16 = nullptr;
+    CMapObjDef* mapObjDefs[2] = { nullptr, nullptr };
+    uint32_t mapObjGroups[4];
+
     bool v0 = CMap::VectorIntersectTerrain(&CWorldScene::s_activeWorldView, &end, &v17, 0x100u, &v16);
-    //    if (bn_CMap_LocateViewerMapObjs(&v12, &v13, v17, &v14, &v8)) {
+    if (CMap::LocateViewerMapObjs(CWorldScene::s_activeWorldView, end, v17, mapObjDefs, mapObjGroups)) {
     //        dword_CD87A4 = v14;
-    //        if (v14) {
-    //            owner = v14->owner;
-    //            m_wmoName = owner->m_wmoName;
-    //            GroupName = bn_CMapObj_GetGroupName(owner, v8);
-    //            if (m_wmoName)
-    //                SStrCopy(s_debugMapName, m_wmoName, 260);
-    //            if (GroupName)
-    //                SStrCopy(s_debugMapChunk, GroupName, 64);
-    //            bn_CWorldScene_AddViewerGroup(&dword_CDB0D4, v8);
-    //            v4 = v9;
-    //            if (v9 != 0xFFFF) {
-    //                bn_CWorldScene_AddViewerGroup(&dword_CDB0D4, v9);
-    //                v4 = v9;
-    //            }
-    //            GroupFlags = 0;
-    //            if (v8 != 0xFFFF) {
-    //                GroupFlags = CMapObj::GetGroupFlags(dword_CD87A4->owner, v8);
-    //                v4 = v9;
-    //            }
-    //            if (v4 != 0xFFFF)
-    //                GroupFlags |= CMapObj::GetGroupFlags(dword_CD87A4->owner, v4);
-    //            if ((GroupFlags & 0x40140) != 0) {
-    //                v7.minY = 0.0;
-    //                v7.minX = 0.0;
-    //                v7.maxY = 1.0;
-    //                v7.maxX = 1.0;
-    //                CPortalView::CPortalView(&v6, &v7, 0.0);
-    //                maybe_CWorldScene__MergeViewerEntry(&stru_ADF570, &v6);
-    //                maybe_CWorldScene__PushPortalView(&v6);
-    //            }
-    //        }
+        if (mapObjDefs[0]) {
+        //            owner = v14->owner;
+        //            m_wmoName = owner->m_wmoName;
+        //            GroupName = bn_CMapObj_GetGroupName(owner, v8);
+        //            if (m_wmoName)
+        //                SStrCopy(s_debugMapName, m_wmoName, 260);
+        //            if (GroupName)
+        //                SStrCopy(s_debugMapChunk, GroupName, 64);
+        //            bn_CWorldScene_AddViewerGroup(&dword_CDB0D4, v8);
+        //            v4 = v9;
+        //            if (v9 != 0xFFFF) {
+        //                bn_CWorldScene_AddViewerGroup(&dword_CDB0D4, v9);
+        //                v4 = v9;
+        //            }
+        //            GroupFlags = 0;
+        //            if (v8 != 0xFFFF) {
+        //                GroupFlags = CMapObj::GetGroupFlags(dword_CD87A4->owner, v8);
+        //                v4 = v9;
+        //            }
+        //            if (v4 != 0xFFFF)
+        //                GroupFlags |= CMapObj::GetGroupFlags(dword_CD87A4->owner, v4);
+        //            if ((GroupFlags & 0x40140) != 0) {
+        //                v7.minY = 0.0;
+        //                v7.minX = 0.0;
+        //                v7.maxY = 1.0;
+        //                v7.maxX = 1.0;
+        //                CPortalView::CPortalView(&v6, &v7, 0.0);
+        //                maybe_CWorldScene__MergeViewerEntry(&stru_ADF570, &v6);
+        //                maybe_CWorldScene__PushPortalView(&v6);
+        //            }
+        }
     //        dword_CD87A0 = v15;
     //        if (v15) {
     //            bn_CWorldScene_AddViewerGroup(&dword_CDB0E4, v10);
     //            if (v11 != 0xFFFF)
     //                bn_CWorldScene_AddViewerGroup(&dword_CDB0E4, v11);
     //        }
-    //    } else if (v0) {
-    if (v0) {
+    } else if (v0) {
         SStrCopy(s_debugMapName, CMap::mapName, 260);
         SStrPrintf(s_debugMapChunk, 0x40u, "%i, %i", v16->cOffset.x / 16, v16->cOffset.y / 16);
     }
+}
+
+// OFFSET: 0x7D5610
+void CWorldScene::RenderCollisionDebug() {
+    if (!CMap::debugVertexArray.Count())
+        return;
+
+    g_theGxDevicePtr->RsPush();
+    GxRsSet(GxRs_PolygonOffset, 1.0f);
+    C3Vector vec = { -CWorldScene::s_activeWorldView.x,
+                     -CWorldScene::s_activeWorldView.y,
+                     -CWorldScene::s_activeWorldView.z };
+    C44Matrix mat;
+    mat.Translate(vec);
+    g_theGxDevicePtr->XformPush(GxXform_World, mat);
+    GxRsSet(GxRs_BlendingMode, 2);
+    //v4 = v2->m_appRenderStates.m_data;
+    //p_m_data = &v2->m_appRenderStates.m_data;
+    //v6 = CGxDevice::s_alphaRef[v4[6].m_value.m_data.i[0]];
+    //if (v4[7].m_value.m_data.i[0] != v6) {
+    //    CGxDevice::IRsDirty(v2, GxRs_AlphaRef);
+    //    (*p_m_data)[7].m_value.m_data.i[0] = v6;
+    //    v2 = g_theGxDevicePtr;
     //}
+    GxRsSet(GxRs_Lighting, 0);
+    GxRsSet(GxRs_DepthWrite, 0);
+    GxRsSet(GxRs_DepthTest, 0);
+    GxRsSet(GxRs_Culling, 0);
+    CGxVertexPC* vertexData = CMap::debugVertexArray.Ptr();
+    GxPrimVertexPtr(CMap::debugVertexArray.Count(), &vertexData->p, sizeof(CGxVertexPC), nullptr, 0, &vertexData->c, sizeof(CGxVertexPC), nullptr, 0, nullptr, 0);
+    GxPrimIndexPtr(CMap::debugIndexArray.Count(), CMap::debugIndexArray.Ptr());
+    CGxBatch batch;
+    batch.m_count = CMap::debugIndexArray.Count();
+    batch.m_maxIndex = CMap::debugVertexArray.Count() - 1;
+    batch.m_primType = GxPrim_Triangles;
+    batch.m_start = 0;
+    batch.m_minIndex = 0;
+    g_theGxDevicePtr->Draw(&batch, true);
+    g_theGxDevicePtr->XformPop(GxXform_World);
+    g_theGxDevicePtr->RsPop();
 }

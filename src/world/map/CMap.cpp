@@ -17,6 +17,8 @@
 #include "world/map/CMapObjDefGroup.hpp"
 #include <tempest/Intersect.hpp>
 #include <tempest/ray/CRay.hpp>
+#include <tempest/segment/C3Segment.hpp>
+#include <world/World.hpp>
 
 char CMap::mapPath[STORM_MAX_PATH];
 char CMap::mapName[STORM_MAX_PATH];
@@ -83,6 +85,9 @@ uint32_t* CMap::entityHeap;
 uint32_t* CMap::mapObjDefGroupHeap;
 uint32_t* CMap::mapObjDefHeap;
 uint32_t* CMap::chunkLiquidHeap;
+
+TSGrowableArray<CGxVertexPC> CMap::debugVertexArray;
+TSGrowableArray<uint16_t> CMap::debugIndexArray;
 
 // OFFSET: 0x79E7C0
 void CMap::Initialize() {
@@ -1536,4 +1541,132 @@ void CMap::VectorIntersectDX(C3Vector& start, C3Vector& end, CiRect& cells) {
         CMap::scCollideList.m_data[CMap::cCount++] = cells.maxX;
         CMap::scCollideList.m_data[CMap::cCount++] = cells.maxY;
     }
+}
+
+// OFFSET: 0x7D59B0
+bool CMap::LocateViewerMapObjs(C3Vector& start, C3Vector& end, float dist, CMapObjDef** outDefs, uint32_t* outGroups) {
+    float bestDist[2];
+    int slot = 0;
+
+    bestDist[0] = dist;
+    bestDist[1] = dist;
+    outDefs[0] = nullptr;
+    outDefs[1] = nullptr;
+    outGroups[0] = 0xFFFF;
+    outGroups[1] = 0xFFFF;
+    outGroups[2] = 0xFFFF;
+    outGroups[3] = 0xFFFF;
+
+    for (auto mapObjDef = CMap::mapObjDefHashtable.Head(); mapObjDef; mapObjDef = CMap::mapObjDefHashtable.Next(mapObjDef)) {
+        if ((mapObjDef->flags & 0x20) != 0)
+            continue;
+        if ((mapObjDef->flags & 0x400) != 0)
+            slot = 1;
+
+        if (!mapObjDef->TestAABox(start, end) || !mapObjDef->owner) {
+            slot = 0;
+            continue;
+        }
+
+        C3Vector localStart = mapObjDef->invMat.TransformPoint(start);
+        C3Vector localEnd = mapObjDef->invMat.TransformPoint(end);
+        if (!mapObjDef->owner->TestBounds(localStart, localEnd)) {
+            slot = 0;
+            continue;
+        }
+
+        int isOutdoor = 0;
+
+        for (auto mapObjDefGroupLink = mapObjDef->mapObjDefGroupLinkList.Head(); mapObjDefGroupLink; mapObjDefGroupLink = mapObjDef->mapObjDefGroupLinkList.Next(mapObjDefGroupLink)) {
+            CMapObjDefGroup* mapObjDefGroup = reinterpret_cast<CMapObjDefGroup*>(mapObjDefGroupLink->owner);
+            CMapObjGroup* group = mapObjDef->owner->GetGroup(mapObjDefGroup->groupNum, false);
+
+            if (!group)
+                continue;
+
+            if (group->flags & 0x00410080)
+                continue;
+
+            if (!mapObjDef->owner->TestGroupBounds(localStart, localEnd, mapObjDefGroup->groupNum))
+                continue;
+
+            C3Segment localSeg;
+            localSeg.b = localStart;
+            localSeg.t = localEnd;
+
+            World::TriData::statusFlags = 0;
+            World::TriData::nBatches = 0;
+            World::TriData::faceIndexCursor = 0;
+            World::TriData::indexCursor = 0;
+            //    dword_CB7538 = 0;
+
+            if (group->GetTris(localSeg, &bestDist[slot], 0, 0, 0, mapObjDef)) {
+                isOutdoor = (group->flags >> 3) & 1;
+            
+                outDefs[slot] = mapObjDef;
+                outGroups[2 * slot] = mapObjDefGroup->groupNum;
+                outGroups[2 * slot + 1] = 0xFFFF;
+            }
+        }
+
+        float portalT = 1.05f;
+        int32_t portalGroups[2];
+
+        C3Segment localSeg;
+        localSeg.b = localStart;
+        localSeg.t = localEnd;
+
+        if (mapObjDef->owner->VectorIntersectPortal(localSeg, &portalT, portalGroups, 0) && portalT - bestDist[slot] < 0.0001f) {
+            SMOGroupInfo* nearInfo = mapObjDef->owner->GetGroupInfo(portalGroups[0]);
+
+            bestDist[slot] = portalT;
+            outDefs[slot] = mapObjDef;
+            outGroups[2 * slot] = portalGroups[0];
+
+            isOutdoor = (nearInfo->flags >> 3) & 1;
+
+            SMOGroupInfo* farInfo = mapObjDef->owner->GetGroupInfo(portalGroups[1]);
+
+            if (farInfo->flags & 8)
+                outGroups[2 * slot + 1] = 0xFFFF;
+            else
+                outGroups[2 * slot + 1] = portalGroups[1];
+        }
+
+        if (isOutdoor)
+            outDefs[slot] = nullptr;
+
+        slot = 0;
+    }
+
+    if (outDefs[0])
+        return true;
+
+    if (!outDefs[1])
+        return false;
+
+    outDefs[0] = outDefs[1];
+    outGroups[0] = outGroups[2];
+    outGroups[1] = outGroups[3];
+
+    outDefs[1] = nullptr;
+    outGroups[2] = 0;
+    outGroups[3] = 0;
+
+    return true;
+}
+
+void CMap::TestQueryAdd(CFacet& facet, CImVector& color, C44Matrix& mat) {
+    uint16_t count = debugVertexArray.Count();
+    for (int32_t i = 0; i < 3; i++) {
+        CGxVertexPC vertex;
+        vertex.p = mat.TransformPoint(facet.v[i]);
+        vertex.c = color;
+        debugVertexArray.Add(1, &vertex);
+    }
+    debugIndexArray.Add(1, &count);
+    count++;
+    debugIndexArray.Add(1, &count);
+    count++;
+    debugIndexArray.Add(1, &count);
 }

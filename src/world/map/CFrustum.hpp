@@ -21,6 +21,7 @@ class CFrustum {
 
     WorldCullStatus Cull(CAaBox* box);
     WorldCullStatus Cull(CAaSphere* box);
+    void Cull(C3Vector& a2, uint8_t* a3);
     void CalcPlanesFromCorners(C3Vector* corners);
     void CalcPlanesFromCorners();
     void Transform(C44Matrix& mat);

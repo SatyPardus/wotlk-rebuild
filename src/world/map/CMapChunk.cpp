@@ -514,7 +514,7 @@ bool CMapChunk::Intersect(int32_t subX, int32_t subY, CRay ray, float* distance)
     int hit = 0;
 
     for (int32_t i = 0; i < 8; i += 2) {
-        int idx[3];
+        uint16_t idx[3];
         idx[0] = base + 9;
         idx[1] = base + CMap::s_fanIndices[i + 1];
         idx[2] = base + CMap::s_fanIndices[i];
@@ -524,7 +524,7 @@ bool CMapChunk::Intersect(int32_t subX, int32_t subY, CRay ray, float* distance)
         CMapChunk::vertexList[idx[2]].z = this->height[idx[2]];
 
         float t = 0.0f;
-        if (NTempest::Intersect(&ray, CMapChunk::vertexList, idx, distance, nullptr, 0.01f)) {
+        if (NTempest::Intersect(&ray, CMapChunk::vertexList, idx, &t, nullptr, 0.01f)) {
             hit = 1;
             if (t < *distance && t >= 0.0f)
                 *distance = t;

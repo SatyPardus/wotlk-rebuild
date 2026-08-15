@@ -8,6 +8,7 @@
 class CWorldMath {
     public:
     static void TransformAABox(C44Matrix& m, CAaBox& src, CAaBox& dst);
+    static bool VectorIntersectAABox2(CAaBox& box, C3Vector& start, C3Vector& end);
 };
 
 #endif

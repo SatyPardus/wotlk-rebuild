@@ -13,6 +13,7 @@
 #include "world/map/CMapObjDef.hpp"
 #include "world/map/CMapObjDefGroup.hpp"
 #include "world/map/CMapObj.hpp"
+#include <tempest/facet/CFacet.hpp>
 
 class CMap {
     public:
@@ -72,6 +73,9 @@ class CMap {
     static uint32_t* mapObjDefHeap;
     static uint32_t* chunkLiquidHeap;
 
+    static TSGrowableArray<CGxVertexPC> debugVertexArray;
+    static TSGrowableArray<uint16_t> debugIndexArray;
+
 
     static void Initialize();
     static void InitializePCFShaders();
@@ -115,6 +119,9 @@ class CMap {
     static void VectorIntersectSX(CiRect& rect);
     static void VectorIntersectDY(C3Vector& a1, C3Vector& a2, CiRect& rect);
     static void VectorIntersectDX(C3Vector& a1, C3Vector& a2, CiRect& rect);
+
+    static bool LocateViewerMapObjs(C3Vector& start, C3Vector& end, float dist, CMapObjDef** outDefs, uint32_t* outGroups);
+    static void TestQueryAdd(CFacet& facet, CImVector& color, C44Matrix& mat);
 };
 
 #endif

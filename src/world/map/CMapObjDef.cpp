@@ -1,4 +1,5 @@
 #include "world/map/CMapObjDef.hpp"
+#include <world/CWorldMath.hpp>
 
 CMapObjDef::CMapObjDef() {
     //CMapBaseObj::CMapBaseObj(this);
@@ -110,4 +111,9 @@ void CMapObjDef::ReserveGroups(int32_t n) {
         this->ConvertInlineGroupsToArray();
         this->defGroups.m_array.SetCount(n);
     }
+}
+
+// OFFSET: 0x7B3990
+bool CMapObjDef::TestAABox(C3Vector& start, C3Vector& end) {
+    return CWorldMath::VectorIntersectAABox2(this->bbox, start, end);
 }

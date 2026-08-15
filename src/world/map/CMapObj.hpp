@@ -7,6 +7,7 @@
 #include "async/CAsyncObject.hpp"
 #include "world/map/CMapObjGroup.hpp"
 #include "world/map/CFrustum.hpp"
+#include "tempest/segment/C3Segment.hpp"
 
 typedef void (*RENDER_FUNC)(CMapObj*, CMapObjGroup*, uint32_t);
 typedef void (*RENDER_CALLBACK)(uint32_t groupNum, void* param);
@@ -83,9 +84,14 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     void GetGroupBounds(CAaBox* box, int32_t index);
     CMapObjGroup* GetGroup(int32_t index, bool a3);
     uint32_t GetGroupFlags(int32_t index);
+    SMOGroupInfo* GetGroupInfo(int32_t index);
     void RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_LIST(CFrustum, sceneLink)* frustumList);
     void CreateMaterial(uint8_t texture);
     void CreateMaterials();
+    bool TestBounds(C3Vector& start, C3Vector& end);
+    bool TestGroupBounds(C3Vector& start, C3Vector& end, uint32_t groupNum);
+    bool GroupBoundingBoxIntersectsSphere(C3Vector& pos, uint32_t groupNum, float radius);
+    bool VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, int useSphereTest);
 
     static void PrepareUpdate();
     static CMapObj* Create(char* fileName);
