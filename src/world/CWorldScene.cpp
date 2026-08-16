@@ -18,6 +18,7 @@
 #include <tempest/Intersect.hpp>
 #include <tempest/math/CMath.hpp>
 #include <console/DebugScreen.hpp>
+#include "CWorldMath.hpp"
 
 CM2Scene* CWorldScene::s_m2Scene;
 HTEXTURE CWorldScene::s_defaultTexture;
@@ -58,6 +59,10 @@ uint32_t CWorldScene::s_portalStamp;
 uint32_t CWorldScene::s_maxPortalDepth = 10;
 CMapObjDef* CWorldScene::s_curMapObjDef;
 CMapObjDef* CWorldScene::s_stampedMapObjDef;
+CMapObjDef* CWorldScene::s_viewerMapObjDef;
+CMapObjDef* CWorldScene::s_viewerMovedMapObjDef;
+TSGrowableArray<uint16_t> CWorldScene::s_viewerMapObjGroups;
+TSGrowableArray<uint16_t> CWorldScene::s_viewerMovedMapObjGroups;
 
 SPortalExt CWorldScene::s_portalExt[2048];
 TSGrowableArray<CPortalView> CWorldScene::s_pendingPortalViews;
@@ -816,40 +821,40 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     // memset32(flt_CD8938, 0xC9742400, 0x180u);
     CWorldOcclusion::ClearVolumes();
     // CWorldScene::AddWorldOccluders();
-    // if (dword_CD87A4) {
-    //     ++dword_CD87B0;
-    //     if (dword_CD87A0) {
-    //          maybe_CWorldScene__RenderMapObjWithCallback(dword_CD87A0, &dword_CDB0E4);
-    //          stru_ADF570.rect.minX = 3.4028235e38;
-    //          stru_ADF570.rect.minY = 3.4028235e38;
-    //          stru_ADF570.verts = 0;
-    //          stru_ADF570.rect.maxX = -3.4028235e38;
-    //          stru_ADF570.vertCount = 0;
-    //          stru_ADF570.rect.maxY = -3.4028235e38;
-    //          s_frustumPortalView.verts = 0;
-    //          s_frustumPortalView.vertCount = 0;
-    //          stru_ADF570.maxViewDepth = -1.0;
-    //          s_frustumPortalView.rect.minX = 3.4028235e38;
-    //          s_frustumPortalView.rect.minY = 3.4028235e38;
-    //          s_frustumPortalView.rect.maxX = -3.4028235e38;
-    //          s_frustumPortalView.rect.maxY = -3.4028235e38;
-    //          s_frustumPortalView.maxViewDepth = -1.0;
-    //          bn_TSGrowableArray_CPortalView_SetCount(&stru_CDD0E8.m_alloc, 0);
-    //          bn_TSGrowableArray_CPortalView_SetCount(&stru_CDD0F8.m_alloc, 0);
-    //     }
-    //     sub_7B3B20((char*)dword_CD87A4, (int)&unk_CDB0D4);
-    //     if (flt_ADF59C < 0.0) {
-    //         sub_794250(&stru_CD9048);
-    //     } else {
-    //         flt_CD8780 = flt_ADF59C + 33.333332;
-    //         sub_79A790(&flt_ADF58C);
-    //     }
-    //     v16 = 0.0;
-    //     v17 = 0.0;
-    //     v18 = 1.0;
-    //     v19 = 1.0;
-    //     sub_799F80(&v16);
-    // } else {
+    if (CWorldScene::s_viewerMapObjDef) {
+        //++dword_CD87B0;
+        if (CWorldScene::s_viewerMovedMapObjDef) {
+            CWorldScene::RenderMapObjWithCallback(CWorldScene::s_viewerMovedMapObjDef, &CWorldScene::s_viewerMovedMapObjGroups);
+            //stru_ADF570.rect.minX = 3.4028235e38;
+            //stru_ADF570.rect.minY = 3.4028235e38;
+            //stru_ADF570.verts = 0;
+            //stru_ADF570.rect.maxX = -3.4028235e38;
+            //stru_ADF570.vertCount = 0;
+            //stru_ADF570.rect.maxY = -3.4028235e38;
+            CWorldScene::frustumPortalView.verts = 0;
+            CWorldScene::frustumPortalView.vertCount = 0;
+            //stru_ADF570.maxViewDepth = -1.0;
+            CWorldScene::frustumPortalView.rect.minX = 3.4028235e38;
+            CWorldScene::frustumPortalView.rect.minY = 3.4028235e38;
+            CWorldScene::frustumPortalView.rect.maxX = -3.4028235e38;
+            CWorldScene::frustumPortalView.rect.maxY = -3.4028235e38;
+            CWorldScene::frustumPortalView.maxViewDepth = -1.0;
+            //bn_TSGrowableArray_CPortalView_SetCount(&stru_CDD0E8.m_alloc, 0);
+            //bn_TSGrowableArray_CPortalView_SetCount(&stru_CDD0F8.m_alloc, 0);
+        }
+        CWorldScene::RenderMapObjWithCallback(CWorldScene::s_viewerMapObjDef, &CWorldScene::s_viewerMapObjGroups);
+        if (CWorldScene::frustumPortalView.maxViewDepth < 0.0) {
+            //CSortTable::Clear(&CWorldScene::sortTable);
+        } else {
+            //flt_CD8780 = CWorldScene::frustumPortalView.maxViewDepth + 33.333332;
+            CWorldScene::CullSortTable(&CWorldScene::frustumPortalView.rect);
+        }
+        //v16.minY = 0.0;
+        //v16.minX = 0.0;
+        //v16.maxY = 1.0;
+        //v16.maxX = 1.0;
+        //CWorldScene::CullThroughPortal(&v16);
+    } else {
     //    ++dword_CD87B0;
     //    stru_ADF570.rect.minY = 0.0;
     //    stru_ADF570.rect.minX = 0.0;
@@ -869,7 +874,7 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     CWorldScene::frustumPortalView.rect.maxX = 1.0;
     CWorldScene::frustumPortalView.vertCount = 0;
     CWorldScene::CullSortTable(&CWorldScene::frustumPortalView.rect);
-    //}
+    }
     //CWorldScene::CullMapObjDefGroup();
     //maybe_CWorldScene__UpdateSortedModels();
     CWorldScene::sortTable.pendingExteriorGroupList.UnlinkAll();
@@ -1357,6 +1362,47 @@ void CWorldScene::RenderThruPortalsExterior(CMapObj* mapObj, C44Matrix& mat, C44
     CWorldScene::RenderThruPortals(mapObj, a7, 0xFFFF, a6, 0, 0);
 }
 
+// OFFSET: 0x7AD1F0
+void CWorldScene::RenderInterior(CMapObj* mapObj, C44Matrix& mat, C44Matrix& invMat, C3Vector& worldPos, C3Vector& camTarget, TSGrowableArray<uint16_t>* groups) {
+    CWorldScene::SetupMapObjDefCull(mapObj, mat, invMat, worldPos, camTarget);
+    s_interiorPass = 1;
+    //dword_CD8620 = 0;
+    if (s_curMapObjDef != s_stampedMapObjDef) {
+        ++s_portalStamp;
+        s_stampedMapObjDef = s_curMapObjDef;
+    }
+
+    CWorldScene::FrustumPush();
+    CRect rect;
+    rect.minY = -1.0f;
+    rect.minX = -1.0f;
+    rect.maxY = 1.0f;
+    rect.maxY = 1.0f;
+    for (int32_t i = 0; i < groups->Count(); i++) {
+        CMapObjGroup* group = mapObj->GetGroup(groups->Ptr()[i], false);
+        if (group) {
+            //if ((group->flags & 0x48) == 0)
+            //    dword_CD8620 = 1;
+            CWorldScene::RenderThruPortals(mapObj, groups->Ptr()[i], 0xFFFF, rect, 0, 1);
+        }
+    }
+    CWorldScene::FrustumPop();
+
+    CAaBox box;
+    for (int32_t i = 0; i < mapObj->groupInfoCount; i++) {
+        SMOGroupInfo groupInfo = mapObj->groupInfo[i];
+        if ((groupInfo.flags & 0x10000) != 0) {
+            CWorldMath::TransformAABox(mat, groupInfo.boundingBox, box);
+            if (!CWorldScene::FrustumCull(&box)) {
+                if (mapObj->GetGroup(i, false)) {
+                    if (CMapObj::gRenderCallback)
+                        CMapObj::gRenderCallback(i, CMapObj::gRenderUserParam);
+                }
+            }
+        }
+    }
+}
+
 // OFFSET: 0x7AC060
 void CWorldScene::RenderThruPortals(CMapObj* mapObj, uint32_t groupNum, uint32_t fromGroup, CRect& ndcRect, uint32_t depth, int32_t interior) {
     if (depth > s_maxPortalDepth)
@@ -1741,73 +1787,64 @@ void CWorldScene::CalcScreenRectFromVerts(CRect& rect, C3Vector* clippedVerts, u
 
 // OFFSET: 0x795D40
 void CWorldScene::LocateViewer3() {
-    //dword_CD87A4 = 0;
-    //dword_CD87A0 = 0;
-    //dword_CDB0D8 = 0;
-    //dword_CDB0E8 = 0;
+    CWorldScene::s_viewerMapObjDef = 0;
+    CWorldScene::s_viewerMovedMapObjDef = 0;
+    CWorldScene::s_viewerMapObjGroups.m_count = 0;
+    CWorldScene::s_viewerMovedMapObjGroups.m_count = 0;
     s_debugMapName[0] = 0;
     s_debugMapChunk[0] = 0;
-    //if ((CWorld::enables & Enable_100) != 0) {
-    C3Vector end = CWorldScene::s_activeWorldView;
-    end.z -= 1760.0f;
-    float    v17 = 1.0f;
-    CMapChunk*    v16 = nullptr;
-    CMapObjDef* mapObjDefs[2] = { nullptr, nullptr };
-    uint32_t mapObjGroups[4];
+    if ((CWorld::s_enables & CWorld::Enables::Enable_WMO) != 0) {
+        C3Vector end = CWorldScene::s_activeWorldView;
+        end.z -= 1760.0f;
+        float v17 = 1.0f;
+        CMapChunk* v16 = nullptr;
+        CMapObjDef* mapObjDefs[2] = { nullptr, nullptr };
+        uint32_t mapObjGroups[4];
 
-    bool v0 = CMap::VectorIntersectTerrain(&CWorldScene::s_activeWorldView, &end, &v17, 0x100u, &v16);
-    if (CMap::LocateViewerMapObjs(CWorldScene::s_activeWorldView, end, v17, mapObjDefs, mapObjGroups)) {
-    //        dword_CD87A4 = v14;
-        if (mapObjDefs[0]) {
-            if (mapObjDefs[0]->owner->m_wmoName)
-                SStrCopy(s_debugMapName, mapObjDefs[0]->owner->m_wmoName, 260);
-            char* groupName = mapObjDefs[0]->owner->GetGroupName(mapObjGroups[0]);
-            if (groupName)
-                SStrCopy(s_debugMapChunk, groupName, 64);
-        //            owner = v14->owner;
-        //            m_wmoName = owner->m_wmoName;
-        //            GroupName = bn_CMapObj_GetGroupName(owner, v8);
-        //            if (m_wmoName)
-        //                SStrCopy(s_debugMapName, m_wmoName, 260);
-        //            if (GroupName)
-        //                SStrCopy(s_debugMapChunk, GroupName, 64);
-        //            bn_CWorldScene_AddViewerGroup(&dword_CDB0D4, v8);
-        //            v4 = v9;
-        //            if (v9 != 0xFFFF) {
-        //                bn_CWorldScene_AddViewerGroup(&dword_CDB0D4, v9);
-        //                v4 = v9;
-        //            }
-        //            GroupFlags = 0;
-        //            if (v8 != 0xFFFF) {
-        //                GroupFlags = CMapObj::GetGroupFlags(dword_CD87A4->owner, v8);
-        //                v4 = v9;
-        //            }
-        //            if (v4 != 0xFFFF)
-        //                GroupFlags |= CMapObj::GetGroupFlags(dword_CD87A4->owner, v4);
-        //            if ((GroupFlags & 0x40140) != 0) {
-        //                v7.minY = 0.0;
-        //                v7.minX = 0.0;
-        //                v7.maxY = 1.0;
-        //                v7.maxX = 1.0;
-        //                CPortalView::CPortalView(&v6, &v7, 0.0);
-        //                maybe_CWorldScene__MergeViewerEntry(&stru_ADF570, &v6);
-        //                maybe_CWorldScene__PushPortalView(&v6);
-        //            }
+        bool v0 = CMap::VectorIntersectTerrain(&CWorldScene::s_activeWorldView, &end, &v17, 0x100u, &v16);
+        if (CMap::LocateViewerMapObjs(CWorldScene::s_activeWorldView, end, v17, mapObjDefs, mapObjGroups)) {
+            CWorldScene::s_viewerMapObjDef = mapObjDefs[0];
+            if (mapObjDefs[0]) {
+                if (mapObjDefs[0]->owner->m_wmoName)
+                    SStrCopy(s_debugMapName, mapObjDefs[0]->owner->m_wmoName, 260);
+                char* groupName = mapObjDefs[0]->owner->GetGroupName(mapObjGroups[0]);
+                if (groupName)
+                    SStrCopy(s_debugMapChunk, groupName, 64);
+                CWorldScene::AddViewerGroup(&CWorldScene::s_viewerMapObjGroups, mapObjGroups[0]);
+                if (mapObjGroups[1] != 0xFFFF)
+                    CWorldScene::AddViewerGroup(&CWorldScene::s_viewerMapObjGroups, mapObjGroups[1]);
+                //            GroupFlags = 0;
+                //            if (v8 != 0xFFFF) {
+                //                GroupFlags = CMapObj::GetGroupFlags(dword_CD87A4->owner, v8);
+                //                v4 = v9;
+                //            }
+                //            if (v4 != 0xFFFF)
+                //                GroupFlags |= CMapObj::GetGroupFlags(dword_CD87A4->owner, v4);
+                //            if ((GroupFlags & 0x40140) != 0) {
+                //                v7.minY = 0.0;
+                //                v7.minX = 0.0;
+                //                v7.maxY = 1.0;
+                //                v7.maxX = 1.0;
+                //                CPortalView::CPortalView(&v6, &v7, 0.0);
+                //                maybe_CWorldScene__MergeViewerEntry(&stru_ADF570, &v6);
+                //                maybe_CWorldScene__PushPortalView(&v6);
+                //            }
+            }
+            CWorldScene::s_viewerMovedMapObjDef = mapObjDefs[1];
+            if (CWorldScene::s_viewerMovedMapObjDef) {
+                CWorldScene::AddViewerGroup(&CWorldScene::s_viewerMovedMapObjGroups, mapObjGroups[2]);
+                if (mapObjGroups[3] != 0xFFFF)
+                    CWorldScene::AddViewerGroup(&CWorldScene::s_viewerMovedMapObjGroups, mapObjGroups[3]);
+            }
+        } else if (v0) {
+            SStrCopy(s_debugMapName, CMap::mapName, 260);
+            SStrPrintf(s_debugMapChunk, 0x40u, "%i, %i", v16->cOffset.x / 16, v16->cOffset.y / 16);
         }
-    //        dword_CD87A0 = v15;
-    //        if (v15) {
-    //            bn_CWorldScene_AddViewerGroup(&dword_CDB0E4, v10);
-    //            if (v11 != 0xFFFF)
-    //                bn_CWorldScene_AddViewerGroup(&dword_CDB0E4, v11);
-    //        }
-    } else if (v0) {
-        SStrCopy(s_debugMapName, CMap::mapName, 260);
-        SStrPrintf(s_debugMapChunk, 0x40u, "%i, %i", v16->cOffset.x / 16, v16->cOffset.y / 16);
-    }
 
-    //DEBUG
-    DebugScreenSet("Location1", s_debugMapName);
-    DebugScreenSet("Location2", s_debugMapChunk);
+        // DEBUG
+        DebugScreenSet("Location1", s_debugMapName);
+        DebugScreenSet("Location2", s_debugMapChunk);
+    }
 }
 
 // OFFSET: 0x7D5610
@@ -1848,4 +1885,22 @@ void CWorldScene::RenderCollisionDebug() {
     g_theGxDevicePtr->Draw(&batch, true);
     g_theGxDevicePtr->XformPop(GxXform_World);
     g_theGxDevicePtr->RsPop();
+}
+
+// OFFSET: 0x792FC0
+void CWorldScene::AddViewerGroup(TSGrowableArray<uint16_t>* group, uint16_t val) {
+    for (int32_t i = 0; i < group->Count(); i++) {
+        if (group->Ptr()[i] == val) {
+            return;
+        }
+    }
+
+    group->Add(1, &val);
+}
+
+// OFFSET: 0x7B3B20
+void CWorldScene::RenderMapObjWithCallback(CMapObjDef* mapObjDef, TSGrowableArray<uint16_t>* groups) {
+    CMapObj::SetGroupRenderCallback(reinterpret_cast<RENDER_CALLBACK>(CWorldScene::AddMapObjDefGroupToSortTable), mapObjDef);
+    CWorldScene::s_curMapObjDef = mapObjDef;
+    CWorldScene::RenderInterior(mapObjDef->owner, mapObjDef->mat, mapObjDef->invMat, CWorldScene::s_activeWorldView, CWorldScene::camTarget, groups);
 }

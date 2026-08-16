@@ -799,6 +799,179 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         CMapObj::UnifiedRender(mapObj, mapObjGroup, a3);
         return;
     }
+
+    mapObjGroup->timer = 0.0;
+    mapObjGroup->AllocVB();
+    mapObjGroup->SetIndexVB();
+    mapObjGroup->SetVertexVB();
+    g_theGxDevicePtr->RsPush();
+    // dword_CFBEB0 = -1;
+    // dword_CFBEAC = -1;
+    s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
+    // dword_CFBEA8 = -1;
+    // v46 = 2 - (s_curGroupIsInterior != 0);
+    CGxTex* gxTex = nullptr;
+    // if (CMap::s_isStreamingMode)
+    //     GxTex = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, 0);
+    for (int32_t i = 0; i < mapObjGroup->batchListCount; i++) {
+        SMOBatch* batch = &mapObjGroup->batchList[i];
+
+        if (!a3)
+            batch->flags &= 0xFu;
+        if ((batch->flags & 0xF0) != 0 /*|| mapObj->CullBatch(batchList)*/) {
+            continue;
+        }
+
+        batch->flags |= 0xF0u;
+        SMOMaterial* v10 = &mapObj->materialList[batch->texture];
+        CGxTex* v11 = TextureGetGxTex(v10->runTimeData_2, 0, 0);
+        if (!v11) {
+            if (!gxTex)
+                continue;
+            v11 = gxTex;
+        }
+
+        CGxTex* v49 = nullptr;
+        if (v10->runTimeData_3) {
+            v49 = TextureGetGxTex(v10->runTimeData_3, 0, 0);
+            if (!v49)
+                v49 = gxTex;
+        }
+        
+        uint32_t v47 = v10->shader;
+        //if (!v47 && !v10->blendMode && !maybe_IsSceneObjectEnabled(a1))
+        //    v47 = 4;
+
+        GxRsSet(GxRs_Culling, ((v10->flags & 4) == 0));
+
+         CImVector color = { 0x00, 0x00, 0x00, 0x00 };
+        if ((v10->flags & 0x10) != 0)
+             color = v10->frameSidnColor;
+
+        // TODO
+        CImVector dword_D1BEFC = { 0x00, 0x00, 0x00, 0x00 };
+
+        uint32_t sum = dword_D1BEFC.value + color.value;
+        uint32_t carry = (color.value ^ dword_D1BEFC.value ^ sum) & 0x01010100;
+        uint32_t sat = (sum - carry) | (carry - (carry >> 8));
+        color.value = ((sat >> 1) & 0x007F7F7F) | (sat & 0xFF000000);
+
+        CMapObj::SetEmissiveColor(color);
+        GxTexSetWrap(v11, (v10->flags & 0x40) == 0 ? GxTex_Wrap : GxTex_Clamp, (v10->flags & 0x80) == 0 ? GxTex_Wrap : GxTex_Clamp);
+        //v17 = CMapObjRender::s_unifiedShaders[v47 + 7];
+        GxRsSet(GxRs_Texture0, v11);
+        GxRsSet(GxRs_Texture1, v49);
+        //bn_CShaderEffect_SetCurrent(v16);
+        //transparencyBatchesCount = a2->transparencyBatchesCount;
+        //if (v40 >= transparencyBatchesCount) {
+        //    v27 = v40 < transparencyBatchesCount + a2->intBatchCount;
+        //    SetShaderFogFromDayNight((v9->flags & 2) == 0 ? v38 : 0);
+        //    if (v27) {
+        //        if (dword_CFBEAC) {
+        //            dword_CFBEAC = 0;
+        //            DayNight::GetActiveDayNight();
+        //            if (CShaderEffect::s_enableShaders) {
+        //                if ((dword_D1C3AC & 1) == 0) {
+        //                    dword_D1C3AC |= 1u;
+        //                    flt_D1C39C = 0.0;
+        //                    flt_D1C3A0 = 0.0;
+        //                    flt_D1C3A4 = 0.0;
+        //                    flt_D1C3A8 = 0.5;
+        //                }
+        //                g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 11, &flt_D1C39C, 1);
+        //            } else {
+        //                GxRsSet_int32_t(GxRs_Lighting, 0);
+        //            }
+        //        }
+        //    } else {
+        //        CMapObjGroup::SetLighting(a2, ((v9->flags & 0x20) != 0) + 1);
+        //    }
+        //    if (dword_CFBEA8 != 1) {
+        //        dword_CFBEA8 = 1;
+        //        bn_CShadowCache_SetShadowMapGenericInterior(1);
+        //        dword_D43010 = CShadowCache::GetShadowValue() != 0;
+        //    }
+        GxRsSet(GxRs_BlendingMode, v10->blendMode);
+        //    bn_CShaderEffect_SetAlphaRefDefault();
+        //    maybe_SelectWorldShaders();
+        CGxBatch v26;
+        v26.m_count = batch->indexCount;
+        v26.m_start = batch->indexStart;
+        v26.m_minIndex = batch->vertexStart;
+        v26.m_maxIndex = batch->vertexEnd;
+        v26.m_primType = GxPrim_Triangles;
+        g_theGxDevicePtr->Draw(&v26, 1);
+        //} else {
+        //    if (dword_CFBEA8) {
+        //        dword_CFBEA8 = 0;
+        //        bn_CShadowCache_SetShadowMapGenericInterior(0);
+        //        dword_D43010 = CShadowCache::GetShadowValue();
+        //    }
+        //    CMapObjGroup::SetLighting(a2, ((v9->flags & 0x20) != 0) + 1);
+        //    SetShaderFogFromDayNight(~v9->flags & 2);
+        //    if (g_theGxDevicePtr->m_context) {
+        //        v18 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
+        //        if (v18->m_value.m_data.i[0] != 9) {
+        //            CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
+        //            v18->m_value.m_data.i[0] = 9;
+        //        }
+        //    }
+        //    bn_CShaderEffect_SetAlphaRefDefault();
+        //    maybe_SelectWorldShaders();
+        //    v19 = v42;
+        //    v20 = v42->indexStart;
+        //    v21 = v42->vertexStart;
+        //    v35.m_count = v42->indexCount;
+        //    vertexEnd = v42->vertexEnd;
+        //    v35.m_start = v20;
+        //    v35.m_minIndex = v21;
+        //    v35.m_maxIndex = vertexEnd;
+        //    v35.m_primType = GxPrim_Triangles;
+        //    g_theGxDevicePtr->Draw(g_theGxDevicePtr, &v35, 1);
+        //    if (dword_CFBEAC) {
+        //        dword_CFBEAC = 0;
+        //        DayNight::GetActiveDayNight();
+        //        if (CShaderEffect::s_enableShaders) {
+        //            if ((dword_D1C3AC & 1) == 0) {
+        //                dword_D1C3AC |= 1u;
+        //                flt_D1C39C = 0.0;
+        //                flt_D1C3A0 = 0.0;
+        //                flt_D1C3A4 = 0.0;
+        //                flt_D1C3A8 = 0.5;
+        //            }
+        //            g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 11, &flt_D1C39C, 1);
+        //        } else {
+        //            GxRsSet_int32_t(GxRs_Lighting, 0);
+        //        }
+        //    }
+        //    SetShaderFogFromDayNight((v9->flags & 2) == 0 ? v38 : 0);
+        //    if (dword_CFBEA8 != 1) {
+        //        dword_CFBEA8 = 1;
+        //        bn_CShadowCache_SetShadowMapGenericInterior(1);
+        //        dword_D43010 = CShadowCache::GetShadowValue() != 0;
+        //    }
+        //    if (g_theGxDevicePtr->m_context) {
+        //        v23 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
+        //        if (v23->m_value.m_data.i[0] != 7) {
+        //            CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
+        //            v23->m_value.m_data.i[0] = 7;
+        //        }
+        //    }
+        //    bn_CShaderEffect_SetAlphaRefDefault();
+        //    maybe_SelectWorldShaders();
+        //    v24 = v19->indexStart;
+        //    v25 = v19->vertexStart;
+        //    v33.m_count = v19->indexCount;
+        //    v26 = v19->vertexEnd;
+        //    v33.m_start = v24;
+        //    v33.m_minIndex = v25;
+        //    v33.m_maxIndex = v26;
+        //    v33.m_primType = GxPrim_Triangles;
+        //    g_theGxDevicePtr->Draw(g_theGxDevicePtr, &v33, 1);
+        //}
+    }
+
+    g_theGxDevicePtr->RsPop();
 }
 
 // OFFSET: 0x7A9380

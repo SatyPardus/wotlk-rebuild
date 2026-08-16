@@ -90,6 +90,10 @@ class CWorldScene {
     static uint32_t s_maxPortalDepth;
     static CMapObjDef* s_curMapObjDef;
     static CMapObjDef* s_stampedMapObjDef;
+    static CMapObjDef* s_viewerMapObjDef;
+    static CMapObjDef* s_viewerMovedMapObjDef;
+    static TSGrowableArray<uint16_t> s_viewerMapObjGroups;
+    static TSGrowableArray<uint16_t> s_viewerMovedMapObjGroups;
 
     static SPortalExt s_portalExt[2048];
     static TSGrowableArray<CPortalView> s_pendingPortalViews;
@@ -134,6 +138,7 @@ class CWorldScene {
     static void SetWorldProjection(C44Matrix& mat);
     static void SetupMapObjDefCull(CMapObj* mapObj, C44Matrix& a2, C44Matrix& a3, C3Vector& a4, C3Vector& a5);
     static void RenderThruPortalsExterior(CMapObj* mapObj, C44Matrix& mat, C44Matrix& invMat, C3Vector& worldPos, C3Vector& camTarget, CRect& a6, int32_t a7);
+    static void RenderInterior(CMapObj* mapObj, C44Matrix& mat, C44Matrix& invMat, C3Vector& worldPos, C3Vector& camTarget, TSGrowableArray<uint16_t>* groups);
     static void RenderThruPortals(CMapObj* mapObj, uint32_t groupNum, uint32_t fromGroup, CRect& ndcRect, uint32_t depth, int32_t interior);
     static void PushPortalView(CPortalView* portalView);
     static void TransformPortal(CMapObj* mapObj, SMOPortal* portal, SPortalExt* portalExt);
@@ -143,6 +148,8 @@ class CWorldScene {
     static void CalcScreenRectFromVerts(CRect& rect, C3Vector* clippedVerts, uint32_t clippedCount);
     static void LocateViewer3();
     static void RenderCollisionDebug();
+    static void AddViewerGroup(TSGrowableArray<uint16_t>* group, uint16_t val);
+    static void RenderMapObjWithCallback(CMapObjDef* mapObjDef, TSGrowableArray<uint16_t>* groups);
 };
 
 #endif // WORLD_C_WORLDSCENE_HPP
