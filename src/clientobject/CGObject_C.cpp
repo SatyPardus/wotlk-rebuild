@@ -44,3 +44,7 @@ void CGObject_C::SetTypeID(OBJECT_TYPE_ID typeID) {
         break;
     }
 }
+
+void CGObject_C::AddWorldObject() {
+
+}

@@ -3,6 +3,9 @@
 #include "db/Db.hpp"
 #include <storm/Error.hpp>
 
+CGPlayer_C::CGPlayer_C() {
+
+}
 
 const CreatureModelDataRec* Player_C_GetModelName(uint32_t race, uint32_t sex) {
     STORM_ASSERT(sex < UNITSEX_LAST);

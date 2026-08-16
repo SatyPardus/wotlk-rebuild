@@ -2,6 +2,9 @@
 
 #include "db/Db.hpp"
 
+CGUnit_C::CGUnit_C() {
+
+}
 
 const char* CGUnit_C::GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut) {
     if (sexOut) {

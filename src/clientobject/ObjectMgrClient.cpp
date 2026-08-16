@@ -4,6 +4,12 @@
 #include <os/Debug.hpp>
 #include <util/ZLib.hpp>
 #include "clientobject/CClientObjCreate.hpp"
+#include "clientobject/Unit_C.hpp"
+#include "clientobject/Item_C.hpp"
+#include "clientobject/Container_C.hpp"
+#include "clientobject/Corpse_C.hpp"
+#include "clientobject/GameObject_C.hpp"
+#include "clientobject/DynamicObject_C.hpp"
 
 #define MAX_CHANGE_MASKS 42
 
@@ -92,6 +98,38 @@ int32_t SkipPartialObjectUpdate(CDataStore* msg) {
     return 1;
 }
 
+// OFFSET: 0x4D3FF0
+void InitObject(CGObject_C* obj, CClientObjCreate& objCreate, uint32_t time) {
+    switch (obj->m_typeID) {
+    case OBJECT_TYPE_ID::ID_ITEM:
+        obj = new (obj) CGItem_C();
+        break;
+    case OBJECT_TYPE_ID::ID_CONTAINER:
+        obj = new (obj) CGContainer_C();
+        break;
+    case OBJECT_TYPE_ID::ID_UNIT:
+        obj = new (obj) CGUnit_C();
+        obj->AddWorldObject();
+        break;
+    case OBJECT_TYPE_ID::ID_PLAYER:
+        obj = new (obj) CGPlayer_C();
+        obj->AddWorldObject();
+        break;
+    case OBJECT_TYPE_ID::ID_GAMEOBJECT:
+        obj = new (obj) CGGameObject_C();
+        obj->AddWorldObject();
+        break;
+    case OBJECT_TYPE_ID::ID_DYNAMICOBJECT:
+        obj = new (obj) CGDynamicObject_C();
+        obj->AddWorldObject();
+        break;
+    case OBJECT_TYPE_ID::ID_CORPSE:
+        obj = new (obj) CGCorpse_C();
+        obj->AddWorldObject();
+        break;
+    }
+}
+
 bool CreateObject(CDataStore* msg, uint32_t time) {
     WGUID guid;
     *msg >> guid;
@@ -148,7 +186,7 @@ bool CreateObject(CDataStore* msg, uint32_t time) {
     //    return 0;
     //}
     //
-    //InitObject(newObject, time, objCreate);
+    InitObject(newObject, objCreate, time);
     //
     //ClntObjMgrGetCurrent()->m_visibleObjects.LinkToTail(newObject);
 

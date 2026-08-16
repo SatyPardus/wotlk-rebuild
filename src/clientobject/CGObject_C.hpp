@@ -47,6 +47,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     CGObject_C();
 
     void SetTypeID(OBJECT_TYPE_ID typeID);
+    void AddWorldObject();
 };
 
 #endif // CLIENTOBJECT_CGOBJECT_C_HPP
