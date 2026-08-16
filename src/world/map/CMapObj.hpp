@@ -85,6 +85,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     CMapObjGroup* GetGroup(int32_t index, bool a3);
     uint32_t GetGroupFlags(int32_t index);
     SMOGroupInfo* GetGroupInfo(int32_t index);
+    char* GetGroupName(int32_t index);
     void RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_LIST(CFrustum, sceneLink)* frustumList);
     void CreateMaterial(uint8_t texture);
     void CreateMaterials();

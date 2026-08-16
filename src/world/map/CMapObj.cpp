@@ -262,6 +262,16 @@ SMOGroupInfo* CMapObj::GetGroupInfo(int32_t index) {
     return nullptr;
 }
 
+// OFFSET: 0x7AEAE0
+char* CMapObj::GetGroupName(int32_t index) {
+    if (!this->isGroupLoaded)
+        return nullptr;
+    auto result = this->mapObjGroupArray[index];
+    if ((result->unkLoadedFlag & 1) == 0)
+        return nullptr;
+    return result->groupName;
+}
+
 // OFFSET: 0x7AEA80
 CMapObjGroup* CMapObj::GetGroup(int32_t index, bool a3) {
     if (!this->isGroupLoaded)

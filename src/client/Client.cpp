@@ -38,6 +38,7 @@
 #include <world/LoadingScreen.hpp>
 #include <async/AsyncFileRead.hpp>
 #include <clientobject/ObjectMgrClient.hpp>
+#include <console/DebugScreen.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -213,6 +214,7 @@ int32_t InitializeEngineCallback(const void* a1, void* a2) {
 
     ScrnInitialize(0);
     ConsoleScreenInitialize(nullptr); // TODO argument
+    DebugScreenInitialize();
 
     // s_cvarTextureFilteringMode = CVar::Register(
     //     "textureFilteringMode",

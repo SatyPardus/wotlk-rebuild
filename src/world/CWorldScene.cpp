@@ -17,6 +17,7 @@
 #include "world/map/CWorldOcclusion.hpp"
 #include <tempest/Intersect.hpp>
 #include <tempest/math/CMath.hpp>
+#include <console/DebugScreen.hpp>
 
 CM2Scene* CWorldScene::s_m2Scene;
 HTEXTURE CWorldScene::s_defaultTexture;
@@ -1758,6 +1759,11 @@ void CWorldScene::LocateViewer3() {
     if (CMap::LocateViewerMapObjs(CWorldScene::s_activeWorldView, end, v17, mapObjDefs, mapObjGroups)) {
     //        dword_CD87A4 = v14;
         if (mapObjDefs[0]) {
+            if (mapObjDefs[0]->owner->m_wmoName)
+                SStrCopy(s_debugMapName, mapObjDefs[0]->owner->m_wmoName, 260);
+            char* groupName = mapObjDefs[0]->owner->GetGroupName(mapObjGroups[0]);
+            if (groupName)
+                SStrCopy(s_debugMapChunk, groupName, 64);
         //            owner = v14->owner;
         //            m_wmoName = owner->m_wmoName;
         //            GroupName = bn_CMapObj_GetGroupName(owner, v8);
@@ -1798,6 +1804,10 @@ void CWorldScene::LocateViewer3() {
         SStrCopy(s_debugMapName, CMap::mapName, 260);
         SStrPrintf(s_debugMapChunk, 0x40u, "%i, %i", v16->cOffset.x / 16, v16->cOffset.y / 16);
     }
+
+    //DEBUG
+    DebugScreenSet("Location1", s_debugMapName);
+    DebugScreenSet("Location2", s_debugMapChunk);
 }
 
 // OFFSET: 0x7D5610
