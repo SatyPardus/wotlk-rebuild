@@ -1377,7 +1377,7 @@ void CWorldScene::RenderInterior(CMapObj* mapObj, C44Matrix& mat, C44Matrix& inv
     rect.minY = -1.0f;
     rect.minX = -1.0f;
     rect.maxY = 1.0f;
-    rect.maxY = 1.0f;
+    rect.maxX = 1.0f;
     for (int32_t i = 0; i < groups->Count(); i++) {
         CMapObjGroup* group = mapObj->GetGroup(groups->Ptr()[i], false);
         if (group) {
@@ -1473,28 +1473,28 @@ void CWorldScene::RenderThruPortals(CMapObj* mapObj, uint32_t groupNum, uint32_t
         if (portalRef->side < 0)
             v16 = -v16;
 
-        //if (v16 < 0.0) {
-        //    if (!s_interiorPass && !depth) {
-        //        CRect rect;
-        //        rect.minY = 0.0;
-        //        rect.minX = 0.0;
-        //        rect.maxY = 1.0;
-        //        rect.maxX = 1.0;
-        //        s_coveredRects.Add(1, &rect);
-        //    }
-        //
-        //    portalRef++;
-        //    continue;
-        //}
+        if (v16 < 0.0) {
+            if (!s_interiorPass && !depth) {
+                CRect rect;
+                rect.minY = 0.0;
+                rect.minX = 0.0;
+                rect.maxY = 1.0;
+                rect.maxX = 1.0;
+                s_coveredRects.Add(1, &rect);
+            }
+        
+            portalRef++;
+            continue;
+        }
 
-        //if ((portalExt->flags & 2) == 0 && (portalExt->flags & 1) != 0
-        //    || ndcRect.maxX < portalExt->rect.minX
-        //    || ndcRect.minX > portalExt->rect.maxX
-        //    || ndcRect.maxY < portalExt->rect.minY
-        //    || ndcRect.minY > portalExt->rect.maxY) {
-        //    portalRef++;
-        //    continue;
-        //}
+        if ((portalExt->flags & 2) == 0 && (portalExt->flags & 1) != 0
+            || ndcRect.maxX < portalExt->rect.minX
+            || ndcRect.minX > portalExt->rect.maxX
+            || ndcRect.maxY < portalExt->rect.minY
+            || ndcRect.minY > portalExt->rect.maxY) {
+            portalRef++;
+            continue;
+        }
 
         CRect clip = portalExt->rect;
         if (clip.minX < ndcRect.minX)
@@ -1504,32 +1504,25 @@ void CWorldScene::RenderThruPortals(CMapObj* mapObj, uint32_t groupNum, uint32_t
         if (clip.minY < ndcRect.minY)
             clip.minY = ndcRect.minY;
 
-        //if (CMath::fequalz(clip.minX, clip.maxX, 0.001) || CMath::fequalz(clip.minY, clip.maxY, 0.001)) {
-        //    portalRef++;
-        //    continue;
-        //}
+        if (CMath::fequalz(clip.minX, clip.maxX, 0.001) || CMath::fequalz(clip.minY, clip.maxY, 0.001)) {
+            portalRef++;
+            continue;
+        }
 
-        //if (!s_interiorPass && (groupFlags & 0x10008) == 0) {
-        //    if (!depth && s_cullStateValid && (groupFlags & 0x140) == 0) {
-        //        maybe_CMapObj__PushPortalViewClipped(
-        //            mapObj,
-        //            &portal->startVertex,
-        //            portalRef,
-        //            v15,
-        //            &s_pendingPortalViews.m_alloc);
-        //    }
-        //} else if ((groupFlags & 0x50148) != 0) {
-        //    maybe_CMapObj__TestPortalVisibility(
-        //        mapObj,
-        //        &portal->startVertex,
-        //        portalRef,
-        //        v15,
-        //        groupFlags & 0x10008);
-        //    if ((groupFlags & 0x10008) != 0) {
-        //        portalRef++;
-        //        continue;
-        //    }
-        //}
+        if (!s_interiorPass) {
+            if ((groupFlags & 0x10008) != 0) {
+                portalRef++;
+                continue;
+            }
+            if (!depth && s_cullStateValid && (groupFlags & 0x140) == 0)
+                AddInteriorPortalView(mapObj, portal, portalRef, portalExt, &s_pendingPortalViews);
+        } else if ((groupFlags & 0x50148) != 0) {
+            AddExteriorPortalView(mapObj, portal, portalRef, portalExt, groupFlags & 0x10008);
+            if ((groupFlags & 0x10008) != 0) {
+                portalRef++;
+                continue;
+            }
+        }
 
         CRect v40 = { 2.0f, 2.0f, 2.0f, 2.0f };
         CRect v39 = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -1903,4 +1896,83 @@ void CWorldScene::RenderMapObjWithCallback(CMapObjDef* mapObjDef, TSGrowableArra
     CMapObj::SetGroupRenderCallback(reinterpret_cast<RENDER_CALLBACK>(CWorldScene::AddMapObjDefGroupToSortTable), mapObjDef);
     CWorldScene::s_curMapObjDef = mapObjDef;
     CWorldScene::RenderInterior(mapObjDef->owner, mapObjDef->mat, mapObjDef->invMat, CWorldScene::s_activeWorldView, CWorldScene::camTarget, groups);
+}
+
+// OFFSET: 0x7A8F20
+void CWorldScene::AddExteriorPortalView(CMapObj* mapObj, SMOPortal* portal, SMOPortalRef* ref, SPortalExt* ext, uint32_t destIsExterior) {
+    if ((ext->flags & 4) != 0)
+        return;
+
+    ext->flags |= 4;
+
+    C3Vector nudge = portal->plane.n * 0.01f;
+    if (ref->side > 0)
+        nudge = -nudge;
+
+    C3Vector* verts = 0;
+    uint32_t n = 0;
+    ext->flags |= TransformAndClipVerts(mapObj, (ext->flags >> 4) & 1, &mapObj->portalVertexList[portal->startVertex], portal->count, nudge, verts, n);
+
+    if (n <= 2)
+        return;
+
+    CPortalView v17;
+    v17.rect.minX = 3.4028235e38;
+    v17.rect.minY = 3.4028235e38;
+    v17.rect.maxX = -3.4028235e38;
+    v17.rect.maxY = -3.4028235e38;
+    v17.maxViewDepth = -1.0;
+    v17.verts = 0;
+    v17.vertCount = 0;
+    CWorldScene::CalcScreenRectFromVerts(v17.rect, verts, n);
+    v17.rect.minX = (v17.rect.minX + 1.0) * 0.5;
+    v17.rect.maxX = (v17.rect.maxX + 1.0) * 0.5;
+    v17.rect.minY = (v17.rect.minY + 1.0) * 0.5;
+    v17.rect.maxY = 0.5 * (v17.rect.maxY + 1.0);
+    v17.maxViewDepth = mapObj->CalcPortalFarthestDistance(portal);
+    //maybe_CWorldScene__PushPortalView(&v17);
+    //maybe_CWorldScene__MergeIntoWorldRect(&v17.rect.minY);
+    if (destIsExterior)
+        CWorldScene::MergeIntoFrustumRect(&v17);
+}
+
+// OFFSET: 0x7A9200
+void CWorldScene::AddInteriorPortalView(CMapObj* mapObj, SMOPortal* portal, SMOPortalRef* ref, SPortalExt* ext, TSGrowableArray<CPortalView>* a5) {
+    if ((ext->flags & 0xC) != 0)
+        return;
+
+    C3Vector nudge = portal->plane.n * 0.01f;
+    if (ref->side > 0)
+        nudge = -nudge;
+
+    C3Vector* verts = 0;
+    uint32_t n = 0;
+    ext->flags |= TransformAndClipVerts(mapObj, (ext->flags >> 4) & 1, &mapObj->portalVertexList[portal->startVertex], portal->count, nudge, verts, n);
+
+    if (n > 2) {
+        //CPortalView v18;
+        //v18.rect.minX = 3.4028235e38;
+        //v18.rect.minY = 3.4028235e38;
+        //v18.verts = 0;
+        //v18.rect.maxX = -3.4028235e38;
+        //v18.vertCount = 0;
+        //v18.rect.maxY = -3.4028235e38;
+        //v18.maxViewDepth = -1.0;
+        //CWorldScene::CalcScreenRectFromVerts(v18.rect, verts, n);
+        //v17 = (stru_D1BEE8.m_data + 12 * stru_D1BEE8.m_count);
+        //v18.vertCount = n;
+        //v18.rect.minX = (v18.rect.minX + 1.0) * 0.5;
+        //v18.verts = v17;
+        //v18.rect.maxX = (v18.rect.maxX + 1.0) * 0.5;
+        //v18.rect.minY = (v18.rect.minY + 1.0) * 0.5;
+        //v18.rect.maxY = 0.5 * (v18.rect.maxY + 1.0);
+        //bn_TSGrowableArray_C3Vector_SetCount(&stru_D1BEE8, v16 + stru_D1BEE8.m_count);
+        //memcpy(v17, verts, 12 * n);
+        //a5->Add(1, &v18);
+    }
+    ext->flags |= 8;
+}
+
+void CWorldScene::MergeIntoFrustumRect(CPortalView* portalView) {
+    CWorldScene::frustumPortalView.Merge(portalView);
 }

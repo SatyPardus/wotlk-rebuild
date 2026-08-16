@@ -150,6 +150,9 @@ class CWorldScene {
     static void RenderCollisionDebug();
     static void AddViewerGroup(TSGrowableArray<uint16_t>* group, uint16_t val);
     static void RenderMapObjWithCallback(CMapObjDef* mapObjDef, TSGrowableArray<uint16_t>* groups);
+    static void AddExteriorPortalView(CMapObj* mapObj, SMOPortal* portal, SMOPortalRef* ref, SPortalExt* ext, uint32_t destIsExterior);
+    static void AddInteriorPortalView(CMapObj* mapObj, SMOPortal* portal, SMOPortalRef* ref, SPortalExt* ext, TSGrowableArray<CPortalView>* a5);
+    static void MergeIntoFrustumRect(CPortalView* portalView);
 };
 
 #endif // WORLD_C_WORLDSCENE_HPP

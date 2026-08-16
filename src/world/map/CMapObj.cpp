@@ -284,10 +284,10 @@ CMapObjGroup* CMapObj::GetGroup(int32_t index, bool a3) {
 
 // OFFSET: 0x7AD020
 void CMapObj::PrepareUpdate() {
-    //++dword_D1C424;
-    //dword_D1C420 = 0;
-    //dword_D1C41C = 0;
-    //bn_TSGrowableArray_C3Vector_SetCount(&dword_D1BEE8, 0);
+    ++CWorldScene::s_portalStamp;
+    CWorldScene::s_curMapObjDef = 0;
+    CWorldScene::s_stampedMapObjDef = 0;
+    //bn_TSGrowableArray_C3Vector_SetCount(&stru_D1BEE8, 0);
     //dword_CFBEC8 = 0;
     switch (CMapObj::s_renderMode) {
     case 0:
@@ -583,6 +583,27 @@ bool CMapObj::VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, in
         *t = bestT * ooSegLen;
 
     return found;
+}
+
+// OFFSET: 0x7A70D0
+float CMapObj::CalcPortalFarthestDistance(SMOPortal* portal) {
+    const float nx = CWorldScene::s_camPlaneLocal.n.x;
+    const float ny = CWorldScene::s_camPlaneLocal.n.y;
+    const float nz = CWorldScene::s_camPlaneLocal.n.z;
+    const float d = CWorldScene::s_camPlaneLocal.d;
+
+    const C3Vector* v = &this->portalVertexList[portal->startVertex];
+
+    float result = 0.0f;
+
+    for (uint32_t i = 0; i < portal->count; ++i) {
+        float dist = v[i].x * nx + v[i].y * ny + v[i].z * nz + d;
+
+        if (dist > result)
+            result = dist;
+    }
+
+    return result;
 }
 
 // OFFSET: 0x7AB1E0

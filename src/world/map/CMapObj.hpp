@@ -93,6 +93,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     bool TestGroupBounds(C3Vector& start, C3Vector& end, uint32_t groupNum);
     bool GroupBoundingBoxIntersectsSphere(C3Vector& pos, uint32_t groupNum, float radius);
     bool VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, int useSphereTest);
+    float CalcPortalFarthestDistance(SMOPortal* portal);
 
     static void PrepareUpdate();
     static CMapObj* Create(char* fileName);

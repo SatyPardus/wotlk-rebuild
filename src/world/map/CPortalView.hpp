@@ -12,6 +12,8 @@ class CPortalView {
     float maxViewDepth;
     C3Vector* verts;
     uint32_t vertCount;
+
+    void Merge(CPortalView* other);
 };
 
 #endif
