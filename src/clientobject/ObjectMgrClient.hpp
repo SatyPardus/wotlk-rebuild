@@ -28,10 +28,6 @@ class ObjectMgr {
     int32_t mapId;
     ClientConnection* realmConnection;
     // DWORD unk_D4;
-
-    // Member functions
-    template <typename T>
-    T GetObjectPtr(WGUID guid);
 };
 
 struct WowTlsBlock {
@@ -52,6 +48,10 @@ void ClntObjMgrSetActivePlayer(WGUID guid);
 WGUID ClntObjMgrGetActivePlayer();
 CGPlayer_C* ClntObjMgrGetActivePlayerObj();
 int32_t ClntObjMgrGetMapID();
+CGObject_C* ClntObjMgrAllocObject(OBJECT_TYPE_ID typeId, WGUID guid);
+
+template <typename T>
+T GetObjectPtr(TSHashTable<CGObject_C, WGUID>* table, WGUID guid);
 
 template <typename T>
 T ClntObjMgrObjectPtr(WGUID guid, TypeMask mask);

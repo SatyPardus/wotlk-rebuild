@@ -14,18 +14,18 @@ void CClientMoveUpdate::Skip(CDataStore* msg) {
 CDataStore& operator>>(CDataStore& msg, CClientMoveUpdate& move) {
     msg >> move.status;
 
-    msg.Get(move.float60);
-    msg.Get(move.float64);
-    msg.Get(move.float68);
-    msg.Get(move.float6C);
-    msg.Get(move.float70);
-    msg.Get(move.float74);
-    msg.Get(move.float78);
-    msg.Get(move.float7C);
-    msg.Get(move.float80);
+    msg.Get(move.m_walkSpeed);
+    msg.Get(move.m_runSpeed);
+    msg.Get(move.m_runBackSpeed);
+    msg.Get(move.m_swimSpeed);
+    msg.Get(move.m_swimBackSpeed);
+    msg.Get(move.m_flightSpeed);
+    msg.Get(move.m_flightBackSpeed);
+    msg.Get(move.m_turnRate);
+    msg.Get(move.m_pitchRate);
 
-    if (move.status.moveFlags & 0x8000000) {
-        msg >> move.spline;
+    if (move.status.m_moveFlags & 0x8000000) {
+        msg >> move.m_moveSpline;
     }
 
     return msg;

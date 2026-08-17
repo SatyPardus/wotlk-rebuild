@@ -4,23 +4,33 @@
 #include <cstdint>
 #include "clientobject/Types.hpp"
 #include "clientobject/CHashKeyGUID.hpp"
+#include "clientobject/CClientObjCreate.hpp"
 #include "storm/Hash.hpp"
 
-struct ObjectFields {
-    WGUID OBJECT_FIELD_GUID;
-    OBJECT_TYPE OBJECT_FIELD_TYPE;
-    uint32_t OBJECT_FIELD_ENTRY;
-    float OBJECT_FIELD_SCALE_X;
-    uint32_t OBJECT_FIELD_PADDING;
+struct CGObjectData {
+    WGUID m_guid;
+    OBJECT_TYPE m_type;
+    uint32_t m_entryID;
+    float m_scale;
+    uint32_t pad;
 };
 
 class CGObject {
     public:
     // uint32_t unk_0000;
-    ObjectFields* ObjectData;
-    // uint32_t ukn_0008;
-    // uint32_t ukn_000C;
+    CGObjectData* m_obj;
+    void* m_objMirror;
+    uint32_t m_heapIndex;
     OBJECT_TYPE_ID m_typeID;
+
+    // OFFSET: 0x4F4A10
+    static uint32_t TotalFields() {
+        return 3;
+    };
+
+    static uint32_t GetDataSize() {
+        return sizeof(CGObjectData);
+    }
 };
 
 class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID> {
@@ -45,9 +55,17 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
 
     // Member functions
     CGObject_C();
+    CGObject_C(CClientObjCreate& objCreate, uint32_t time);
 
     void SetTypeID(OBJECT_TYPE_ID typeID);
     void AddWorldObject();
+    void SetData(uint32_t offset, uint32_t value);
+
+    // Virtual functions
+    virtual bool GetModelFileName(const char** fileName);
+
+    // Static functions
+    static void SetStorage(CGObject_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
 };
 
 #endif // CLIENTOBJECT_CGOBJECT_C_HPP

@@ -7,24 +7,27 @@
 #include <tempest/Vector.hpp>
 
 struct CMovementStatus {
-    uint32_t uint0 = 0;
-    // TODO
-    WGUID transport = 0;
-    uint32_t moveFlags = 0x0;
-    uint16_t uint14 = 0;
-    // TODO
-    C3Vector position18;
-    float facing24 = 0.0f;
-    C3Vector position28;
-    float facing34 = 0.0f;
-    float float38 = 0.0f;
-    uint32_t uint3C = 0;
-    float float40 = 0.0f;
-    float float44 = 0.0f;
-    float float48 = 0.0f;
-    float float4C = 0.0f;
-    float float50 = 0.0f;
-    // TODO
+    uint32_t m_gameTime;
+    uint32_t unk_0004;
+    WGUID m_transportGuid;
+    uint32_t m_moveFlags;
+    uint16_t m_moveExtraFlags;
+    uint8_t m_transportSeat;
+    uint8_t uint17;
+    C3Vector m_transportPosition;
+    float m_transportFacing;
+    C3Vector m_position;
+    float m_facing;
+    float m_pitch;
+    uint32_t m_fallTime;
+    float m_zSpeed;
+    float m_sinAngle;
+    float m_cosAngle;
+    float m_xySpeed;
+    float m_splineElevation;
+    float m_transportTime;
+    uint32_t m_transportTime2;
+    float float5C;
 
     static uint32_t Skip(CDataStore* msg);
 };

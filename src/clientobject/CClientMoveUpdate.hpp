@@ -7,17 +7,17 @@
 
 struct CClientMoveUpdate {
     CMovementStatus status;
-    float float60;
-    float float64;
-    float float68;
-    float float6C;
-    float float70;
-    float float74;
-    float float78;
-    float float7C;
-    float float80;
-    // TODO
-    CMoveSpline spline;
+    float m_walkSpeed;
+    float m_runSpeed;
+    float m_runBackSpeed;
+    float m_swimSpeed;
+    float m_swimBackSpeed;
+    float m_flightSpeed;
+    float m_flightBackSpeed;
+    float m_turnRate;
+    float m_pitchRate;
+    uint32_t unk_0084;
+    CMoveSpline m_moveSpline;
 
     static void Skip(CDataStore* msg);
 };

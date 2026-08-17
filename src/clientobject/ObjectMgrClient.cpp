@@ -10,16 +10,44 @@
 #include "clientobject/Corpse_C.hpp"
 #include "clientobject/GameObject_C.hpp"
 #include "clientobject/DynamicObject_C.hpp"
+#include <common/ObjectAlloc.hpp>
 
 #define MAX_CHANGE_MASKS 42
 
 thread_local WowTlsBlock g_tlsBlock {};
 
-// OFFSET: 0x4D4BB0
-template <typename T>
-T ObjectMgr::GetObjectPtr(WGUID guid) {
-    return this->m_objects.Ptr(guid.guid_low, guid);
-}
+bool s_heapsAllocated;
+uint32_t s_objTotalSize[8] {
+    sizeof(uint32_t) * CGObject::TotalFields() + sizeof(CGObject_C) + CGObject::GetDataSize(),
+    sizeof(uint32_t) * CGItem::TotalFields() + sizeof(CGItem_C) + CGItem::GetDataSize(),
+    sizeof(uint32_t) * CGContainer::TotalFields() + sizeof(CGContainer_C) + CGContainer::GetDataSize(),
+    sizeof(uint32_t) * CGUnit::TotalFields() + sizeof(CGUnit_C) + CGUnit::GetDataSize(),
+    sizeof(uint32_t) * CGPlayer::TotalRemoteFields() + sizeof(CGPlayer_C) + CGPlayer::GetDataSize(),
+    sizeof(uint32_t) * CGGameObject::TotalFields() + sizeof(CGGameObject_C) + CGGameObject::GetDataSize(),
+    sizeof(uint32_t) * CGDynamicObject::TotalFields() + sizeof(CGDynamicObject_C) + CGDynamicObject::GetDataSize(),
+    sizeof(uint32_t) * CGCorpse::TotalFields() + sizeof(CGCorpse_C) + CGCorpse::GetDataSize()
+};
+char* s_objNames[8] = {
+    "CGObject_C",
+    "CGItem_C",
+    "CGContainer_C",
+    "CGUnit_C",
+    "CGPlayer_C",
+    "CGGameObject_C",
+    "CGDynamicObject_C",
+    "CGCorpse_C"
+};
+uint32_t s_objHeapId[8];
+uint32_t s_objHeapSize[8] = {
+    0x0,
+    0x200,
+    0x20,
+    0x40,
+    0x40,
+    0x40,
+    0x20,
+    0x20
+};
 
 int32_t ExtractDirtyMasks(CDataStore* msg, uint8_t* maskCount, uint32_t* masks) {
     uint8_t count;
@@ -45,6 +73,37 @@ int32_t IsMaskBitSet(uint32_t* masks, uint32_t block) {
     return masks[block / 32] & (1 << (block % 32));
 }
 
+// OFFSET: 0x4D3DF0
+int32_t GetNumDwordBlocks(OBJECT_TYPE mask, WGUID guid) {
+    switch (mask) {
+    case HIER_TYPE_OBJECT:
+        return CGObject::GetDataSize() / sizeof(uint32_t);
+    case HIER_TYPE_ITEM:
+        return CGItem::GetDataSize() / sizeof(uint32_t);
+    case HIER_TYPE_CONTAINER:
+        return CGContainer::GetDataSize() / sizeof(uint32_t);
+        break;
+    case HIER_TYPE_UNIT:
+        return CGUnit::GetDataSize() / sizeof(uint32_t);
+        break;
+    case HIER_TYPE_PLAYER:
+        if (guid == ClntObjMgrGetActivePlayer()) {
+            return CGPlayer::GetDataSize() / sizeof(uint32_t);
+        }
+        return CGPlayer::GetRemoteDataSize() / sizeof(uint32_t);
+    case HIER_TYPE_GAMEOBJECT:
+        return CGGameObject::GetDataSize() / sizeof(uint32_t);
+        break;
+    case HIER_TYPE_DYNAMICOBJECT:
+        return CGDynamicObject::GetDataSize() / sizeof(uint32_t);
+        break;
+    case HIER_TYPE_CORPSE:
+        return CGCorpse::GetDataSize() / sizeof(uint32_t);
+        break;
+    }
+    return 0;
+}
+
 int32_t FillInPartialObjectData(CGObject_C* object, WGUID guid, CDataStore* msg, bool forFullUpdate, bool zeroZeroBits) {
     uint8_t changeMaskCount;
     uint32_t changeMasks[MAX_CHANGE_MASKS];
@@ -54,29 +113,47 @@ int32_t FillInPartialObjectData(CGObject_C* object, WGUID guid, CDataStore* msg,
 
     OBJECT_TYPE_ID typeID = ID_OBJECT;
     uint32_t blockOffset = 0;
-    //uint32_t numBlocks = GetNumDwordBlocks(object->GetType(), guid);
+    uint32_t numBlocks = GetNumDwordBlocks(object->m_obj->m_type, guid);
 
-    //for (int32_t block = 0; block < numBlocks; block++) {
-    //    if (block >= s_objMirrorBlocks[typeID]) {
-    //        blockOffset = s_objMirrorBlocks[typeID];
-    //        typeID = IncTypeID(object, typeID);
-    //    }
+    //v17.m_linkoffset = 8;
+    //v17.m_terminator.m_prevlink = &v17.m_terminator;
+    //v17.m_terminator.m_next = &v17.m_terminator.m_prevlink + 1;
 
-    //    if (!forFullUpdate) {
-    //        // TODO
-    //    }
+    for (int32_t block = 0; block < numBlocks; block++) {
+        //if (block >= s_objMirrorBlocks[typeID]) {
+        //    blockOffset = s_objMirrorBlocks[typeID];
+        //    typeID = IncTypeID(object, typeID);
+        //}
 
-    //    if (IsMaskBitSet(changeMasks, block)) {
-    //        uint32_t blockValue;
-    //        msg->GetArray(reinterpret_cast<uint8_t*>(&blockValue), sizeof(blockValue));
+        if (!forFullUpdate) {
+            //sub_4D4850(&v17);
+            //v9 = (g_objFieldMirrorLists + 12 * v7 + 12 * (1326 * a1 - v16));
+            //if (CallMirrorHandlers__LinkPendingNodes(&v17, v9))
+            //    maybe_ClntObjMgr__CopyMirrorFields(v9, obj);
+            //ActiveObj = GetObjectMirrorList(a1, obj, v7 - v16);
+            //if (CallMirrorHandlers__LinkPendingNodes(&v17, ActiveObj))
+            //    maybe_ClntObjMgr__CopyMirrorFields(ActiveObj, obj);
+        }
 
-    //        object->SetBlock(block, blockValue);
-    //    } else if (zeroZeroBits) {
-    //        object->SetBlock(block, 0);
-    //    }
+        if (IsMaskBitSet(changeMasks, block)) {
+            uint32_t blockValue;
+            msg->GetArray(reinterpret_cast<uint8_t*>(&blockValue), sizeof(blockValue));
+
+            object->SetData(block, blockValue);
+        } else if (zeroZeroBits) {
+            object->SetData(block, 0);
+        }
+    }
+
+    //bn_TSList_TSGetExplicitLink_UnlinkAll(&v17);
+    //if (v17.m_terminator.m_prevlink) {
+    //    if ((v17.m_terminator.m_next & 1) == 0 && v17.m_terminator.m_next)
+    //        v11 = v17.m_terminator.m_next + &v17.m_terminator - v17.m_terminator.m_prevlink->m_next;
+    //    else
+    //        v11 = (v17.m_terminator.m_next & 0xFFFFFFFE);
+    //    *v11 = v17.m_terminator.m_prevlink;
+    //    v17.m_terminator.m_prevlink->m_next = v17.m_terminator.m_next;
     //}
-
-    // TODO
 
     return 1;
 }
@@ -102,34 +179,132 @@ int32_t SkipPartialObjectUpdate(CDataStore* msg) {
 void InitObject(CGObject_C* obj, CClientObjCreate& objCreate, uint32_t time) {
     switch (obj->m_typeID) {
     case OBJECT_TYPE_ID::ID_ITEM:
-        obj = new (obj) CGItem_C();
+        obj = new (obj) CGItem_C(objCreate, time);
         break;
     case OBJECT_TYPE_ID::ID_CONTAINER:
-        obj = new (obj) CGContainer_C();
+        obj = new (obj) CGContainer_C(objCreate, time);
         break;
     case OBJECT_TYPE_ID::ID_UNIT:
-        obj = new (obj) CGUnit_C();
+        obj = new (obj) CGUnit_C(objCreate, time);
         obj->AddWorldObject();
         break;
     case OBJECT_TYPE_ID::ID_PLAYER:
-        obj = new (obj) CGPlayer_C();
+        obj = new (obj) CGPlayer_C(objCreate, time);
         obj->AddWorldObject();
         break;
     case OBJECT_TYPE_ID::ID_GAMEOBJECT:
-        obj = new (obj) CGGameObject_C();
+        obj = new (obj) CGGameObject_C(objCreate, time);
         obj->AddWorldObject();
         break;
     case OBJECT_TYPE_ID::ID_DYNAMICOBJECT:
-        obj = new (obj) CGDynamicObject_C();
+        obj = new (obj) CGDynamicObject_C(objCreate, time);
         obj->AddWorldObject();
         break;
     case OBJECT_TYPE_ID::ID_CORPSE:
-        obj = new (obj) CGCorpse_C();
+        obj = new (obj) CGCorpse_C(objCreate, time);
         obj->AddWorldObject();
         break;
     }
 }
 
+// OFFSET: 0x4D45B0
+void SetupObjectStorage(CGObject_C* obj, OBJECT_TYPE_ID typeId, WGUID guid) {
+    uintptr_t offset = 0;
+    uint32_t dataSize = 0;
+
+    switch (typeId) {
+    case OBJECT_TYPE_ID::ID_OBJECT:
+        offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGObject_C);
+        dataSize = CGObject::GetDataSize();
+
+        CGObject_C::SetStorage(obj, offset, offset + dataSize);
+        memset(reinterpret_cast<void*>(offset), 0, dataSize);
+        break;
+    case OBJECT_TYPE_ID::ID_ITEM:
+        offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGItem_C);
+        dataSize = CGItem::GetDataSize();
+
+        CGItem_C::SetStorage(reinterpret_cast<CGItem_C*>(obj), offset, offset + dataSize);
+        memset(reinterpret_cast<void*>(offset), 0, dataSize);
+        break;
+    case OBJECT_TYPE_ID::ID_CONTAINER:
+        offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGContainer_C);
+        dataSize = CGContainer::GetDataSize();
+
+        CGContainer_C::SetStorage(reinterpret_cast<CGContainer_C*>(obj), offset, offset + dataSize);
+        memset(reinterpret_cast<void*>(offset), 0, dataSize);
+        break;
+    case OBJECT_TYPE_ID::ID_UNIT:
+        offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGUnit_C);
+        dataSize = CGUnit::GetDataSize();
+
+        CGUnit_C::SetStorage(reinterpret_cast<CGUnit_C*>(obj), offset, offset + dataSize);
+        memset(reinterpret_cast<void*>(offset), 0, dataSize);
+        break;
+    case OBJECT_TYPE_ID::ID_PLAYER:
+        offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGPlayer_C);
+        if ((guid == ClntObjMgrGetActivePlayer())) {
+            dataSize = CGPlayer::GetDataSize();
+            //*(a1 + 0x614) = &a1[4 * CGPlayer::TotalFields() + 0x2E10];
+        } else {
+            dataSize = CGPlayer::GetRemoteDataSize();
+            //*(a1 + 0x614) = 0;
+        }
+
+        CGPlayer_C::SetStorage(reinterpret_cast<CGPlayer_C*>(obj), offset, offset + dataSize);
+        memset(reinterpret_cast<void*>(offset), 0, dataSize);
+        break;
+    case OBJECT_TYPE_ID::ID_GAMEOBJECT:
+        offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGGameObject_C);
+        dataSize = CGGameObject::GetDataSize();
+
+        CGGameObject_C::SetStorage(reinterpret_cast<CGGameObject_C*>(obj), offset, offset + dataSize);
+        memset(reinterpret_cast<void*>(offset), 0, dataSize);
+        break;
+    case OBJECT_TYPE_ID::ID_DYNAMICOBJECT:
+        offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGDynamicObject_C);
+        dataSize = CGDynamicObject::GetDataSize();
+
+        CGDynamicObject_C::SetStorage(reinterpret_cast<CGDynamicObject_C*>(obj), offset, offset + dataSize);
+        memset(reinterpret_cast<void*>(offset), 0, dataSize);
+        break;
+    case OBJECT_TYPE_ID::ID_CORPSE:
+        offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGCorpse_C);
+        dataSize = CGCorpse::GetDataSize();
+
+        CGCorpse_C::SetStorage(reinterpret_cast<CGCorpse_C*>(obj), offset, offset + dataSize);
+        memset(reinterpret_cast<void*>(offset), 0, dataSize);
+        break;
+    }
+}
+
+CGObject_C* GetUpdateObject(WGUID guid, bool* reenable) {
+    *reenable = false;
+    CGObject_C* obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, guid);
+    if (obj) {
+        //obj->SetDisablePending(0);
+        return obj;
+    }
+
+    obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_lazyCleanupObjects, guid);
+    if (obj) {
+        //sub_4D4790(result);
+        //TSLink::Unlink(&v9->ukn_0054);
+        //TSHashTable__CGObject_C__Insert(&pObjMgr->m_objects, v9, __PAIR64__(v12, a4));
+        //v10 = v13->pObjMgr;
+        //if (!*(&v9->unk_0004 + v10->unk_A4.m_linkoffset)) {
+        //    p_unk_B0 = &v10->unk_B0;
+        //    if (!List::Contains(&v10->unk_B0.m_linkoffset, v9)) {
+        //        *a3 = 1;
+        //        HashTable::AddEntry(p_unk_B0, v9);
+        //    }
+        //}
+        return obj;
+    }
+    return nullptr;
+}
+
+// OFFSET: 0x4D6C00
 bool CreateObject(CDataStore* msg, uint32_t time) {
     WGUID guid;
     *msg >> guid;
@@ -141,24 +316,27 @@ bool CreateObject(CDataStore* msg, uint32_t time) {
     if (typeID >= NUM_CLIENT_OBJECT_TYPES)
         return false;
 
-    //int32_t reenable;
-    //auto existingObject = GetUpdateObject(guid, &reenable);
-    //
-    //if (existingObject) {
-    //    CClientObjCreate::Skip(msg);
-    //
-    //    if (!FillInPartialObjectData(existingObject, existingObject->GetGUID(), msg, false, true)) {
-    //        return 0;
-    //    }
-    //
+    bool reenable;
+    auto existingObject = GetUpdateObject(guid, &reenable);
+    
+    if (existingObject) {
+        CClientObjCreate::Skip(msg);
+    
+        if (!FillInPartialObjectData(existingObject, existingObject->m_obj->m_guid, msg, false, true)) {
+            return 0;
+        }
+    
     //    if (reenable) {
     //        existingObject->Reenable();
     //    }
-    //
-    //    return 1;
-    //}
+    
+        return 1;
+    }
 
     CClientObjCreate objCreate;
+    objCreate.flags = 0;
+    objCreate.m_targetGuid = 0;
+    objCreate.m_packedRotation = 0;
     if (!objCreate.Get(msg)) {
         return 0;
     }
@@ -167,25 +345,14 @@ bool CreateObject(CDataStore* msg, uint32_t time) {
         ClntObjMgrSetActivePlayer(guid);
     }
 
-    //### debug
-    void* m = STORM_ALLOC(sizeof(CGObject_C));
-    auto newObject = new (m) CGObject_C();
-    newObject->ObjectData = new ObjectFields();
-    newObject->ObjectData->OBJECT_FIELD_GUID = guid;
-    //###
-    //auto newObject = ClntObjMgrAllocObject(typeID, guid);
-    //SetupObjectStorage(typeID, newObject, guid);
+    auto newObject = ClntObjMgrAllocObject(typeID, guid);
+    SetupObjectStorage(newObject, typeID, guid);
     newObject->SetTypeID(typeID);
-
-    //### debug
-    SkipPartialObjectUpdate(msg);
-    ClntObjMgrLinkInNewObject(newObject);
-    //###
     
-    //if (!FillInPartialObjectData(newObject, guid, msg, true, false)) {
-    //    return 0;
-    //}
-    //
+    if (!FillInPartialObjectData(newObject, guid, msg, true, false)) {
+        return 0;
+    }
+    
     InitObject(newObject, objCreate, time);
     //
     //ClntObjMgrGetCurrent()->m_visibleObjects.LinkToTail(newObject);
@@ -351,7 +518,13 @@ void ClntObjMgrInitialize() {
 
 // OFFSET: 0x4D4AC0
 void ClntObjMgrInitializeShared() {
-    // TODO
+    if (!s_heapsAllocated) {
+        for (uint32_t i = 1; i < 8; ++i)
+            s_objHeapId[i] = ObjectAllocAddHeap(s_objTotalSize[i], s_objHeapSize[i], s_objNames[i], 1);
+        s_heapsAllocated = true;
+    }
+    //MirrorInitialize(a1, a2);
+    //ConsoleCommandRegister("ObjUsage", CCommand_ObjUsage, 4, 0);
 }
 
 // OFFSET: 0x4D7750
@@ -370,7 +543,7 @@ void ClntObjMgrInitializeStd(int32_t zoneId) {
 
 // OFFSET: 0x4D6BC0
 void ClntObjMgrLinkInNewObject(CGObject_C* obj) {
-    g_tlsBlock.pObjMgr->m_objects.Insert(obj, obj->ObjectData->OBJECT_FIELD_GUID.guid_low, obj->ObjectData->OBJECT_FIELD_GUID);
+    g_tlsBlock.pObjMgr->m_objects.Insert(obj, obj->m_obj->m_guid.guid_low, obj->m_obj->m_guid);
 }
 
 // OFFSET: None (inlined)
@@ -401,6 +574,30 @@ int32_t ClntObjMgrGetMapID() {
     return 0;
 }
 
+// OFFSET: 0x4D4930
+CGObject_C* ClntObjMgrAllocObject(OBJECT_TYPE_ID typeId, WGUID guid) {
+    if (guid == g_tlsBlock.pObjMgr->playerGuid) {
+        void* m = STORM_ALLOC(sizeof(uint32_t) * CGPlayer::TotalFields() + sizeof(CGPlayer_C) + CGPlayer::GetDataSize());
+        CGObject_C* obj = new (m) CGObject_C();
+        return obj;
+    }
+
+    //maybe_ClntObjMgr__ExpireOldObjects(10000, a1);
+    if (ObjectAlloc(s_objHeapId[typeId], &guid.guid_high, nullptr, false)) {
+        void* m = ObjectPtr(s_objHeapId[typeId], guid.guid_high);
+        CGObject_C* obj = new (m) CGObject_C();
+        obj->m_heapIndex = guid.guid_high;
+        return obj;
+    }
+    return nullptr;
+}
+
+// OFFSET: 0x4D4BB0
+template <typename T>
+T GetObjectPtr(TSHashTable<CGObject_C, WGUID>* table, WGUID guid) {
+    return table->Ptr(guid.guid_low, guid);
+}
+
 // OFFSET: 0x4D4DB0
 template <typename T>
 T ClntObjMgrObjectPtr(WGUID guid, TypeMask mask) {
@@ -409,9 +606,9 @@ T ClntObjMgrObjectPtr(WGUID guid, TypeMask mask) {
         return nullptr;
     if (!guid)
         return nullptr;
-    CGObject_C* result = mgr->GetObjectPtr<CGObject_C*>(guid);
+    CGObject_C* result = GetObjectPtr<CGObject_C*>(&mgr->m_objects, guid);
     if (result) {
-        if ((mask & result->ObjectData->OBJECT_FIELD_TYPE) == 0) {
+        if ((mask & result->m_obj->m_type) == 0) {
             return nullptr;
         }
     }

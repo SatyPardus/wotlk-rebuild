@@ -7,24 +7,29 @@
 #include <tempest/Vector.hpp>
 
 struct CMoveSpline {
-    // TODO
+    uint32_t unk_0000;
+    uint32_t unk_0004;
+    uint32_t unk_0008;
+    uint32_t unk_000C;
     union {
         C3Vector spot = {};
         WGUID guid;
         float facing;
     } face;
+    uint32_t unk_001C;
     uint32_t flags;
+    uint32_t m_timePassed;
     uint32_t start;
-    // TODO
-    uint32_t uint2C;
-    uint32_t uint30;
+    uint32_t m_duration;
+    uint32_t m_id;
     C3Spline_CatmullRom spline;
-    C3Vector vector1F8;
-    float float204;
-    float float208;
-    float float20C;
-    uint32_t uint210;
-    // TODO
+    C3Vector m_finalDestination;
+    float m_durationMod;
+    float m_durationModNext;
+    float m_verticalAcceleration;
+    uint32_t m_effectStartTime;
+    uint32_t unk_0214;
+    uint32_t unk_0218;
 
     static void Skip(CDataStore* msg);
 };

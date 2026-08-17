@@ -74,59 +74,58 @@ int32_t CClientObjCreate::Get(CDataStore* msg) {
     this->flags = flags;
     
     if (this->flags & 0x20) {
-        *msg >> this->move;
+        *msg >> this->m_moveUpdate;
     } else if (this->flags & 0x100) {
         WGUID guid;
         *msg >> guid;
-        this->move.status.transport = guid;
+        this->m_moveUpdate.status.m_transportGuid = guid;
     
-        *msg >> this->move.status.position28;
-        *msg >> this->move.status.position18;
+        *msg >> this->m_moveUpdate.status.m_position;
+        *msg >> this->m_moveUpdate.status.m_transportPosition;
     
-        msg->Get(this->move.status.facing34);
-        msg->Get(this->move.status.facing24);
+        msg->Get(this->m_moveUpdate.status.m_facing);
+        msg->Get(this->m_moveUpdate.status.m_transportFacing);
     } else if (this->flags & 0x40) {
-        this->move.status.transport = 0;
-    
-        *msg >> this->move.status.position28;
-        this->move.status.position18 = this->move.status.position28;
-    
-        msg->Get(this->move.status.facing34);
+        *msg >> this->m_moveUpdate.status.m_position;
+        msg->Get(this->m_moveUpdate.status.m_facing);
+
+        this->m_moveUpdate.status.m_transportGuid = 0;
+        this->m_moveUpdate.status.m_transportPosition = this->m_moveUpdate.status.m_position;
     }
     
     if (this->flags & 0x8) {
-        msg->Get(this->uint2AC);
+        msg->Get(this->unk_02AC);
     } else {
-        this->uint2AC = 0;
+        this->unk_02AC = 0;
     }
     
     if (this->flags & 0x10) {
-        msg->Get(this->uint2B0);
+        msg->Get(this->m_lowGuid);
     } else {
-        this->uint2B0 = 0;
+        this->m_lowGuid = 0;
     }
     
     if (this->flags & 0x4) {
         WGUID guid;
         *msg >> guid;
-        this->guid2B8 = guid;
+        this->m_targetGuid = guid;
     } else {
-        this->guid2B8 = 0;
+        this->m_targetGuid = 0;
     }
     
     if (this->flags & 0x2) {
-        msg->Get(this->uint2C0);
+        msg->Get(this->m_someTransportTime);
     }
     
     if (this->flags & 0x80) {
-        msg->Get(this->uint2C4);
-        msg->Get(this->float2C8);
+        msg->Get(this->m_vehicleId);
+        msg->Get(this->m_vehicleOrientation);
     }
     
     if (this->flags & 0x200) {
-        msg->Get(this->uint2D4);
+        msg->Get(this->m_packedRotation);
     } else {
-        this->uint2D4 = 0;
+        this->m_packedRotation = 0;
     }
 
     return msg->Size() >= msg->Tell();

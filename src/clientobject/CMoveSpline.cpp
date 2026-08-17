@@ -40,16 +40,16 @@ CDataStore& operator>>(CDataStore& msg, CMoveSpline& spline) {
     msg.Get(val);
     spline.start = OsGetAsyncTimeMsPrecise() - val;
 
-    msg.Get(spline.uint2C);
-    msg.Get(spline.uint30);
-    msg.Get(spline.float204);
-    msg.Get(spline.float208);
-    msg.Get(spline.float20C);
-    msg.Get(spline.uint210);
+    msg.Get(spline.m_duration);
+    msg.Get(spline.m_id);
+    msg.Get(spline.m_durationMod);
+    msg.Get(spline.m_durationModNext);
+    msg.Get(spline.m_verticalAcceleration);
+    msg.Get(spline.m_effectStartTime);
 
     msg >> spline.spline;
 
-    msg >> spline.vector1F8;
+    msg >> spline.m_finalDestination;
 
     return msg;
 }

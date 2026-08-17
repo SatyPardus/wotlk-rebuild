@@ -7,6 +7,11 @@ CGPlayer_C::CGPlayer_C() {
 
 }
 
+CGPlayer_C::CGPlayer_C(CClientObjCreate& objCreate, uint32_t time)
+    : CGUnit_C(objCreate, time) {
+    
+}
+
 const CreatureModelDataRec* Player_C_GetModelName(uint32_t race, uint32_t sex) {
     STORM_ASSERT(sex < UNITSEX_LAST);
 
@@ -51,4 +56,11 @@ uint32_t Player_C_GetDisplayId(uint32_t race, uint32_t sex) {
     SErrPrepareAppFatal(__FILE__, __LINE__);
     SErrDisplayAppFatal("Error, unrecognized sex code %d!", sex);
     return 0;
+}
+
+// OFFSET: 0x6D1CF0
+void CGPlayer_C::SetStorage(CGPlayer_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr) {
+    CGUnit_C::SetStorage(obj, descriptorPtr, mirrorPtr);
+    obj->m_player = reinterpret_cast<CGPlayerData*>(descriptorPtr + CGUnit::GetDataSize());
+    obj->m_playerMirror = reinterpret_cast<void*>(mirrorPtr + 4 * CGUnit::TotalFields());
 }

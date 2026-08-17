@@ -8,17 +8,17 @@
 class CDataStore;
 
 struct CClientObjCreate {
-    CClientMoveUpdate move;
-    uint32_t flags = 0x0;
-    uint32_t uint2AC;
-    uint32_t uint2B0;
-    // TODO
-    WGUID guid2B8 = 0;
-    uint32_t uint2C0;
-    uint32_t uint2C4;
-    float float2C8;
-    // TODO
-    uint64_t uint2D4 = 0; // TODO guid?
+    CClientMoveUpdate m_moveUpdate;
+    uint32_t unk_02A4;
+    uint32_t flags;
+    uint32_t unk_02AC;
+    uint32_t m_lowGuid;
+    uint32_t unk_02B4;
+    WGUID m_targetGuid;
+    uint32_t m_someTransportTime;
+    uint32_t m_vehicleId;
+    uint32_t m_vehicleOrientation;
+    uint64_t m_packedRotation;
 
     static void Skip(CDataStore* msg);
     int32_t Get(CDataStore* msg);
