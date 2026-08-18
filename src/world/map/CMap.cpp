@@ -43,6 +43,7 @@ STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) CMap::mapAreaList;
 STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkFreeList;
 STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkUpdateList;
 STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) CMap::doodadDefList;
+STORM_EXPLICIT_LIST(CMapEntity, lameAssLink) CMap::entityList;
 TSHashTable<CMapDoodadDef, uint32_t> CMap::doodadDefHashtable;
 TSHashTable<CMapObjDef, uint32_t> CMap::mapObjDefHashtable;
 int32_t CMap::uniqueId;
@@ -270,7 +271,7 @@ void CMap::MapMemInitialize() {
     *CMap::doodadDefHeap = ObjectAllocAddHeap(sizeof(CMapDoodadDef), 5000, "WDOODADDEF", true);
 
     CMap::entityHeap = NEW(uint32_t);
-    *CMap::entityHeap = ObjectAllocAddHeap(208, 128, "WENTITY", true);
+    *CMap::entityHeap = ObjectAllocAddHeap(sizeof(CMapEntity), 128, "WENTITY", true);
 
     CMap::mapObjDefGroupHeap = NEW(uint32_t);
     *CMap::mapObjDefGroupHeap = ObjectAllocAddHeap(sizeof(CMapObjDefGroup), 128, "WMAPOBJDEFGROUP", true);
@@ -539,6 +540,26 @@ CMapObj* CMap::AllocMapObj() {
     }
 
     return nullptr;
+}
+
+// OFFSET: 0x7C0670
+CMapEntity* CMap::AllocEntity(bool linkToHead) {
+    uint32_t memHandle;
+    void* object = nullptr;
+    CMapEntity* def = nullptr;
+
+    if (ObjectAlloc(*CMap::entityHeap, &memHandle, &object, 0)) {
+        def = new (object) CMapEntity();
+
+        def->m_memHandle = memHandle;
+    }
+
+    if (linkToHead)
+        CMap::entityList.LinkToHead(def);
+    else
+        CMap::entityList.LinkToTail(def);
+
+    return def;
 }
 
 // OFFSET: 0x7BFFE0
@@ -1264,6 +1285,75 @@ void CMap::ProcessRenderChunkUpdateList() {
 
         renderChunk = next;
     }
+}
+
+// OFFSET: 0x781A10
+CMapEntity* CMap::ObjectCreate(CM2Model* model, uint32_t func, uint32_t a3, WGUID guid, uint32_t a6, uint32_t a7) {
+    CMapEntity* entity = CMap::AllocEntity((a7 >> 3) & 1);
+    entity->model = model;
+    entity->m_guid = guid;
+    entity->unk_00A0 = a6;
+    entity->position = C3Vector(10000000.0f, 10000000.0f, 10000000.0f);
+    entity->unk_08C = 1.0f;
+    entity->vec2 = C3Vector(10000000.0f, 10000000.0f, 10000000.0f);
+    entity->unk_00C4 = 1.0f;
+    entity->type |= 0x200;
+    //v7 = v6->unk_07C & 0xFFFF13FD | (((a7 >> 3) & 1) << 13) & 0xFFFF3BFF | ~(a7 << 10) & 0x800 | (2 * (a7 & 1 | ((a7 & 4 | (8 * (a7 & 0x10))) << 7)));
+    //v6->flags = 0;
+    //v6->m_func = 0;
+    //v6->unk_00B4 = 0;
+    //v6->unk_07C = v7;
+    //if ((a7 & 0x20) != 0)
+    //    v6->flags = MAPOBJ_FLAG_SHADOW_20000;
+    //v8 = 0.0;
+    //m_ambientColor = s_mapLight->unk14.m_ambientColor;
+    //if (m_ambientColor.z > 0.0) {
+    //    v9 = 255.0;
+    //    if (m_ambientColor.z < 1.0)
+    //        v10 = m_ambientColor.z * 255.0 + 0.5;
+    //    else
+    //        v10 = 255.0;
+    //} else {
+    //    v9 = 255.0;
+    //    v10 = 0.0;
+    //}
+    //y = m_ambientColor.y;
+    //if (m_ambientColor.y > 0.0) {
+    //    if (y < 1.0)
+    //        v12 = y * v9 + 0.5;
+    //    else
+    //        v12 = v9;
+    //} else {
+    //    v12 = 0.0;
+    //}
+    //x = m_ambientColor.x;
+    //if (m_ambientColor.x > 0.0) {
+    //    if (x < 1.0)
+    //        v9 = v9 * x + 0.5;
+    //    v8 = v9;
+    //    v14 = v12;
+    //    v15 = v10;
+    //} else {
+    //    v14 = v12;
+    //    v15 = v10;
+    //}
+    //HIBYTE(a6a) = -1;
+    //LOBYTE(a6a) = v15;
+    //BYTE1(a6a) = v14;
+    //BYTE2(a6a) = v8;
+    //v6->unk_00C0 = a6a;
+    //v6->m2AmbietColor = a6a;
+    //if (v6->model) {
+    //    if (!SStrCmpI(off_ADEE74, model->m_shared->m_fileNameWithoutPath, 0x7FFFFFFFu))
+    //        v6->unk_07C |= 0x4000u;
+    //    v17 = v6->model;
+    //    v17->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
+    //    v17->m_lightingArg = v6;
+    //    ++v6->model->m_refCount;
+    //}
+    //v6->m_func = func;
+    //v6->unk_0094 = a3;
+    return entity;
 }
 
 // OFFSET: 0x7A39F0

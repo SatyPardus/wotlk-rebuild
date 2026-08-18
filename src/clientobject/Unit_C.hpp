@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include "clientobject/CGObject_C.hpp"
+#include "db/Db.hpp"
 
 class ChrRacesRec;
 class ChrClassesRec;
@@ -116,13 +117,15 @@ class CGUnit {
 
 class CGUnit_C : public CGObject_C, public CGUnit {
     public:
+
     CGUnit_C();
     CGUnit_C(CClientObjCreate& objCreate, uint32_t time);
 
     CreatureModelDataRec* GetModelData();
 
     // Virtual functions
-    bool GetModelFileName(const char** fileName) override;
+    /* 11 */ void GetPosition(C3Vector& pos) override;
+    /* 24 */ bool GetModelFileName(const char** fileName) override;
 
     // Static functions
     static const char* GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut = nullptr);

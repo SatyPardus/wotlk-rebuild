@@ -1,5 +1,8 @@
 #include "clientobject/CGObject_C.hpp"
 #include "clientobject/ObjectMgrClient.hpp"
+#include <world/CWorldScene.hpp>
+#include <model/CM2Scene.hpp>
+#include <world/map/CMap.hpp>
 
 CGObject_C::CGObject_C() {
     
@@ -51,12 +54,177 @@ void CGObject_C::SetTypeID(OBJECT_TYPE_ID typeID) {
     }
 }
 
+// OFFSET: 0x743760
 void CGObject_C::AddWorldObject() {
+    const char* modelFileName;
+    if (!this->m_worldModel && this->GetModelFileName(&modelFileName)) {
+        CM2Model* model = CWorldScene::s_m2Scene->CreateModel(modelFileName, 0);
+        if (model != this->m_worldModel) {
+            if (model)
+                model->m_refCount++;
+            CM2Model* prevModel = this->m_worldModel;
+            this->m_worldModel = model;
+            this->SetModelFinish(prevModel);
+        }
+        model->Release();
+    }
 
+    if (!this->m_worldModel)
+        return;
+    //if (!ClntObjMgrGetPlayerType())
+    //    return;
+
+    if (this->m_worldObject) {
+        //SysMsgPrintf_0(1, 2, "OBJECTALREADYACTIVE|0x%016I64X", *&this->m_obj->OBJECT_FIELD_GUID);
+        return;
+    }
+
+    uint32_t v6 = 0;
+    if ((this->m_obj->m_type & OBJECT_TYPE::TYPE_GAMEOBJECT) != 0) {
+        v6 = 11;
+    } else if ((this->m_obj->m_type & OBJECT_TYPE::TYPE_DYNAMICOBJECT) != 0) {
+        v6 = 10;
+    } else if ((this->m_obj->m_type & OBJECT_TYPE::TYPE_CORPSE) != 0) {
+        //if ((this[1].ukn27 & 1) != 0)
+        //    v6 = 2;
+    } else if ((this->m_obj->m_type & OBJECT_TYPE::TYPE_UNIT) != 0) {
+        //if (CGUnit_C::IsLinkAll(this))
+        //    v6 = 8;
+        //if (CGUnit_C::HasNoShadowBlob(this))
+        //    v6 |= 2u;
+        //v6 |= 0x10u;
+        //if ((this->m_obj->m_type & 0x10) != 0)
+        //    v6 |= 0x20u;
+    }
+    CM2Model* v7 = this->GetObjectModel();
+    this->m_worldObject = CMap::ObjectCreate(v7, 0 /* CGWorldFrame::ObjectEnumProc */, 0, this->m_obj->m_guid, 0, v6);
+    //if ((this->ukn_00BC & 0x40000) != 0 && (this->ukn_00BC & 0x20000) == 0)
+    //    this->UpdateWorldObject(0);
 }
 
+// OFFSET: 0x743680
+void CGObject_C::SetModelFinish(CM2Model* model) {
+    //m_model = this->ukn_00A8;
+    //if (m_model) {
+    //    do {
+    //        ukn48 = m_model->ukn48;
+    //        bn_CEffect_DetachFromParent(m_model);
+    //        if (CM2Model::IsLoaded(this->m_worldModel, 0, 0))
+    //            CEffect::UpdateAttachment(m_model);
+    //        m_model = ukn48;
+    //    } while (ukn48);
+    //}
+    if (model) {
+        model->SetLoadedCallback(nullptr, nullptr);
+        //if (a2->ukn19)
+        //    CM2Model::DetachFromParent(a2);
+        model->Release();
+    }
+
+    if (this->m_worldModel)
+        this->m_worldModel->SetLoadedCallback(CGObject_C::ModelLoadedCallback, this);
+
+    //if (this->m_worldObject && this->m_worldModel == this->GetObjectModel()) {
+    //    World::ObjectSetModel(this->m_worldObject, this->m_worldModel);
+    //}
+}
+
+// OFFSET: 0x743BA0
 void CGObject_C::SetData(uint32_t offset, uint32_t value) {
     reinterpret_cast<uint32_t*>(this->m_obj)[offset] = value;
+}
+
+// OFFSET: 744DB0
+void CGObject_C::Reenable() {
+    //v2 = this->__vftable;
+    //this->ukn_00BC = this->ukn_00BC & 0xFFFCFFFF | 0x20000;
+    //*&this->ukn_0090[2] = (v2->GetScale)();
+    //SetFrameOfReference = this->__vftable[1].SetFrameOfReference;
+    //this->ukn_0090[4] = 0;
+    //v5 = (SetFrameOfReference)(this) != 0 ? 1000 : 0;
+    //alpha = (this->__vftable[1].ukn19)(this);
+    //CGObject_C::DoFade(this, alpha, v5);
+}
+
+// OFFSET: 0x7438E0
+void CGObject_C::UpdateWorldObject(bool a2) {
+    // TODO
+}
+
+// OFFSET: 0x4D5EA0
+void CGObject_C::GetPosition(C3Vector& pos) {
+    pos = C3Vector();
+}
+
+// OFFSET: 0x4D5EC0
+void CGObject_C::GetRawPosition(C3Vector& pos) {
+    this->GetPosition(pos);
+}
+
+// OFFSET: 0x4D5EE0
+float CGObject_C::GetFacing() {
+    return 0.0f;
+}
+
+// OFFSET: 0x4D5EF0
+float CGObject_C::GetRawFacing() {
+    return this->GetFacing();
+}
+
+// OFFSET: 0x4D5F00
+float CGObject_C::GetScale() {
+    return this->m_obj->m_scale;
+}
+
+// OFFSET: 0x4899F0
+bool CGObject_C::GetModelFileName(const char** fileName) {
+    *fileName = nullptr;
+    return false;
+}
+
+// OFFSET: 0x4D5F90
+float CGObject_C::GetTrueScale() {
+    //return *&this->unk_009C * *&this->unk_0098;
+    return 1.0f;
+}
+
+// OFFSET: 0x7442E0
+void CGObject_C::ModelLoaded(CM2Model* model) {
+    if (model != this->GetObjectModel())
+        return;
+
+    //maybe_CGObject_C__ModelChanged(this);
+    //ukn_00A8 = this->ukn_00A8;
+    //if (ukn_00A8) {
+    //    do {
+    //        v4 = *(ukn_00A8 + 264);
+    //        CEffect::UpdateAttachment(ukn_00A8);
+    //        ukn_00A8 = v4;
+    //    } while (v4);
+    //}
+}
+
+// OFFSET: 0x743330
+void CGObject_C::Animate(float a2) {
+    CM2Model* model = this->GetObjectModel();
+    if (!model)
+        return;
+
+    float scale = this->GetTrueScale();
+    float facing = this->GetRenderFacing();
+    C3Vector position;
+    this->GetPosition(position);
+    model->SetWorldTransform(position, facing, scale);
+}
+
+// OFFSET: 0x4D5EF0
+float CGObject_C::GetRenderFacing() {
+    return this->GetRawFacing();
+}
+
+// OFFSET: 0x4D5FE0
+CM2Model* CGObject_C::GetObjectModel() {
+    return this->m_worldModel;
 }
 
 // OFFSET: 0x743640
@@ -65,7 +233,9 @@ void CGObject_C::SetStorage(CGObject_C* obj, uintptr_t descriptorPtr, uintptr_t 
     obj->m_objMirror = reinterpret_cast<void*>(mirrorPtr);
 }
 
-bool CGObject_C::GetModelFileName(const char** fileName) {
-    *fileName = nullptr;
-    return false;
+// OFFSET: 0x743110
+void CGObject_C::ModelLoadedCallback(CM2Model* model, void* arg) {
+    CGObject_C* obj = reinterpret_cast<CGObject_C*>(arg);
+    if (obj)
+        obj->ModelLoaded(model);
 }

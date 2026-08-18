@@ -13,6 +13,7 @@
 #include "world/map/CMapObjDef.hpp"
 #include "world/map/CMapObjDefGroup.hpp"
 #include "world/map/CMapObj.hpp"
+#include "world/map/CMapEntity.hpp"
 #include <tempest/facet/CFacet.hpp>
 
 class CMap {
@@ -30,6 +31,7 @@ class CMap {
     static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkFreeList;
     static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkUpdateList;
     static STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) doodadDefList;
+    static STORM_EXPLICIT_LIST(CMapEntity, lameAssLink) entityList;
     static TSHashTable<CMapDoodadDef, uint32_t> doodadDefHashtable;
     static TSHashTable<CMapObjDef, uint32_t> mapObjDefHashtable;
     static int32_t uniqueId;
@@ -95,6 +97,7 @@ class CMap {
     static CMapDoodadDef* AllocDoodadDef();
     static CMapObjDef* AllocMapObjDef();
     static CMapObj* AllocMapObj();
+    static CMapEntity* AllocEntity(bool linkToHead);
     static CMapObjGroup* AllocMapObjGroup();
     static CMapObjDefGroup* AllocMapObjDefGroup();
     static CMapDoodadDef* CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3Vector* position);
@@ -112,6 +115,7 @@ class CMap {
     static void CreateMapObjDefGroups(CMapObjDef* mapObjDef, CMapObj* mapObj);
     static void PrepareMapDoodadDefs();
     static void ProcessRenderChunkUpdateList();
+    static CMapEntity* ObjectCreate(CM2Model* model, uint32_t func, uint32_t a3, WGUID guid, uint32_t a6, uint32_t a7);
 
     static bool VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);
     static bool VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);

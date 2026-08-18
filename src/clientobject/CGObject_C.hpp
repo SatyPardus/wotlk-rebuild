@@ -5,7 +5,9 @@
 #include "clientobject/Types.hpp"
 #include "clientobject/CHashKeyGUID.hpp"
 #include "clientobject/CClientObjCreate.hpp"
+#include "model/CM2Model.hpp"
 #include "storm/Hash.hpp"
+#include "world/map/CMapEntity.hpp"
 
 struct CGObjectData {
     WGUID m_guid;
@@ -36,22 +38,8 @@ class CGObject {
 class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID> {
     public:
     // Member variables
-    //CGObject_C_vtbl* __vftable /*VFT*/;
-    //DWORD ukn_0038;
-    //DWORD ukn_003C;
-    //DWORD ukn_0040;
-    //TSList ukn_0044;
-    //TSList ukn_0050;
-    //TSList ukn_005C;
-    //TSList ukn_0068;
-    //TSList ukn_0074;
-    //TSList ukn_0080;
-    //CM2Model* m_model;
-    //DWORD ukn090[8];
-    //PLAYERNAMEDESC* nameDesc;
-    //DWORD ukn091[2];
-    //DWORD m_flags;
-    //DWORD ukn0C0[4];
+    /* 0x00B4 */ CM2Model* m_worldModel = nullptr;
+    /* 0x00B8 */ CMapEntity* m_worldObject = nullptr;
 
     // Member functions
     CGObject_C();
@@ -59,13 +47,27 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
 
     void SetTypeID(OBJECT_TYPE_ID typeID);
     void AddWorldObject();
+    void SetModelFinish(CM2Model* model);
     void SetData(uint32_t offset, uint32_t value);
 
     // Virtual functions
-    virtual bool GetModelFileName(const char** fileName);
+    /* 02 */ virtual void Reenable();
+    /* 05 */ virtual void UpdateWorldObject(bool a2);
+    /* 11 */ virtual void GetPosition(C3Vector& pos);
+    /* 12 */ virtual void GetRawPosition(C3Vector& pos);
+    /* 13 */ virtual float GetFacing();
+    /* 14 */ virtual float GetRawFacing();
+    /* 15 */ virtual float GetScale();
+    /* 24 */ virtual bool GetModelFileName(const char** fileName);
+    /* 31 */ virtual float GetTrueScale();
+    /* 32 */ virtual void ModelLoaded(CM2Model* model);
+    /* 35 */ virtual void Animate(float a2);
+    /* 37 */ virtual float GetRenderFacing();
+    /* 53 */ virtual CM2Model* GetObjectModel();
 
     // Static functions
     static void SetStorage(CGObject_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
+    static void ModelLoadedCallback(CM2Model* model, void* arg);
 };
 
 #endif // CLIENTOBJECT_CGOBJECT_C_HPP

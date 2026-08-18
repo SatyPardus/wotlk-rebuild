@@ -32,6 +32,11 @@ CreatureModelDataRec* CGUnit_C::GetModelData() {
     return creatureModelData;
 }
 
+// OFFSET: 0x6E6EF0
+void CGUnit_C::GetPosition(C3Vector& pos) {
+    // TODO
+}
+
 // OFFSET: 0x717B20
 bool CGUnit_C::GetModelFileName(const char** fileName) {
     CreatureModelDataRec* creatureModelData = this->GetModelData();

@@ -49,6 +49,34 @@ uint32_t s_objHeapSize[8] = {
     0x20
 };
 
+// OFFSET: 0x4D6AE0
+CGObject_C* GetUpdateObject(WGUID guid, bool* reenable) {
+    *reenable = false;
+    CGObject_C* obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, guid);
+    if (obj) {
+        // obj->SetDisablePending(0);
+        return obj;
+    }
+
+    obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_lazyCleanupObjects, guid);
+    if (obj) {
+        // sub_4D4790(result);
+        // TSLink::Unlink(&v9->ukn_0054);
+        // TSHashTable__CGObject_C__Insert(&pObjMgr->m_objects, v9, __PAIR64__(v12, a4));
+        // v10 = v13->pObjMgr;
+        // if (!*(&v9->unk_0004 + v10->unk_A4.m_linkoffset)) {
+        //     p_unk_B0 = &v10->unk_B0;
+        //     if (!List::Contains(&v10->unk_B0.m_linkoffset, v9)) {
+        //         *a3 = 1;
+        //         HashTable::AddEntry(p_unk_B0, v9);
+        //     }
+        // }
+        return obj;
+    }
+    return nullptr;
+}
+
+// OFFSET: 0x4D3F10
 int32_t ExtractDirtyMasks(CDataStore* msg, uint8_t* maskCount, uint32_t* masks) {
     uint8_t count;
     msg->Get(count);
@@ -104,6 +132,7 @@ int32_t GetNumDwordBlocks(OBJECT_TYPE mask, WGUID guid) {
     return 0;
 }
 
+// OFFSET 0x4D53C0
 int32_t FillInPartialObjectData(CGObject_C* object, WGUID guid, CDataStore* msg, bool forFullUpdate, bool zeroZeroBits) {
     uint8_t changeMaskCount;
     uint32_t changeMasks[MAX_CHANGE_MASKS];
@@ -158,6 +187,28 @@ int32_t FillInPartialObjectData(CGObject_C* object, WGUID guid, CDataStore* msg,
     return 1;
 }
 
+// OFFSET: 0x4D6E80
+int32_t PartialUpdateFromFullUpdate(CDataStore* msg) {
+    WGUID guid;
+    *msg >> guid;
+
+    bool reenable;
+    CGObject_C* obj = GetUpdateObject(guid, &reenable);
+    if (!obj) {
+        //NOP("Failed to update object data.  Object (0x%016I64X) unknown to client!");
+        return 0;
+    }
+
+    if (!FillInPartialObjectData(obj, obj->m_obj->m_guid, msg, false, false)) {
+        return 0;
+    }
+
+    if (reenable)
+        obj->Reenable();
+    return 1;
+}
+
+// OFFSET: 0x4D3F80
 int32_t SkipPartialObjectUpdate(CDataStore* msg) {
     uint8_t changeMaskCount;
     uint32_t changeMasks[MAX_CHANGE_MASKS];
@@ -278,32 +329,6 @@ void SetupObjectStorage(CGObject_C* obj, OBJECT_TYPE_ID typeId, WGUID guid) {
     }
 }
 
-CGObject_C* GetUpdateObject(WGUID guid, bool* reenable) {
-    *reenable = false;
-    CGObject_C* obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, guid);
-    if (obj) {
-        //obj->SetDisablePending(0);
-        return obj;
-    }
-
-    obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_lazyCleanupObjects, guid);
-    if (obj) {
-        //sub_4D4790(result);
-        //TSLink::Unlink(&v9->ukn_0054);
-        //TSHashTable__CGObject_C__Insert(&pObjMgr->m_objects, v9, __PAIR64__(v12, a4));
-        //v10 = v13->pObjMgr;
-        //if (!*(&v9->unk_0004 + v10->unk_A4.m_linkoffset)) {
-        //    p_unk_B0 = &v10->unk_B0;
-        //    if (!List::Contains(&v10->unk_B0.m_linkoffset, v9)) {
-        //        *a3 = 1;
-        //        HashTable::AddEntry(p_unk_B0, v9);
-        //    }
-        //}
-        return obj;
-    }
-    return nullptr;
-}
-
 // OFFSET: 0x4D6C00
 bool CreateObject(CDataStore* msg, uint32_t time) {
     WGUID guid;
@@ -362,20 +387,44 @@ bool CreateObject(CDataStore* msg, uint32_t time) {
     return true;
 }
 
+void UpdateInRangeObjects(CDataStore* msg) {
+    uint32_t count;
+    msg->Get(count);
+
+    WGUID guid;
+    for (uint32_t i = 0; i < count; i++) {
+        *msg >> guid;
+        if (guid == ClntObjMgrGetActivePlayer())
+            continue;
+
+        bool reenable;
+        CGObject_C* obj = GetUpdateObject(guid, &reenable);
+        if (!obj || !reenable)
+            continue;
+
+        obj->Reenable();
+    }
+}
+
 int32_t ObjectUpdateFirstPass(uint32_t updateIndex, CDataStore* msg, uint32_t time, uint32_t updateCount) {
     if (updateIndex >= updateCount)
         return 1;
 
+    WGUID guid;
     for (uint32_t i = updateIndex; i < updateCount; i++) {
         uint8_t updateType;
         msg->Get(updateType);
 
         switch (updateType) {
         case UPDATE_PARTIAL:
-
+            if (!PartialUpdateFromFullUpdate(msg))
+                return 0;
             break;
         case UPDATE_MOVEMENT:
+            *msg >> guid;
 
+            OsOutputDebugString("Move update for %ull\n", guid);
+            CClientMoveUpdate::Skip(msg);
             break;
         case UPDATE_FULL:
         case UPDATE_3:
@@ -384,14 +433,63 @@ int32_t ObjectUpdateFirstPass(uint32_t updateIndex, CDataStore* msg, uint32_t ti
             }
             break;
         case UPDATE_IN_RANGE:
-
+            UpdateInRangeObjects(msg);
             break;
         default:
+            //NOP("Unknown client update packet type (%d)!");
             return 0;
         }
     }
 
     return 1;
+}
+
+// OFFSET: 0x4D7230
+void UpdateOutOfRangeObjects(CDataStore* msg) {
+    uint32_t count;
+    msg->Get(count);
+
+    uint32_t readPosition = msg->Tell();
+
+    WGUID guid;
+    for (uint32_t i = 0; i < count; i++) {
+        *msg >> guid;
+        if (guid == ClntObjMgrGetActivePlayer())
+            continue;
+
+        CGObject_C* obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, guid);
+        if (!obj)
+            continue;
+
+        //if (bnl_CGBattlefieldInfo__m_instanceType == 4) {
+        //    OBJECT_FIELD_GUID = ObjectPtr->m_obj->OBJECT_FIELD_GUID;
+        //    maybe_UpdateArenaOpponents(&OBJECT_FIELD_GUID);
+        //}
+        //(v4->ukn4)(v4, 0);
+        //if (CGObject_C__IsObjectLocked(v4)) {
+        //    CGObject_C::SetDisablePending(v4, 1);
+        //} else {
+        //    CGObject_C::SetDisablePending(v4, 0);
+        //    v4->Disable(v4);
+        //}
+    }
+
+    msg->Seek(readPosition);
+
+    for (uint32_t i = 0; i < count; i++) {
+        *msg >> guid;
+        if (guid == ClntObjMgrGetActivePlayer())
+            continue;
+
+        CGObject_C* obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, guid);
+        if (!obj)
+            continue;
+
+        // if (!CGObject_C__IsObjectLocked(v5))
+        //     ObjDelete(v6);
+    }
+
+    // CVehiclePassenger_C::ExecutePendingRescueTransitions();
 }
 
 int32_t ObjectUpdateSecondPass(CDataStore* msg, uint32_t updateCount) {
@@ -409,7 +507,7 @@ int32_t Packet_SMSG_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, 
     msg->Get(updateType);
 
     if (updateType == UPDATE_OUT_OF_RANGE) {
-        // UpdateOutOfRangeObjects();
+        UpdateOutOfRangeObjects(msg);
         updateIndex = 1;
     } else {
         msg->Seek(startPos);
