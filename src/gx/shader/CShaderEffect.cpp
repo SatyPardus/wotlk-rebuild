@@ -197,7 +197,7 @@ void CShaderEffect::SetTexMtx(C44Matrix& mat, uint32_t a2) {
             mat.a0, mat.b0, mat.c0, mat.d0,
             mat.a1, mat.b1, mat.c1, mat.d1
         };
-        //GxShaderConstantsSet(GxSh_Vertex, 2 * a2 + 6, reinterpret_cast<C4Vector*>(&matrix), 2);
+        GxShaderConstantsSet(GxSh_Vertex, 2 * a2 + 6, reinterpret_cast<C4Vector*>(&matrix), 2);
     } else {
         // TODO
         // - non-shader code path
