@@ -47,6 +47,7 @@ target_link_libraries(client
         ui
         util
         world
+        componentcore
     PUBLIC
         bc
         common

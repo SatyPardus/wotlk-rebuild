@@ -9,7 +9,7 @@
 #include "clientobject/Player_C.hpp"
 #include "db/Db.hpp"
 #include "glue/CGlueMgr.hpp"
-#include "glue/CCharacterComponent.hpp"
+#include "componentcore/CCharacterComponent.hpp"
 
 CSimpleModelFFX* CCharacterSelection::m_modelFrame = nullptr;
 uint32_t CCharacterSelection::m_characterCount = 0;

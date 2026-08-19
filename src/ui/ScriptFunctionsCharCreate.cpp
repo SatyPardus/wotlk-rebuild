@@ -8,7 +8,7 @@
 #include "db/Db.hpp"
 #include "clientobject/Unit_C.hpp"
 #include "glue/CCharacterCreation.hpp"
-#include "glue/CCharacterComponent.hpp"
+#include "componentcore/CCharacterComponent.hpp"
 #include "glue/CCharacterSelection.hpp"
 #include "client/ClientServices.hpp"
 #include <cstdint>

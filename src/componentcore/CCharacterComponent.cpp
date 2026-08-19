@@ -1,4 +1,4 @@
-#include "glue/CCharacterComponent.hpp"
+#include "componentcore/CCharacterComponent.hpp"
 
 #include <algorithm>
 

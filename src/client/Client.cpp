@@ -13,7 +13,7 @@
 #include "db/Db.hpp"
 #include "db/Startup_Strings.hpp"
 #include "glue/CGlueMgr.hpp"
-#include "glue/CCharacterComponent.hpp"
+#include "componentcore/CCharacterComponent.hpp"
 #include "gameui/CGGameUI.hpp"
 #include "gx/Screen.hpp"
 #include "gx/Texture.hpp"

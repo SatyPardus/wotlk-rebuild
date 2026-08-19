@@ -1,5 +1,5 @@
 #include "glue/CCharacterCreation.hpp"
-#include "glue/CCharacterComponent.hpp"
+#include "componentcore/CCharacterComponent.hpp"
 #include "glue/CCharacterSelection.hpp"
 #include "glue/CGlueMgr.hpp"
 #include "ui/CSimpleModelFFX.hpp"

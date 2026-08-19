@@ -707,6 +707,7 @@ void CM2Shared::Release() {
     // TODO
 }
 
+// OFFSET: 0x8360A0
 int32_t CM2Shared::SetIndices() {
     if (!this->m_indexPool) {
         this->m_indexPool = GxPoolCreate(
