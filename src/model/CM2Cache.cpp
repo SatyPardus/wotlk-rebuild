@@ -128,6 +128,9 @@ CM2Shared* CM2Cache::CreateShared(const char* path, uint32_t flags) {
 
         SFile::Close(fileptr);
         DEL(shared);
+        STORM_FREE(shared);
+    } else {
+        // NOP("Model2: File not found: %s\n");
     }
 
     return nullptr;

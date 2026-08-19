@@ -487,7 +487,7 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
             // - liquid plane stuff
         }
 
-        auto skinProfile = model->m_shared->skinProfile;
+        auto skinProfile = model->m_shared->m_skinData;
         auto v17 = (this->m_cache->m_flags & 0x1) == 0;
 
         int32_t v229;
@@ -663,6 +663,7 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
     // TODO sort additive particles
 }
 
+// OFFSET: 0x81F8F0
 CM2Model* CM2Scene::CreateModel(const char* file, uint32_t a3) {
     if (!file) {
         return nullptr;
@@ -680,7 +681,8 @@ CM2Model* CM2Scene::CreateModel(const char* file, uint32_t a3) {
 
         if (model) {
             if (!model->Initialize(this, shared, nullptr, a3)) {
-                // TODO
+                //CM2Model::~CM2Model(g_modelPool, model);
+                model = 0;
             }
         }
 

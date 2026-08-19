@@ -24,49 +24,50 @@ class CM2Shared {
         static void LoadFailedCallback(void* param);
         static void LoadSucceededCallback(void* param);
         static void SkinProfileLoadedCallback(void* param);
+        static void MakeSkinFileName(char* fileName, uint32_t profile, char* out);
 
         // Member variables
-        CM2Cache* m_cache;
-        uint32_t m_m2DataLoaded : 1;
-        uint32_t m_skinProfileLoaded : 1;
-        uint32_t m_flag4 : 1;
-        uint32_t m_flag8 : 1;
-        uint32_t m_flag10 : 1;
-        uint32_t m_flag20 : 1;
-        uint32_t m_flag40 : 1;
-        CAsyncObject* asyncObject = nullptr;
-        CM2Model* m_callbackList = nullptr;
-        CM2Model** m_callbackListTail = &this->m_callbackList;
-        CM2Shared* m_previous;
-        CM2Shared* m_next;
-        char m_filePath[STORM_MAX_PATH];
-        char* m_fileNameWithoutPath;
-        uint32_t m_fileNameHash;
-        char* ext = nullptr;
-        M2Data* m_data = nullptr;
-        CAaBox aaBox154;
-        uint32_t m_dataSize = 0;
-        M2SkinProfile* skinProfile = nullptr;
-        HTEXTURE* textures = nullptr;
-        CGxPool* m_indexPool = nullptr;
-        CGxBuf* m_indexBuf = nullptr;
-        CGxPool* m_vertexPool = nullptr;
-        CGxBuf* m_vertexBuf = nullptr;
-        CShaderEffect** m_batchShaders = nullptr;
-        M2SkinSection* m_skinSections = nullptr;
-        uint32_t uint190 = 0;
-        uint32_t uint194 = 0;
+        /* 0000 */ uint32_t m_refCount;
+        /* 0004 */ CM2Cache* m_cache;
+        /* 0008 */ union {
+            struct {
+                uint32_t m_m2DataLoaded : 1;
+                uint32_t m_skinProfileLoaded : 1;
+                uint32_t m_flag4 : 1;
+                uint32_t m_flag8 : 1;
+                uint32_t m_flag10 : 1;
+                uint32_t m_flag20 : 1;
+                uint32_t m_flag40 : 1;
+            };
+            uint32_t m_flags;
+        };
+        /* 000C */ CAsyncObject* asyncObject = nullptr;
+        /* 0010 */ CM2Model* m_callbackList = nullptr;
+        /* 0014 */ CM2Model** m_callbackListTail = &this->m_callbackList;
+        /* 0000 */ CM2Shared* m_previous;
+        /* 0000 */ CM2Shared* m_next;
+        /* 003C */ char m_filePath[STORM_MAX_PATH];
+        /* 0140 */ char* m_fileNameWithoutPath;
+        /* 0144 */ uint32_t m_fileNameHash;
+        /* 0000 */ char* ext = nullptr;
+        /* 0150 */ M2Data* m_data = nullptr;
+        /* 0154 */ CAaBox m_boundingBox;
+        /* 016C */ uint32_t m_fileSize = 0;
+        /* 0170 */ M2SkinProfile* m_skinData = nullptr;
+        /* 0000 */ HTEXTURE* textures = nullptr;
+        /* 0000 */ CGxPool* m_indexPool = nullptr;
+        /* 0000 */ CGxBuf* m_indexBuf = nullptr;
+        /* 0000 */ CGxPool* m_vertexPool = nullptr;
+        /* 0000 */ CGxBuf* m_vertexBuf = nullptr;
+        /* 0000 */ CShaderEffect** m_batchShaders = nullptr;
+        /* 0000 */ M2SkinSection* m_skinSections = nullptr;
+        /* 0000 */ uint32_t uint190 = 0;
+        /* 0000 */ uint32_t uint194 = 0;
 
         // Member functions
         CM2Shared(CM2Cache* cache)
             : m_cache(cache)
-            , m_m2DataLoaded(0)
-            , m_skinProfileLoaded(0)
-            , m_flag4(0)
-            , m_flag8(0)
-            , m_flag10(0)
-            , m_flag20(0)
-            , m_flag40(0)
+            , m_flags(0)
             {};
         void AddRef();
         int32_t CallbackWhenLoaded(CM2Model* model);
@@ -82,6 +83,9 @@ class CM2Shared {
         int32_t SetVertices(uint32_t a2);
         void SubstituteSimpleShaders();
         void SubstituteSpecializedShaders();
+        void ConvertTextureValuesToCombos();
+        void AssignBatchTextureComboIndices();
+        void ConvertTextureComboEntry(bool a2);
 };
 
 #endif

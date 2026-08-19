@@ -13,6 +13,7 @@
 #include <cstring>
 #include <cstdio>
 
+// OFFSET: 0x835A00
 void CM2Shared::LoadFailedCallback(void* arg) {
     CM2Shared* shared = static_cast<CM2Shared*>(arg);
 
@@ -27,7 +28,7 @@ void CM2Shared::LoadSucceededCallback(void* arg) {
     shared->asyncObject = nullptr;
 
     uint8_t* base = reinterpret_cast<uint8_t*>(shared->m_data);
-    uint32_t size = shared->m_dataSize;
+    uint32_t size = shared->m_fileSize;
     M2Data& data = *shared->m_data;
 
     if (!M2Init(base, size, data)) {
@@ -44,6 +45,7 @@ void CM2Shared::LoadSucceededCallback(void* arg) {
     shared->m_m2DataLoaded = 1;
 }
 
+// OFFSET: 0x83CB10
 void CM2Shared::SkinProfileLoadedCallback(void* arg) {
     CM2Shared* shared = static_cast<CM2Shared*>(arg);
 
@@ -53,8 +55,27 @@ void CM2Shared::SkinProfileLoadedCallback(void* arg) {
     shared->asyncObject = nullptr;
 }
 
+// OFFSET: 0x35970
 void CM2Shared::AddRef() {
-    // TODO
+    if (this->m_refCount || !this->m_cache) {
+        this->m_refCount++;
+        return;
+    }
+
+    //if (this->unk_0030)
+    //    *this->unk_0030 = this->unk_0034;
+    //if (this->unk_0034) {
+    //    *(this->unk_0034 + 48) = this->unk_0030;
+    //    this->m_refCount++;
+    //    this->unk_0030 = 0;
+    //    this->unk_0034 = 0;
+    //    this->unk_0038 = 0;
+    //    return;
+    //}
+    //this->m_cache->unk_000C = v3;
+    //this->unk_0030 = 0;
+    //this->unk_0034 = 0;
+    //this->unk_0038 = 0;
 }
 
 int32_t CM2Shared::CallbackWhenLoaded(CM2Model* model) {
@@ -253,14 +274,15 @@ CShaderEffect* CM2Shared::CreateSimpleEffect(uint32_t textureCount, uint16_t sha
     return effect;
 }
 
+// OFFSET: 0x838490
 int32_t CM2Shared::FinishLoadingSkinProfile(uint32_t size) {
     if (this->m_skinProfileLoaded) {
         return 1;
     }
 
-    uint8_t* base = reinterpret_cast<uint8_t*>(this->skinProfile);
+    uint8_t* base = reinterpret_cast<uint8_t*>(this->m_skinData);
     M2Data& data = *this->m_data;
-    M2SkinProfile& skinProfile = *this->skinProfile;
+    M2SkinProfile& skinProfile = *this->m_skinData;
 
     if (!M2Init(base, size, data, skinProfile)) {
         return 0;
@@ -283,6 +305,7 @@ int32_t CM2Shared::FinishLoadingSkinProfile(uint32_t size) {
     return 1;
 }
 
+// OFFSET: 0x836600
 CShaderEffect* CM2Shared::GetEffect(M2Batch* batch) {
     CShaderEffect* effect;
 
@@ -354,13 +377,17 @@ CShaderEffect* CM2Shared::GetEffect(M2Batch* batch) {
 
         // TODO
         // effect->InitFixedFuncPass(effect, &colorOp, &alphaOp, 1);
+
+        if (!effect) {
+            effect = this->CreateSimpleEffect(batch->textureCount, 0x11, batch->textureCoordComboIndex);
+        }
     }
 
     return effect;
 }
 
 int32_t CM2Shared::Initialize() {
-    this->skinProfile = nullptr;
+    this->m_skinData = nullptr;
 
     // TODO
     // implement logic to select skin profile
@@ -425,13 +452,14 @@ int32_t CM2Shared::Initialize() {
     return 1;
 }
 
+// OFFSET: 0x837A40
 int32_t CM2Shared::InitializeSkinProfile() {
-    this->uint194 = this->skinProfile->indices.Count()
-        ? 65536 / this->skinProfile->indices.Count()
+    this->uint194 = this->m_skinData->indices.Count()
+        ? 65536 / this->m_skinData->indices.Count()
         : 1;
 
-    for (int32_t i = 0; i < this->skinProfile->skinSections.Count(); i++) {
-        uint32_t v6 = this->skinProfile->boneCountMax / this->skinProfile->skinSections[i].boneCount;
+    for (int32_t i = 0; i < this->m_skinData->skinSections.Count(); i++) {
+        uint32_t v6 = this->m_skinData->boneCountMax / this->m_skinData->skinSections[i].boneCount;
 
         if (this->uint194 > v6) {
             this->uint194 = v6;
@@ -444,9 +472,9 @@ int32_t CM2Shared::InitializeSkinProfile() {
 
     this->uint190 = 1;
 
-    uint32_t dataSize = sizeof(M2SkinSection) * this->skinProfile->skinSections.Count();
-    if (this->skinProfile->indices.Count()) {
-        dataSize += sizeof(CShaderEffect*) * this->skinProfile->batches.Count();
+    uint32_t dataSize = sizeof(M2SkinSection) * this->m_skinData->skinSections.Count();
+    if (this->m_skinData->indices.Count()) {
+        dataSize += sizeof(CShaderEffect*) * this->m_skinData->batches.Count();
     }
 
     char* data = static_cast<char*>(SMemAlloc(dataSize, __FILE__, __LINE__, 0x0));
@@ -455,44 +483,126 @@ int32_t CM2Shared::InitializeSkinProfile() {
     }
 
     this->m_skinSections = reinterpret_cast<M2SkinSection*>(data);
-    if (this->skinProfile->skinSections.Count()) {
-        data += sizeof(M2SkinSection) * this->skinProfile->skinSections.Count();
-        memcpy(this->m_skinSections, this->skinProfile->skinSections.Data(), this->skinProfile->skinSections.Count() * sizeof(M2SkinSection));
+    if (this->m_skinData->skinSections.Count()) {
+        data += sizeof(M2SkinSection) * this->m_skinData->skinSections.Count();
+        memcpy(this->m_skinSections, this->m_skinData->skinSections.Data(), this->m_skinData->skinSections.Count() * sizeof(M2SkinSection));
     }
 
-    if (this->skinProfile->indices.Count()) {
+    if (this->m_skinData->indices.Count()) {
         this->m_batchShaders = reinterpret_cast<CShaderEffect**>(data);
-        memset(this->m_batchShaders, 0, sizeof(CShaderEffect*) * this->skinProfile->batches.Count());
+        memset(this->m_batchShaders, 0, sizeof(CShaderEffect*) * this->m_skinData->batches.Count());
     }
 
     this->SubstituteSimpleShaders();
     this->SubstituteSpecializedShaders();
 
-    if (this->skinProfile->indices.Count()) {
-        for (int32_t i = 0; i < this->skinProfile->batches.Count(); i++) {
-            this->m_batchShaders[i] = this->GetEffect(&this->skinProfile->batches[i]);
+    if (this->m_skinData->indices.Count()) {
+        for (int32_t i = 0; i < this->m_skinData->batches.Count(); i++) {
+            this->m_batchShaders[i] = this->GetEffect(&this->m_skinData->batches[i]);
         }
     }
 
     if (!(this->m_cache->m_flags & 0x8)) {
-        // TODO
-        // - non-shader-path vertex logic
+        //v17 = this->m_skinData->vertices.count;
+        //v18 = SMemAlloc((48 * v17) >> 32 != 0 ? -1 : 48 * v17, ".\\M2Shared.cpp", 1320, 0);
+        //v41 = v18;
+        //if (v18) {
+        //    v19 = v17 - 1;
+        //    if (v19 >= 0) {
+        //        v20 = v18 + 7;
+        //        do {
+        //            *(v20 - 7) = 0.0;
+        //            *(v20 - 6) = 0.0;
+        //            *(v20 - 5) = 0.0;
+        //            *(v20 - 2) = 0.0;
+        //            *(v20 - 1) = 0.0;
+        //            *v20 = 0.0;
+        //            ForEachElement((v20 + 1), 8, 2, function);
+        //            v20 += 12;
+        //            --v19;
+        //        } while (v19 >= 0);
+        //        v18 = v41;
+        //    }
+        //    v21 = v18;
+        //    v44 = v18;
+        //} else {
+        //    v44 = 0;
+        //    v21 = 0;
+        //}
+        //v42 = 0;
+        //if (this->m_skinData->skinSections.count) {
+        //    v43 = 0;
+        //    do {
+        //        v22 = (v43 + this->m_skinData->skinSections.offset);
+        //        v23 = v22[2];
+        //        v40 = v23 + v22[3];
+        //        v47 = v23;
+        //        if (v23 < v40) {
+        //            v24 = &v21[12 * v23];
+        //            v46 = v24;
+        //            while (1) {
+        //                v25 = (this->m_data->vertices.offset + 48 * *(this->m_skinData->vertices.offset + 2 * v23));
+        //                v26 = 0;
+        //                qmemcpy(v24, v25, 0x30u);
+        //                if (v22[8]) {
+        //                    do {
+        //                        v46[v26 + 16] = *(this->m_data->boneCombos.offset + 2 * (v22[7] + *(4 * v47 + this->m_skinData->bones.offset + v26)));
+        //                        ++v26;
+        //                    } while (v26 < v22[8]);
+        //                }
+        //                v46 += 48;
+        //                if (++v47 >= v40)
+        //                    break;
+        //                v24 = v46;
+        //                v23 = v47;
+        //            }
+        //            v21 = v44;
+        //        }
+        //        v43 += 48;
+        //        ++v42;
+        //    } while (v42 < this->m_skinData->skinSections.count);
+        //}
+        //v27 = 0;
+        //if (this->m_skinData->skinSections.count) {
+        //    v28 = 0;
+        //    do {
+        //        *(this->unk_018C + v28 + 14) = 0;
+        //        *(this->m_skinData->skinSections.offset + v28 + 14) = 0;
+        //        ++v27;
+        //        v28 += 48;
+        //    } while (v27 < this->m_skinData->skinSections.count);
+        //}
+        //for (i = 0; i < this->m_data->boneCombos.count; ++i)
+        //    *(this->m_data->boneCombos.offset + 2 * i) = i;
+        //for (j = 0; j < this->m_skinData->vertices.count; ++j)
+        //    *(this->m_skinData->vertices.offset + 2 * j) = j;
+        //m_data = this->m_data;
+        //v32 = this->m_skinData->vertices.count;
+        //if (v32 <= m_data->vertices.count) {
+        //    memcpy(m_data->vertices.offset, v21, 48 * v32);
+        //    if (v21)
+        //        SMemFree(v21, "delete[]", -1, 0);
+        //} else {
+        //    this->m_flags |= 8u;
+        //    m_data->vertices.offset = v21;
+        //}
+        //this->m_data->vertices.count = this->m_skinData->vertices.count;
     }
 
     if (!(this->m_cache->m_flags & 0x8)) {
-        for (int32_t i = 0; i < this->skinProfile->batches.Count(); i++) {
-            auto& batch = this->skinProfile->batches[i];
+        for (int32_t i = 0; i < this->m_skinData->batches.Count(); i++) {
+            auto& batch = this->m_skinData->batches[i];
 
             if (batch.textureCount > 1) {
-                this->skinProfile->batches[i - batch.materialLayer].flags |= 0x40;
+                this->m_skinData->batches[i - batch.materialLayer].flags |= 0x40;
             }
         }
 
-        for (int32_t i = 0; i < this->skinProfile->batches.Count(); i++) {
-            auto& batch = this->skinProfile->batches[i];
+        for (int32_t i = 0; i < this->m_skinData->batches.Count(); i++) {
+            auto& batch = this->m_skinData->batches[i];
 
             if (batch.materialLayer) {
-                if (this->skinProfile->batches[i - batch.materialLayer].flags & 0x40) {
+                if (this->m_skinData->batches[i - batch.materialLayer].flags & 0x40) {
                     batch.flags |= 0x40;
                 }
             }
@@ -502,21 +612,19 @@ int32_t CM2Shared::InitializeSkinProfile() {
     return 1;
 }
 
+// OFFSET: 0x83D410
 int32_t CM2Shared::Load(SFile* file, int32_t a3, CAaBox* a4) {
-    // TODO
-    // this->dword8 ^= (this->dword8 ^ (4 * (a3 != 0))) & 4;
+    this->m_flags ^= (this->m_flags ^ (4 * (a3 != 0))) & 4;
+    this->m_fileSize = SFile::GetFileSize(file, 0);
 
-    this->m_dataSize = SFile::GetFileSize(file, 0);
-
-    // TODO use proper allocation function here
-    this->m_data = static_cast<M2Data*>(SMemAlloc(this->m_dataSize, __FILE__, __LINE__, 0));
+    this->m_data = static_cast<M2Data*>(SMemAlignedAlloc(this->m_fileSize, __FILE__, __LINE__));
 
     if (!this->m_data) {
         return 0;
     }
 
     if (a4) {
-        this->aaBox154 = *a4;
+        this->m_boundingBox = *a4;
     }
 
     this->asyncObject = AsyncFileReadAllocObject();
@@ -527,7 +635,7 @@ int32_t CM2Shared::Load(SFile* file, int32_t a3, CAaBox* a4) {
 
     this->asyncObject->file = file;
     this->asyncObject->buffer = this->m_data;
-    this->asyncObject->size = this->m_dataSize;
+    this->asyncObject->size = this->m_fileSize;
     this->asyncObject->userArg = this;
     this->asyncObject->userPostloadCallback = &CM2Shared::LoadSucceededCallback;
     this->asyncObject->userFailedCallback = &CM2Shared::LoadFailedCallback;
@@ -539,34 +647,33 @@ int32_t CM2Shared::Load(SFile* file, int32_t a3, CAaBox* a4) {
     return 1;
 }
 
-int32_t CM2Shared::LoadSkinProfile(uint32_t profile) {
-    // TODO
-    // the file path logic is in its own function
-
-    char skinFilePath[STORM_MAX_PATH];
-
-    strcpy(skinFilePath, this->m_filePath);
-    char* v4 = strrchr(skinFilePath, '.');
+// OFFSET: 0x835A80
+void CM2Shared::MakeSkinFileName(char* fileName, uint32_t profile, char* out) {
+    char* v3 = strcpy(out, fileName);
+    char* v4 = strrchr(v3, '.');
     if (v4) {
         *v4 = 0;
     }
-    sprintf(&skinFilePath[strlen(skinFilePath)], "%02d.skin", profile);
+    sprintf(&v3[strlen(v3)], "%02d.skin", profile);
+}
+
+// OFFSET: 0x83CB40
+int32_t CM2Shared::LoadSkinProfile(uint32_t profile) {
+    char skinFilePath[STORM_MAX_PATH];
+    CM2Shared::MakeSkinFileName(this->m_filePath, profile, skinFilePath);
 
     SFile* fileptr;
 
     if (!SFile::OpenEx(nullptr, skinFilePath, this->m_flag4, &fileptr)) {
-        // TODO
-        // error handling
-
+        // NOP("Model2: File not found: %s\n");
         return 0;
     }
 
     uint32_t size = SFile::GetFileSize(fileptr, nullptr);
 
-    // TODO use proper allocation function here
-    this->skinProfile = static_cast<M2SkinProfile*>(SMemAlloc(size, __FILE__, __LINE__, 0));
+    this->m_skinData = static_cast<M2SkinProfile*>(SMemAlignedAlloc(size, __FILE__, __LINE__));
 
-    if (!this->skinProfile) {
+    if (!this->m_skinData) {
         SFile::Close(fileptr);
 
         return 0;
@@ -576,13 +683,13 @@ int32_t CM2Shared::LoadSkinProfile(uint32_t profile) {
 
     if (!this->asyncObject) {
         SFile::Close(fileptr);
-        delete this->skinProfile;
+        delete this->m_skinData;
 
         return 0;
     }
 
     this->asyncObject->file = fileptr;
-    this->asyncObject->buffer = this->skinProfile;
+    this->asyncObject->buffer = this->m_skinData;
     this->asyncObject->size = size,
     this->asyncObject->userArg = this;
     this->asyncObject->userPostloadCallback = &CM2Shared::SkinProfileLoadedCallback;
@@ -605,7 +712,7 @@ int32_t CM2Shared::SetIndices() {
         this->m_indexPool = GxPoolCreate(
             GxPoolTarget_Index,
             GxPoolUsage_Dynamic,
-            2 * this->uint190 * this->skinProfile->indices.Count(),
+            2 * this->uint190 * this->m_skinData->indices.Count(),
             GxPoolHintBit_Unk1,
             this->ext
         );
@@ -613,7 +720,7 @@ int32_t CM2Shared::SetIndices() {
         this->m_indexBuf = GxBufCreate(
             this->m_indexPool,
             2,
-            this->uint190 * this->skinProfile->indices.Count(),
+            this->uint190 * this->m_skinData->indices.Count(),
             0
         );
 
@@ -634,19 +741,19 @@ int32_t CM2Shared::SetIndices() {
             || (this->m_data->bones.Count() == 1 && (this->m_cache->m_flags & 0x40) != 0);
         uint32_t v21 = 0;
 
-        for (int32_t i = 0; i < this->skinProfile->skinSections.Count(); i++) {
+        for (int32_t i = 0; i < this->m_skinData->skinSections.Count(); i++) {
             auto& skinSection = this->m_skinSections[i];
-            auto indexStart = this->skinProfile->skinSections[i].indexStart;
+            auto indexStart = this->m_skinData->skinSections[i].indexStart;
             auto v25 = v10 ? 0 : -skinSection.vertexStart;
 
             for (int32_t j = 0; j < this->uint190; j++) {
                 for (int32_t k = 0; k < skinSection.indexCount; k++) {
-                    indexBuf[k] = this->skinProfile->indices[indexStart + k + v25];
+                    indexBuf[k] = this->m_skinData->indices[indexStart + k + v25];
                 }
 
                 indexBuf += skinSection.indexCount;
 
-                v25 += v10 ? this->skinProfile->vertices.Count() : skinSection.vertexCount;
+                v25 += v10 ? this->m_skinData->vertices.Count() : skinSection.vertexCount;
             }
 
             skinSection.indexStart = v21;
@@ -666,7 +773,7 @@ int32_t CM2Shared::SetVertices(uint32_t a2) {
         this->m_vertexPool = GxPoolCreate(
             GxPoolTarget_Vertex,
             GxPoolUsage_Static,
-            sizeof(CGxVertexPBNT2) * this->uint190 * this->skinProfile->vertices.Count(),
+            sizeof(CGxVertexPBNT2) * this->uint190 * this->m_skinData->vertices.Count(),
             GxPoolHintBit_Unk1,
             this->ext
         );
@@ -674,7 +781,7 @@ int32_t CM2Shared::SetVertices(uint32_t a2) {
         this->m_vertexBuf = GxBufCreate(
             this->m_vertexPool,
             sizeof(CGxVertexPBNT2),
-            this->uint190 * this->skinProfile->vertices.Count(),
+            this->uint190 * this->m_skinData->vertices.Count(),
             0
         );
 
@@ -694,8 +801,8 @@ int32_t CM2Shared::SetVertices(uint32_t a2) {
 
             auto v27 = 0;
             for (int32_t i = 0; i < this->uint190; i++) {
-                for (int32_t j = 0; j < this->skinProfile->skinSections.Count(); j++) {
-                    auto& skinSection = this->skinProfile->skinSections[j];
+                for (int32_t j = 0; j < this->m_skinData->skinSections.Count(); j++) {
+                    auto& skinSection = this->m_skinData->skinSections[j];
                     auto vertexStart = skinSection.vertexStart;
                     auto vertexEnd = vertexStart + skinSection.vertexCount;
 
@@ -703,14 +810,14 @@ int32_t CM2Shared::SetVertices(uint32_t a2) {
 
                     if (vertexStart < vertexEnd) {
                         for (int32_t k = vertexStart; k < vertexEnd; k++) {
-                            auto vertex = &this->m_data->vertices[this->skinProfile->vertices[k]];
+                            auto vertex = &this->m_data->vertices[this->m_skinData->vertices[k]];
                             memcpy(&vertexBuf[k], vertex, sizeof(CGxVertexPBNT2));
-                            vertexBuf[k].bi.u = v25 + this->skinProfile->bones[k].u;
+                            vertexBuf[k].bi.u = v25 + this->m_skinData->bones[k].u;
                         }
                     }
                 }
 
-                vertexBuf += this->skinProfile->vertices.Count();
+                vertexBuf += this->m_skinData->vertices.Count();
             }
 
             GxBufUnlock(this->m_vertexBuf, 0);
@@ -727,9 +834,10 @@ int32_t CM2Shared::SetVertices(uint32_t a2) {
     }
 }
 
+// OFFSET: 0x836980
 void CM2Shared::SubstituteSimpleShaders() {
-    for (int32_t batchIndex = 0; batchIndex < this->skinProfile->batches.Count(); batchIndex++) {
-        auto& batch = this->skinProfile->batches[batchIndex];
+    for (int32_t batchIndex = 0; batchIndex < this->m_skinData->batches.Count(); batchIndex++) {
+        auto& batch = this->m_skinData->batches[batchIndex];
 
         if (batch.shader & 0x8000) {
             continue;
@@ -803,6 +911,22 @@ void CM2Shared::SubstituteSimpleShaders() {
     }
 }
 
+// OFFSET: 0x837680
 void CM2Shared::SubstituteSpecializedShaders() {
+    // TODO
+}
+
+// OFFSET: 0x837250
+void CM2Shared::ConvertTextureValuesToCombos() {
+    // TODO
+}
+
+// OFFSET: 0x8374A0
+void CM2Shared::AssignBatchTextureComboIndices() {
+    // TODO
+}
+
+// OFFSET: 0x35F90
+void CM2Shared::ConvertTextureComboEntry(bool a2) {
     // TODO
 }

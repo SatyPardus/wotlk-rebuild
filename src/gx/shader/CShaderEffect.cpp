@@ -190,8 +190,18 @@ void CShaderEffect::SetTexMtx_Identity(uint32_t a1) {
     }
 }
 
-void CShaderEffect::SetTexMtx(const C44Matrix& matrix, uint32_t a2) {
-    // TODO
+// OFFSET: 0x873620
+void CShaderEffect::SetTexMtx(C44Matrix& mat, uint32_t a2) {
+    if (CShaderEffect::s_enableShaders) {
+        float matrix[] = {
+            mat.a0, mat.b0, mat.c0, mat.d0,
+            mat.a1, mat.b1, mat.c1, mat.d1
+        };
+        //GxShaderConstantsSet(GxSh_Vertex, 2 * a2 + 6, reinterpret_cast<C4Vector*>(&matrix), 2);
+    } else {
+        // TODO
+        // - non-shader code path
+    }
 }
 
 void CShaderEffect::SetTexMtx_SphereMap(uint32_t a1) {

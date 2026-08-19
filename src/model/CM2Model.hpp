@@ -21,6 +21,7 @@ struct M2ModelLight;
 struct M2ModelTextureWeight;
 struct M2SequenceFallback;
 struct M2TrackBase;
+struct M2ModelTextureTransform;
 
 struct CM2ModelCall {
     uint32_t type = -1;
@@ -105,6 +106,7 @@ class CM2Model {
         M2ModelColor* m_colors = nullptr;
         HTEXTURE* m_textures = nullptr;
         M2ModelTextureWeight* m_textureWeights = nullptr;
+        M2ModelTextureTransform* m_textureTransforms = nullptr;
         C44Matrix* m_textureMatrices = nullptr;
         C44Matrix matrixB4;
         C44Matrix matrixF4;
@@ -154,6 +156,7 @@ class CM2Model {
         void AnimateMTSimple(const C44Matrix* view, const C3Vector& a3, const C3Vector& a4, float a5, float a6);
         void AnimateAttachmentsMT();
         void AnimateST();
+        void AnimateTextureTransformsMT();
         void AttachToScene(CM2Scene* scene);
         uint16_t AttachToParent(CM2Model* parent, uint32_t attachmentId, const C3Vector* a4, int32_t a5);
         void CancelDeferredSequences(uint32_t boneIndex, bool a3);

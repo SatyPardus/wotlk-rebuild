@@ -100,6 +100,7 @@ void CM2Model::AnimateCamerasST() {
     }
 }
 
+// OFFSET: 0x82F0F0
 void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vector& a4, float a5, float a6) {
     if (!this->m_loaded /* TODO other conditionals */) {
         return;
@@ -335,7 +336,9 @@ void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vect
         }
     }
 
-    // TODO
+    if (this->m_shared->m_data->textureTransforms.Count()) {
+        this->AnimateTextureTransformsMT();
+    }
 
     for (int32_t i = 0; i < this->m_shared->m_data->lights.Count(); i++) {
         auto& light = this->m_shared->m_data->lights[i];
@@ -589,6 +592,48 @@ void CM2Model::AnimateST() {
     for (auto child = this->m_attachList; child; child = child->m_attachNext) {
         // TODO: v43
         child->AnimateST();
+    }
+}
+
+// OFFSET: 0x82D6F0
+void CM2Model::AnimateTextureTransformsMT() {
+    M2Data* data = this->m_shared->m_data;
+    if (!data->textureTransforms.Count())
+        return;
+
+    static bool initializedLazy;
+    static C3Vector center;
+    if (!initializedLazy) {
+        initializedLazy = true;
+        center = C3Vector(0.5f, 0.5f, 0.0f);
+    }
+
+    for (int32_t i = 0; i < data->textureTransforms.Count(); i++) {
+        M2TextureTransform* src = &data->textureTransforms[i];
+        M2ModelTextureTransform* dst = &this->m_textureTransforms[i];
+        C44Matrix* mtx = &this->m_textureMatrices[i];
+
+        *mtx = C44Matrix();
+
+        if (src->rotationTrack.sequenceTimes.Count()) {
+            C4Quaternion defaultValue;
+            M2AnimateTrack<M2CompQuat, C4Quaternion>(this, this->m_bones, src->rotationTrack, dst->rotation, defaultValue);
+            mtx->Translate(center);
+            mtx->Rotate(dst->rotation.currentValue);
+            mtx->Translate(C3Vector(-center.x, -center.y, -center.z));
+        }
+        if (src->scaleTrack.sequenceTimes.Count()) {
+            C3Vector defaultValue = { 1.0f, 1.0f, 1.0f };
+            M2AnimateTrack<C3Vector, C3Vector>(this, this->m_bones, src->scaleTrack, dst->scaling, defaultValue);
+            mtx->Translate(center);
+            mtx->Scale(dst->scaling.currentValue);
+            mtx->Translate(C3Vector(-center.x, -center.y, -center.z));
+        }
+        if (src->translationTrack.sequenceTimes.Count()) {
+            C3Vector defaultValue;
+            M2AnimateTrack<C3Vector, C3Vector>(this, this->m_bones, src->translationTrack, dst->translation, defaultValue);
+            mtx->Translate(dst->translation.currentValue);
+        }
     }
 }
 
@@ -966,19 +1011,21 @@ int32_t CM2Model::Initialize(CM2Scene* scene, CM2Shared* shared, CM2Model* a4, u
     return this->m_shared->CallbackWhenLoaded(this);
 }
 
+// OFFSET: 0x832EA0
 int32_t CM2Model::InitializeLoaded() {
     if (!this->m_shared->m_m2DataLoaded || !this->m_shared->m_skinProfileLoaded) {
         return 1;
     }
 
     uint32_t dataSize
-        = (sizeof(M2ModelBone) * this->m_shared->m_data->bones.Count())
-        + (sizeof(uint32_t) * this->m_shared->m_data->loops.Count())
-        + (sizeof(uint32_t) * this->m_shared->skinProfile->skinSections.Count())
-        + (sizeof(M2ModelColor) * this->m_shared->m_data->colors.Count())
+        = (sizeof(uint32_t) * this->m_shared->m_skinData->skinSections.Count())
         + (sizeof(HTEXTURE) * this->m_shared->m_data->textures.Count())
+        + (sizeof(uint32_t) * this->m_shared->m_data->loops.Count())
+        + (sizeof(M2ModelBone) * this->m_shared->m_data->bones.Count())
+        + (sizeof(M2ModelColor) * this->m_shared->m_data->colors.Count())
         + (sizeof(M2ModelTextureWeight) * this->m_shared->m_data->textureWeights.Count())
         + (sizeof(M2ModelTextureTransform) * this->m_shared->m_data->textureTransforms.Count())
+        + (sizeof(C44Matrix) * this->m_shared->m_data->textureTransforms.Count())
         + (sizeof(M2ModelAttachment) * this->m_shared->m_data->attachments.Count())
         + (sizeof(M2ModelLight) * this->m_shared->m_data->lights.Count())
         + (sizeof(M2ModelCamera) * this->m_shared->m_data->cameras.Count());
@@ -1000,8 +1047,7 @@ int32_t CM2Model::InitializeLoaded() {
             this->m_bones[i].flags = this->m_shared->m_data->bones[i].flags;
         }
 
-        // TODO use A16 allocator
-        this->m_boneMatrices = static_cast<C44Matrix*>(SMemAlloc(sizeof(C44Matrix) * this->m_shared->m_data->bones.Count(), __FILE__, __LINE__, 0));
+        this->m_boneMatrices = static_cast<C44Matrix*>(SMemAlignedAlloc(sizeof(C44Matrix) * this->m_shared->m_data->bones.Count(), __FILE__, __LINE__));
 
         for (int32_t i = 0; i < this->m_shared->m_data->bones.Count(); i++) {
             new (&this->m_boneMatrices[i]) C44Matrix();
@@ -1019,23 +1065,21 @@ int32_t CM2Model::InitializeLoaded() {
         }
     }
 
-    if (this->m_shared->skinProfile->skinSections.Count()) {
+    if (this->m_shared->m_skinData->skinSections.Count()) {
         this->m_skinSections = reinterpret_cast<uint32_t*>(&data[0]);
-        data += (sizeof(uint32_t) * this->m_shared->skinProfile->skinSections.Count());
+        data += (sizeof(uint32_t) * this->m_shared->m_skinData->skinSections.Count());
 
         if (this->model30) {
             memcpy(
                 this->m_skinSections,
                 this->model30->m_skinSections,
-                sizeof(uint32_t) * this->m_shared->skinProfile->skinSections.Count());
+                sizeof(uint32_t) * this->m_shared->m_skinData->skinSections.Count());
         } else {
-            for (uint32_t i = 0; i < this->m_shared->skinProfile->skinSections.Count(); ++i) {
+            for (uint32_t i = 0; i < this->m_shared->m_skinData->skinSections.Count(); ++i) {
                 this->m_skinSections[i] = 1;
             }
         }
     }
-
-    // TODO
 
     if (this->m_shared->m_data->colors.Count()) {
         this->m_colors = reinterpret_cast<M2ModelColor*>(&data[0]);
@@ -1070,7 +1114,48 @@ int32_t CM2Model::InitializeLoaded() {
         }
     }
 
-    // TODO
+    if (this->m_shared->m_data->textureTransforms.Count()) {
+        this->m_textureTransforms = reinterpret_cast<M2ModelTextureTransform*>(&data[0]);
+        data += (sizeof(M2ModelTextureTransform) * this->m_shared->m_data->textureWeights.Count());
+
+        for (int32_t i = 0; i < this->m_shared->m_data->textureTransforms.Count(); i++) {
+            new (&this->m_textureTransforms[i]) M2ModelTextureTransform();
+        }
+
+        this->m_textureMatrices = reinterpret_cast<C44Matrix*>(SMemAlignedAlloc(sizeof(C44Matrix) * this->m_shared->m_data->textureTransforms.Count(), __FILE__, __LINE__));
+        if (!this->m_textureMatrices)
+            return 0;
+    }
+
+    //if (m_data->attachments.count) {
+    //    v59 = v172;
+    //    this->m_attachments = v172;
+    //    v60 = m_data->attachments.count;
+    //    v172 = &v59[12 * v60];
+    //    v61 = 0;
+    //    if (v60) {
+    //        v62 = 0;
+    //        do {
+    //            v63 = v62 + this->m_attachments;
+    //            if (v63) {
+    //                *v63 = 0;
+    //                *(v63 + 4) = 0;
+    //                *(v63 + 8) = 0;
+    //            }
+    //            ++v61;
+    //            v62 += 12;
+    //        } while (v61 < m_data->attachments.count);
+    //    }
+    //    v64 = 0;
+    //    if (m_data->attachments.count) {
+    //        v65 = 0;
+    //        do {
+    //            *(v65 + this->m_attachments + 8) = 1;
+    //            ++v64;
+    //            v65 += 12;
+    //        } while (v64 < m_data->attachments.count);
+    //    }
+    //}
 
     if (this->m_shared->m_data->lights.Count()) {
         this->m_lights = reinterpret_cast<M2ModelLight*>(&data[0]);
@@ -1711,6 +1796,7 @@ void CM2Model::Sub826E60(uint32_t* a2, uint32_t* a3) {
     // TODO
 }
 
+// OFFSET: 0x824510
 void CM2Model::UnlinkFromCallbackList() {
     if (this->m_callbackPrev) {
         *this->m_callbackPrev = this->m_callbackNext;
@@ -1770,7 +1856,7 @@ void CM2Model::SetGeometryVisible(uint32_t start, uint32_t end, int32_t visible)
     if (this->m_loaded) {
         bool needUpdate = false;
 
-        const auto& skinSections = this->m_shared->skinProfile->skinSections;
+        const auto& skinSections = this->m_shared->m_skinData->skinSections;
 
         for (uint32_t i = 0; i < skinSections.Count(); ++i) {
             uint32_t id = skinSections[i].skinSectionId;
