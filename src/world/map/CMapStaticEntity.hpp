@@ -12,7 +12,7 @@ class CMapStaticEntity : public CMapBaseObj {
     int32_t unk_024;
     uint32_t unkFlags_28;
     int32_t unkCounter;
-    float unk_030;
+    float m_distanceToCamera;
     CM2Model* model;
     CAaSphere sphere;
     CAaBox bbox;

@@ -3,12 +3,15 @@
 
 #include "ui/CSimpleFrame.hpp"
 #include "ui/CSimpleTop.hpp"
+#include "clientobject/CGObject_C.hpp"
 
 class CGCamera;
 
 class CGWorldFrame : public CSimpleFrame {
     public:
     CGWorldFrame(CSimpleFrame* parent);
+
+    void UpdateObject(CGObject_C* obj, int a3);
 
     virtual void OnFrameRender(CRenderBatch* batch, uint32_t layer);
     virtual int32_t OnLayerKeyDown(const CKeyEvent& evt);
@@ -19,6 +22,7 @@ class CGWorldFrame : public CSimpleFrame {
     static void OnWorldUpdate();
     static void OnWorldRender();
     static CGCamera* GetActiveCamera();
+    static bool ObjectEnumProc(void* param, uint32_t status, uint64_t param64, uint32_t param32);
 
     CGCamera* m_camera = nullptr;
 

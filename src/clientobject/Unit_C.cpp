@@ -8,7 +8,8 @@ CGUnit_C::CGUnit_C() {
 
 CGUnit_C::CGUnit_C(CClientObjCreate& objCreate, uint32_t time)
     : CGObject_C(objCreate, time) {
-    
+    tempPosition = objCreate.m_moveUpdate.status.m_position;
+    tempFacing = objCreate.m_moveUpdate.status.m_facing;
 }
 
 // OFFSET: 0x717A20
@@ -35,6 +36,13 @@ CreatureModelDataRec* CGUnit_C::GetModelData() {
 // OFFSET: 0x6E6EF0
 void CGUnit_C::GetPosition(C3Vector& pos) {
     // TODO
+    pos = tempPosition;
+}
+
+// OFFSET: 0x6E6F40
+float CGUnit_C::GetFacing() {
+    // TODO
+    return tempFacing;
 }
 
 // OFFSET: 0x717B20

@@ -766,7 +766,7 @@ void CMap::PrepareUpdate(bool a1) {
     CMap::PreUpdateAreas(a1);
     CMap::PrepareMapObjDefs(a1);
     CMap::PrepareMapDoodadDefs();
-    // sub_7B5590(a1);
+    CMap::PrepareEntitys(a1);
     if (CMap::bPreload) {
         //    if (CMap::s_isStreamingMode) {
         //        v1 = sub_7B4960(&stru_CD7778.X);
@@ -1288,21 +1288,20 @@ void CMap::ProcessRenderChunkUpdateList() {
 }
 
 // OFFSET: 0x781A10
-CMapEntity* CMap::ObjectCreate(CM2Model* model, uint32_t func, uint32_t a3, WGUID guid, uint32_t a6, uint32_t a7) {
+CMapEntity* CMap::ObjectCreate(CM2Model* model, MAP_OBJECT_FUNC func, void* funcParam, uint64_t param64, uint32_t param32, uint32_t a7) {
     CMapEntity* entity = CMap::AllocEntity((a7 >> 3) & 1);
     entity->model = model;
-    entity->m_guid = guid;
-    entity->unk_00A0 = a6;
+    entity->m_funcParam64 = param64;
+    entity->m_funcParam32 = param32;
     entity->position = C3Vector(10000000.0f, 10000000.0f, 10000000.0f);
     entity->unk_08C = 1.0f;
     entity->vec2 = C3Vector(10000000.0f, 10000000.0f, 10000000.0f);
     entity->unk_00C4 = 1.0f;
     entity->type |= 0x200;
-    //v7 = v6->unk_07C & 0xFFFF13FD | (((a7 >> 3) & 1) << 13) & 0xFFFF3BFF | ~(a7 << 10) & 0x800 | (2 * (a7 & 1 | ((a7 & 4 | (8 * (a7 & 0x10))) << 7)));
-    //v6->flags = 0;
-    //v6->m_func = 0;
-    //v6->unk_00B4 = 0;
-    //v6->unk_07C = v7;
+    entity->flags = 0;
+    entity->m_func = nullptr;
+    entity->unk_00B4 = 0;
+    entity->unk_07C = entity->unk_07C & 0xFFFF13FD | (((a7 >> 3) & 1) << 13) & 0xFFFF3BFF | ~(a7 << 10) & 0x800 | (2 * (a7 & 1 | ((a7 & 4 | (8 * (a7 & 0x10))) << 7)));
     //if ((a7 & 0x20) != 0)
     //    v6->flags = MAPOBJ_FLAG_SHADOW_20000;
     //v8 = 0.0;
@@ -1343,17 +1342,77 @@ CMapEntity* CMap::ObjectCreate(CM2Model* model, uint32_t func, uint32_t a3, WGUI
     //BYTE2(a6a) = v8;
     //v6->unk_00C0 = a6a;
     //v6->m2AmbietColor = a6a;
-    //if (v6->model) {
+    if (entity->model) {
     //    if (!SStrCmpI(off_ADEE74, model->m_shared->m_fileNameWithoutPath, 0x7FFFFFFFu))
     //        v6->unk_07C |= 0x4000u;
-    //    v17 = v6->model;
-    //    v17->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
-    //    v17->m_lightingArg = v6;
-    //    ++v6->model->m_refCount;
-    //}
-    //v6->m_func = func;
-    //v6->unk_0094 = a3;
+        //entity->model->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
+        entity->model->m_lightingCallback = CMapDoodadLightingCallback;
+        entity->model->m_lightingArg = entity;
+        ++entity->model->m_refCount;
+    }
+    entity->m_func = func;
+    entity->m_funcParam = funcParam;
     return entity;
+}
+
+// OFFSET: 0x780240
+void CMap::ObjectUpdate(CMapEntity* entity, C44Matrix& mat, CAaBox& localBox, CAaSphere& localSphere, C3Vector& vec, bool a6, uint32_t a7) {
+    C3Vector origin = { mat.d0, mat.d1, mat.d2 };
+
+    float scale = sqrtf(mat.a0 * mat.a0 + mat.a1 * mat.a1 + mat.a2 * mat.a2);
+
+    C3Vector center = mat.TransformPoint(vec);
+    CAaBox box = { origin, origin };
+    CAaSphere sphere = { origin, 0.0f };
+
+    if (localSphere.r > 0.001f) {
+        sphere.r = scale * localSphere.r;
+        sphere.c = mat.TransformPoint(localSphere.c);
+    }
+
+    if (localBox.t.x > localBox.b.x && localBox.t.y > localBox.b.y && localBox.t.z > localBox.b.z) {
+        box = mat.Transform(localBox);
+    }
+
+    C3Vector dPos = { entity->position.x - origin.x, entity->position.y - origin.y, entity->position.z - origin.z };
+    C3Vector dCenter = { entity->vec2.x - center.x, entity->vec2.y - center.y, entity->vec2.z - center.z };
+    C3Vector dBoxMin = { entity->bbox.b.x - box.b.x, entity->bbox.b.y - box.b.y, entity->bbox.b.z - box.b.z };
+    C3Vector dBoxMax = { entity->bbox.t.x - box.t.x, entity->bbox.t.y - box.t.y, entity->bbox.t.z - box.t.z };
+    C3Vector dSphere = { entity->sphere.c.x - sphere.c.x, entity->sphere.c.y - sphere.c.y, entity->sphere.c.z - sphere.c.z };
+    float dRadius = entity->sphere.r - sphere.r;
+
+    entity->position = origin;
+    entity->vec2 = center;
+    entity->scale = scale;
+    entity->bbox = box;
+    entity->sphere = sphere;
+    entity->unk_00A4 = a7;
+
+    bool changed =
+           dPos.x    * dPos.x    + dPos.y    * dPos.y    + dPos.z    * dPos.z    > 0.000001f
+        || dCenter.x * dCenter.x + dCenter.y * dCenter.y + dCenter.z * dCenter.z > 0.0001f
+        || dBoxMin.x * dBoxMin.x + dBoxMin.y * dBoxMin.y + dBoxMin.z * dBoxMin.z > 0.0001f
+        || dBoxMax.x * dBoxMax.x + dBoxMax.y * dBoxMax.y + dBoxMax.z * dBoxMax.z > 0.0001f
+        || dSphere.x * dSphere.x + dSphere.y * dSphere.y + dSphere.z * dSphere.z > 0.0001f
+        || dRadius > 0.0001f;
+
+    //if ( changed && !a6 )
+    //    CMap::UpdateEntity(entity);
+}
+
+// OFFSET: 0x7B5590
+void CMap::PrepareEntitys(bool a1) {
+    if (!a1)
+        return;
+
+    for (auto entity = CMap::entityList.Head(); entity;) {
+        auto next = CMap::entityList.Next(entity);
+
+        if ((entity->unk_07C & 0x4) == 0)
+            CWorldScene::AddEntityToSortTable(entity);
+
+        entity = next;
+    }
 }
 
 // OFFSET: 0x7A39F0

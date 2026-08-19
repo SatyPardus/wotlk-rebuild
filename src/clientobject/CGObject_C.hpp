@@ -38,8 +38,10 @@ class CGObject {
 class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID> {
     public:
     // Member variables
+    /* 0x00AC */ float m_height = 1.0f;
     /* 0x00B4 */ CM2Model* m_worldModel = nullptr;
     /* 0x00B8 */ CMapEntity* m_worldObject = nullptr;
+    /* 0x00BC */ uint32_t m_modelFlags = 0;
 
     // Member functions
     CGObject_C();
@@ -48,6 +50,8 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     void SetTypeID(OBJECT_TYPE_ID typeID);
     void AddWorldObject();
     void SetModelFinish(CM2Model* model);
+    void ModelChanged();
+    bool IsReadyToDraw();
     void SetData(uint32_t offset, uint32_t value);
 
     // Virtual functions
@@ -61,7 +65,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     /* 24 */ virtual bool GetModelFileName(const char** fileName);
     /* 31 */ virtual float GetTrueScale();
     /* 32 */ virtual void ModelLoaded(CM2Model* model);
-    /* 35 */ virtual void Animate(float a2);
+    /* 35 */ virtual bool Animate(float a2);
     /* 37 */ virtual float GetRenderFacing();
     /* 53 */ virtual CM2Model* GetObjectModel();
 

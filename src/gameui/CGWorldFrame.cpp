@@ -21,6 +21,7 @@
 #include <tempest/Vector.hpp>
 #include <common/Time.hpp>
 #include <cmath>
+#include <clientobject/ObjectMgrClient.hpp>
 
 
 CGWorldFrame* CGWorldFrame::s_currentWorldFrame = nullptr;
@@ -36,6 +37,60 @@ CGWorldFrame::CGWorldFrame(CSimpleFrame* parent) : CSimpleFrame(parent) {
     this->EnableEvent(SIMPLE_EVENT_KEY, -1);
     this->EnableEvent(SIMPLE_EVENT_MOUSE, -1);
     this->EnableEvent(SIMPLE_EVENT_MOUSEWHEEL, -1);
+}
+
+// OFFSET: 0x4F8D10
+void CGWorldFrame::UpdateObject(CGObject_C* obj, int a3) {
+    CM2Model* model = obj->GetObjectModel();
+    if (!model)
+        return;
+
+    bool a2a = true;
+    uint32_t v18 = 0;
+    uint32_t v17 = 0;
+    //obj->ShouldRender(a3, &v18, &v17);
+    if (v18 || v17)
+        a2a = false;
+    //obj->PreAnimate(this);
+    if (!obj->Animate(0.0f /*this->unk_0B14*/))
+        return;
+
+    //if ((a2->m_obj->OBJECT_FIELD_TYPE & (TYPEMASK_CORPSE | TYPEMASK_GAMEOBJECT | TYPEMASK_UNIT)) != 0 && a2a && (a2->m_modelFlags & 0x100000) == 0) {
+    //    if (sub_4F7180(&this->unk_02B4)) {
+    //        v6 = maybe_CGWorldFrame__AllocModelRecord(&this->unk_029C, 2, 0, 0);
+    //    } else {
+    //        unk_02BC = this->unk_02BC;
+    //        if ((unk_02BC & 1) == 0 && unk_02BC)
+    //            v6 = this->unk_02BC;
+    //        else
+    //            v6 = 0;
+    //        bn_TSList_UnlinkNode(v6);
+    //        TSList::LinkToTail(&this->unk_029C, v6);
+    //    }
+    //    v8 = a2->GetObjectModel(a2);
+    //    *(v6 + 2) = v8;
+    //    ++v8->m_refCount;
+    //    m_obj = a2->m_obj;
+    //    v6[4] = *&m_obj->OBJECT_FIELD_GUID.guid_low;
+    //    v6[5] = *&m_obj->OBJECT_FIELD_GUID.guid_high;
+    //}
+    model->SetVisible(a2a);
+    //m_attachedParent = v5->m_attachedParent;
+    //m_bitFlags = v5->m_bitFlags;
+    //v12 = a2a & 1;
+    //if (m_attachedParent) {
+    //    v13 = v12 << 7;
+    //    v14 = m_bitFlags & 0xFFFFFF7F;
+    //} else {
+    //    v13 = 8 * v12;
+    //    v14 = m_bitFlags & 0xFFFFFFF7;
+    //}
+    //v15 = v14 | v13;
+    //v5->m_bitFlags = v15;
+    //if (m_attachedParent)
+    //    v5->m_bitFlags = v15 & 0xFFFDFFFF | (v12 << 17);
+    //else
+    //    v5->m_bitFlags = v5->m_bitFlags & 0xFFFEFFFF | (v12 << 16);
 }
 
 void CGWorldFrame::OnFrameRender(CRenderBatch* batch, uint32_t layer) {
@@ -259,4 +314,31 @@ CGCamera* CGWorldFrame::GetActiveCamera() {
     STORM_ASSERT(CGWorldFrame::s_currentWorldFrame);
     STORM_ASSERT(CGWorldFrame::s_currentWorldFrame->m_camera);
     return CGWorldFrame::s_currentWorldFrame->m_camera;
+}
+
+// OFFSET: 0x4F9F70
+bool CGWorldFrame::ObjectEnumProc(void* param, uint32_t status, uint64_t param64, uint32_t param32) {
+    CGObject_C* obj = ClntObjMgrObjectPtr<CGObject_C*>(WGUID(param64), TYPEMASK_OBJECT);
+    if (!obj)
+        return true;
+
+    if ((status & 4) != 0)
+        obj->m_modelFlags |= 0x800000;
+    else
+        obj->m_modelFlags &= ~0x800000;
+
+    if ((obj->m_modelFlags & 0x10000) == 0 && obj->IsReadyToDraw()) {
+        CGWorldFrame::s_currentWorldFrame->UpdateObject(obj, status);
+        return true;
+    }
+
+    CM2Model* model = obj->GetObjectModel();
+    if (model) {
+        model->SetVisible(0);
+        if (model->m_attachParent)
+            model->m_flag20000 = 0;
+        else
+            model->m_flag10000 = 0;
+    }
+    return true;
 }

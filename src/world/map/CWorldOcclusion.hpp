@@ -13,6 +13,7 @@ class CWorldOcclusion {
     static uint32_t QueryVolumes(CAaSphere* sphere);
     static uint32_t QueryVolumes(C3Vector* sphere, uint32_t count);
     static uint32_t QueryBuffer(CAaBox* box, uint8_t flags);
+    static uint32_t QueryBuffer(CAaSphere* box, uint8_t flags);
 };
 
 #endif

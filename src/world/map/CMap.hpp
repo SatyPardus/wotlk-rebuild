@@ -115,7 +115,9 @@ class CMap {
     static void CreateMapObjDefGroups(CMapObjDef* mapObjDef, CMapObj* mapObj);
     static void PrepareMapDoodadDefs();
     static void ProcessRenderChunkUpdateList();
-    static CMapEntity* ObjectCreate(CM2Model* model, uint32_t func, uint32_t a3, WGUID guid, uint32_t a6, uint32_t a7);
+    static CMapEntity* ObjectCreate(CM2Model* model, MAP_OBJECT_FUNC func, void* funcParam, uint64_t param64, uint32_t param32, uint32_t a7);
+    static void ObjectUpdate(CMapEntity* entity, C44Matrix& mat, CAaBox& box, CAaSphere& sphere, C3Vector& vec, bool a6, uint32_t a7);
+    static void PrepareEntitys(bool a1);
 
     static bool VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);
     static bool VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);

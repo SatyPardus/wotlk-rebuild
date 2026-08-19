@@ -25,3 +25,8 @@ uint32_t CWorldOcclusion::QueryVolumes(C3Vector* sphere, uint32_t count) {
 uint32_t CWorldOcclusion::QueryBuffer(CAaBox* box, uint8_t flags) {
     return 0;
 }
+
+// OFFSET: 0x78FDC0
+uint32_t CWorldOcclusion::QueryBuffer(CAaSphere* box, uint8_t flags) {
+    return 0;
+}

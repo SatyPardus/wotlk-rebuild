@@ -9,10 +9,10 @@
 
 class CMapEntity : public CMapStaticEntity {
     public:
-    uint32_t m_func;
-    uint32_t unk_0094;
-    WGUID m_guid;
-    uint32_t unk_00A0;
+    MAP_OBJECT_FUNC m_func;
+    void* m_funcParam;
+    uint64_t m_funcParam64;
+    uint32_t m_funcParam32;
     uint32_t unk_00A4;
     uint32_t unk_00A8;
     uint32_t unk_00AC;

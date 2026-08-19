@@ -9,6 +9,8 @@
 #include <tempest/sphere/CAaSphere.hpp>
 #include <gx/Texture.hpp>
 
+typedef bool (*MAP_OBJECT_FUNC)(void*, uint32_t, uint64_t, uint32_t);
+
 struct SIffChunk {
     uint32_t token;
     uint32_t size;

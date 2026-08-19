@@ -713,4 +713,5 @@ T ClntObjMgrObjectPtr(WGUID guid, TypeMask mask) {
     return reinterpret_cast<T>(result);
 }
 
+template CGObject_C* ClntObjMgrObjectPtr<CGObject_C*>(WGUID, TypeMask);
 template CGPlayer_C* ClntObjMgrObjectPtr<CGPlayer_C*>(WGUID, TypeMask);

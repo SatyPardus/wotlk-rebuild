@@ -3,6 +3,8 @@
 #include <world/CWorldScene.hpp>
 #include <model/CM2Scene.hpp>
 #include <world/map/CMap.hpp>
+#include <gameui/CGWorldFrame.hpp>
+#include "model/CM2Shared.hpp"
 
 CGObject_C::CGObject_C() {
     
@@ -97,9 +99,9 @@ void CGObject_C::AddWorldObject() {
         //    v6 |= 0x20u;
     }
     CM2Model* v7 = this->GetObjectModel();
-    this->m_worldObject = CMap::ObjectCreate(v7, 0 /* CGWorldFrame::ObjectEnumProc */, 0, this->m_obj->m_guid, 0, v6);
-    //if ((this->ukn_00BC & 0x40000) != 0 && (this->ukn_00BC & 0x20000) == 0)
-    //    this->UpdateWorldObject(0);
+    this->m_worldObject = CMap::ObjectCreate(v7, CGWorldFrame::ObjectEnumProc, nullptr, (uint64_t)this->m_obj->m_guid, 0, v6);
+    if ((this->m_modelFlags & 0x40000) != 0 && (this->m_modelFlags & 0x20000) == 0)
+        this->UpdateWorldObject(0);
 }
 
 // OFFSET: 0x743680
@@ -129,12 +131,38 @@ void CGObject_C::SetModelFinish(CM2Model* model) {
     //}
 }
 
+// OFFSET: 0x744230
+void CGObject_C::ModelChanged() {
+    CM2Model* model = this->GetObjectModel();
+    bool isLoaded = model->IsLoaded(0, 1);
+    CAaBox boundingBox = model->GetBoundingBox();
+    float height = 0.0f;
+    if (boundingBox.t.x > boundingBox.b.x && boundingBox.t.y > boundingBox.b.y && boundingBox.t.z > boundingBox.b.z)
+        height = boundingBox.t.z - boundingBox.b.z;
+    this->m_height = height;
+    if ((this->m_modelFlags & 0x10000) == 0)
+        this->UpdateWorldObject(false);
+    if (isLoaded)
+        this->m_modelFlags &= ~0x200000;
+    else
+        this->m_modelFlags |= 0x200000;
+}
+
+// OFFSET: 0x743450
+bool CGObject_C::IsReadyToDraw() {
+    CM2Model* model = this->GetObjectModel();
+    if (model && model->IsDrawable(0, 0)) {
+        return true;
+    }
+    return false;
+}
+
 // OFFSET: 0x743BA0
 void CGObject_C::SetData(uint32_t offset, uint32_t value) {
     reinterpret_cast<uint32_t*>(this->m_obj)[offset] = value;
 }
 
-// OFFSET: 744DB0
+// OFFSET: 0x744DB0
 void CGObject_C::Reenable() {
     //v2 = this->__vftable;
     //this->ukn_00BC = this->ukn_00BC & 0xFFFCFFFF | 0x20000;
@@ -148,7 +176,35 @@ void CGObject_C::Reenable() {
 
 // OFFSET: 0x7438E0
 void CGObject_C::UpdateWorldObject(bool a2) {
-    // TODO
+    if (!this->m_worldObject)
+        return;
+
+    C44Matrix mat;
+    C3Vector pos;
+    this->GetPosition(pos);
+    float facing = this->GetFacing();
+    float scale = this->GetTrueScale();
+
+    mat.Translate(pos);
+    mat.RotateAroundZ(facing);
+    mat.Scale(scale);
+
+    C3Vector vec;
+    CAaBox box;
+    CAaSphere sphere;
+
+    if (this->m_worldModel && this->m_worldModel->IsLoaded(0, 0)) {
+        if (!this->m_worldModel->m_shared->m_m2DataLoaded)
+            this->m_worldModel->WaitForLoad(nullptr);
+
+        M2Bounds* collisionBounds = &this->m_worldModel->m_shared->m_data->collisionBounds;
+        vec.x = (collisionBounds->extent.t.x + collisionBounds->extent.b.x) * 0.5;
+        vec.y = (collisionBounds->extent.t.y + collisionBounds->extent.b.y) * 0.5;
+        vec.z = (collisionBounds->extent.t.z + collisionBounds->extent.b.z) * 0.5;
+        box = this->m_worldModel->GetBoundingBox();
+        sphere = this->m_worldModel->GetBoundingSphere();
+    }
+    CMap::ObjectUpdate(this->m_worldObject, mat, box, sphere, vec, a2, 0xFFFFFFFF);
 }
 
 // OFFSET: 0x4D5EA0
@@ -193,7 +249,7 @@ void CGObject_C::ModelLoaded(CM2Model* model) {
     if (model != this->GetObjectModel())
         return;
 
-    //maybe_CGObject_C__ModelChanged(this);
+    this->ModelChanged();
     //ukn_00A8 = this->ukn_00A8;
     //if (ukn_00A8) {
     //    do {
@@ -205,16 +261,17 @@ void CGObject_C::ModelLoaded(CM2Model* model) {
 }
 
 // OFFSET: 0x743330
-void CGObject_C::Animate(float a2) {
+bool CGObject_C::Animate(float a2) {
     CM2Model* model = this->GetObjectModel();
     if (!model)
-        return;
+        return true;
 
     float scale = this->GetTrueScale();
     float facing = this->GetRenderFacing();
     C3Vector position;
     this->GetPosition(position);
     model->SetWorldTransform(position, facing, scale);
+    return true;
 }
 
 // OFFSET: 0x4D5EF0

@@ -10,6 +10,7 @@
 #include "world/map/CMapObjDef.hpp"
 #include "world/map/CMapObjDefGroup.hpp"
 #include "world/map/CPortalView.hpp"
+#include "world/map/CMapEntity.hpp"
 
 class CM2Scene;
 class CMapDoodadDef;
@@ -17,7 +18,7 @@ class CMapDoodadDef;
 struct CSortEntry {
     STORM_EXPLICIT_LIST(CMapChunk, sortListLink) mapChunkList;
     STORM_EXPLICIT_LIST(CMapObjDefGroup, sortEntryLink) exteriorGroupList;
-    //TSList entityList;
+    STORM_EXPLICIT_LIST(CMapEntity, sortEntryLink) entityList;
     //TSList doodadDefList;
     //TSList liquidList;
     //TSList occluderList;
@@ -34,8 +35,8 @@ struct CSortTable {
     STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) renderChunkLists[24];
     STORM_EXPLICIT_LIST(CMapObjDefGroup, sortTableLink) mapObjDefGroup;
     //TSList interiorLiquidGroupList;
-    //TSList visibleEntityList;
-    //TSList culledEntityList;
+    STORM_EXPLICIT_LIST(CMapEntity, sortEntryLink) visibleEntityList;
+    STORM_EXPLICIT_LIST(CMapEntity, sortEntryLink) culledEntityList;
     //TSList detailDoodadBatchList;
     //TSList horizonChunkList;
     //TSList horizonMapObjList;
@@ -100,6 +101,8 @@ class CWorldScene {
     static TSGrowableArray<CRect> s_coveredRects;
     static int32_t s_curGroupIsInterior;
 
+    static bool s_entityCanLink;
+
     static char s_debugMapName[260];
     static char s_debugMapChunk[64];
 
@@ -112,6 +115,7 @@ class CWorldScene {
     static void AddMapObjDefGroup(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup);
     static void AddMapChunkToRenderList(CMapChunk* mapChunk, C3Vector* pos);
     static void AddMapObjDefGroupToSortTable(uint32_t groupNum, CMapObjDef* mapObjDef);
+    static void AddEntityToSortTable(CMapEntity* entity);
     static CFrustum* AllocFrustum();
     static bool FrustumCull(CAaBox* box);
     static bool FrustumCull(CAaSphere* box);
@@ -129,6 +133,7 @@ class CWorldScene {
     static void CullDoodadsExterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, uint8_t fadeLevel);
     static void CullMapObjDefGroups(CSortEntry* entry, CRect* a2, uint32_t a3);
     static void CullMapObjDefGroupFromExterior(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, CRect* a3, uint32_t a4);
+    static void CullEntitys(CSortEntry* entry);
     static void AddDoodadDefModelToModelScene(CMapDoodadDef* a1);
     static void Render(const C3Vector& cameraPos, float time);
     static void RenderChunks();

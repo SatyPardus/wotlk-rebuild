@@ -117,6 +117,8 @@ class CGUnit {
 
 class CGUnit_C : public CGObject_C, public CGUnit {
     public:
+    C3Vector tempPosition;
+    float tempFacing;
 
     CGUnit_C();
     CGUnit_C(CClientObjCreate& objCreate, uint32_t time);
@@ -125,6 +127,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
 
     // Virtual functions
     /* 11 */ void GetPosition(C3Vector& pos) override;
+    /* 13 */ float GetFacing() override;
     /* 24 */ bool GetModelFileName(const char** fileName) override;
 
     // Static functions
