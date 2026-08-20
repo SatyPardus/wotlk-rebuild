@@ -134,17 +134,17 @@ void CCharacterCreation::ResetCharCustomizeInfo() {
 
     ComponentData data;
     CCharacterCreation::GetRandomRaceAndSex(&data);
-    CCharacterCreation::CalcClasses(data.m_info.raceID);
+    CCharacterCreation::CalcClasses(data.m_preferences.raceID);
     CCharacterCreation::InitCharacterComponent(&data, 1);
 
     auto classID = CCharacterCreation::GetRandomClassID();
     CCharacterCreation::SetSelectedClass(classID);
 
-    data.m_info.classID = CCharacterCreation::m_selectedClassID;
+    data.m_preferences.classID = CCharacterCreation::m_selectedClassID;
 
     CCharacterCreation::m_raceIndex = -1;
     for (uint32_t i = 0; i < CCharacterCreation::m_races.Count(); ++i) {
-        if (CCharacterCreation::m_races[i] == CCharacterCreation::m_character->m_data.m_info.raceID) {
+        if (CCharacterCreation::m_races[i] == CCharacterCreation::m_character->m_data.m_preferences.raceID) {
             CCharacterCreation::m_raceIndex = i;
             break;
         }
@@ -157,8 +157,8 @@ void CCharacterCreation::ResetCharCustomizeInfo() {
 void CCharacterCreation::GetRandomRaceAndSex(ComponentData* data) {
     // TODO
     // WORKAROUND
-    data->m_info.sexID = 0;
-    data->m_info.raceID = 1;
+    data->m_preferences.sexID = 0;
+    data->m_preferences.raceID = 1;
 }
 
 void CCharacterCreation::CalcClasses(uint32_t raceID) {
@@ -191,7 +191,7 @@ void CCharacterCreation::Dress() {
 }
 
 void CCharacterCreation::InitCharacterComponent(ComponentData* data, int32_t randomize) {
-    auto record = Player_C_GetModelName(data->m_info.raceID, data->m_info.sexID);
+    auto record = Player_C_GetModelName(data->m_preferences.raceID, data->m_preferences.sexID);
     if (!record || !record->m_modelName[0]) {
         return;
     }
@@ -215,14 +215,14 @@ void CCharacterCreation::InitCharacterComponent(ComponentData* data, int32_t ran
     // TODO: LightingCallback + particles
     data->m_model->SetBoneSequence(0xFFFFFFFF, 0, 0, 0, 1.0f, 1, 1);
 
-    data->m_unkFlag |= 2u;
+    data->m_flags |= 2u;
     CCharacterCreation::m_character->Init(data, nullptr);
 
     if (randomize) {
         CCharacterCreation::RandomizeCharFeatures();
     }
 
-    const auto& info = CCharacterCreation::m_character->m_data.m_info;
+    const auto& info = CCharacterCreation::m_character->m_data.m_preferences;
     CCharacterCreation::m_prevSkinIndex = info.skinID;
     CCharacterCreation::m_prevFaceIndex = info.faceID;
     CCharacterCreation::m_prevHairColorIndex = info.hairColorID;
@@ -248,7 +248,7 @@ void CCharacterCreation::RandomizeCharFeatures() {
     CCharacterCreation::m_character->SetRandomFace();
     CCharacterCreation::m_character->SetRandomFacialFeature();
 
-    const auto& info = CCharacterCreation::m_character->m_data.m_info;
+    const auto& info = CCharacterCreation::m_character->m_data.m_preferences;
     CCharacterCreation::m_prevSkinIndex = info.skinID;
     CCharacterCreation::m_prevFaceIndex = info.faceID;
     CCharacterCreation::m_prevHairColorIndex = info.hairColorID;
@@ -264,7 +264,7 @@ void CCharacterCreation::SetSelectedRace(int32_t raceIndex) {
     }
 
     auto previousRace = CCharacterCreation::m_races[CCharacterCreation::m_raceIndex];
-    auto sexID = CCharacterCreation::m_character->m_data.m_info.sexID;
+    auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
 
     auto preferences = CCharacterCreation::m_charPreferences[2 * previousRace + sexID];
     if (!preferences) {
@@ -272,7 +272,7 @@ void CCharacterCreation::SetSelectedRace(int32_t raceIndex) {
         CCharacterCreation::m_charPreferences[2 * previousRace + sexID] = preferences;
     }
 
-    CCharacterCreation::m_character->GetInfo(preferences);
+    CCharacterCreation::m_character->GetPreferences(preferences);
     CCharacterCreation::m_raceIndex = raceIndex;
 
     ComponentData data;
@@ -281,14 +281,14 @@ void CCharacterCreation::SetSelectedRace(int32_t raceIndex) {
         auto display = CCharacterSelection::GetCharacterDisplay(CCharacterCreation::m_existingCharacterIndex);
         if (display && display->m_characterInfo.sexID == sexID &&
             (display->m_characterInfo.customizeFlags & 1)) {
-            data.m_info.raceID = display->m_characterInfo.raceID;
-            data.m_info.sexID = display->m_characterInfo.sexID;
-            data.m_info.classID = display->m_characterInfo.classID;
-            data.m_info.skinID = display->m_characterInfo.skinID;
-            data.m_info.hairStyleID = display->m_characterInfo.hairStyleID;
-            data.m_info.hairColorID = display->m_characterInfo.hairColorID;
-            data.m_info.facialHairStyleID = display->m_characterInfo.facialHairStyleID;
-            data.m_info.faceID = display->m_characterInfo.faceID;
+            data.m_preferences.raceID = display->m_characterInfo.raceID;
+            data.m_preferences.sexID = display->m_characterInfo.sexID;
+            data.m_preferences.classID = display->m_characterInfo.classID;
+            data.m_preferences.skinID = display->m_characterInfo.skinID;
+            data.m_preferences.hairStyleID = display->m_characterInfo.hairStyleID;
+            data.m_preferences.hairColorID = display->m_characterInfo.hairColorID;
+            data.m_preferences.facialHairStyleID = display->m_characterInfo.facialHairStyleID;
+            data.m_preferences.faceID = display->m_characterInfo.faceID;
 
             CCharacterCreation::InitCharacterComponent(&data, 0);
             CCharacterCreation::SetSelectedSex(display->m_characterInfo.sexID);
@@ -303,22 +303,22 @@ void CCharacterCreation::SetSelectedRace(int32_t raceIndex) {
     auto raceID = CCharacterCreation::m_races[CCharacterCreation::m_raceIndex];
     preferences = CCharacterCreation::m_charPreferences[2 * raceID + sexID];
     if (preferences) {
-        data.m_info = *preferences;
-        CCharacterCreation::CalcClasses(data.m_info.raceID);
-        if (!CCharacterCreation::IsRaceClassValid(data.m_info.raceID, CCharacterCreation::m_selectedClassID)) {
+        data.m_preferences = *preferences;
+        CCharacterCreation::CalcClasses(data.m_preferences.raceID);
+        if (!CCharacterCreation::IsRaceClassValid(data.m_preferences.raceID, CCharacterCreation::m_selectedClassID)) {
             CCharacterCreation::m_selectedClassID = CCharacterCreation::GetRandomClassID();
         }
-        data.m_info.classID = CCharacterCreation::m_selectedClassID;
+        data.m_preferences.classID = CCharacterCreation::m_selectedClassID;
         CCharacterComponent::ValidateComponentData(&data);
         CCharacterCreation::InitCharacterComponent(&data, 0);
     } else {
-        data.m_info.sexID = sexID;
-        data.m_info.raceID = raceID;
-        CCharacterCreation::CalcClasses(data.m_info.raceID);
-        if (!CCharacterCreation::IsRaceClassValid(data.m_info.raceID, CCharacterCreation::m_selectedClassID)) {
+        data.m_preferences.sexID = sexID;
+        data.m_preferences.raceID = raceID;
+        CCharacterCreation::CalcClasses(data.m_preferences.raceID);
+        if (!CCharacterCreation::IsRaceClassValid(data.m_preferences.raceID, CCharacterCreation::m_selectedClassID)) {
             CCharacterCreation::SetSelectedClass(CCharacterCreation::GetRandomClassID());
         }
-        data.m_info.classID = CCharacterCreation::m_selectedClassID;
+        data.m_preferences.classID = CCharacterCreation::m_selectedClassID;
         CCharacterCreation::InitCharacterComponent(&data, 1);
     }
 
@@ -332,7 +332,7 @@ void CCharacterCreation::SetSelectedSex(int32_t sexID) {
         return;
     }
 
-    auto previousSex = CCharacterCreation::m_character->m_data.m_info.sexID;
+    auto previousSex = CCharacterCreation::m_character->m_data.m_preferences.sexID;
 
     if (sexID == previousSex) {
         return;
@@ -346,25 +346,25 @@ void CCharacterCreation::SetSelectedSex(int32_t sexID) {
         CCharacterCreation::m_charPreferences[2 * raceID + previousSex] = preferences;
     }
 
-    CCharacterCreation::m_character->GetInfo(preferences);
+    CCharacterCreation::m_character->GetPreferences(preferences);
 
     ComponentData data;
-    data.m_info.raceID = CCharacterCreation::m_character->m_data.m_info.raceID;
-    data.m_info.sexID = sexID;
-    data.m_info.classID = CCharacterCreation::m_selectedClassID;
+    data.m_preferences.raceID = CCharacterCreation::m_character->m_data.m_preferences.raceID;
+    data.m_preferences.sexID = sexID;
+    data.m_preferences.classID = CCharacterCreation::m_selectedClassID;
 
     if (CCharacterCreation::m_existingCharacterIndex >= 0) {
         auto display = CCharacterSelection::GetCharacterDisplay(CCharacterCreation::m_existingCharacterIndex);
         if (display && display->m_characterInfo.sexID == sexID &&
             (display->m_characterInfo.customizeFlags & 1)) {
-            data.m_info.raceID = display->m_characterInfo.raceID;
-            data.m_info.sexID = display->m_characterInfo.sexID;
-            data.m_info.classID = display->m_characterInfo.classID;
-            data.m_info.skinID = display->m_characterInfo.skinID;
-            data.m_info.hairStyleID = display->m_characterInfo.hairStyleID;
-            data.m_info.hairColorID = display->m_characterInfo.hairColorID;
-            data.m_info.facialHairStyleID = display->m_characterInfo.facialHairStyleID;
-            data.m_info.faceID = display->m_characterInfo.faceID;
+            data.m_preferences.raceID = display->m_characterInfo.raceID;
+            data.m_preferences.sexID = display->m_characterInfo.sexID;
+            data.m_preferences.classID = display->m_characterInfo.classID;
+            data.m_preferences.skinID = display->m_characterInfo.skinID;
+            data.m_preferences.hairStyleID = display->m_characterInfo.hairStyleID;
+            data.m_preferences.hairColorID = display->m_characterInfo.hairColorID;
+            data.m_preferences.facialHairStyleID = display->m_characterInfo.facialHairStyleID;
+            data.m_preferences.faceID = display->m_characterInfo.faceID;
 
             CCharacterCreation::InitCharacterComponent(&data, 0);
 
@@ -376,14 +376,14 @@ void CCharacterCreation::SetSelectedSex(int32_t sexID) {
 
     preferences = CCharacterCreation::m_charPreferences[2 * raceID + sexID];
     if (preferences) {
-        data.m_info = *preferences;
-        data.m_info.classID = CCharacterCreation::m_selectedClassID;
+        data.m_preferences = *preferences;
+        data.m_preferences.classID = CCharacterCreation::m_selectedClassID;
         CCharacterComponent::ValidateComponentData(&data);
         CCharacterCreation::InitCharacterComponent(&data, 0);
     } else {
-        data.m_info.raceID = CCharacterCreation::m_character->m_data.m_info.raceID;
-        data.m_info.sexID = sexID;
-        data.m_info.classID = CCharacterCreation::m_selectedClassID;
+        data.m_preferences.raceID = CCharacterCreation::m_character->m_data.m_preferences.raceID;
+        data.m_preferences.sexID = sexID;
+        data.m_preferences.classID = CCharacterCreation::m_selectedClassID;
         CCharacterCreation::InitCharacterComponent(&data, 1);
     }
 
@@ -398,8 +398,8 @@ void CCharacterCreation::SetSelectedClass(int32_t classID) {
 
     CCharacterCreation::m_selectedClassID = classID;
     ComponentData data;
-    data.m_info = CCharacterCreation::m_character->m_data.m_info;
-    data.m_info.classID = classID;
+    data.m_preferences = CCharacterCreation::m_character->m_data.m_preferences;
+    data.m_preferences.classID = classID;
     CCharacterComponent::ValidateComponentData(&data);
     CCharacterCreation::InitCharacterComponent(&data, 0);
     CCharacterCreation::Dress();
@@ -453,7 +453,7 @@ void CCharacterCreation::CreateCharacter(const char* name) {
         return;
     }
 
-    const auto& info = CCharacterCreation::m_character->m_data.m_info;
+    const auto& info = CCharacterCreation::m_character->m_data.m_preferences;
 
     CHARACTER_CREATE_INFO character;
     SStrCopy(character.name, name, sizeof(character.name));

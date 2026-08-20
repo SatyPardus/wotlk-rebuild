@@ -131,7 +131,7 @@ void CCharacterSelection::ShowCharacter() {
 
     ComponentData componentData(character.m_characterInfo);
     componentData.m_model = model;
-    componentData.m_unkFlag |= 2;
+    componentData.m_flags |= 2;
 
     character.m_component = CCharacterComponent::AllocComponent();
     character.m_component->Init(&componentData, 0);

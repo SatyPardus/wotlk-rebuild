@@ -46,8 +46,8 @@ int32_t Script_ResetCharCustomize(lua_State*) {
 }
 
 int32_t Script_GetNameForRace(lua_State* L) {
-    auto raceID = CCharacterCreation::m_character->m_data.m_info.raceID;
-    auto sexID = CCharacterCreation::m_character->m_data.m_info.sexID;
+    auto raceID = CCharacterCreation::m_character->m_data.m_preferences.raceID;
+    auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
     auto record = g_chrRacesDB.GetRecord(raceID);
     auto raceName = CGUnit_C::GetDisplayRaceNameFromRecord(record, sexID);
     if (record && raceName) {
@@ -97,7 +97,7 @@ int32_t Script_GetFactionForRace(lua_State* L) {
 }
 
 int32_t Script_GetAvailableRaces(lua_State* L) {
-    auto sexID = CCharacterCreation::m_character->m_data.m_info.sexID;
+    auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
 
     for (uint32_t i = 0; i < CCharacterCreation::m_races.Count(); ++i) {
         auto raceRecord = g_chrRacesDB.GetRecord(CCharacterCreation::m_races[i]);
@@ -117,7 +117,7 @@ int32_t Script_GetAvailableRaces(lua_State* L) {
 }
 
 int32_t Script_GetAvailableClasses(lua_State* L) {
-    auto sexID = CCharacterCreation::m_character->m_data.m_info.sexID;
+    auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
 
     for (int32_t i = 0; i < g_chrClassesDB.GetNumRecords(); ++i) {
         auto record = g_chrClassesDB.GetRecordByIndex(i);
@@ -138,7 +138,7 @@ int32_t Script_GetAvailableClasses(lua_State* L) {
 }
 
 int32_t Script_GetClassesForRace(lua_State* L) {
-    auto sexID = CCharacterCreation::m_character->m_data.m_info.sexID;
+    auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
 
     for (uint32_t i = 0; i < CCharacterCreation::m_classes.Count(); ++i) {
         auto record = CCharacterCreation::m_classes[i];
@@ -179,7 +179,7 @@ int32_t Script_GetFacialHairCustomization(lua_State* L) {
 
     auto record = g_chrRacesDB.GetRecord(raceID);
     if (record) {
-        auto sexID = CCharacterCreation::m_character->m_data.m_info.sexID;
+        auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
         lua_pushstring(L, record->m_facialHairCustomization[sexID]);
     } else {
         lua_pushstring(L, "NORMAL");
@@ -193,7 +193,7 @@ int32_t Script_GetSelectedRace(lua_State* L) {
 }
 
 int32_t Script_GetSelectedSex(lua_State* L) {
-    auto sexID = CCharacterCreation::m_character->m_data.m_info.sexID;
+    auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
     lua_pushnumber(L, g_glueFrameScriptGenders[sexID]);
     return 1;
 }
@@ -205,7 +205,7 @@ int32_t Script_GetSelectedClass(lua_State* L) {
     }
     auto className = CGUnit_C::GetDisplayClassNameFromRecord(
         record,
-        CCharacterCreation::m_character->m_data.m_info.sexID);
+        CCharacterCreation::m_character->m_data.m_preferences.sexID);
 
     lua_pushstring(L, className);
     lua_pushstring(L, record->m_filename);
@@ -442,7 +442,7 @@ int32_t Script_GetCreateBackgroundModel(lua_State* L) {
             return 1;
         }
     } else {
-        int32_t raceID = CCharacterCreation::m_character->m_data.m_info.raceID;
+        int32_t raceID = CCharacterCreation::m_character->m_data.m_preferences.raceID;
         if (raceID == 7) {
             raceID = 3;
         } else if (raceID == 8) {
