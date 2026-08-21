@@ -49,6 +49,7 @@ class CCharacterComponent {
 
     bool Init(ComponentData* data, const char* a3);
     bool RenderPrep(int32_t a2);
+    void GeosRenderPrep();
     void GeosRenderPrep(int32_t a2);
     void GetPreferences(CHARACTER_PREFERENCES* info);
 

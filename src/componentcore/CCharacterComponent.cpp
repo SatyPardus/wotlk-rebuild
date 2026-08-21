@@ -296,9 +296,46 @@ bool CCharacterComponent::Init(ComponentData* data, const char* a3) {
 
 // OFFSET: 0x4F1520
 bool CCharacterComponent::RenderPrep(int32_t a2) {
-    // TODO: Proper implementation
-    GeosRenderPrep(a2);
+    if ((this->m_data.m_flags & 0x1) != 0) {
+        if ((this->m_flags & 0x4) != 0) {
+            this->GeosRenderPrep();
+        }
+        return true;
+    }
+
+    if (!this->m_dirtySections && (this->m_flags & 0x1) == 0) {
+        if ((this->m_flags & 0x4) != 0) {
+            this->GeosRenderPrep();
+        }
+        return true;
+    }
+
+    if ((this->m_data.m_flags & 0x1) != 0) {
+        //if (!this->m_link.Next())
+        //    TSList::LinkToTail_0(&stru_AC46E4, this);
+        return true;
+    }
+
+    if (a2) {
+        if (this->m_request) {
+            //*m_request &= ~1u;
+            //this->m_request = 0;
+        }
+        //CCharacterComponent::sub_4ED640(this, 1);
+        //CCharacterComponent::ItemsLoaded(this, 1);
+        this->m_flags |= 8u;
+        //CCharacterComponent::RenderPrepSections(this);
+        this->m_link.Unlink();
+    }
+
+    // if (!this->m_link.Next())
+    //     TSList::LinkToTail_0(&stru_AC46E4, this);
     return false;
+}
+
+// OFFSET: 0x4ED900
+void CCharacterComponent::GeosRenderPrep() {
+
 }
 
 void CCharacterComponent::GeosRenderPrep(int32_t a2) {
