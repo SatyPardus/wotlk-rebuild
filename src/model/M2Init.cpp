@@ -436,7 +436,7 @@ int32_t M2Init(uint8_t* base, uint32_t size, const M2Data& data, M2SequenceTimes
     return 1;
 }
 
-// OFFSET: non (inlined)
+// OFFSET: none (inlined)
 int32_t M2Init(uint8_t* base, uint32_t size, const M2Data& data, M2SkinProfile& skinProfile) {
     if (!M2Init<uint16_t>(base, size, data, skinProfile.vertices)) {
         return 0;

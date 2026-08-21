@@ -469,7 +469,7 @@ void CMapRenderChunk::UpdateShaderGxTexture(EGxTexCommand cmd, uint32_t w, uint3
     }
 }
 
-// OFFSET: 0x007B99B0 - Created via AI DOUBLE CHECK!!!
+// OFFSET: 0x7B99B0 - Created via AI DOUBLE CHECK!!!
 void CMapRenderChunk::CreateShaderTexture() {
     int genFormat = GENFORMAT_4444;
     if (CMap::header.flags & MapHeaderFlag_BigAlpha)
@@ -639,7 +639,7 @@ void CMapRenderChunk::CreateChunkLayerTex(CMapRenderChunkLayer* layer) {
     this->UnpackAlphaBits(CMapRenderChunk::s_defaultTex, texSize, &layerInfo, shadowMap, layerMode, chunkHeaderFlags & 0x8000);
 }
 
-// OFFSET: 0x007B7530 - Created via AI DOUBLE CHECK!!!
+// OFFSET: 0x7B7530 - Created via AI DOUBLE CHECK!!!
 void FetchAlphaShadowRows(const uint8_t** outShadowRow,
                           const uint8_t** outAlphaRows,
                           TextureLayerInfo* cursors,
@@ -681,7 +681,7 @@ void FetchAlphaShadowRows(const uint8_t** outShadowRow,
     }
 }
 
-// OFFSET: 0x007B84A0 - Created via AI DOUBLE CHECK!!!
+// OFFSET: 0x7B84A0 - Created via AI DOUBLE CHECK!!!
 void EmitRow4444Unfixed(uint16_t* dst, const uint8_t* const* alphaRows, const uint8_t* shadowRow, uint32_t size) {
     uint32_t x = 0;
     const uint32_t lastColumn = size - 1;

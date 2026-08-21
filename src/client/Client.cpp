@@ -427,7 +427,7 @@ bool TimingMethodCallback(CVar* h, const char* oldValue, const char* newValue, v
 
 #endif
 
-// OFFSET: 0x004067F0 TODO
+// OFFSET: 0x4067F0 TODO
 int32_t InitializeGlobal() {
     ProcessCommandLine();
 
@@ -630,7 +630,7 @@ void DestroyGlobal() {
     // TODO
 }
 
-// OFFSET: 0x00406C70 TODO
+// OFFSET: 0x406C70 TODO
 void CommonMain() {
     StormInitialize();
 

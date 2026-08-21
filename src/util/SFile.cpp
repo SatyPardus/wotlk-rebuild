@@ -16,7 +16,7 @@ static char s_basepath[STORM_MAX_PATH] = { 0 };
 static char s_datapath[STORM_MAX_PATH] = { 0 };
 static char s_datapath2[STORM_MAX_PATH] = { 0 };
 
-// OFFSET: 0x00402B20
+// OFFSET: 0x402B20
 void SFile::Initialize()
 {
     //SFile::DisableSFileCheckDisk();

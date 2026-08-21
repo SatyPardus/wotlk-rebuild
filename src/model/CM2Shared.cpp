@@ -55,7 +55,7 @@ void CM2Shared::SkinProfileLoadedCallback(void* arg) {
     shared->asyncObject = nullptr;
 }
 
-// OFFSET: 0x35970
+// OFFSET: 0x835970
 void CM2Shared::AddRef() {
     if (this->m_refCount || !this->m_cache) {
         this->m_refCount++;
@@ -927,7 +927,7 @@ void CM2Shared::AssignBatchTextureComboIndices() {
     // TODO
 }
 
-// OFFSET: 0x35F90
+// OFFSET: 0x835F90
 void CM2Shared::ConvertTextureComboEntry(bool a2) {
     // TODO
 }

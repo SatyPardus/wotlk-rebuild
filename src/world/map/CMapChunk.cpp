@@ -99,7 +99,7 @@ void CMapChunk::Initialize() {
     CMapChunk::s_geoToTex = -1.0 / CMapChunk::vertexList[1].y;
 }
 
-// OFFSET: 7C3C60
+// OFFSET: 0x7C3C60
 void CMapChunk::InitializeVertexGrid() {
     const float OUTER_STEP = 100.0f / 24.0f;
     const float INNER_OFFSET = OUTER_STEP / 2.0f;

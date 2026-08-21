@@ -644,7 +644,7 @@ void ClntObjMgrLinkInNewObject(CGObject_C* obj) {
     g_tlsBlock.pObjMgr->m_objects.Insert(obj, obj->m_obj->m_guid.guid_low, obj->m_obj->m_guid);
 }
 
-// OFFSET: None (inlined)
+// OFFSET: none (inlined)
 void ClntObjMgrSetActivePlayer(WGUID guid) {
     auto mgr = g_tlsBlock.pObjMgr;
     if (mgr)
