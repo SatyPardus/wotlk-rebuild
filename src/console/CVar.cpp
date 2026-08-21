@@ -92,7 +92,7 @@ CVar* CVar::Register(const char* name, const char* help, uint32_t flags, const c
         cv->m_flags = flags | 0x1;
 
         if (!a7) {
-            cv->m_flags |= 0x8000000;
+            cv->m_flags |= 0x80000001;
         }
 
         if (a9 && cv->m_flags) {
