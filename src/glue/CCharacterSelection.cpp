@@ -25,7 +25,7 @@ uint32_t CCharacterSelection::m_restrictTauren = 0;
 uint32_t CCharacterSelection::m_restrictUndead = 0;
 uint32_t CCharacterSelection::m_restrictBloodElf = 0;
 TSGrowableArray<CharacterSelectionDisplay> CCharacterSelection::s_characterList;
-int32_t CCharacterSelection::m_selectionIndex = 0;
+uint32_t CCharacterSelection::m_selectionIndex = 0;
 
 
 void CCharacterSelection::Initialize() {
@@ -35,7 +35,7 @@ void CCharacterSelection::Initialize() {
 // OFFSET: none (inlined)
 void CCharacterSelection::RenderPrep() {
     auto index = CCharacterSelection::m_selectionIndex;
-    if (index < 0 || index >= CCharacterSelection::GetNumCharacters()) {
+    if (index >= CCharacterSelection::GetNumCharacters()) {
         return;
     }
 

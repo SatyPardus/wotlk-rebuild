@@ -33,7 +33,7 @@ class CCharacterSelection {
         static uint32_t m_restrictUndead;
         static uint32_t m_restrictBloodElf;
         static TSGrowableArray<CharacterSelectionDisplay> s_characterList;
-        static int32_t m_selectionIndex;
+        static uint32_t m_selectionIndex;
 
         // Static functions
         static void Initialize();
