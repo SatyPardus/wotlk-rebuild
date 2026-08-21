@@ -6,6 +6,8 @@
 #include <tempest/Box.hpp>
 #include <tempest/Rect.hpp>
 
+class Weather;
+
 class CWorld {
     public:
         typedef void (*CALLBACK_FUNC)(float, void*);
@@ -60,6 +62,7 @@ class CWorld {
         static CALLBACK_FUNC s_loadProgressCallback;
         static void* s_loadProgressParam;
         static int32_t terrainAlphaBitDepth;
+        static Weather* s_weather;
 
         // Static functions
         static void Initialize();

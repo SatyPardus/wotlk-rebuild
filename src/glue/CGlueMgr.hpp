@@ -12,6 +12,8 @@ float CalculateAspectRatio();
 
 
 class CSimpleTop;
+class EffectGlow;
+class EffectDeath;
 
 class CGlueMgr {
     public:
@@ -76,6 +78,10 @@ class CGlueMgr {
         static CVar *s_curGameTip;
         static CVar *s_showGameTips;
 
+        static bool m_ffxActive;
+        static EffectGlow* m_glowEffect;
+        static EffectDeath* m_deathEffect;
+
         static CHARACTER_INFO* m_characterInfo;
 
         // Static functions
@@ -88,6 +94,7 @@ class CGlueMgr {
         static int32_t NetDisconnectHandler(const void* eventData, void*);
         static int32_t Idle(const void* a1, void* a2);
         static void Initialize();
+        static void InitializeFFX();
         static void InitCursor();
         static void LoginServerLogin(const char* accountName, const char* password);
         static void QuitGame();

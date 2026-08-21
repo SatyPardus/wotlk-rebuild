@@ -584,7 +584,19 @@ static int32_t Script_GetCVarBool(lua_State* L) {
 }
 
 int32_t Script_SetCVar(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1))
+        luaL_error(L, "Usage: SetCVar(\"cvar\", value [, \"scriptCvar\")");
+    auto v1 = lua_tolstring(L, 1, 0);
+    auto v2 = CVar::LookupRegistered(v1);
+    if (!v2)
+        luaL_error(L, "Couldn't find CVar named '%s'", v1);
+    if ((v2->m_flags & 4) != 0)
+        luaL_error(L, "\"%s\" is read-only", v1);
+    auto v3 = lua_tolstring(L, 2, 0);
+    if (!v3)
+        v3 = "0";
+    v2->Set(v3, 1, 0, 0, 1);
+    return 0;
 }
 
 int32_t Script_GetCVarDefault(lua_State* L) {

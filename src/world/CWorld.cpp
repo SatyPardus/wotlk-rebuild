@@ -12,6 +12,7 @@
 #include "util/SFile.hpp"
 #include <gameui/CGWorldFrame.hpp>
 #include <gameui/camera/CGCamera.hpp>
+#include "world/MapWeather.hpp"
 
 uint32_t CWorld::s_enables;
 uint32_t CWorld::s_enables2;
@@ -26,6 +27,7 @@ float CWorld::prevFarClip;
 CWorld::CALLBACK_FUNC CWorld::s_loadProgressCallback;
 void* CWorld::s_loadProgressParam;
 int32_t CWorld::terrainAlphaBitDepth;
+Weather* CWorld::s_weather;
 
 void CWorld::Initialize() {
     CWorld::s_enables |=
@@ -173,11 +175,7 @@ void CWorld::Initialize() {
     //        (int)"Textures\\WaterPoop02.blp");
     //else
     //    CWorld::particulate = 0;
-    //v3 = (float*)SMemAlloc(0x198, ".\\World.cpp", 473, 0);
-    //if (v3)
-    //    dword_CD7544 = MapWeather::MapWeather(v3);
-    //else
-    //    dword_CD7544 = 0;
+    CWorld::s_weather = new (STORM_ALLOC(sizeof(Weather))) Weather();
     //CM2Scene::SetProjectTextureCallback(s_m2Scene, (DWORD)World::ProjectTextureCallback, 0);
     //CM2Scene::SetProjectPositionCallback(s_m2Scene, (int)World::ProjectPositionCallback, 0);
     //ConsoleCommandRegister("showDetailDoodads", (int)sub_77F5B0, 1, 0);

@@ -2,6 +2,7 @@
 #define GX_C_GX_STRING_HPP
 
 #include "gx/Types.hpp"
+#include "gx/buffer/Types.hpp"
 #include <cstdint>
 #include <storm/Array.hpp>
 #include <storm/List.hpp>
@@ -9,7 +10,6 @@
 
 struct EMBEDDEDPARSEINFO;
 class CGxFont;
-class CGxVertexPCT;
 
 struct VERT {
     C3Vector vc;

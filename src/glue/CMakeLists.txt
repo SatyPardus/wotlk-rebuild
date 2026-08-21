@@ -21,6 +21,7 @@ target_link_libraries(glue
         sound
         ui
         util
+        ffx
     PUBLIC
         bc
         storm

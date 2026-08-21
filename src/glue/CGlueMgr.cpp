@@ -25,6 +25,9 @@
 #include <common/MD5.hpp>
 #include <world/LoadingScreen.hpp>
 #include <db/StaticDb.hpp>
+#include "ffx/FFX.hpp"
+#include "ffx/EffectGlow.hpp"
+#include "ffx/EffectDeath.hpp"
 
 unsigned char InterfaceKey[256] = {
     0xC3, 0x5B, 0x50, 0x84, 0xB9, 0x3E, 0x32, 0x42, 0x8C, 0xD0, 0xC7, 0x48, 0xFA, 0x0E, 0x5D, 0x54,
@@ -86,6 +89,10 @@ bool CGlueMgr::m_deleteLocalPatch;
 
 CVar* CGlueMgr::s_curGameTip = nullptr;
 CVar* CGlueMgr::s_showGameTips = nullptr;
+
+bool CGlueMgr::m_ffxActive = false;
+EffectGlow* CGlueMgr::m_glowEffect = nullptr;
+EffectDeath* CGlueMgr::m_deathEffect = nullptr;
 
 CHARACTER_INFO* CGlueMgr::m_characterInfo = nullptr;
 
@@ -448,6 +455,15 @@ void CGlueMgr::Initialize() {
 
     // TODO
     // AccountDataInitializeBasicSystem();
+}
+
+void CGlueMgr::InitializeFFX() {
+    if (!CGlueMgr::m_ffxActive) {
+        CGlueMgr::m_ffxActive = 1;
+        FFX::Init();
+        CGlueMgr::m_glowEffect = new (STORM_ALLOC(sizeof(EffectGlow))) EffectGlow();
+        CGlueMgr::m_deathEffect = new (STORM_ALLOC(sizeof(EffectDeath))) EffectDeath();
+    }
 }
 
 void CGlueMgr::LoginServerLogin(const char* accountName, const char* password) {
@@ -958,8 +974,7 @@ void CGlueMgr::Resume() {
 
     FrameScript_SignalEvent(22, nullptr);
 
-    // TODO
-    // CGlueMgr::InitializeFFX();
+    CGlueMgr::InitializeFFX();
 
     // TODO
     // ClientServices::SetMessageHandler(SMSG_CHARACTER_RENAME_RESULT, CGlueMgr::OnCharRenameResult, 0);

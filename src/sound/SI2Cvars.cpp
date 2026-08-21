@@ -1,5 +1,6 @@
 #include "sound/SI2.hpp"
 #include "console/CVar.hpp"
+#include <os/System.hpp>
 
 bool OutboundChatVolumeHandler(CVar*, const char*, const char*, void*) {
     return true;
@@ -49,6 +50,38 @@ bool OutputDriverIndex_CVarCallback(CVar*, const char*, const char*, void*) {
     return true;
 }
 
+bool EnableAllSound_CVarCallback(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool EnableSFX_CVarCallback(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool EnableMusic_CVarHandler(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool EnableAmbience_CVarHandler(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool MasterVolume_CVarHandler(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool SFXVolume_CVarHandler(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool MusicVolume_CVarHandler(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool AmbienceVolume_CVarHandler(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
 
 void SI2::RegisterCVars() {
     CVar::Register("StartTalkingDelay", "", 0, "0.0", 0, 5, 0, 0, 0);
@@ -77,4 +110,23 @@ void SI2::RegisterCVars() {
     CVar::Register("Sound_EnableHardware", "Enables Hardware", 0, "0", 0, 7, 0, 0, 0);
     CVar::Register("Sound_EnableMode2", "test", 0, "0", 0, 7, 0, 0, 0);
     CVar::Register("Sound_EnableMixMode2", "test", 0, "0", 0, 7, 0, 0, 0);
+
+    CVar::Register("Sound_EnableAllSound", "", 0, "1", EnableAllSound_CVarCallback, 7, 0, 0, 0);
+    CVar::Register("Sound_EnableSFX", "", 0, "1", EnableSFX_CVarCallback, 7, 0, 0, 0);
+    CVar::Register("Sound_EnableErrorSpeech", "error speech", 0, "1", 0, 7, 0, 0, 0);
+    CVar::Register("Sound_EnableEmoteSounds", "", 0, "1", 0, 7, 0, 0, 0);
+    CVar::Register("Sound_EnablePetSounds", "Enables pet sounds", 0, "1", 0, 7, 0, 0, 0);
+    CVar::Register("Sound_EnableMusic", "Enables music", 0, "1", EnableMusic_CVarHandler, 7, 0, 0, 0);
+    CVar::Register("Sound_ZoneMusicNoDelay", "", 0, "0", 0, 7, 0, 0, 0);
+    CVar::Register("Sound_EnableAmbience", "Enable Ambience", 0, "1", EnableAmbience_CVarHandler, 7, 0, 0, 0);
+    CVar::Register("Sound_EnableSoundWhenGameIsInBG", "Enable Sound When Game Is In Background", 0, "0", 0, 7, 0, 0, 0);
+    auto v0 = OsGetNumberOfProcessors() <= 1;
+    auto v1 = "1";
+    if (v0)
+        v1 = "0";
+    CVar::Register("Sound_EnableDSPEffects", "", 0, v1, 0, 7, 0, 0, 0);
+    CVar::Register("Sound_MasterVolume", "master volume (0.0 to 1.0)", 0, "1.0", MasterVolume_CVarHandler, 7, 0, 0, 0);
+    CVar::Register("Sound_SFXVolume", "sound volume (0.0 to 1.0)", 0, "1.0", SFXVolume_CVarHandler, 7, 0, 0, 0);
+    CVar::Register("Sound_MusicVolume", "music volume (0.0 to 1.0)", 0, "0.4", MusicVolume_CVarHandler, 7, 0, 0, 0);
+    CVar::Register("Sound_AmbienceVolume", "Ambience Volume (0.0 to 1.0)", 0, "0.6", AmbienceVolume_CVarHandler, 7, 0, 0, 0);
 }

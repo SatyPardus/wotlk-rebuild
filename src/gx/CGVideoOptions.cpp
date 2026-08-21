@@ -6,6 +6,7 @@
 #include "gx/CGxMonitorMode.hpp"
 #include "gx/Device.hpp"
 #include "util/Lua.hpp"
+#include <os/System.hpp>
 
 static TSGrowableArray<C2iVector> s_resolutions;
 
@@ -187,7 +188,11 @@ int32_t Script_IsStereoVideoAvailable(lua_State* L) {
 }
 
 int32_t Script_IsPlayerResolutionAvailable(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (OsGetNumberOfProcessors() <= 1)
+        lua_pushnil(L);
+    else
+        lua_pushnumber(L, 1.0);
+    return 1;
 }
 
 FrameScript_Method CGVideoOptions::s_ScriptFunctions[] = {
