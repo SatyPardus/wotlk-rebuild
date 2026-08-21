@@ -260,6 +260,7 @@ void CCharacterComponent::SetRandomFace(COMPONENT_CONTEXT context) {
 void CCharacterComponent::SetRandomFacialFeature(COMPONENT_CONTEXT context) {
 }
 
+// OFFSET: 0x4F24D0
 bool CCharacterComponent::Init(ComponentData* data, const char* a3) {
     if (this->m_data.m_model)
         this->m_data.m_model->Release();
@@ -293,6 +294,7 @@ bool CCharacterComponent::Init(ComponentData* data, const char* a3) {
     return false;
 }
 
+// OFFSET: 0x4F1520
 bool CCharacterComponent::RenderPrep(int32_t a2) {
     // TODO: Proper implementation
     GeosRenderPrep(a2);

@@ -138,6 +138,7 @@ int32_t Script_DeclineCharacter(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4E2FD0
 int32_t Script_UpdateSelectionCustomizationScene(lua_State* L) {
     CCharacterSelection::RenderPrep();
 

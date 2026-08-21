@@ -32,6 +32,7 @@ void CCharacterSelection::Initialize() {
     // Empty method
 }
 
+// OFFSET: none (inlined)
 void CCharacterSelection::RenderPrep() {
     auto index = CCharacterSelection::m_selectionIndex;
     if (index < 0 || index >= CCharacterSelection::GetNumCharacters()) {

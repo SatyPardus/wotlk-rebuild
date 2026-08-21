@@ -94,6 +94,7 @@ int32_t CM2Shared::CallbackWhenLoaded(CM2Model* model) {
     return 1;
 }
 
+// OFFSET: 0x836600
 CShaderEffect* CM2Shared::CreateSimpleEffect(uint32_t textureCount, uint16_t shader, uint16_t textureCoordComboIndex) {
     uint32_t combiner[2];
     uint32_t envmap[2];
@@ -305,7 +306,7 @@ int32_t CM2Shared::FinishLoadingSkinProfile(uint32_t size) {
     return 1;
 }
 
-// OFFSET: 0x836600
+// OFFSET: 0x836C90
 CShaderEffect* CM2Shared::GetEffect(M2Batch* batch) {
     CShaderEffect* effect;
 

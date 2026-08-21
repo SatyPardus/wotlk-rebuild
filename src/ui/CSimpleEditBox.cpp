@@ -1420,7 +1420,7 @@ void CSimpleEditBox::SetText(const char* text, const char* tainted) {
     }
 }
 
-// OFFSET: 0x09654E0
+// OFFSET: 0x9654E0
 void CSimpleEditBox::OnTextSet(const char* tainted) {
     if (this->m_onTextSet.luaRef) {
         this->RunScript(this->m_onTextSet, 0, tainted);
