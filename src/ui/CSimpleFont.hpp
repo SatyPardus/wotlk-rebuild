@@ -31,6 +31,7 @@ class CSimpleFont : public FrameScript_Object, public CSimpleFontable {
         // Static functions
         static void CreateScriptMetaTable();
         static CSimpleFont* GetFont(const char* name, int32_t a2);
+        static int32_t GetTextColor(const char* displayName, CSimpleFont* font, lua_State* L);
         static int32_t GetObjectType();
         static void RegisterScriptMethods(lua_State* L);
 

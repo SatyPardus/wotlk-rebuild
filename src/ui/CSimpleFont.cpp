@@ -9,6 +9,7 @@
 #include "util/StringTo.hpp"
 #include <common/XML.hpp>
 #include <storm/String.hpp>
+#include "util/Lua.hpp"
 
 TSHashTable<SIMPLEFONT, HASHKEY_STRI> CSimpleFont::s_fontList;
 int32_t CSimpleFont::s_metatable;
@@ -233,4 +234,13 @@ void CSimpleFont::UpdateObjects() {
 
         this->m_attributes.m_flags &= ~FLAG_COMPLETE_UPDATE;
     }
+}
+
+int32_t CSimpleFont::GetTextColor(const char* displayName, CSimpleFont* font, lua_State* L) {
+    auto color = font->m_attributes.m_color;
+    lua_pushnumber(L, color.r / 255.0f);
+    lua_pushnumber(L, color.g / 255.0f);
+    lua_pushnumber(L, color.b / 255.0f);
+    lua_pushnumber(L, color.a / 255.0f);
+    return 4;
 }
