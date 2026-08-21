@@ -4,19 +4,23 @@
 #include "util/Unimplemented.hpp"
 
 int32_t Script_PlaySound(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    return 0;
 }
 
 int32_t Script_PlayMusic(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    return 0;
 }
 
 int32_t Script_PlaySoundFile(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    return 0;
 }
 
 int32_t Script_StopMusic(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    return 0;
 }
 
 int32_t Script_Sound_GameSystem_GetNumInputDrivers(lua_State* L) {
