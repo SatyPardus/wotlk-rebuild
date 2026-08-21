@@ -382,7 +382,25 @@ int32_t CSimpleFrame_GetScale(lua_State* L) {
 }
 
 int32_t CSimpleFrame_SetScale(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleFrame::GetObjectType();
+    auto frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
+
+    if (!frame->ProtectedFunctionsAllowed()) {
+        // TODO
+        return 0;
+    }
+
+    if (!lua_isnumber(L, 2)) {
+        luaL_error(L, "Usage: %s:SetScale(scale)", frame->GetDisplayName());
+    }
+
+    float scale = lua_tonumber(L, 2);
+    if (scale <= 0.0f) {
+        luaL_error(L, "%s:SetScale(): Scale must be > 0", frame->GetDisplayName());
+    }
+
+    frame->SetFrameScale(scale, false);
+    return 0;
 }
 
 int32_t CSimpleFrame_GetEffectiveAlpha(lua_State* L) {
