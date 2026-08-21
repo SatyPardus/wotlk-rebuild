@@ -40,6 +40,10 @@ CLayoutFrame* CScriptRegion::GetLayoutFrameByName(const char* name) {
     return static_cast<CLayoutFrame*>(object);
 }
 
+void CScriptRegion::SetParent(CSimpleFrame* parent) {
+    this->m_parent = parent;
+}
+
 const char* CScriptRegion::GetObjectTypeName() {
     return CScriptRegion::s_objectTypeName;
 }

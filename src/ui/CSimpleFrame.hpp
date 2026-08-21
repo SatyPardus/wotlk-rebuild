@@ -124,6 +124,7 @@ class CSimpleFrame : public CScriptRegion {
         virtual void UpdateDepth(bool a2);
         virtual void ParentFrame(CSimpleFrame* frame);
         virtual void OnFrameSizeChanged(const CRect& rect);
+        virtual void SetParent(CSimpleFrame* parent);
 
         // Member functions
         CSimpleFrame(CSimpleFrame* parent);
@@ -166,7 +167,6 @@ class CSimpleFrame : public CScriptRegion {
         bool SetFrameScale(float scale, bool a3);
         void SetFrameStrata(FRAME_STRATA strata);
         void SetHitRect();
-        void SetParent(CSimpleFrame* parent);
         void Show();
         int32_t TestHitRect(const C2Vector& pt);
         void UnregisterForEvents(int32_t a2);

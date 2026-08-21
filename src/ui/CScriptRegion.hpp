@@ -44,6 +44,7 @@ class CScriptRegion : public CScriptObject, public CLayoutFrame {
         virtual void LoadXML(const XMLNode* node, CStatus* status);
         virtual CLayoutFrame* GetLayoutParent();
         virtual CLayoutFrame* GetLayoutFrameByName(const char* name);
+        virtual void SetParent(CSimpleFrame* parent);
 
         // Member functions
         void LoadXML_Animations(const XMLNode* node, CStatus* status);
