@@ -115,6 +115,10 @@ uint32_t CGxDevice::s_texFormatBytesPerBlock[] = {
 CGxShader* CGxDevice::s_uiVertexShader = nullptr;
 CGxShader* CGxDevice::s_uiPixelShader = nullptr;
 
+uint32_t CGxDevice::s_windowMinWidth = 320;
+uint32_t CGxDevice::s_windowMinHeight = 240;
+float CGxDevice::s_windowAspect = 0.0f;
+
 #if defined(WHOA_SYSTEM_WIN)
 
 uint16_t HToI(const char* h, uint32_t count) {
@@ -615,9 +619,19 @@ const CRect& CGxDevice::DeviceCurWindow() {
     return this->m_curWindowRect;
 }
 
+// OFFSET: 0x6840F0
 int32_t CGxDevice::DeviceSetFormat(const CGxFormat& format) {
     memcpy(&this->m_format, &format, sizeof(this->m_format));
+    if (this->m_format.size.x < CGxDevice::s_windowMinWidth && this->m_format.size.y < CGxDevice::s_windowMinHeight) {
+        this->m_format.size.x = CGxDevice::s_windowMinWidth;
+        this->m_format.size.y = CGxDevice::s_windowMinHeight;
+    }
 
+    if (this->m_format.aspect) {
+        CGxDevice::s_windowAspect = static_cast<float>(this->m_format.size.x) / static_cast<float>(this->m_format.size.y);
+    } else {
+        CGxDevice::s_windowAspect = 0.0f;
+    }
     return 1;
 }
 
@@ -625,6 +639,7 @@ void CGxDevice::DeviceSetCurWindow(const CRect& rect) {
     this->m_curWindowRect = rect;
 }
 
+// OFFSET: 0x684360
 void CGxDevice::DeviceSetDefWindow(const CRect& rect) {
     this->m_defWindowRect = rect;
     this->DeviceSetCurWindow(rect);
@@ -1684,4 +1699,72 @@ void CGxDevice::LightEnable(int index, int32_t enable) {
         this->m_lights[index].flags |= 1u;
         this->m_lights[index].m_enable = enable;
     }
+}
+
+int32_t SizingClientWidth(const SizingRect& r) {
+    return r.right - r.left - CGxDeviceD3d::s_clientAdjustWidth;
+}
+
+int32_t SizingClientHeight(const SizingRect& r) {
+    return r.bottom - r.top - CGxDeviceD3d::s_clientAdjustHeight;
+}
+
+// 0x00683F00
+void CGxDevice::SizingMinHeightMoveTop(SizingRect& r) {
+    if (SizingClientHeight(r) < CGxDevice::s_windowMinHeight) {
+        r.top = r.bottom - CGxDeviceD3d::s_clientAdjustHeight - CGxDevice::s_windowMinHeight;
+    }
+}
+
+// 0x00683F30
+void CGxDevice::SizingMinHeightMoveBottom(SizingRect& r) {
+    if (SizingClientHeight(r) < CGxDevice::s_windowMinHeight) {
+        r.bottom = r.top + CGxDeviceD3d::s_clientAdjustHeight + CGxDevice::s_windowMinHeight;
+    }
+}
+
+// 0x00683EA0
+void CGxDevice::SizingMinWidthMoveLeft(SizingRect& r) {
+    if (SizingClientWidth(r) < CGxDevice::s_windowMinWidth) {
+        r.left = r.right - CGxDeviceD3d::s_clientAdjustWidth - CGxDevice::s_windowMinWidth;
+    }
+}
+
+// 0x00683ED0
+void CGxDevice::SizingMinWidthMoveRight(SizingRect& r) {
+    if (SizingClientWidth(r) < CGxDevice::s_windowMinWidth) {
+        r.right = r.left + CGxDeviceD3d::s_clientAdjustWidth + CGxDevice::s_windowMinWidth;
+    }
+}
+
+// 0x00683D60
+void CGxDevice::SizingAspectMoveTop(SizingRect& r) {
+    if (CGxDevice::s_windowAspect == 0.0f) {
+        return;
+    }
+    r.top = r.bottom - static_cast<int32_t>(SizingClientWidth(r) / CGxDevice::s_windowAspect + 0.5f + CGxDeviceD3d::s_clientAdjustHeight);
+}
+
+// 0x00683DB0
+void CGxDevice::SizingAspectMoveBottom(SizingRect& r) {
+    if (CGxDevice::s_windowAspect == 0.0f) {
+        return;
+    }
+    r.bottom = r.top + static_cast<int32_t>(SizingClientWidth(r) / CGxDevice::s_windowAspect + 0.5f + CGxDeviceD3d::s_clientAdjustHeight);
+}
+
+// 0x00683E00
+void CGxDevice::SizingAspectMoveLeft(SizingRect& r) {
+    if (CGxDevice::s_windowAspect == 0.0f) {
+        return;
+    }
+    r.left = r.right - static_cast<int32_t>( CGxDevice::s_windowAspect * SizingClientHeight(r) + 0.5f + CGxDeviceD3d::s_clientAdjustWidth);
+}
+
+// 0x00683E50
+void CGxDevice::SizingAspectMoveRight(SizingRect& r) {
+    if (CGxDevice::s_windowAspect == 0.0f) {
+        return;
+    }
+    r.right = r.left + static_cast<int32_t>(CGxDevice::s_windowAspect * SizingClientHeight(r) + 0.5f + CGxDeviceD3d::s_clientAdjustWidth);
 }

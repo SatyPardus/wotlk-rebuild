@@ -79,6 +79,7 @@ class CGxString : public TSLinkedNode<CGxString> {
         void SetStringPosition(const C3Vector& position);
         void Tick();
         void WriteGeometry(CGxVertexPCT*, int32_t, int32_t, int32_t);
+        void HandleScreenSizeChange();
 };
 
 #endif

@@ -7,6 +7,7 @@
 #include <storm/Error.hpp>
 #include <tempest/Vector.hpp>
 #include <windows.h>
+#include "gx/Window.hpp"
 
 #if defined(WHOA_BUILD_GLSDL)
 #include "os/sdl/Input.hpp"
@@ -146,9 +147,6 @@ static const uint32_t s_thailookup[256] = {
     0x0E53, 0x0E54, 0x0E55, 0x0E56, 0x0E57, 0x0E58, 0x0E59, 0x0E5A, 0x0E5B,
     0x20,   0x20,   0x20,   0x20
 };
-
-static RECT s_defaultWindowRect;
-static int32_t s_savedResize;
 
 static HWND s_mouseWnd;
 static C2iVector s_mousePos;

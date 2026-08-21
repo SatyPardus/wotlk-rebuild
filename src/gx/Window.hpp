@@ -29,6 +29,9 @@ typedef struct tagRECT {
 } RECT;
 #endif
 
+extern RECT s_defaultWindowRect;
+extern int32_t s_savedResize;
+
 int32_t OsGetDefaultWindowRect(RECT* rect);
 
 Rect* GetSavedWindowBounds();

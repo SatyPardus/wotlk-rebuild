@@ -15,10 +15,15 @@ class CSimpleSlider : public CSimpleFrame {
         static void RegisterScriptMethods(lua_State* L);
 
         // Member variables
-        int32_t m_changed : 1;
-        int32_t m_rangeSet : 1;
-        int32_t m_valueSet : 1;
-        int32_t m_buttonDown : 1;
+        union {
+            struct {
+                int32_t m_changed : 1;
+                int32_t m_rangeSet : 1;
+                int32_t m_valueSet : 1;
+                int32_t m_buttonDown : 1;
+            };
+            int32_t m_sliderFlags;
+        };
         float m_baseValue = 0.0f;
         float m_range = 0.0f;
         float m_value = 0.0f;
@@ -46,6 +51,7 @@ class CSimpleSlider : public CSimpleFrame {
         void SetMinMaxValues(float min, float max);
         void SetValue(float value);
         float Sub96BC10(float value);
+        void SetValueStep(float value);
 };
 
 #endif

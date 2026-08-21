@@ -112,6 +112,9 @@ class CSimpleEditBox : public CSimpleFrame, CSimpleFontedFrame {
         void UpdateVisibleCursor();
         void UpdateVisibleHighlight();
         void UpdateVisibleText();
+        void HighlightText(int32_t a2, int32_t a3);
+        void SetText(const char* text, const char* tainted);
+        void OnTextSet(const char* tainted);
 };
 
 #endif

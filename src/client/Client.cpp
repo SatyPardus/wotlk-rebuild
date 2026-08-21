@@ -39,6 +39,7 @@
 #include <async/AsyncFileRead.hpp>
 #include <clientobject/ObjectMgrClient.hpp>
 #include <console/DebugScreen.hpp>
+#include <world/CWorldParam.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -47,6 +48,11 @@ CVar* Client::g_movieVar;
 CVar* Client::g_expansionMovieVar;
 CVar* Client::g_movieSubtitleVar;
 CVar* Client::g_lastCharacterIndex;
+CVar* Client::g_desktopGamma;
+CVar* Client::g_gamma;
+CVar* Client::g_cvTextureFilteringMode;
+CVar* Client::g_cvUIFaster;
+CVar* Client::g_cvTextureCacheSize;
 
 
 HEVENTCONTEXT Client::g_clientEventContext;
@@ -101,7 +107,16 @@ void ClientMiscInitialize() {
     // TODO
 }
 
+bool DesktopGammaCallback(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool GammaCallback(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
 void ClientRegisterConsoleCommands() {
+    // TODO properly do everything
     ConsoleCommandRegister("reloadUI", CCommand_ReloadUI, GRAPHICS, nullptr);
     ConsoleCommandRegister("perf",     CCommand_Perf,     DEBUG,    nullptr);
 
@@ -187,6 +202,11 @@ void ClientRegisterConsoleCommands() {
         nullptr,
         false);
     // TODO
+    auto v1 = CVar::Register("showToolsUI", "Display the launcher when starting the game", 0, "-1", 0, 4, 0, 0, 0);
+    if (v1->m_intValue >= 2u)
+        v1->Set("1", 1, 0, 0, 1);
+    Client::g_desktopGamma = CVar::Register("DesktopGamma", 0, 0, "0", DesktopGammaCallback, 1, 0, 0, 0);
+    Client::g_gamma = CVar::Register("Gamma", 0, 0, "1.0", GammaCallback, 1, 0, 0, 0);
 }
 
 void ClientPostClose(int32_t a1) {
@@ -197,6 +217,18 @@ void ClientPostClose(int32_t a1) {
 int32_t DestroyEngineCallback(const void* a1, void* a2) {
     // TODO
     return 1;
+}
+
+bool TextureFilteringCallback(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool UIFasterCalllback(CVar*, const char*, const char*, void*) {
+    return true;
+}
+
+bool TextureCacheSizeCallback(CVar*, const char*, const char*, void*) {
+    return true;
 }
 
 int32_t InitializeEngineCallback(const void* a1, void* a2) {
@@ -216,41 +248,9 @@ int32_t InitializeEngineCallback(const void* a1, void* a2) {
     ConsoleScreenInitialize(nullptr); // TODO argument
     DebugScreenInitialize();
 
-    // s_cvarTextureFilteringMode = CVar::Register(
-    //     "textureFilteringMode",
-    //     "Texture filtering mode",
-    //     1,
-    //     "1",
-    //     &TextureFilteringCallback,
-    //     1,
-    //     0,
-    //     0,
-    //     0
-    // );
-
-    // s_cvarUIFaster = CVar::Register(
-    //     "UIFaster",
-    //     "UI acceleration option",
-    //     0,
-    //     "3",
-    //     &UIFasterCalllback,
-    //     1,
-    //     0,
-    //     0,
-    //     0
-    // );
-
-    // s_cvarTextureCacheSize = CVar::Register(
-    //     "textureCacheSize",
-    //     "Texture cache size in bytes",
-    //     1,
-    //     "32",
-    //     &TextureCacheSizeCallback,
-    //     1,
-    //     0,
-    //     0,
-    //     0
-    // );
+    Client::g_cvTextureFilteringMode = CVar::Register("textureFilteringMode", "Texture filtering mode", 1, "1", &TextureFilteringCallback, 1, 0, 0, 0);
+    Client::g_cvUIFaster = CVar::Register("UIFaster", "UI acceleration option", 0, "3", &UIFasterCalllback, 1, 0, 0, 0);
+    Client::g_cvTextureCacheSize = CVar::Register("textureCacheSize", "Texture cache size in bytes", 1, "32", &TextureCacheSizeCallback, 1, 0, 0, 0);
 
     // sub_4B6580(*(_DWORD *)(dword_B2F9FC + 48) << 20);
 
@@ -737,9 +737,7 @@ void WowClientInit() {
     // DBCache_RegisterHandlers();
     // DBCache_Initialize(a1);
 
-    // TODO
-    // sub_78E400();
-
+    CWorldParam::Initialize();
     CWorld::Initialize();
 
     // TODO

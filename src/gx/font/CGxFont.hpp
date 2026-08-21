@@ -136,6 +136,7 @@ class CGxFont : public TSLinkedNode<CGxFont> {
         const CHARCODEDESC* NewCodeDesc(uint32_t);
         void RegisterEvictNotice(uint32_t);
         int32_t UpdateDimensions(void);
+        void HandleScreenSizeChange();
 };
 
 #endif

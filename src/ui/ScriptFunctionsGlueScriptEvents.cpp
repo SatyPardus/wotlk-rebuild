@@ -15,6 +15,8 @@
 #include "sound/SI2.hpp"
 #include <cstdint>
 #include <async/AsyncFileRead.hpp>
+#include <util/StringTo.hpp>
+#include "gx/Device.hpp"
 
 int32_t Script_IsShiftKeyDown(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
@@ -159,9 +161,10 @@ int32_t Script_ShowTOSNotice(lua_State* L) {
 }
 
 int32_t Script_TOSAccepted(lua_State* L) {
-    // TODO
-    lua_pushboolean(L, 1);
-
+    if (CGlueMgr::m_acceptedTOS)
+        lua_pushnumber(L, 1.0);
+    else
+        lua_pushnil(L);
     return 1;
 }
 
@@ -174,9 +177,10 @@ int32_t Script_ShowEULANotice(lua_State* L) {
 }
 
 int32_t Script_EULAAccepted(lua_State* L) {
-    // TODO
-    lua_pushboolean(L, 1);
-
+    if (CGlueMgr::m_acceptedEULA)
+        lua_pushnumber(L, 1.0);
+    else
+        lua_pushnil(L);
     return 1;
 }
 
@@ -189,9 +193,11 @@ int32_t Script_ShowTerminationWithoutNoticeNotice(lua_State* L) {
 }
 
 int32_t Script_TerminationWithoutNoticeAccepted(lua_State* L) {
-    lua_pushboolean(L, 1);
+    if (CGlueMgr::m_acceptedTerminationWithoutNotice)
+        lua_pushnumber(L, 1.0);
+    else
+        lua_pushnil(L);
     return 1;
-    //WHOA_UNIMPLEMENTED(0);
 }
 
 int32_t Script_AcceptTerminationWithoutNotice(lua_State* L) {
@@ -203,7 +209,11 @@ int32_t Script_ShowScanningNotice(lua_State* L) {
 }
 
 int32_t Script_ScanningAccepted(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGlueMgr::m_acceptedScanning)
+        lua_pushnumber(L, 1.0);
+    else
+        lua_pushnil(L);
+    return 1;
 }
 
 int32_t Script_AcceptScanning(lua_State* L) {
@@ -215,7 +225,11 @@ int32_t Script_ShowContestNotice(lua_State* L) {
 }
 
 int32_t Script_ContestAccepted(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGlueMgr::m_acceptedContest)
+        lua_pushnumber(L, 1.0);
+    else
+        lua_pushnil(L);
+    return 1;
 }
 
 int32_t Script_AcceptContest(lua_State* L) {
@@ -410,11 +424,13 @@ int32_t Script_GetCursorPosition(lua_State* L) {
 }
 
 int32_t Script_ShowCursor(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    g_theGxDevicePtr->CursorSetVisible(1);
+    return 0;
 }
 
 int32_t Script_HideCursor(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    g_theGxDevicePtr->CursorSetVisible(0);
+    return 0;
 }
 
 int32_t Script_GetBillingTimeRemaining(lua_State* L) {
@@ -438,11 +454,13 @@ int32_t Script_PINEntered(lua_State* L) {
 }
 
 int32_t Script_PlayGlueAmbience(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    return 0;
 }
 
 int32_t Script_StopGlueAmbience(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    return 0;
 }
 
 int32_t Script_GetCreditsText(lua_State* L) {
@@ -513,11 +531,17 @@ int32_t Script_IsScanDLLFinished(lua_State* L) {
 }
 
 int32_t Script_IsWindowsClient(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+
+    lua_pushnumber(L, 1.0);
+    return 1;
 }
 
 int32_t Script_IsOtherPlatformClient(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+
+    lua_pushnil(L);
+    return 1;
 }
 
 int32_t Script_SetRealmSplitState(lua_State* L) {
@@ -534,11 +558,29 @@ int32_t Script_CancelLogin(lua_State* L) {
 }
 
 int32_t Script_GetCVar(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1))
+        luaL_error(L, "Usage: GetCVar(\"cvar\")");
+    auto v1 = lua_tolstring(L, 1, 0);
+    auto v2 = CVar::LookupRegistered(v1);
+    if (!v2) {
+        luaL_error(L, "Couldn't find CVar named '%s'", v1);
+    }
+    lua_pushstring(L, v2->GetString());
+    return 1;
 }
 
-int32_t Script_GetCVarBool(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+static int32_t Script_GetCVarBool(lua_State* L) {
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "Usage: GetCVarBool(\"cvar\")");
+    }
+
+    auto cvar = CVar::LookupRegistered(lua_tolstring(L, 1, nullptr));
+    if (cvar && StringToBOOL(cvar->GetString())) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 int32_t Script_SetCVar(lua_State* L) {
@@ -546,23 +588,108 @@ int32_t Script_SetCVar(lua_State* L) {
 }
 
 int32_t Script_GetCVarDefault(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1))
+        luaL_error(L, "Usage: GetCVarDefault(\"cvar\")");
+    auto v1 = lua_tolstring(L, 1, 0);
+    auto v2 = CVar::LookupRegistered(v1);
+    if (!v2) {
+        luaL_error(L, "Couldn't find CVar named '%s'", v1);
+    }
+    auto string = v2->GetString();
+    if (string)
+        lua_pushstring(L, string);
+    else
+        lua_pushnil(L);
+    return 1;
 }
 
-int32_t Script_GetCVarMin(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+static int32_t Script_GetCVarMin(lua_State* L) {
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "Usage: GetCVarMin(\"cvar\")");
+    }
+
+    auto name = lua_tolstring(L, 1, nullptr);
+    auto cvar = CVar::LookupRegistered(name);
+    if (!cvar) {
+        return luaL_error(L, "Couldn't find CVar named '%s'", name);
+    }
+
+    auto key = cvar->m_key.GetString();
+    if (!SStrCmpI(key, "extShadowQuality", STORM_MAX_STR)) {
+        lua_pushnumber(L, 0.0);
+    } else if (!SStrCmpI(key, "farclip", STORM_MAX_STR)) {
+        lua_pushnumber(L, 177.0);
+    } else {
+        lua_pushnil(L);
+    }
+
+    return 1;
 }
 
-int32_t Script_GetCVarMax(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+static int32_t Script_GetCVarMax(lua_State* L) {
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "Usage: GetCVarMax(\"cvar\")");
+    }
+
+    auto name = lua_tolstring(L, 1, nullptr);
+    auto cvar = CVar::LookupRegistered(name);
+    if (!cvar) {
+        return luaL_error(L, "Couldn't find CVar named '%s'", name);
+    }
+
+    auto key = cvar->m_key.GetString();
+    if (!SStrCmpI(key, "extShadowQuality", STORM_MAX_STR)) {
+        // TODO
+        lua_pushnumber(L, 1.0);
+    } else if (!SStrCmpI(key, "farclip", STORM_MAX_STR)) {
+        lua_pushnumber(L, 1277.0);
+    } else {
+        lua_pushnil(L);
+    }
+
+    return 1;
 }
 
-int32_t Script_GetCVarAbsoluteMin(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+static int32_t Script_GetCVarAbsoluteMin(lua_State* L) {
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "Usage: GetCVarAbsoluteMin(\"cvar\")");
+    }
+
+    auto name = lua_tolstring(L, 1, nullptr);
+    auto cvar = CVar::LookupRegistered(name);
+    if (!cvar) {
+        return luaL_error(L, "Couldn't find CVar named '%s'", name);
+    }
+
+    auto key = cvar->m_key.GetString();
+    if (!SStrCmpI(key, "extShadowQuality", STORM_MAX_STR)) {
+        lua_pushnumber(L, 0.0);
+    } else {
+        lua_pushnil(L);
+    }
+
+    return 1;
 }
 
-int32_t Script_GetCVarAbsoluteMax(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+static int32_t Script_GetCVarAbsoluteMax(lua_State* L) {
+    if (!lua_isstring(L, 1)) {
+        return luaL_error(L, "Usage: GetCVarAbsoluteMax(\"cvar\")");
+    }
+
+    auto name = lua_tolstring(L, 1, nullptr);
+    auto cvar = CVar::LookupRegistered(name);
+    if (!cvar) {
+        return luaL_error(L, "Couldn't find CVar named '%s'", name);
+    }
+
+    auto key = cvar->m_key.GetString();
+    if (!SStrCmpI(key, "extShadowQuality", STORM_MAX_STR)) {
+        lua_pushnumber(L, 5.0);
+    } else {
+        lua_pushnil(L);
+    }
+
+    return 1;
 }
 
 int32_t Script_GetChangedOptionWarnings(lua_State* L) {
@@ -633,7 +760,10 @@ int32_t Script_IsStreamingMode(lua_State* L) {
 }
 
 int32_t Script_IsStreamingTrial(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+
+    lua_pushboolean(L, 0);
+    return 1;
 }
 
 int32_t Script_IsConsoleActive(lua_State* L) {

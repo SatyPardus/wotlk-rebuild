@@ -290,7 +290,7 @@ class CGxDeviceD3d : public CGxDevice {
     LPDIRECT3DVERTEXBUFFER9 ICreateD3dVB(EGxPoolUsage usage, uint32_t size);
     LPDIRECT3DVERTEXDECLARATION9 ICreateD3dVertexDecl(D3DVERTEXELEMENT9 elements[], uint32_t count);
     bool ICreateWindow(CGxFormat& format);
-    void ICursorClip(int32_t a1);
+    void ISetWindowFocus(bool focus);
     void ISetPresentParms(D3DPRESENT_PARAMETERS& d3dpp, const CGxFormat& format);
     void IDestroyD3d();
     void IDestroyD3dDevice();

@@ -926,3 +926,13 @@ int32_t CGxFont::UpdateDimensions() {
 
     return result;
 }
+
+// OFFSET: 0x6C3960
+void CGxFont::HandleScreenSizeChange() {
+    this->ClearGlyphs();
+    this->UpdateDimensions();
+    for (auto s = this->m_strings.Head(); s;) {
+        s->HandleScreenSizeChange();
+        s = this->m_strings.Next(s);
+    }
+}

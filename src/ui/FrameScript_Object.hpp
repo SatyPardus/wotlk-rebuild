@@ -43,6 +43,7 @@ class FrameScript_Object {
         // Member functions
         const char* GetDisplayName();
         int32_t RegisterScriptEvent(const char* name);
+        void UnregisterScriptEvent(const char* name);
         void RegisterScriptObject(const char* name);
         void RunScript(ScriptIx const& script, int32_t argCount, const char* a4);
         void UnregisterScriptObject(const char* name);

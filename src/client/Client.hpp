@@ -15,6 +15,11 @@ namespace Client {
     extern CVar* g_expansionMovieVar;
     extern CVar* g_movieSubtitleVar;
     extern CVar* g_lastCharacterIndex;
+    extern CVar* g_desktopGamma;
+    extern CVar* g_gamma;
+    extern CVar* g_cvTextureFilteringMode;
+    extern CVar* g_cvUIFaster;
+    extern CVar* g_cvTextureCacheSize;
     extern HEVENTCONTEXT g_clientEventContext;
     extern char g_currentLocaleName[5];
 }

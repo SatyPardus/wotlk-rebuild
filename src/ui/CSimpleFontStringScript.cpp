@@ -429,7 +429,28 @@ int32_t CSimpleFontString_GetJustifyH(lua_State* L) {
 }
 
 int32_t CSimpleFontString_SetJustifyH(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleFontString::GetObjectType();
+    auto string = static_cast<CSimpleFontString*>(FrameScript_GetObjectThis(L, type));
+
+    if (!lua_isstring(L, 2)) {
+        return luaL_error(L, "Usage: %s:SetJustifyH(\"justify\")", string->GetDisplayName());
+    }
+
+    auto v4 = lua_tolstring(L, 2, 0);
+    uint32_t justify;
+    if (!StringToJustify(v4, justify)) {
+        return luaL_error(L, "Usage: %s:SetJustifyH(\"justify\")", string->GetDisplayName());
+    }
+    auto m_styleFlags = string->m_styleFlags;
+    string->m_settableStyleFlags &= 0xFFFFFFF8;
+    auto v6 = m_styleFlags ^ (justify ^ m_styleFlags) & 7;
+    if (v6 != m_styleFlags) {
+        string->m_styleFlags = v6;
+        if (!string->m_string)
+            string->UpdateString();
+    }
+    string->m_fontableFlags &= ~2u;
+    return 0;
 }
 
 int32_t CSimpleFontString_GetJustifyV(lua_State* L) {

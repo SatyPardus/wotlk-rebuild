@@ -703,6 +703,7 @@ void GxuFontUpdate() {
     // TODO
 }
 
+// OFFSET: 0x6BE020
 void GxuFontWindowSizeChanged() {
     static CRect s_currentRect = { 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -725,8 +726,10 @@ void GxuFontWindowSizeChanged() {
     g_indentPixelWidth = 15.0f;
     g_indentNormWidth = 15.0f / (rect.maxX - rect.minX);
 
-    // TODO
-    // - walk s_fonts and trigger HandleScreenSizeChange
+    for (auto font = g_fonts.Head(); font;) {
+        font->HandleScreenSizeChange();
+        font = g_fonts.Next(font);
+    }
 }
 
 int32_t IGxuFontGlyphRenderGlyph(FT_Face face, uint32_t pixelHeight, uint32_t code, uint32_t baseline, GLYPHBITMAPDATA* dataPtr, int32_t monochrome, uint32_t a7) {

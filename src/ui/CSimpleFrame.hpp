@@ -131,6 +131,7 @@ class CSimpleFrame : public CScriptRegion {
         void DisableDrawLayer(uint32_t drawlayer);
         void EnableDrawLayer(uint32_t drawlayer);
         void EnableEvent(CSimpleEventType eventType, int32_t priority);
+        void DisableEvent(CSimpleEventType eventType);
         int32_t GetHitRect(CRect& rect);
         void Hide();
         void LoadXML_Attributes(XMLNode* node, CStatus* status);

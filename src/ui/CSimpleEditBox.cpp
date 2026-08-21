@@ -1383,3 +1383,55 @@ void CSimpleEditBox::UpdateVisibleText() {
         this->SetHeight(height + this->m_editTextInset.minY + this->m_editTextInset.maxY);
     }
 }
+
+void CSimpleEditBox::HighlightText(int32_t a2, int32_t a3) {
+    m_textLength = this->m_textLength;
+    auto v4 = a2 <= 0 ? 0 : a2;
+    if (v4 >= m_textLength)
+        v4 = this->m_textLength;
+    auto v5 = a3;
+    auto v6 = a3;
+    if (a3 <= -1)
+        v6 = -1;
+    if (v6 >= m_textLength) {
+        v5 = this->m_textLength;
+    } else if (a3 <= -1) {
+        v5 = -1;
+    }
+    if (v5 < v4)
+        v5 = this->m_textLength;
+    this->m_dirtyFlags |= 2u;
+    this->m_highlightLeft = v4;
+    this->m_highlightRight = v5;
+}
+
+// OFFSET: 0x966580
+void CSimpleEditBox::SetText(const char* text, const char* tainted) {
+    if (this->m_highlightLeft != this->m_highlightRight) {
+        this->m_dirtyFlags |= 2u;
+        this->m_highlightRight = 0;
+        this->m_highlightLeft = 0;
+    }
+    if (SStrCmp(text, this->m_text, 0x7FFFFFFFu)) {
+        this->DeleteSubstring(0, this->m_textLength, 1);
+        this->m_visiblePos = 0;
+        this->Insert(text, tainted, 0, 0, 1);
+        this->OnTextSet(tainted);
+    }
+}
+
+// OFFSET: 0x09654E0
+void CSimpleEditBox::OnTextSet(const char* tainted) {
+    if (this->m_onTextSet.luaRef) {
+        this->RunScript(this->m_onTextSet, 0, tainted);
+    }
+
+    //if (this->simpleEditBoxUkn46) {
+    //    simpleEditBoxUkn46 = this->simpleEditBoxUkn46;
+    //    v4[2] = this->simpleEditBoxUkn45;
+    //    v4[1] = 0;
+    //    v4[0] = &off_9EAA04;
+    //    v4[3] = this;
+    //    (*(*simpleEditBoxUkn46 + 16))(simpleEditBoxUkn46, v4);
+    //}
+}

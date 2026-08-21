@@ -84,6 +84,32 @@ int32_t FrameScript_Object::RegisterScriptEvent(const char* name) {
     return 1;
 }
 
+void FrameScript_Object::UnregisterScriptEvent(const char* name) {
+    auto event = FrameScript::s_scriptEventsHash.Ptr(name);
+
+    if (!event) {
+        return;
+    }
+
+    if (event->pendingSignalCount) {
+        auto node = event->unregisterListeners.Head();
+
+        while (node) {
+            if (node->listener == this) {
+                break;
+            }
+
+            node = node->Next();
+        }
+
+        if (node) {
+            event->unregisterListeners.DeleteNode(node);
+        }
+    }
+
+    FrameScript_UnregisterScriptEvent(this, event);
+}
+
 void FrameScript_Object::RegisterScriptObject(const char* name) {
     auto L = FrameScript_GetContext();
 

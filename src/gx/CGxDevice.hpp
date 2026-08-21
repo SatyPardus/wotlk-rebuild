@@ -61,6 +61,9 @@ class CGxDevice {
         static uint32_t s_texFormatBytesPerBlock[];
         static CGxShader* s_uiVertexShader;
         static CGxShader* s_uiPixelShader;
+        static uint32_t s_windowMinWidth;
+        static uint32_t s_windowMinHeight;
+        static float s_windowAspect;
 
         // Static functions
         static int32_t AdapterID(uint16_t& vendorID, uint16_t& deviceID, uint32_t& driverVersionHi, uint32_t& driverVersionLow);
@@ -74,6 +77,15 @@ class CGxDevice {
         static void Log(const CGxFormat& format);
         static void LogClose();
         static uint32_t PrimCalcCount(EGxPrim primType, uint32_t count);
+
+        static void SizingMinHeightMoveTop(SizingRect& r);
+        static void SizingMinHeightMoveBottom(SizingRect& r);
+        static void SizingMinWidthMoveLeft(SizingRect& r);
+        static void SizingMinWidthMoveRight(SizingRect& r);
+        static void SizingAspectMoveTop(SizingRect& r);
+        static void SizingAspectMoveBottom(SizingRect& r);
+        static void SizingAspectMoveLeft(SizingRect& r);
+        static void SizingAspectMoveRight(SizingRect& r);
 
         // graphics api factory
 #if defined(WHOA_SYSTEM_WIN)
@@ -106,7 +118,7 @@ class CGxDevice {
         /* 0x0000 */ int32_t m_context = 0;
         /* 0x0000 */ int32_t intF5C = 0;
         /* 0x0000 */ int32_t m_windowVisible = 0;
-        /* 0x0000 */ int32_t intF64 = 0;
+        /* 0x0000 */ int32_t m_windowFocus = 0;
         /* 0x0000 */ int32_t m_needsReset = 1;
         /* 0x0000 */ CBoundingBox m_viewport;
         /* 0x0000 */ C44Matrix m_projection;

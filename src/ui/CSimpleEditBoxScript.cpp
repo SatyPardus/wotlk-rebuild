@@ -128,8 +128,18 @@ int32_t CSimpleEditBox_Insert(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975E80
 int32_t CSimpleEditBox_SetText(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleEditBox::GetObjectType();
+    CSimpleEditBox* editBox = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
+
+    if (!lua_isstring(L, 2)) {
+        luaL_error(L, "Usage: %s:SetText(\"text\")", editBox->GetDisplayName());
+    }
+
+    const char* tainted = nullptr; //*lua_tainted TODO;
+    editBox->SetText(lua_tolstring(L, 2, 0), tainted);
+    return 0;
 }
 
 int32_t CSimpleEditBox_GetText(lua_State* L) {
@@ -156,7 +166,17 @@ int32_t CSimpleEditBox_GetNumber(lua_State* L) {
 }
 
 int32_t CSimpleEditBox_HighlightText(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleEditBox::GetObjectType();
+    CSimpleEditBox* editBox = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
+
+    int32_t v2 = 0;
+    if (lua_isnumber(L, 2))
+        v2 = lua_tonumber(L, 2);
+    int32_t v3 = -1;
+    if (lua_isnumber(L, 3))
+        v3 = lua_tonumber(L, 3);
+    editBox->HighlightText(v2, v3);
+    return 0;
 }
 
 int32_t CSimpleEditBox_AddHistoryLine(lua_State* L) {

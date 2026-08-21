@@ -12,6 +12,7 @@ class CGxCaps {
         int32_t m_numStreams = 0;
         int32_t int10 = 0;
         EGxColorFormat m_colorFormat = GxCF_argb;
+        uint32_t unk18 = 0;
         uint32_t m_maxIndex = 0;
         int32_t m_generateMipMaps = 0;
         int32_t m_texFmt[GxTexFormats_Last] = { 0 };
@@ -23,6 +24,7 @@ class CGxCaps {
         uint32_t m_maxTexAnisotropy = 0;
         int32_t m_depthBias = 0;
         int32_t m_hwCursor = 0;
+        int32_t m_stereoAvailable = 0;
         int32_t int130 = 1;
         int32_t int134 = 0;
         int32_t int138 = 0;

@@ -7,6 +7,7 @@
 #include "util/StringTo.hpp"
 #include "util/Unimplemented.hpp"
 #include <cstdint>
+#include "ui/CSimpleFont.hpp"
 
 int32_t CSimpleButton_SetStateTexture(lua_State* L, CSimpleButtonState state, const char* method) {
     auto type = CSimpleButton::GetObjectType();
@@ -103,7 +104,23 @@ int32_t CSimpleButton_SetButtonState(lua_State* L) {
 }
 
 int32_t CSimpleButton_SetNormalFontObject(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleButton::GetObjectType();
+    auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
+
+    CSimpleFont* font = nullptr;
+    if (lua_type(L, 2) == LUA_TSTRING) {
+        font = CSimpleFont::GetFont(lua_tolstring(L, 2, 0), 0);
+    } else if (lua_type(L, 2) == LUA_TTABLE) {
+        lua_rawgeti(L, 2, 0);
+        font = static_cast<CSimpleFont*>(lua_touserdata(L, -1));
+        lua_settop(L, -2);
+    }
+    if (!button || !font || !font->IsA(CSimpleFont::GetObjectType())) {
+        luaL_error(L, "Usage: %s:SetDisabledFontObject(\"fontname\")", button->GetDisplayName());
+    }
+    button->m_normalFont = font;
+    button->UpdateTextState(button->m_state);
+    return 0;
 }
 
 int32_t CSimpleButton_GetNormalFontObject(lua_State* L) {
@@ -111,7 +128,23 @@ int32_t CSimpleButton_GetNormalFontObject(lua_State* L) {
 }
 
 int32_t CSimpleButton_SetDisabledFontObject(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleButton::GetObjectType();
+    auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
+
+    CSimpleFont* font = nullptr;
+    if (lua_type(L, 2) == LUA_TSTRING) {
+        font = CSimpleFont::GetFont(lua_tolstring(L, 2, 0), 0);
+    } else if (lua_type(L, 2) == LUA_TTABLE) {
+        lua_rawgeti(L, 2, 0);
+        font = static_cast<CSimpleFont*>(lua_touserdata(L, -1));
+        lua_settop(L, -2);
+    }
+    if (!button || !font || !font->IsA(CSimpleFont::GetObjectType())) {
+        luaL_error(L, "Usage: %s:SetDisabledFontObject(\"fontname\")", button->GetDisplayName());
+    }
+    button->m_disabledFont = font;
+    button->UpdateTextState(button->m_state);
+    return 0;
 }
 
 int32_t CSimpleButton_GetDisabledFontObject(lua_State* L) {
@@ -119,7 +152,23 @@ int32_t CSimpleButton_GetDisabledFontObject(lua_State* L) {
 }
 
 int32_t CSimpleButton_SetHighlightFontObject(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleButton::GetObjectType();
+    auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
+
+    CSimpleFont* font = nullptr;
+    if (lua_type(L, 2) == LUA_TSTRING) {
+        font = CSimpleFont::GetFont(lua_tolstring(L, 2, 0), 0);
+    } else if (lua_type(L, 2) == LUA_TTABLE) {
+        lua_rawgeti(L, 2, 0);
+        font = static_cast<CSimpleFont*>(lua_touserdata(L, -1));
+        lua_settop(L, -2);
+    }
+    if (!button || !font || !font->IsA(CSimpleFont::GetObjectType())) {
+        luaL_error(L, "Usage: %s:SetDisabledFontObject(\"fontname\")", button->GetDisplayName());
+    }
+    button->m_highlightFont = font;
+    button->UpdateTextState(button->m_state);
+    return 0;
 }
 
 int32_t CSimpleButton_GetHighlightFontObject(lua_State* L) {

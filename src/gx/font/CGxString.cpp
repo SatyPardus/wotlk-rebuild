@@ -632,3 +632,14 @@ void CGxString::WriteGeometry(CGxVertexPCT* buf, int32_t line, int32_t ofs, int3
         );
     }
 }
+
+// OFFSET: 0x6C6C70
+void CGxString::HandleScreenSizeChange() {
+    if ((this->m_flags & 4) != 0)
+        this->m_requestedFontHeight = GxuFontGetOneToOneHeight(this->m_currentFace);
+    float height = 2.0f / GetScreenPixelHeight();
+    if (this->m_requestedFontHeight > height)
+        height = this->m_requestedFontHeight;
+    this->m_currentFontHeight = height;
+    this->ClearInstanceData();
+}

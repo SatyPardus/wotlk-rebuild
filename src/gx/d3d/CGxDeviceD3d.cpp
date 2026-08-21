@@ -219,6 +219,7 @@ int32_t CGxDeviceD3d::s_texArgs[] {
     D3DTA_TEXTURE, D3DTA_CURRENT  // 2, 1
 };
 
+// OFFSET: 0x68EB20
 ATOM WindowClassCreate() {
     auto instance = GetModuleHandle(nullptr);
 
@@ -240,6 +241,7 @@ ATOM WindowClassCreate() {
     return RegisterClassEx(&wc);
 }
 
+// OFFSET: 0x68ED80
 int32_t CGxDeviceD3d::ILoadD3dLib(HINSTANCE& d3dLib, LPDIRECT3D9& d3d) {
     d3dLib = nullptr;
     d3d = nullptr;
@@ -271,6 +273,7 @@ int32_t CGxDeviceD3d::ILoadD3dLib(HINSTANCE& d3dLib, LPDIRECT3D9& d3d) {
     return 0;
 }
 
+// OFFSET: 0x68E140
 void CGxDeviceD3d::IUnloadD3dLib(HINSTANCE& d3dLib, LPDIRECT3D9& d3d) {
     if (d3d) {
         d3d->Release();
@@ -281,6 +284,7 @@ void CGxDeviceD3d::IUnloadD3dLib(HINSTANCE& d3dLib, LPDIRECT3D9& d3d) {
     }
 }
 
+// OFFSET: 0x6A0360
 LRESULT CALLBACK CGxDeviceD3d::WindowProcD3d(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     auto device = reinterpret_cast<CGxDeviceD3d*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
@@ -368,19 +372,93 @@ LRESULT CALLBACK CGxDeviceD3d::WindowProcD3d(HWND hWnd, UINT uMsg, WPARAM wParam
     }
 
     case WM_DISPLAYCHANGE: {
-        // TODO
-
+        if (!device->IDevIsWindowed()) {
+            CRect windowRect = {
+                0.0f,
+                0.0f,
+                static_cast<float>(HIWORD(lParam)),
+                static_cast<float>(LOWORD(lParam))
+            };
+            device->DeviceWM(GxWM_DisplayChange, reinterpret_cast<uintptr_t>(&windowRect), 0);
+        }
         break;
     }
 
     case WM_SYSCOMMAND: {
-        // TODO
-
         break;
     }
 
     case WM_SIZING: {
-        // TODO
+        auto windowRect = reinterpret_cast<RECT*>(lParam);
+
+        if (windowRect->right - windowRect->left <= 0 || windowRect->bottom - windowRect->top <= 0) {
+            return 0;
+        }
+
+        SizingRect r = {
+            windowRect->top,
+            windowRect->left,
+            windowRect->bottom,
+            windowRect->right
+        };
+
+        switch (wParam) {
+        case WMSZ_LEFT:
+            SizingMinWidthMoveLeft(r);
+            SizingAspectMoveTop(r);
+            break;
+
+        case WMSZ_RIGHT:
+            SizingMinWidthMoveRight(r);
+            SizingAspectMoveBottom(r);
+            break;
+
+        case WMSZ_TOP:
+            SizingMinHeightMoveTop(r);
+            SizingAspectMoveLeft(r);
+            break;
+
+        case WMSZ_TOPLEFT:
+            SizingMinHeightMoveTop(r);
+            SizingMinWidthMoveLeft(r);
+            SizingAspectMoveTop(r);
+            SizingAspectMoveLeft(r);
+            break;
+
+        case WMSZ_TOPRIGHT:
+            SizingMinHeightMoveTop(r);
+            SizingMinWidthMoveRight(r);
+            SizingAspectMoveTop(r);
+            SizingAspectMoveRight(r);
+            break;
+
+        case WMSZ_BOTTOM:
+            SizingMinHeightMoveBottom(r);
+            SizingAspectMoveRight(r);
+            break;
+
+        case WMSZ_BOTTOMLEFT:
+            SizingMinHeightMoveBottom(r);
+            SizingMinWidthMoveLeft(r);
+            SizingAspectMoveLeft(r);
+            SizingAspectMoveBottom(r);
+            break;
+
+        case WMSZ_BOTTOMRIGHT:
+            SizingMinHeightMoveBottom(r);
+            SizingMinWidthMoveRight(r);
+            SizingAspectMoveBottom(r);
+            SizingAspectMoveRight(r);
+            break;
+
+        default:
+            break;
+        }
+
+        windowRect->left = r.left;
+        windowRect->top = r.top;
+        windowRect->right = r.right;
+        windowRect->bottom = r.bottom;
 
         return 1;
     }
@@ -510,7 +588,7 @@ int32_t CGxDeviceD3d::DeviceSetFormat(const CGxFormat& format) {
     CGxFormat createFormat = format;
 
     if (this->ICreateWindow(createFormat) && this->ICreateD3dDevice(createFormat) && this->CGxDevice::DeviceSetFormat(format)) {
-        this->ICursorClip(1);
+        this->ISetWindowFocus(1);
         return 1;
     } else {
         CGxDevice::Log("CGxDeviceD3d::DeviceSetFormat(): unable to set format!");
@@ -527,6 +605,7 @@ void* CGxDeviceD3d::DeviceWindow() {
     return this->m_hwnd;
 }
 
+// OFFSET: 0x690230
 void CGxDeviceD3d::DeviceWM(EGxWM wm, uintptr_t param1, uintptr_t param2) {
     switch (wm) {
     case GxWM_Size: {
@@ -546,12 +625,12 @@ void CGxDeviceD3d::DeviceWM(EGxWM wm, uintptr_t param1, uintptr_t param2) {
 
                 if (SUCCEEDED(this->m_d3dDevice->Reset(&d3dpp))) {
                     this->IStateSetD3dDefaults();
-                    // TODO
+                    this->ISetWindowFocus(true);
 
                     this->m_context = 1;
                     this->intF5C = 0;
 
-                    // TODO
+                    // TODO this->ukn5();
 
                     this->m_needsReset = 1;
 
@@ -566,6 +645,20 @@ void CGxDeviceD3d::DeviceWM(EGxWM wm, uintptr_t param1, uintptr_t param2) {
 
         break;
     }
+    case GxWM_DisplayChange:
+        if (this->m_windowVisible) {
+            auto& windowRect = *reinterpret_cast<CRect*>(param1);
+            this->DeviceSetDefWindow(windowRect);
+            this->m_needsReset = 1;
+        }
+        break;
+    case GxWM_Destroy:
+    case GxWM_KillFocus:
+        this->ISetWindowFocus(false);
+        break;
+    case GxWM_SetFocus:
+        this->ISetWindowFocus(true);
+        break;
     default: {
     }
     }
@@ -1156,10 +1249,10 @@ bool CGxDeviceD3d::ICreateWindow(CGxFormat& format) {
     return this->m_hwnd != nullptr;
 }
 
-void CGxDeviceD3d::ICursorClip(int32_t a1) {
-    this->intF64 = a1;
+void CGxDeviceD3d::ISetWindowFocus(bool focus) {
+    this->m_windowFocus = focus;
 
-    if (a1) {
+    if (focus) {
         this->m_hwCursorNeedsUpdate = 1;
 
         if (this->m_format.window == 0) {
@@ -1677,7 +1770,7 @@ void CGxDeviceD3d::ISceneBegin() {
             this->ISetPresentParms(d3dpp, this->m_format);
             if (this->m_d3dDevice->Reset(&d3dpp) == D3D_OK) {
                 this->IStateSetD3dDefaults();
-                this->ICursorClip(1);
+                this->ISetWindowFocus(1);
                 this->m_context = 1;
                 // TODO
                 // this->intF5C = 0;
@@ -2389,7 +2482,7 @@ void CGxDeviceD3d::IStateSyncMaterial() {
     }
 }
 
-// OFFSET: 0x0x006A4250
+// OFFSET: 0x6A4250
 void CGxDeviceD3d::ISetMaterial(uint32_t diffuse, uint32_t emissive, uint32_t specular, float power) {
     constexpr float k = 1.0f / 255.0f;
 

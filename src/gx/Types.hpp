@@ -369,4 +369,11 @@ struct MipBits {
     C4Pixel* mip[1];
 };
 
+struct SizingRect {
+    int32_t top;
+    int32_t left;
+    int32_t bottom;
+    int32_t right;
+};
+
 #endif

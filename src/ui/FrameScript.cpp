@@ -254,7 +254,7 @@ void FrameScript_Execute(int32_t function, FrameScript_Object* objectThis, int32
 
     if (firstArg < argCount) {
         for (int32_t i = firstArg; i < argCount; i++) {
-            argId = i + 1;
+            argId++;
 
             if (argId >= 10) {
                 SStrPrintf(&argName[3], 3, "%d", argId);
@@ -265,7 +265,7 @@ void FrameScript_Execute(int32_t function, FrameScript_Object* objectThis, int32
 
             lua_pushstring(L, argName);
             lua_rawget(L, LUA_GLOBALSINDEX);
-            lua_pushvalue(L, v20 + firstArg);
+            lua_pushvalue(L, v20 + i);
             lua_pushstring(L, argName);
             lua_insert(L, -2);
             lua_rawset(L, LUA_GLOBALSINDEX);
@@ -876,8 +876,17 @@ void FrameScript_SetPluralRule(PLURAL_RULE rule) {
 }
 
 int32_t FrameScript_ShouldSignalEvent(uint32_t index) {
-    // TODO
-    return 1;
+    if (index >= FrameScript::s_scriptEvents.Count()) {
+        return 0;
+    }
+
+    auto event = FrameScript::s_scriptEvents[index];
+
+    if (!event) {
+        return 0;
+    }
+
+    return !event->listeners.IsEmpty();
 }
 
 void FrameScript_PushEventName(uint32_t index) {
@@ -951,6 +960,8 @@ void FrameScript_SignalEvent(uint32_t index, lua_State* L, int32_t argCount) {
     auto node = event->listeners.Head();
 
     while (node) {
+        auto next = node->Next();
+
         auto unregisterNode = event->unregisterListeners.Head();
 
         while (unregisterNode) {
@@ -961,21 +972,19 @@ void FrameScript_SignalEvent(uint32_t index, lua_State* L, int32_t argCount) {
             unregisterNode = unregisterNode->Next();
         }
 
-        if (unregisterNode) {
-            break;
-        }
+        if (!unregisterNode) {
+            auto script = &node->listener->m_onEvent;
 
-        auto script = &node->listener->m_onEvent;
+            if (script->luaRef) {
+                for (int32_t i = 0; i < argCount; i++) {
+                    lua_pushvalue(L, -argCount);
+                }
 
-        if (script->luaRef) {
-            for (int32_t i = 0; i < argCount; i++) {
-                lua_pushvalue(L, -argCount);
+                FrameScript_Execute(script->luaRef, node->listener, argCount, script->unk, event);
             }
-
-            FrameScript_Execute(script->luaRef, node->listener, argCount, script->unk, event);
         }
 
-        node = node->Next();
+        node = next;
     }
 
     event->pendingSignalCount--;
@@ -1016,6 +1025,7 @@ void FrameScript_SignalEvent(uint32_t index, const char* format, ...) {
     argCount += FrameScript_PushEventArgs(format, args);
 
     FrameScript_SignalEvent(index, FrameScript::s_context, argCount);
+    lua_settop(FrameScript::s_context, -1 - argCount);
 
     // TODO
     // if (lua_taintexpected && !lua_taintedclosure) {

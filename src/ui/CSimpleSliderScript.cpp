@@ -76,19 +76,46 @@ int32_t CSimpleSlider_GetValueStep(lua_State* L) {
 }
 
 int32_t CSimpleSlider_SetValueStep(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleSlider::GetObjectType();
+    auto slider = static_cast<CSimpleSlider*>(FrameScript_GetObjectThis(L, type));
+
+    if (!lua_isnumber(L, 2)) {
+        luaL_error(L, "Usage: %s:SetValueStep(value)", slider->GetDisplayName());
+    }
+
+    float value = lua_tonumber(L, 2);
+    slider->SetValueStep(value);
+    return 0;
 }
 
 int32_t CSimpleSlider_Enable(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleSlider::GetObjectType();
+    auto slider = static_cast<CSimpleSlider*>(FrameScript_GetObjectThis(L, type));
+
+    slider->SetFrameFlag(0x400, 0);
+    if (slider->m_onEnable.luaRef && !slider->m_loading)
+        slider->RunScript(slider->m_onEnable, 0, nullptr);
+    return 0;
 }
 
 int32_t CSimpleSlider_Disable(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleSlider::GetObjectType();
+    auto slider = static_cast<CSimpleSlider*>(FrameScript_GetObjectThis(L, type));
+
+    slider->SetFrameFlag(0x400, 1);
+    if (slider->m_onDisable.luaRef && !slider->m_loading)
+        slider->RunScript(slider->m_onDisable, 0, nullptr);
+    return 0;
 }
 
 int32_t CSimpleSlider_IsEnabled(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleSlider::GetObjectType();
+    auto slider = static_cast<CSimpleSlider*>(FrameScript_GetObjectThis(L, type));
+    if ((slider->m_flags & 0x400) != 0)
+        lua_pushnil(L);
+    else
+        lua_pushnumber(L, 1.0);
+    return 1;
 }
 
 FrameScript_Method SimpleSliderMethods[NUM_SIMPLE_SLIDER_SCRIPT_METHODS] = {

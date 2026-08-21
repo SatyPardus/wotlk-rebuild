@@ -206,9 +206,6 @@ int32_t CSimpleFrame_GetScript(lua_State* L) {
 }
 
 int32_t CSimpleFrame_SetScript(lua_State* L) {
-    // WARNING: This implementation breaks the client
-    WHOA_UNIMPLEMENTED(0);
-
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
 
@@ -254,7 +251,14 @@ int32_t CSimpleFrame_RegisterEvent(lua_State* L) {
 }
 
 int32_t CSimpleFrame_UnregisterEvent(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleFrame::GetObjectType();
+    CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
+
+    if (!lua_isstring(L, 2)) {
+        return luaL_error(L, "Usage: %s:UnregisterEvent(\"event\")", frame->GetDisplayName());
+    }
+    frame->UnregisterScriptEvent(lua_tolstring(L, 2, 0));
+    return 0;
 }
 
 int32_t CSimpleFrame_RegisterAllEvents(lua_State* L) {
@@ -478,7 +482,16 @@ int32_t CSimpleFrame_Hide(lua_State* L) {
 }
 
 int32_t CSimpleFrame_IsVisible(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleFrame::GetObjectType();
+    CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
+
+    if (frame->m_visible) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+
+    return 1;
 }
 
 int32_t CSimpleFrame_IsShown(lua_State* L) {
@@ -603,7 +616,23 @@ int32_t CSimpleFrame_RegisterForDrag(lua_State* L) {
 }
 
 int32_t CSimpleFrame_EnableKeyboard(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleFrame::GetObjectType();
+    CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
+
+    if (!frame->ProtectedFunctionsAllowed()) {
+        // TODO
+        // - disallowed logic
+
+        return 0;
+    }
+
+    if (StringToBOOL(L, 2, 1)) {
+        frame->EnableEvent(SIMPLE_EVENT_KEY, -1);
+        frame->EnableEvent(SIMPLE_EVENT_CHAR, -1);
+    } else {
+        frame->DisableEvent(SIMPLE_EVENT_KEY);
+        frame->DisableEvent(SIMPLE_EVENT_CHAR);
+    }
 }
 
 int32_t CSimpleFrame_IsKeyboardEnabled(lua_State* L) {

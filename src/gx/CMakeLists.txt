@@ -40,6 +40,7 @@ target_link_libraries(gx
         model
         ui
         util
+        os
     PUBLIC
         bc
         freetype-2.0

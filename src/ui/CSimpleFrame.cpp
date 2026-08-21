@@ -677,6 +677,16 @@ void CSimpleFrame::EnableEvent(CSimpleEventType eventType, int32_t priority) {
     this->m_eventmask |= 1 << eventType;
 }
 
+void CSimpleFrame::DisableEvent(CSimpleEventType eventType) {
+    if ((1 << eventType) & this->m_eventmask) {
+        return;
+    }
+
+    if (this->m_visible)
+        this->m_top->UnregisterForEvent(this, eventType, 0);
+    this->m_eventmask &= ~(1 << eventType);
+}
+
 void CSimpleFrame::Hide() {
     if (this->ProtectedFunctionsAllowed()) {
         this->m_shown = 0;
