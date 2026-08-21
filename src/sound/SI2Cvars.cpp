@@ -1,6 +1,6 @@
 #include "sound/SI2.hpp"
 #include "console/CVar.hpp"
-#include <os/System.hpp>
+#include <common/processor/Processor.hpp>
 
 bool OutboundChatVolumeHandler(CVar*, const char*, const char*, void*) {
     return true;
@@ -120,7 +120,7 @@ void SI2::RegisterCVars() {
     CVar::Register("Sound_ZoneMusicNoDelay", "", 0, "0", 0, 7, 0, 0, 0);
     CVar::Register("Sound_EnableAmbience", "Enable Ambience", 0, "1", EnableAmbience_CVarHandler, 7, 0, 0, 0);
     CVar::Register("Sound_EnableSoundWhenGameIsInBG", "Enable Sound When Game Is In Background", 0, "0", 0, 7, 0, 0, 0);
-    auto v0 = OsGetNumberOfProcessors() <= 1;
+    auto v0 = OsGetProcessorCount() <= 1;
     auto v1 = "1";
     if (v0)
         v1 = "0";
