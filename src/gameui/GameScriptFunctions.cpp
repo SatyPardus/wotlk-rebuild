@@ -170,8 +170,7 @@ static int32_t Script_GetCVar(lua_State* L) {
         return luaL_error(L, "Usage: GetCVar(\"cvar\")");
     }
 
-    // TODO: Use LookupRegistered
-    auto cvar = CVar::Lookup(lua_tolstring(L, 1, nullptr));
+    auto cvar = CVar::LookupRegistered(lua_tolstring(L, 1, nullptr));
     if (!cvar || (cvar->m_flags & 0x40)) {
         lua_pushnil(L);
     } else {
@@ -185,8 +184,7 @@ static int32_t Script_GetCVarBool(lua_State* L) {
         return luaL_error(L, "Usage: GetCVarBool(\"cvar\")");
     }
 
-    // TODO: Use LookupRegistered
-    auto cvar = CVar::Lookup(lua_tolstring(L, 1, nullptr));
+    auto cvar = CVar::LookupRegistered(lua_tolstring(L, 1, nullptr));
     if (cvar && (cvar->m_flags & 0x40) == 0 && StringToBOOL(cvar->GetString())) {
         lua_pushnumber(L, 1.0);
     } else {
@@ -201,8 +199,7 @@ static int32_t Script_GetCVarDefault(lua_State* L) {
     }
 
     auto name = lua_tolstring(L, 1, nullptr);
-    // TODO: Use LookupRegistered
-    auto cvar = CVar::Lookup(name);
+    auto cvar = CVar::LookupRegistered(name);
     if (!cvar || (cvar->m_flags & 0x40)) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     } else {
@@ -217,8 +214,7 @@ static int32_t Script_GetCVarMin(lua_State* L) {
     }
 
     auto name = lua_tolstring(L, 1, nullptr);
-    // TODO: Use LookupRegistered
-    auto cvar = CVar::Lookup(name);
+    auto cvar = CVar::LookupRegistered(name);
     if (!cvar || (cvar->m_flags & 0x40)) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     }
@@ -241,8 +237,7 @@ static int32_t Script_GetCVarMax(lua_State* L) {
     }
 
     auto name = lua_tolstring(L, 1, nullptr);
-    // TODO: Use LookupRegistered
-    auto cvar = CVar::Lookup(name);
+    auto cvar = CVar::LookupRegistered(name);
     if (!cvar || (cvar->m_flags & 0x40)) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     }
@@ -266,8 +261,7 @@ static int32_t Script_GetCVarAbsoluteMin(lua_State* L) {
     }
 
     auto name = lua_tolstring(L, 1, nullptr);
-    // TODO: Use LookupRegistered
-    auto cvar = CVar::Lookup(name);
+    auto cvar = CVar::LookupRegistered(name);
     if (!cvar || (cvar->m_flags & 0x40)) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     }
@@ -288,8 +282,7 @@ static int32_t Script_GetCVarAbsoluteMax(lua_State* L) {
     }
 
     auto name = lua_tolstring(L, 1, nullptr);
-    // TODO: Use LookupRegistered
-    auto cvar = CVar::Lookup(name);
+    auto cvar = CVar::LookupRegistered(name);
     if (!cvar || (cvar->m_flags & 0x40)) {
         return luaL_error(L, "Couldn't find CVar named '%s'", name);
     }
