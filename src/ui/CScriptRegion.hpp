@@ -21,30 +21,36 @@ class CScriptRegion : public CScriptObject, public CLayoutFrame {
         static int32_t GetObjectType();
 
         // Member variables
-        CSimpleFrame* m_parent = nullptr; // TODO verify type
+        /* 0094 */ CSimpleFrame* m_parent = nullptr; // TODO verify type
+        /* 0098 */ CSimpleAnimGroup* animGroups;     // TODO verify name+type
+        /* 009C */ CSimpleAnimGroup* animGroupNode;  // TODO verify name+type
 
         // Virtual member functions
-        virtual bool IsA(int32_t type);
-        virtual CScriptObject* GetScriptObjectParent();
-        virtual bool IsA(const char* typeName);
-        virtual const char* GetObjectTypeName();
-        virtual bool IsDragging();
-        virtual bool IsMouseOver(float a1, float a2, float a3, float a4);
-        virtual void PreOnAnimUpdate() {};
-        virtual void OnLayerUpdate(float elapsedSec);
-        virtual void NotifyAnimBegin(CSimpleAnimGroup* animGroup);
-        virtual void NotifyAnimEnd(CSimpleAnimGroup* animGroup);
-        virtual void StopAnimating();
-        virtual void AnimActivated(CSimpleAnimGroup* animGroup, int32_t, int32_t) {};
-        virtual void AnimDeactivated(CSimpleAnimGroup* animGroup, int32_t, int32_t) {};
-        virtual void AddAnimTranslation(CScriptRegion*, const C2Vector&) {};
-        virtual void AddAnimRotation(CScriptRegion*, FRAMEPOINT, const C2Vector&, float) {};
-        virtual void AddAnimScale(CScriptRegion*, FRAMEPOINT, const C2Vector&, const C2Vector&) {};
-        virtual void AddAnimAlpha(CScriptRegion*, int16_t) {};
-        virtual void LoadXML(const XMLNode* node, CStatus* status);
-        virtual CLayoutFrame* GetLayoutParent();
-        virtual CLayoutFrame* GetLayoutFrameByName(const char* name);
-        virtual void SetParent(CSimpleFrame* parent);
+        // CLayoutFrame
+        /* 00 */ virtual ~CScriptRegion();
+        /* 01 */ virtual void LoadXML(const XMLNode* node, CStatus* status);
+        /* 02 */ virtual CLayoutFrame* GetLayoutParent();
+        /* 16 */ virtual CLayoutFrame* GetLayoutFrameByName(const char* name);
+        // CScriptObject
+        /* 04 */ virtual bool IsA(int32_t type);
+        /* 05 */ virtual CScriptObject* GetScriptObjectParent();
+        /* 06 */ virtual bool IsA(const char* typeName);
+        /* 07 */ virtual const char* GetObjectTypeName();
+        /* 08 */ virtual void SetParent(CSimpleFrame* parent);
+        /* 12 */ virtual void NotifyAnimBegin(CSimpleAnimGroup* animGroup);
+        /* 13 */ virtual void NotifyAnimEnd(CSimpleAnimGroup* animGroup);
+        /* 14 */ virtual void StopAnimating();
+
+        /* 00 */ virtual bool IsDragging();
+        /* 00 */ virtual bool IsMouseOver(float a1, float a2, float a3, float a4);
+        /* 00 */ virtual void PreOnAnimUpdate() {};
+        /* 00 */ virtual void OnLayerUpdate(float elapsedSec);
+        /* 00 */ virtual void AnimActivated(CSimpleAnimGroup* animGroup, int32_t, int32_t) {};
+        /* 00 */ virtual void AnimDeactivated(CSimpleAnimGroup* animGroup, int32_t, int32_t) {};
+        /* 00 */ virtual void AddAnimTranslation(CScriptRegion*, const C2Vector&) {};
+        /* 00 */ virtual void AddAnimRotation(CScriptRegion*, FRAMEPOINT, const C2Vector&, float) {};
+        /* 00 */ virtual void AddAnimScale(CScriptRegion*, FRAMEPOINT, const C2Vector&, const C2Vector&) {};
+        /* 00 */ virtual void AddAnimAlpha(CScriptRegion*, int16_t) {};
 
         // Member functions
         void LoadXML_Animations(const XMLNode* node, CStatus* status);

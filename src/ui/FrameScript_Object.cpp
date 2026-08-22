@@ -5,6 +5,7 @@
 
 int32_t FrameScript_Object::s_objectTypes = 0;
 
+// OFFSET: 0x816790
 int32_t FrameScript_Object::CreateScriptMetaTable(lua_State* L, void (*a2)(lua_State* L)) {
     lua_createtable(L, 0, 0);
     lua_pushstring(L, "__index");
@@ -16,6 +17,7 @@ int32_t FrameScript_Object::CreateScriptMetaTable(lua_State* L, void (*a2)(lua_S
     return luaL_ref(L, LUA_REGISTRYINDEX);
 }
 
+// OFFSET: 0x8167E0
 void FrameScript_Object::FillScriptMethodTable(lua_State *L, FrameScript_Method methods[], int32_t count) {
     for (int32_t i = 0; i < count; i++) {
         lua_pushstring(L, methods[i].name);
@@ -24,17 +26,20 @@ void FrameScript_Object::FillScriptMethodTable(lua_State *L, FrameScript_Method 
     }
 }
 
+// OFFSET: 0x819850
 FrameScript_Object::~FrameScript_Object() {
     if (this->m_onEvent.luaRef) {
         luaL_unref(FrameScript_GetContext(), LUA_REGISTRYINDEX, this->m_onEvent.luaRef);
     }
 }
 
+// OFFSET: 0x482AA0
 const char* FrameScript_Object::GetDisplayName() {
     const char* name = this->GetName();
     return name ? name : "<unnamed>";
 }
 
+// OFFSET: 0x816830
 FrameScript_Object::ScriptIx* FrameScript_Object::GetScriptByName(const char* name, FrameScript_Object::ScriptData& data) {
     if (!SStrCmpI(name, "OnEvent", STORM_MAX_STR)) {
         data.wrapper = "return function(self,event,...) %s end";
@@ -44,6 +49,7 @@ FrameScript_Object::ScriptIx* FrameScript_Object::GetScriptByName(const char* na
     return nullptr;
 }
 
+// OFFSET: 0x81B380
 int32_t FrameScript_Object::RegisterScriptEvent(const char* name) {
     auto event = FrameScript::s_scriptEventsHash.Ptr(name);
 
@@ -84,6 +90,7 @@ int32_t FrameScript_Object::RegisterScriptEvent(const char* name) {
     return 1;
 }
 
+// OFFSET: 0x81B410
 void FrameScript_Object::UnregisterScriptEvent(const char* name) {
     auto event = FrameScript::s_scriptEventsHash.Ptr(name);
 
@@ -110,6 +117,7 @@ void FrameScript_Object::UnregisterScriptEvent(const char* name) {
     FrameScript_UnregisterScriptEvent(this, event);
 }
 
+// OFFSET: 0x819880
 void FrameScript_Object::RegisterScriptObject(const char* name) {
     auto L = FrameScript_GetContext();
 
@@ -164,10 +172,12 @@ void FrameScript_Object::RegisterScriptObject(const char* name) {
     }
 }
 
+// OFFSET: 0x81A2C0
 void FrameScript_Object::RunScript(ScriptIx const& script, int32_t argCount, const char* a4) {
     FrameScript_Execute(script.luaRef, this, argCount, a4 ? a4 : script.unk, nullptr);
 }
 
+// OFFSET: 0x8199C0
 void FrameScript_Object::UnregisterScriptObject(const char* name) {
     auto L = FrameScript_GetContext();
 
@@ -194,6 +204,7 @@ void FrameScript_Object::UnregisterScriptObject(const char* name) {
     }
 }
 
+// OFFSET: 0x4A81B0
 FrameScript_Object* FrameScript_GetObjectThis(lua_State* L, int32_t type) {
     if (lua_type(L, 1) != LUA_TTABLE) {
         luaL_error(L, "Attempt to find 'this' in non-table object (used '.' instead of ':' ?)");

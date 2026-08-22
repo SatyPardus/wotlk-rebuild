@@ -23,10 +23,11 @@ class CLayoutFrame {
         static void ResizePending();
 
         // Member variables
-        TSLink<CLayoutFrame> resizeLink;
-        CFramePoint* m_points[FRAMEPOINT_NUMPOINTS] = {};
-        TSList<FRAMENODE, TSGetLink<FRAMENODE>> m_resizeList;
-        struct {
+        /* 0000 */ // vftable
+        /* 0004 */ TSLink<CLayoutFrame> resizeLink;
+        /* 000C */ CFramePoint* m_points[FRAMEPOINT_NUMPOINTS] = {};
+        /* 0030 */ TSList<FRAMENODE, TSGetLink<FRAMENODE>> m_resizeList;
+        /* 003C */ struct {
             int32_t left : 1;
             int32_t top : 1;
             int32_t right : 1;
@@ -34,37 +35,45 @@ class CLayoutFrame {
             int32_t centerX : 1;
             int32_t centerY : 1;
         } m_guard;
-        uint32_t m_resizeCounter : 8;
-        uint32_t m_flags : 16;
-        CRect m_rect;
-        float m_width;
-        float m_height;
-        float m_layoutScale;
-        float m_layoutDepth;
+        union {
+            struct {
+                /* 0040 */ uint32_t m_resizeCounter : 8;
+                /* 0041 */ uint32_t m_flags : 16;
+            };
+            /* 0040 */ uint32_t m_layoutFlags;
+        };
+        /* 0044 */ CRect m_rect;
+        /* 0054 */ float m_width;
+        /* 0058 */ float m_height;
+        /* 005C */ float m_layoutScale;
+        /* 0060 */ float m_layoutDepth;
+        /* 0064 */ CRect m_resizeRect;
 
         // Virtual member functions
-        virtual ~CLayoutFrame();
-        virtual CLayoutFrame* GetLayoutParent();
-        virtual bool SetLayoutScale(float scale, bool force);
-        virtual void SetSize(float width, float height);
-        virtual void SetWidth(float width);
-        virtual void SetHeight(float height);
-        virtual float GetWidth();
-        virtual float GetHeight();
-        virtual void GetClampRectInsets(float& a1, float& a2, float& a3, float& a4);
-        virtual int32_t IsAttachmentOrigin();
-        virtual CLayoutFrame* GetLayoutFrameByName(const char* name);
-        virtual int32_t IsObjectLoaded();
-        virtual void OnFrameSizeChanged(const CRect& rect);
+        /* 00 */ virtual ~CLayoutFrame();
+        /* 01 */ virtual void LoadXML(const XMLNode* node, CStatus* status);
+        /* 02 */ virtual CLayoutFrame* GetLayoutParent();
+        /* 05 */ virtual bool SetLayoutScale(float scale, bool force);
         /* 06 */ virtual bool SetLayoutDepth(float depth, bool force);
+        /* 07 */ virtual void SetWidth(float width);
+        /* 08 */ virtual void SetHeight(float height);
+        /* 09 */ virtual void SetSize(float width, float height);
+        /* 10 */ virtual float GetWidth();
+        /* 11 */ virtual float GetHeight();
         /* 12 */ virtual void GetSize(float* width, float* height, int32_t ignoreRect);
+        /* 13 */ virtual void GetClampRectInsets(float& a1, float& a2, float& a3, float& a4);
+        /* 15 */ virtual bool CanBeAnchorFor(CLayoutFrame* frame);
+        /* 16 */ virtual CLayoutFrame* GetLayoutFrameByName(const char* name);
+        /* 18 */ virtual void OnFrameSizeChanged(const CRect& rect);
+
+        /* 00 */ virtual int32_t IsAttachmentOrigin();
+        /* 00 */ virtual int32_t IsObjectLoaded();
 
         // Member functions
         CLayoutFrame();
         void AddToResizeList();
         float Bottom();
         int32_t CalculateRect(CRect* rect);
-        bool CanBeAnchorFor(CLayoutFrame* frame);
         float CenterX();
         float CenterY();
         void ClearAllPoints();
@@ -76,7 +85,6 @@ class CLayoutFrame {
         int32_t IsResizeDependency(CLayoutFrame* dependentFrame);
         uint32_t IsResizePending();
         float Left();
-        void LoadXML(const XMLNode* node, CStatus* status);
         int32_t OnFrameResize();
         void OnProtectedAttach(CLayoutFrame* frame);
         int32_t PtInFrameRect(const C2Vector& pt);
@@ -87,8 +95,8 @@ class CLayoutFrame {
         void SetDeferredResize(int32_t enable);
         void SetPoint(FRAMEPOINT point, CLayoutFrame* relative, FRAMEPOINT relativePoint, float offsetX, float offsetY, int32_t doResize);
         void SetProtectFlag(uint32_t flag);
-        int32_t Sub488DB0(const FRAMEPOINT* const pointarray, int32_t elements, float& x);
-        int32_t Sub488E40(const FRAMEPOINT* const pointarray, int32_t elements, float& y);
+        int32_t GetFramePointX(const FRAMEPOINT* const pointarray, int32_t elements, float& x);
+        int32_t GetFramePointY(const FRAMEPOINT* const pointarray, int32_t elements, float& y);
         float Top();
         void UnflattenFrame(CLayoutFrame* frame);
         void UnregisterResize(CLayoutFrame* frame, uint32_t dep);

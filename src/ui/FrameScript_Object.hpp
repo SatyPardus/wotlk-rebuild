@@ -29,16 +29,17 @@ class FrameScript_Object {
         static void FillScriptMethodTable(lua_State* L, FrameScript_Method methods[], int32_t count);
 
         // Member variables
-        int32_t lua_registered = 0;
-        int32_t lua_objectRef = -2;
-        ScriptIx m_onEvent;
+        /* 0000 */ // vftable
+        /* 0004 */ int32_t lua_registered = 0;
+        /* 0008 */ int32_t lua_objectRef = -2;
+        /* 000C */ ScriptIx m_onEvent;
 
         // Virtual member functions
-        virtual ~FrameScript_Object();
-        virtual char* GetName() = 0;
-        virtual int32_t GetScriptMetaTable() = 0;
-        virtual ScriptIx* GetScriptByName(const char* name, ScriptData& data);
-        virtual bool IsA(int32_t type) = 0;
+        /* 00 */ virtual ~FrameScript_Object();
+        /* 01 */ virtual char* GetName() = 0;
+        /* 02 */ virtual int32_t GetScriptMetaTable() = 0;
+        /* 03 */ virtual ScriptIx* GetScriptByName(const char* name, ScriptData& data);
+        /* 04 */ virtual bool IsA(int32_t type) = 0;
 
         // Member functions
         const char* GetDisplayName();

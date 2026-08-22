@@ -61,12 +61,13 @@ CLayoutFrame::CLayoutFrame() {
     this->m_layoutDepth = 1.0;
 
     this->m_guard = { 0 };
+    this->m_resizeRect = { 0.0, 0.0, 0.0, 0.0 };
 }
 
+// OFFSET: 0x48B240
 CLayoutFrame::~CLayoutFrame() {
     this->DestroyLayout();
-
-    // TODO
+    // List and Link cleanup handled by respective dtor
 }
 
 void CLayoutFrame::AddToResizeList() {
@@ -315,7 +316,7 @@ void CLayoutFrame::GetFirstPointX(const FRAMEPOINT* const pointarray, int32_t el
     // - what's up with this loop?
 
     for (int32_t i = 0; i < FRAMEPOINT_NUMPOINTS; i++) {
-        if (this->Sub488DB0(pointarray, elements, x)) {
+        if (this->GetFramePointX(pointarray, elements, x)) {
             break;
         }
     }
@@ -326,7 +327,7 @@ void CLayoutFrame::GetFirstPointY(const FRAMEPOINT* const pointarray, int32_t el
     // - what's up with this loop?
 
     for (int32_t i = 0; i < FRAMEPOINT_NUMPOINTS; i++) {
-        if (this->Sub488E40(pointarray, elements, y)) {
+        if (this->GetFramePointY(pointarray, elements, y)) {
             break;
         }
     }
@@ -877,7 +878,7 @@ void CLayoutFrame::SetWidth(float width) {
     this->Resize(0);
 }
 
-int32_t CLayoutFrame::Sub488DB0(const FRAMEPOINT* const pointarray, int32_t elements, float& x) {
+int32_t CLayoutFrame::GetFramePointX(const FRAMEPOINT* const pointarray, int32_t elements, float& x) {
     for (int32_t i = 0; i < elements; i++) {
         FRAMEPOINT f = pointarray[i];
         CFramePoint* point = this->m_points[f];
@@ -900,7 +901,7 @@ int32_t CLayoutFrame::Sub488DB0(const FRAMEPOINT* const pointarray, int32_t elem
     return 1;
 }
 
-int32_t CLayoutFrame::Sub488E40(const FRAMEPOINT* const pointarray, int32_t elements, float& y) {
+int32_t CLayoutFrame::GetFramePointY(const FRAMEPOINT* const pointarray, int32_t elements, float& y) {
     for (int32_t i = 0; i < elements; i++) {
         FRAMEPOINT f = pointarray[i];
         CFramePoint* point = this->m_points[f];

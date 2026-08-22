@@ -8,6 +8,11 @@
 int32_t CScriptRegion::s_objectType;
 const char* CScriptRegion::s_objectTypeName = "Region";
 
+// OFFSET: 0x488B50
+CScriptRegion::~CScriptRegion() {
+
+}
+
 int32_t CScriptRegion::GetObjectType() {
     if (!CScriptRegion::s_objectType) {
         CScriptRegion::s_objectType = ++FrameScript_Object::s_objectTypes;
