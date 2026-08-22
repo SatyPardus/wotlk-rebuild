@@ -28,7 +28,7 @@ void CScriptRegion::RegisterScriptMethods(lua_State* L) {
 
 // TODO verify return type
 CLayoutFrame* CScriptRegion::GetLayoutParent() {
-    if (!this->m_parent || this->m_parent->m_layoutScale == 0.0f) {
+    if (!this->m_parent || this->m_parent->m_width == 0.0f) {
         return CSimpleTop::s_instance;
     } else {
         return (CLayoutFrame*)this->m_parent;
