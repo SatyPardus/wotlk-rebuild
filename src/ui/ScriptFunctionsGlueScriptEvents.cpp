@@ -74,7 +74,10 @@ int32_t Script_GetSavedAccountList(lua_State* L) {
 }
 
 int32_t Script_SetSavedAccountList(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1))
+        luaL_error(L, "Usage: SetSavedAccountList(\"accountList\")");
+    Client::g_accountListVar->Set(lua_tolstring(L, 1, 0), 1, 0, 0, 1);
+    return 0;
 }
 
 int32_t Script_SetCurrentScreen(lua_State* L) {
@@ -743,8 +746,10 @@ int32_t Script_SetGameAccount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4DD380
 int32_t Script_StopAllSFX(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    //SE2::StopAllSounds(lua_tonumber(L, 1));
+    return 0;
 }
 
 int32_t Script_SetClearConfigData(lua_State* L) {
