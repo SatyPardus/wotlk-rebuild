@@ -17,6 +17,7 @@
 #include <async/AsyncFileRead.hpp>
 #include <util/StringTo.hpp>
 #include "gx/Device.hpp"
+#include <common/datastore/CDataStore.hpp>
 
 // OFFSET: 0x4DBE10
 int32_t Script_IsShiftKeyDown(lua_State* L) {
@@ -902,7 +903,12 @@ int32_t Script_RunScript(lua_State* L) {
 
 // OFFSET: 0x4DE390
 int32_t Script_ReadyForAccountDataTimes(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    CDataStore dataStore = CDataStore();
+    dataStore.Put((uint32_t)CMSG_READY_FOR_ACCOUNT_DATA_TIMES);
+    dataStore.Finalize();
+    ClientServices::s_currentConnection->Send(&dataStore);
+    dataStore.Destroy();
+    return 0;
 }
 
 // OFFSET: 0x4DD4D0
