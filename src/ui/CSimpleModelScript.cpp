@@ -152,42 +152,90 @@ int32_t CSimpleModel_ReplaceIconTexture(lua_State* L) {
 
 // OFFSET: 0x9611A0
 int32_t CSimpleModel_SetFogColor(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    CImVector color;
+    FrameScript_GetColor(L, 2, color);
+    model->m_flags |= 1;
+    model->m_fogColor = color;
+    return 0;
 }
 
 // OFFSET: 0x961200
 int32_t CSimpleModel_GetFogColor(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    lua_pushnumber(L, model->m_fogColor.r / 255.0f);
+    lua_pushnumber(L, model->m_fogColor.g / 255.0f);
+    lua_pushnumber(L, model->m_fogColor.b / 255.0f);
+    lua_pushnumber(L, model->m_fogColor.a / 255.0f);
+    return 4;
 }
 
 // OFFSET: 0x9612D0
 int32_t CSimpleModel_SetFogNear(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    if (!lua_isnumber(L, 2)) {
+        luaL_error(L, "Usage: %s:SetFogNear(value)", model->GetDisplayName());
+    }
+    model->m_fogNear = lua_tonumber(L, 2);
+    return 0;
 }
 
 // OFFSET: 0x961350
 int32_t CSimpleModel_GetFogNear(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    lua_pushnumber(L, model->m_fogNear);
+    return 1;
 }
 
 // OFFSET: 0x9613A0
 int32_t CSimpleModel_SetFogFar(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    if (!lua_isnumber(L, 2)) {
+        luaL_error(L, "Usage: %s:SetFogFar(value)", model->GetDisplayName());
+    }
+    model->m_fogFar = lua_tonumber(L, 2);
+    return 0;
 }
 
 // OFFSET: 0x961420
 int32_t CSimpleModel_GetFogFar(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    lua_pushnumber(L, model->m_fogFar);
+    return 1;
 }
 
 // OFFSET: 0x961470
 int32_t CSimpleModel_ClearFog(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    model->m_flags &= ~1;
+    return 0;
 }
 
 // OFFSET: 0x9614B0
 int32_t CSimpleModel_SetGlow(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    if (!lua_isnumber(L, 2)) {
+        luaL_error(L, "Usage: %s:SetGlow(value)", model->GetDisplayName());
+    }
+
+    model->SetGlow(lua_tonumber(L, 2));
+    return 0;
 }
 
 FrameScript_Method SimpleModelMethods[NUM_SIMPLE_MODEL_SCRIPT_METHODS] = {

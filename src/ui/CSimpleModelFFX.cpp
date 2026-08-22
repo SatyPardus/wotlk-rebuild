@@ -55,3 +55,7 @@ void CSimpleModelFFX::OnFrameRender(CRenderBatch* batch, uint32_t layer) {
         batch->QueueCallback(CSimpleModelFFX::Render, this);
     }
 }
+
+void CSimpleModelFFX::SetGlow(float glow) {
+    this->m_glow = glow;
+}

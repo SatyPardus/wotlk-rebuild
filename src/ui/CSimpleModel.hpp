@@ -51,6 +51,7 @@ class CSimpleModel : public CSimpleFrame {
         virtual void OnFrameRender(CRenderBatch*, uint32_t);
         virtual void UpdateModel();
         virtual void OnModelLoaded(CM2Model* model);
+        virtual void SetGlow(float glow);
 
         // Member functions
         CSimpleModel(CSimpleFrame* parent);

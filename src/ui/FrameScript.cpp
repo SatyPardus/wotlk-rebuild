@@ -460,7 +460,8 @@ void FrameScript_GetColorNoAlpha(lua_State* L, int32_t idx, CImVector& color) {
     color.Set(1.0f, r, g, b);
 }
 
-void FrameScript_GetColor(lua_State* L, int32_t idx, CImVector& color) {
+// OFFSET: 0x960420
+int32_t FrameScript_GetColor(lua_State* L, int32_t idx, CImVector& color) {
     float r = lua_tonumber(L, idx + 0);
     r = std::max(0.0f, std::min(r, 1.0f));
 
@@ -470,13 +471,17 @@ void FrameScript_GetColor(lua_State* L, int32_t idx, CImVector& color) {
     float b = lua_tonumber(L, idx + 2);
     b = std::max(0.0f, std::min(b, 1.0f));
 
+    idx += 3;
+
     float a = 1.0f;
-    if (lua_isnumber(L, idx + 3)) {
-        a = lua_tonumber(L, idx + 3);
+    if (lua_isnumber(L, idx)) {
+        a = lua_tonumber(L, idx);
         a = std::max(0.0f, std::min(a, 1.0f));
+        idx++;
     }
 
     color.Set(a, r, g, b);
+    return idx;
 }
 
 int32_t SetDecimalConversion(int32_t enabled) {

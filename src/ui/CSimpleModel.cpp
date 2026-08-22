@@ -276,6 +276,10 @@ void CSimpleModel::OnModelLoaded(CM2Model* model) {
     this->Resize(0);
 }
 
+void CSimpleModel::SetGlow(float glow) {
+
+}
+
 void CSimpleModel::SetCamera(HCAMERA camera) {
     if (camera) {
         camera = HandleDuplicate(camera);

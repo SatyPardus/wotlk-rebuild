@@ -10,6 +10,12 @@ class CSimpleModelFFX : public CSimpleModel {
         // Static variables
         static int32_t s_metatable;
 
+        // Member variables
+        //CM2LightArray m_lightArray1[2];
+        //CM2LightArray m_lightArray2[2];
+        //CM2LightArray m_lightArray3[2];
+        /* 0DE8 */ float m_glow;
+
         // Static functions
         static CSimpleFrame* Create(CSimpleFrame* parent);
         static void CreateScriptMetaTable();
@@ -19,6 +25,7 @@ class CSimpleModelFFX : public CSimpleModel {
         // Virtual member functions
         virtual int32_t GetScriptMetaTable();
         virtual void OnFrameRender(CRenderBatch* batch, uint32_t layer);
+        void SetGlow(float glow) override;
 
         // Member functions
         CSimpleModelFFX(CSimpleFrame* parent);

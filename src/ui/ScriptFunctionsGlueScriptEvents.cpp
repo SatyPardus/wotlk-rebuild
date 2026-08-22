@@ -635,7 +635,13 @@ int32_t Script_SetRealmSplitState(lua_State* L) {
 
 // OFFSET: 0x4DE2E0
 int32_t Script_RequestRealmSplitInfo(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    CDataStore dataStore = CDataStore();
+    dataStore.Put(static_cast<uint32_t>(CMSG_REALM_SPLIT));
+    dataStore.Put(static_cast<uint32_t>(-1));
+    dataStore.Finalize();
+    ClientServices::s_currentConnection->Send(&dataStore);
+    dataStore.Destroy();
+    return 0;
 }
 
 // OFFSET: 0x4DCE60
