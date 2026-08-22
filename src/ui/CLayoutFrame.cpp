@@ -361,6 +361,39 @@ float CLayoutFrame::GetWidth() {
     return this->m_width;
 }
 
+// OFFSET: 0x489FF0
+void CLayoutFrame::GetSize(float* width, float* height, int32_t ignoreRect) {
+    *width = this->GetWidth();
+    *height = this->GetHeight();
+
+    if (ignoreRect || (*height != 0.0f && *width != 0.0f))
+        return;
+
+    if ((this->m_flags & 0x4) != 0) {
+        if ((this->m_flags & 0x8) != 0 || !this->OnFrameResize()) {
+            if ((this->m_flags & 0x4) != 0 && ((this->m_flags & 0x2) != 0 || LayoutFrame::s_resizePendingList.IsLinked(this))) {
+                this->m_resizeCounter = 6;
+            } else {
+                this->m_flags |= 0x4;
+                if ((this->m_flags & 0x2) != 0) {
+                    for (CLayoutFrame::FRAMENODE* frameNode = this->m_resizeList.Head(); frameNode;) {
+                        frameNode->frame->Resize(0);
+                        frameNode = frameNode->m_link.Next();
+                    }
+                } else {
+                    this->AddToResizeList();
+                }
+            }
+        } else if (LayoutFrame::s_resizePendingList.IsLinked(this)) {
+            LayoutFrame::s_resizePendingList.UnlinkNode(this);
+        }
+    }
+    if ((this->m_flags & 0x1) != 0) {
+        *width = (this->m_rect.maxX - this->m_rect.minX) / this->m_layoutScale;
+        *height = (this->m_rect.maxY - this->m_rect.minY) / this->m_layoutScale;
+    }
+}
+
 int32_t CLayoutFrame::IsAttachmentOrigin() {
     return 0;
 }
@@ -751,6 +784,22 @@ bool CLayoutFrame::SetLayoutScale(float scale, bool force) {
         this->m_layoutScale = scale;
         this->m_rect = { 0.0f, 0.0f, 0.0f, 0.0f };
         this->m_flags &= ~0x1;
+
+        this->Resize(0);
+
+        return true;
+    }
+
+    return false;
+}
+
+// OFFSET: 0x489F20
+bool CLayoutFrame::SetLayoutDepth(float depth, bool force) {
+    if (force || depth > 0.00000011920929) {
+        if (depth < 0.2f)
+            depth = 0.2f;
+        this->m_layoutDepth = depth;
+        this->m_flags &= ~0x100;
 
         this->Resize(0);
 

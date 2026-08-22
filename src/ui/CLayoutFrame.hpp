@@ -56,6 +56,8 @@ class CLayoutFrame {
         virtual CLayoutFrame* GetLayoutFrameByName(const char* name);
         virtual int32_t IsObjectLoaded();
         virtual void OnFrameSizeChanged(const CRect& rect);
+        /* 06 */ virtual bool SetLayoutDepth(float depth, bool force);
+        /* 12 */ virtual void GetSize(float* width, float* height, int32_t ignoreRect);
 
         // Member functions
         CLayoutFrame();
