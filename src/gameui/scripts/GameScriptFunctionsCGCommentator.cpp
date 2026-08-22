@@ -4,142 +4,177 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5690A0
 static int32_t Script_CommentatorSetMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569180
 static int32_t Script_CommentatorToggleMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569230
 static int32_t Script_CommentatorGetMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569E50
 static int32_t Script_CommentatorSetMapAndInstanceIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569FA0
 static int32_t Script_CommentatorSetPlayerIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5692A0
 static int32_t Script_CommentatorUpdatePlayerInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569340
 static int32_t Script_CommentatorUpdateMapInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x568730
 static int32_t Script_CommentatorGetNumMaps(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5693E0
 static int32_t Script_CommentatorGetMapInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569520
 static int32_t Script_CommentatorGetInstanceInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5696E0
 static int32_t Script_CommentatorEnterInstance(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5697B0
 static int32_t Script_CommentatorExitInstance(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569820
 static int32_t Script_CommentatorGetNumPlayers(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569910
 static int32_t Script_CommentatorGetPlayerInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569B50
 static int32_t Script_CommentatorFollowPlayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x569CD0
 static int32_t Script_CommentatorLookatPlayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x568770
 static int32_t Script_CommentatorZoomIn(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x568810
 static int32_t Script_CommentatorZoomOut(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56A0F0
 static int32_t Script_CommentatorSetCamera(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56A2A0
 static int32_t Script_CommentatorGetCamera(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56A380
 static int32_t Script_CommentatorGetCurrentMapID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56A410
 static int32_t Script_CommentatorStartInstance(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56A640
 static int32_t Script_CommentatorAddPlayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56A860
 static int32_t Script_CommentatorRemovePlayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AA10
 static int32_t Script_CommentatorSetBattlemaster(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AAF0
 static int32_t Script_CommentatorSetMoveSpeed(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AB70
 static int32_t Script_CommentatorSetCameraCollision(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AC10
 static int32_t Script_CommentatorSetTargetHeightOffset(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AC90
 static int32_t Script_CommentatorSetSkirmishMatchmakingMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56ADA0
 static int32_t Script_CommentatorRequestSkirmishQueueData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AF60
 static int32_t Script_CommentatorGetSkirmishQueueCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AFC0
 static int32_t Script_CommentatorGetSkirmishQueuePlayerInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56B0B0
 static int32_t Script_CommentatorStartSkirmishMatch(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AE50
 static int32_t Script_CommentatorRequestSkirmishMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x56AF00
 static int32_t Script_CommentatorGetSkirmishMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

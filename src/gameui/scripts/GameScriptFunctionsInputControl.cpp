@@ -4,210 +4,262 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5FBF80
 static int32_t Script_JumpOrAscendStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC0A0
 static int32_t Script_AscendStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC140
 static int32_t Script_DescendStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FAAE0
 static int32_t Script_ToggleRun(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC190
 static int32_t Script_ToggleAutoRun(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC200
 static int32_t Script_MoveForwardStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC250
 static int32_t Script_MoveForwardStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC290
 static int32_t Script_MoveBackwardStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC2E0
 static int32_t Script_MoveBackwardStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC320
 static int32_t Script_TurnLeftStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC360
 static int32_t Script_TurnLeftStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC3B0
 static int32_t Script_TurnRightStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC3F0
 static int32_t Script_TurnRightStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC440
 static int32_t Script_StrafeLeftStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC490
 static int32_t Script_StrafeLeftStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC4D0
 static int32_t Script_StrafeRightStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC520
 static int32_t Script_StrafeRightStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC8E0
 static int32_t Script_PitchUpStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC570
 static int32_t Script_PitchUpStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC920
 static int32_t Script_PitchDownStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC5C0
 static int32_t Script_PitchDownStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC610
 static int32_t Script_TurnOrActionStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC680
 static int32_t Script_TurnOrActionStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC6C0
 static int32_t Script_CameraOrSelectOrMoveStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC730
 static int32_t Script_CameraOrSelectOrMoveStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC780
 static int32_t Script_MoveAndSteerStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC830
 static int32_t Script_MoveAndSteerStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FD550
 static int32_t Script_SetMouselookOverrideBinding(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FCC10
 static int32_t Script_MouselookStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC890
 static int32_t Script_MouselookStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5F9DD0
 static int32_t Script_IsMouselooking(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB660
 static int32_t Script_VehicleExit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB6D0
 static int32_t Script_VehiclePrevSeat(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB720
 static int32_t Script_VehicleNextSeat(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC8E0
 static int32_t Script_VehicleAimUpStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC570
 static int32_t Script_VehicleAimUpStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC920
 static int32_t Script_VehicleAimDownStart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FC5C0
 static int32_t Script_VehicleAimDownStop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB770
 static int32_t Script_VehicleAimIncrement(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB7D0
 static int32_t Script_VehicleAimDecrement(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB820
 static int32_t Script_VehicleAimRequestAngle(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5F9E10
 static int32_t Script_VehicleAimGetAngle(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB8C0
 static int32_t Script_VehicleAimRequestNormAngle(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5F9E60
 static int32_t Script_VehicleAimGetNormAngle(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5F9F10
 static int32_t Script_VehicleAimSetNormPower(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5F9550
 static int32_t Script_VehicleAimGetNormPower(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB970
 static int32_t Script_IsUsingVehicleControls(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FB9C0
 static int32_t Script_CanExitVehicle(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FBA10
 static int32_t Script_CanSwitchVehicleSeats(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5F9F70
 static int32_t Script_IsVehicleAimAngleAdjustable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5F9FE0
 static int32_t Script_IsVehicleAimPowerAdjustable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5FA050
 static int32_t Script_DetectWowMouse(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

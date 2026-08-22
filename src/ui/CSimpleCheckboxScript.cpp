@@ -6,6 +6,7 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x976B40
 int32_t CSimpleCheckbox_SetChecked(lua_State* L) {
     auto type = CSimpleCheckbox::GetObjectType();
     auto checkbox = static_cast<CSimpleCheckbox*>(FrameScript_GetObjectThis(L, type));
@@ -15,6 +16,7 @@ int32_t CSimpleCheckbox_SetChecked(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x976B90
 int32_t CSimpleCheckbox_GetChecked(lua_State* L) {
     auto type = CSimpleCheckbox::GetObjectType();
     auto checkbox = static_cast<CSimpleCheckbox*>(FrameScript_GetObjectThis(L, type));
@@ -28,6 +30,7 @@ int32_t CSimpleCheckbox_GetChecked(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x976BF0
 int32_t CSimpleCheckbox_GetCheckedTexture(lua_State* L) {
     auto type = CSimpleCheckbox::GetObjectType();
     auto checkbox = static_cast<CSimpleCheckbox*>(FrameScript_GetObjectThis(L, type));
@@ -45,6 +48,7 @@ int32_t CSimpleCheckbox_GetCheckedTexture(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x976C70
 int32_t CSimpleCheckbox_SetCheckedTexture(lua_State* L) {
     auto type = CSimpleCheckbox::GetObjectType();
     auto checkbox = static_cast<CSimpleCheckbox*>(FrameScript_GetObjectThis(L, type));
@@ -83,6 +87,7 @@ int32_t CSimpleCheckbox_SetCheckedTexture(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x976DD0
 int32_t CSimpleCheckbox_GetDisabledCheckedTexture(lua_State* L) {
     auto type = CSimpleCheckbox::GetObjectType();
     auto checkbox = static_cast<CSimpleCheckbox*>(FrameScript_GetObjectThis(L, type));
@@ -100,6 +105,7 @@ int32_t CSimpleCheckbox_GetDisabledCheckedTexture(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x976E50
 int32_t CSimpleCheckbox_SetDisabledCheckedTexture(lua_State* L) {
     auto type = CSimpleCheckbox::GetObjectType();
     auto checkbox = static_cast<CSimpleCheckbox*>(FrameScript_GetObjectThis(L, type));

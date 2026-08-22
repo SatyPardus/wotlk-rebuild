@@ -3,6 +3,7 @@
 #include "util/Lua.hpp"
 #include <cstdint>
 
+// OFFSET: 0x4A8240
 int32_t CScriptObject_GetObjectType(lua_State* L) {
     auto object = static_cast<CScriptObject*>(FrameScript_GetObjectThis(L, CScriptObject::GetObjectType()));
     auto type = object->GetObjectTypeName();
@@ -12,6 +13,7 @@ int32_t CScriptObject_GetObjectType(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4A8290
 int32_t CScriptObject_IsObjectType(lua_State* L) {
     auto object = static_cast<CScriptObject*>(FrameScript_GetObjectThis(L, CScriptObject::GetObjectType()));
 
@@ -31,6 +33,7 @@ int32_t CScriptObject_IsObjectType(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4A8340
 int32_t CScriptObject_GetName(lua_State* L) {
     auto object = static_cast<CScriptObject*>(FrameScript_GetObjectThis(L, CScriptObject::GetObjectType()));
     auto name = object->GetName();
@@ -44,6 +47,7 @@ int32_t CScriptObject_GetName(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4A83A0
 int32_t CScriptObject_GetParent(lua_State* L) {
     auto object = static_cast<CScriptObject*>(FrameScript_GetObjectThis(L, CScriptObject::GetObjectType()));
     CScriptObject* parent = object->GetScriptObjectParent();

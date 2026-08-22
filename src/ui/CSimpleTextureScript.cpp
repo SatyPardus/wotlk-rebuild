@@ -5,34 +5,42 @@
 #include "util/Unimplemented.hpp"
 #include <cstdint>
 
+// OFFSET: 0x48BE30
 int32_t CSimpleTexture_IsObjectType(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48BDE0
 int32_t CSimpleTexture_GetObjectType(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48BEE0
 int32_t CSimpleTexture_GetDrawLayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48BF30
 int32_t CSimpleTexture_SetDrawLayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48BFF0
 int32_t CSimpleTexture_GetBlendMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48C040
 int32_t CSimpleTexture_SetBlendMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48C0E0
 int32_t CSimpleTexture_GetVertexColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48C1C0
 int32_t CSimpleTexture_SetVertexColor(lua_State* L) {
     int32_t type = CSimpleTexture::GetObjectType();
     CSimpleTexture* texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
@@ -51,14 +59,17 @@ int32_t CSimpleTexture_SetVertexColor(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x48C240
 int32_t CSimpleTexture_SetGradient(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48C310
 int32_t CSimpleTexture_SetGradientAlpha(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48C3E0
 int32_t CSimpleTexture_SetAlpha(lua_State* L) {
     int32_t type = CSimpleTexture::GetObjectType();
     CSimpleTexture* texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
@@ -73,10 +84,12 @@ int32_t CSimpleTexture_SetAlpha(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x48C4C0
 int32_t CSimpleTexture_GetAlpha(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48C530
 int32_t CSimpleTexture_Show(lua_State* L) {
     int32_t type = CSimpleTexture::GetObjectType();
     CSimpleTexture* texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
@@ -86,6 +99,7 @@ int32_t CSimpleTexture_Show(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x48C570
 int32_t CSimpleTexture_Hide(lua_State* L) {
     int32_t type = CSimpleTexture::GetObjectType();
     CSimpleTexture* texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
@@ -95,6 +109,7 @@ int32_t CSimpleTexture_Hide(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x48C5B0
 int32_t CSimpleTexture_IsVisible(lua_State* L) {
     auto type = CSimpleTexture::GetObjectType();
     auto texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
@@ -106,6 +121,7 @@ int32_t CSimpleTexture_IsVisible(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x48C610
 int32_t CSimpleTexture_IsShown(lua_State* L) {
     auto type = CSimpleTexture::GetObjectType();
     auto texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
@@ -117,10 +133,12 @@ int32_t CSimpleTexture_IsShown(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x48C670
 int32_t CSimpleTexture_GetTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48C6F0
 int32_t CSimpleTexture_SetTexture(lua_State* L) {
     int32_t type = CSimpleTexture::GetObjectType();
     CSimpleTexture* texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
@@ -159,10 +177,12 @@ int32_t CSimpleTexture_SetTexture(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x48C7F0
 int32_t CSimpleTexture_GetTexCoord(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48E170
 int32_t CSimpleTexture_SetTexCoord(lua_State* L) {
     auto type = CSimpleTexture::GetObjectType();
     auto texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
@@ -220,42 +240,51 @@ int32_t CSimpleTexture_SetTexCoord(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x48C860
 int32_t CSimpleTexture_SetRotation(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48C9A0
 int32_t CSimpleTexture_SetDesaturated(lua_State* L) {
     // TODO
     lua_pushnil(L);
     return 1;
 }
 
+// OFFSET: 0x48CA30
 int32_t CSimpleTexture_IsDesaturated(lua_State* L) {
     // TODO
     lua_pushnil(L);
     return 1;
 }
 
+// OFFSET: 0x48CAA0
 int32_t CSimpleTexture_SetNonBlocking(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48CB00
 int32_t CSimpleTexture_GetNonBlocking(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48CB60
 int32_t CSimpleTexture_SetHorizTile(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48CBC0
 int32_t CSimpleTexture_GetHorizTile(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48CC30
 int32_t CSimpleTexture_SetVertTile(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x48CC90
 int32_t CSimpleTexture_GetVertTile(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

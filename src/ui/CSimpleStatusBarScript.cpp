@@ -6,6 +6,7 @@
 #include "util/Unimplemented.hpp"
 #include "util/StringTo.hpp"
 
+// OFFSET: 0x971240
 static int32_t Script_GetOrientation(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -13,6 +14,7 @@ static int32_t Script_GetOrientation(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x971290
 static int32_t Script_SetOrientation(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -30,6 +32,7 @@ static int32_t Script_SetOrientation(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x971360
 static int32_t Script_GetMinMaxValues(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -38,6 +41,7 @@ static int32_t Script_GetMinMaxValues(lua_State* L) {
     return 2;
 }
 
+// OFFSET: 0x9713C0
 static int32_t Script_SetMinMaxValues(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -57,6 +61,7 @@ static int32_t Script_SetMinMaxValues(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x9714F0
 static int32_t Script_GetValue(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -64,6 +69,7 @@ static int32_t Script_GetValue(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x971540
 static int32_t Script_SetValue(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -76,6 +82,7 @@ static int32_t Script_SetValue(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x9715D0
 static int32_t Script_GetStatusBarTexture(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -91,6 +98,7 @@ static int32_t Script_GetStatusBarTexture(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x971650
 static int32_t Script_SetStatusBarTexture(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -133,6 +141,7 @@ static int32_t Script_SetStatusBarTexture(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x971800
 static int32_t Script_GetStatusBarColor(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -153,6 +162,7 @@ static int32_t Script_GetStatusBarColor(lua_State* L) {
     return 4;
 }
 
+// OFFSET: 0x971910
 static int32_t Script_SetStatusBarColor(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -163,6 +173,7 @@ static int32_t Script_SetStatusBarColor(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x971970
 static int32_t Script_GetRotatesTexture(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));
@@ -174,6 +185,7 @@ static int32_t Script_GetRotatesTexture(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x9719D0
 static int32_t Script_SetRotatesTexture(lua_State* L) {
     auto type = CSimpleStatusBar::GetObjectType();
     auto statusBar = static_cast<CSimpleStatusBar*>(FrameScript_GetObjectThis(L, type));

@@ -43,6 +43,7 @@ int32_t CSimpleButton_SetStateTexture(lua_State* L, CSimpleButtonState state, co
     return 0;
 }
 
+// OFFSET: 0x977090
 int32_t CSimpleButton_Enable(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -57,6 +58,7 @@ int32_t CSimpleButton_Enable(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x977100
 int32_t CSimpleButton_Disable(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -71,6 +73,7 @@ int32_t CSimpleButton_Disable(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x977170
 int32_t CSimpleButton_IsEnabled(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -78,6 +81,7 @@ int32_t CSimpleButton_IsEnabled(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x9771D0
 int32_t CSimpleButton_GetButtonState(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -99,10 +103,12 @@ int32_t CSimpleButton_GetButtonState(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x977280
 int32_t CSimpleButton_SetButtonState(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x977340
 int32_t CSimpleButton_SetNormalFontObject(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -123,10 +129,12 @@ int32_t CSimpleButton_SetNormalFontObject(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x977450
 int32_t CSimpleButton_GetNormalFontObject(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9774C0
 int32_t CSimpleButton_SetDisabledFontObject(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -147,10 +155,12 @@ int32_t CSimpleButton_SetDisabledFontObject(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x9775D0
 int32_t CSimpleButton_GetDisabledFontObject(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x977640
 int32_t CSimpleButton_SetHighlightFontObject(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -171,14 +181,17 @@ int32_t CSimpleButton_SetHighlightFontObject(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x977750
 int32_t CSimpleButton_GetHighlightFontObject(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9777C0
 int32_t CSimpleButton_SetFontString(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9778E0
 int32_t CSimpleButton_GetFontString(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -194,6 +207,7 @@ int32_t CSimpleButton_GetFontString(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x977960
 int32_t CSimpleButton_SetText(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -204,10 +218,12 @@ int32_t CSimpleButton_SetText(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x9779B0
 int32_t CSimpleButton_SetFormattedText(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x977A10
 int32_t CSimpleButton_GetText(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -223,30 +239,37 @@ int32_t CSimpleButton_GetText(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x977C70
 int32_t CSimpleButton_SetNormalTexture(lua_State* L) {
     return CSimpleButton_SetStateTexture(L, BUTTONSTATE_NORMAL, "SetNormalTexture");
 }
 
+// OFFSET: 0x977C90
 int32_t CSimpleButton_GetNormalTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x977CB0
 int32_t CSimpleButton_SetPushedTexture(lua_State* L) {
     return CSimpleButton_SetStateTexture(L, BUTTONSTATE_PUSHED, "SetPushedTexture");
 }
 
+// OFFSET: 0x977CD0
 int32_t CSimpleButton_GetPushedTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x977CF0
 int32_t CSimpleButton_SetDisabledTexture(lua_State* L) {
     return CSimpleButton_SetStateTexture(L, BUTTONSTATE_DISABLED, "SetDisabledTexture");
 }
 
+// OFFSET: 0x977D10
 int32_t CSimpleButton_GetDisabledTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x977D30
 int32_t CSimpleButton_SetHighlightTexture(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -287,6 +310,7 @@ int32_t CSimpleButton_SetHighlightTexture(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x977EE0
 int32_t CSimpleButton_GetHighlightTexture(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -306,14 +330,17 @@ int32_t CSimpleButton_GetHighlightTexture(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x977F60
 int32_t CSimpleButton_SetPushedTextOffset(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x978040
 int32_t CSimpleButton_GetPushedTextOffset(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9780D0
 int32_t CSimpleButton_GetTextWidth(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -329,10 +356,12 @@ int32_t CSimpleButton_GetTextWidth(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x978150
 int32_t CSimpleButton_GetTextHeight(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9781D0
 int32_t CSimpleButton_RegisterForClicks(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -349,6 +378,7 @@ int32_t CSimpleButton_RegisterForClicks(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x978260
 int32_t CSimpleButton_Click(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -365,6 +395,7 @@ int32_t CSimpleButton_Click(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x9782E0
 int32_t CSimpleButton_LockHighlight(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -374,6 +405,7 @@ int32_t CSimpleButton_LockHighlight(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x978320
 int32_t CSimpleButton_UnlockHighlight(lua_State* L) {
     auto type = CSimpleButton::GetObjectType();
     auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
@@ -383,10 +415,12 @@ int32_t CSimpleButton_UnlockHighlight(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x978360
 int32_t CSimpleButton_GetMotionScriptsWhileDisabled(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9783B0
 int32_t CSimpleButton_SetMotionScriptsWhileDisabled(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

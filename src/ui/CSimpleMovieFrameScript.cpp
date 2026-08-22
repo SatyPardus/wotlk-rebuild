@@ -6,6 +6,7 @@
 #include <cstdint>
 
 
+// OFFSET: 0x970660
 int32_t CSimpleMovieFrame_StartMovie(lua_State* L) {
     auto type = CSimpleMovieFrame::GetObjectType();
     auto movieFrame = static_cast<CSimpleMovieFrame*>(FrameScript_GetObjectThis(L, type));
@@ -26,6 +27,7 @@ int32_t CSimpleMovieFrame_StartMovie(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x970730
 int32_t CSimpleMovieFrame_StopMovie(lua_State* L) {
     auto type = CSimpleMovieFrame::GetObjectType();
     auto movieFrame = static_cast<CSimpleMovieFrame*>(FrameScript_GetObjectThis(L, type));
@@ -33,6 +35,7 @@ int32_t CSimpleMovieFrame_StopMovie(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x970770
 int32_t CSimpleMovieFrame_EnableSubtitles(lua_State* L) {
     auto type = CSimpleMovieFrame::GetObjectType();
     auto movieFrame = static_cast<CSimpleMovieFrame*>(FrameScript_GetObjectThis(L, type));

@@ -9,22 +9,27 @@
 #include <common/XML.hpp>
 #include <storm/String.hpp>
 
+// OFFSET: 0x81B720
 int32_t Script_GetText(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x81BAB0
 int32_t Script_GetNumFrames(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x81B9C0
 int32_t Script_EnumerateFrames(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x81B7B0
 int32_t Script_CreateFont(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x81BB20
 int32_t Script_CreateFrame(lua_State* L) {
     if (!lua_isstring(L, 1) || (lua_type(L, 3) != -1 && lua_type(L, 3) && lua_type(L, 3) != LUA_TTABLE)) {
         return luaL_error(L, "Usage: CreateFrame(\"frameType\" [, \"name\"] [, parent] [, \"template\"] [, id])");
@@ -129,10 +134,12 @@ int32_t Script_CreateFrame(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x81BE70
 int32_t Script_GetFramesRegisteredForEvent(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x81B820
 int32_t Script_GetCurrentKeyBoardFocus(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

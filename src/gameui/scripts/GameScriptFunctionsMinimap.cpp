@@ -4,20 +4,24 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x57F170
 static int32_t Script_GetNumTrackingTypes(lua_State* L) {
     // TODO
     lua_pushnumber(L, 0.0);
     return 1;
 }
 
+// OFFSET: 0x57F1B0
 static int32_t Script_GetTrackingInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x57F380
 static int32_t Script_SetTracking(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x57F4F0
 static int32_t Script_GetTrackingTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

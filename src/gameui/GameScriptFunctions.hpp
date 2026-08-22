@@ -11,9 +11,7 @@ struct lua_State;
 #define NUM_SCRIPT_FUNCTIONS_UIMACROS 22
 #define NUM_SCRIPT_FUNCTIONS_INPUT_CONTROL 52
 #define NUM_SCRIPT_FUNCTIONS_CAMERA 22
-#define NUM_SCRIPT_FUNCTIONS_SOUND 23
 #define NUM_SCRIPT_FUNCTIONS_SPELL 11
-#define NUM_SCRIPT_FUNCTIONS_SCRIPT_EVENTS 7
 #define NUM_SCRIPT_FUNCTIONS_SCRIPT_EVENTS_UNIT 169
 #define NUM_SCRIPT_FUNCTIONS_MINIMAP 4
 #define NUM_SCRIPT_FUNCTIONS_UNIT_COMBAT_LOG 11
@@ -78,9 +76,7 @@ namespace GameScript {
     extern FrameScript_Method s_ScriptFunctions_UIMacros[NUM_SCRIPT_FUNCTIONS_UIMACROS];
     extern FrameScript_Method s_ScriptFunctions_InputControl[NUM_SCRIPT_FUNCTIONS_INPUT_CONTROL];
     extern FrameScript_Method s_ScriptFunctions_Camera[NUM_SCRIPT_FUNCTIONS_CAMERA];
-    extern FrameScript_Method s_ScriptFunctions_Sound[NUM_SCRIPT_FUNCTIONS_SOUND];
     extern FrameScript_Method s_ScriptFunctions_Spell[NUM_SCRIPT_FUNCTIONS_SPELL];
-    extern FrameScript_Method s_ScriptFunctions_ScriptEvents[NUM_SCRIPT_FUNCTIONS_SCRIPT_EVENTS];
     extern FrameScript_Method s_ScriptFunctions_ScriptEventsUnit[NUM_SCRIPT_FUNCTIONS_SCRIPT_EVENTS_UNIT];
     extern FrameScript_Method s_ScriptFunctions_Minimap[NUM_SCRIPT_FUNCTIONS_MINIMAP];
     extern FrameScript_Method s_ScriptFunctions_UnitCombatLog[NUM_SCRIPT_FUNCTIONS_UNIT_COMBAT_LOG];
@@ -147,7 +143,6 @@ void UIBindingsRegisterScriptFunctions();
 void UIMacrosRegisterScriptFunctions();
 void InputControlRegisterScriptFunctions();
 void CameraRegisterScriptFunctions();
-void SoundRegisterScriptFunctions();
 void SpellRegisterScriptFunctions();
 void ScriptEventsRegisterFunctions();
 void MinimapRegisterScriptFunctions();

@@ -13,6 +13,7 @@
 #include "client/ClientServices.hpp"
 #include <cstdint>
 
+// OFFSET: 0x4E05B0
 int32_t Script_SetCharCustomizeFrame(lua_State* L) {
     if (!lua_isstring(L, 1)) {
         return luaL_error(L, "Usage: SetCharCustomizeFrame(\"frameName\")");
@@ -29,6 +30,7 @@ int32_t Script_SetCharCustomizeFrame(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E0620
 int32_t Script_SetCharCustomizeBackground(lua_State* L) {
     if (!lua_isstring(L, 1)) {
         return luaL_error(L, "Usage: SetCharCustomizeBackground(\"filename\")");
@@ -45,6 +47,7 @@ int32_t Script_ResetCharCustomize(lua_State*) {
     return 0;
 }
 
+// OFFSET: 0x4E0670
 int32_t Script_GetNameForRace(lua_State* L) {
     auto raceID = CCharacterCreation::m_character->m_data.m_preferences.raceID;
     auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
@@ -61,6 +64,7 @@ int32_t Script_GetNameForRace(lua_State* L) {
     return 2;
 }
 
+// OFFSET: 0x4E06F0
 int32_t Script_GetFactionForRace(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: GetFactionForRace(index)");
@@ -96,6 +100,7 @@ int32_t Script_GetFactionForRace(lua_State* L) {
     return 2;
 }
 
+// OFFSET: 0x4E1880
 int32_t Script_GetAvailableRaces(lua_State* L) {
     auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
 
@@ -116,6 +121,7 @@ int32_t Script_GetAvailableRaces(lua_State* L) {
     return CCharacterCreation::m_races.Count() * 3;
 }
 
+// OFFSET: 0x4E0830
 int32_t Script_GetAvailableClasses(lua_State* L) {
     auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
 
@@ -137,6 +143,7 @@ int32_t Script_GetAvailableClasses(lua_State* L) {
     return g_chrClassesDB.GetNumRecords() * 3;
 }
 
+// OFFSET: 0x4E19A0
 int32_t Script_GetClassesForRace(lua_State* L) {
     auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
 
@@ -158,6 +165,7 @@ int32_t Script_GetClassesForRace(lua_State* L) {
     return CCharacterCreation::m_classes.Count() * 3;
 }
 
+// OFFSET: 0x4E0900
 int32_t Script_GetHairCustomization(lua_State* L) {
     int32_t raceID = 0;
 
@@ -170,6 +178,7 @@ int32_t Script_GetHairCustomization(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4E0970
 int32_t Script_GetFacialHairCustomization(lua_State* L) {
     int32_t raceID = 0;
 
@@ -187,17 +196,20 @@ int32_t Script_GetFacialHairCustomization(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4E09F0
 int32_t Script_GetSelectedRace(lua_State* L) {
     lua_pushnumber(L, CCharacterCreation::m_raceIndex + 1.0);
     return 1;
 }
 
+// OFFSET: 0x4E0A30
 int32_t Script_GetSelectedSex(lua_State* L) {
     auto sexID = CCharacterCreation::m_character->m_data.m_preferences.sexID;
     lua_pushnumber(L, g_glueFrameScriptGenders[sexID]);
     return 1;
 }
 
+// OFFSET: 0x4E0A60
 int32_t Script_GetSelectedClass(lua_State* L) {
     auto record = g_chrClassesDB.GetRecord(CCharacterCreation::m_selectedClassID);
     if (!record) {
@@ -228,6 +240,7 @@ int32_t Script_GetSelectedClass(lua_State* L) {
     return 6;
 }
 
+// OFFSET: 0x4E2470
 int32_t Script_SetSelectedRace(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: SetSelectedRace(index)");
@@ -238,6 +251,7 @@ int32_t Script_SetSelectedRace(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E1A60
 int32_t Script_SetSelectedSex(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: SetSelectedSex(index)");
@@ -252,6 +266,7 @@ int32_t Script_SetSelectedSex(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E1AC0
 int32_t Script_SetSelectedClass(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: SetSelectedSex(index)");
@@ -275,6 +290,7 @@ int32_t Script_UpdateCustomizationScene(lua_State*) {
     return 0;
 }
 
+// OFFSET: 0x4E0B50
 int32_t Script_CycleCharCustomization(lua_State* L) {
     if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
         return luaL_error(L, "Usage: CycleCharCustomization(index, delta)");
@@ -294,11 +310,13 @@ int32_t Script_RandomizeCharCustomization(lua_State*) {
     return 0;
 }
 
+// OFFSET: 0x4E0BE0
 int32_t Script_GetCharacterCreateFacing(lua_State* L) {
     lua_pushnumber(L, CCharacterCreation::m_charFacing * 57.29578);
     return 1;
 }
 
+// OFFSET: 0x4E0C10
 int32_t Script_SetCharacterCreateFacing(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: SetCharacterCreateFacing(degrees)");
@@ -310,6 +328,7 @@ int32_t Script_SetCharacterCreateFacing(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4DFCA0
 int32_t Script_GetRandomName(lua_State* L) {
     // TODO: Proper implementation
     // WORKAROUND:
@@ -317,6 +336,7 @@ int32_t Script_GetRandomName(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4E0C60
 int32_t Script_CreateCharacter(lua_State* L) {
     if (lua_isstring(L, 1)) {
         lua_tolstring(L, 1, nullptr);
@@ -326,6 +346,7 @@ int32_t Script_CreateCharacter(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E2500
 int32_t Script_CustomizeExistingCharacter(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: CustomizeExistingCharacter(index)");
@@ -336,22 +357,27 @@ int32_t Script_CustomizeExistingCharacter(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x608560
 int32_t Script_PaidChange_GetPreviousRaceIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4E0CA0
 int32_t Script_PaidChange_GetCurrentRaceIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4E0CD0
 int32_t Script_PaidChange_GetCurrentClassIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4E1B70
 int32_t Script_PaidChange_GetName(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4E0D00
 int32_t Script_IsRaceClassValid(lua_State* L) {
     if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
         return luaL_error(L, "Usage: IsRaceClassValid(raceIndex, classIndex)");
@@ -378,6 +404,7 @@ int32_t Script_IsRaceClassValid(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4DFA70
 int32_t Script_IsRaceClassRestricted(lua_State* L) {
     if (!lua_isnumber(L, 1) || !lua_isnumber(L, 2)) {
         return luaL_error(L, "Usage: Script_IsRaceClassRestricted(raceID, classID)");
@@ -429,6 +456,7 @@ int32_t Script_IsRaceClassRestricted(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4E0DD0
 int32_t Script_GetCreateBackgroundModel(lua_State* L) {
     if (SFile::IsTrial()) {
         lua_pushstring(L, "CharacterSelect");

@@ -4,10 +4,12 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x548720
 static int32_t Script_GetNumWorldStateUI(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x548D40
 static int32_t Script_GetWorldStateUIInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

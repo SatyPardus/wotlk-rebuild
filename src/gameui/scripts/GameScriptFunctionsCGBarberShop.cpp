@@ -4,38 +4,47 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x52E850
 static int32_t Script_GetBarberShopStyleInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x52FDD0
 static int32_t Script_SetNextBarberShopStyle(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x52ED60
 static int32_t Script_GetBarberShopTotalCost(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x52EEF0
 static int32_t Script_ApplyBarberShopStyle(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x52ED80
 static int32_t Script_CancelBarberShop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x52E9B0
 static int32_t Script_GetHairCustomization(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x52E9D0
 static int32_t Script_GetFacialHairCustomization(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x52F900
 static int32_t Script_BarberShopReset(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x52E4F0
 static int32_t Script_CanAlterSkin(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

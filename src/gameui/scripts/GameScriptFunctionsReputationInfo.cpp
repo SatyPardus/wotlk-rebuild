@@ -4,62 +4,77 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5CFF20
 static int32_t Script_GetNumFactions(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1150
 static int32_t Script_GetFactionInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D11E0
 static int32_t Script_GetFactionInfoByID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1240
 static int32_t Script_GetWatchedFactionInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1420
 static int32_t Script_SetWatchedFactionIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1390
 static int32_t Script_FactionToggleAtWar(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1F70
 static int32_t Script_CollapseFactionHeader(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1FC0
 static int32_t Script_CollapseAllFactionHeaders(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1E50
 static int32_t Script_SetFactionInactive(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1EE0
 static int32_t Script_SetFactionActive(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D0740
 static int32_t Script_IsFactionInactive(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D2000
 static int32_t Script_ExpandFactionHeader(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D1FE0
 static int32_t Script_ExpandAllFactionHeaders(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D07B0
 static int32_t Script_SetSelectedFaction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D0820
 static int32_t Script_GetSelectedFaction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

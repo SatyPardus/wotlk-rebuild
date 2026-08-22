@@ -4,14 +4,17 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5C5500
 static int32_t Script_GetMinigameType(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5C5550
 static int32_t Script_MakeMinigameMove(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5C55F0
 static int32_t Script_GetMinigameState(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

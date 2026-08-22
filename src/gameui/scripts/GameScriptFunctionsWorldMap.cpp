@@ -4,162 +4,202 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x544B20
 static int32_t Script_GetMapContinents(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x544B90
 static int32_t Script_GetMapZones(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5469E0
 static int32_t Script_SetMapZoom(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x546A90
 static int32_t Script_ZoomOut(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x547B80
 static int32_t Script_SetDungeonMapLevel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x546290
 static int32_t Script_GetNumDungeonMapLevels(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x544C40
 static int32_t Script_DungeonUsesTerrainMap(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x547C10
 static int32_t Script_SetMapToCurrentZone(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x544CA0
 static int32_t Script_GetMapInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x544D40
 static int32_t Script_GetCurrentMapContinent(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x544E10
 static int32_t Script_GetCurrentMapAreaID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x544E80
 static int32_t Script_GetCurrentMapZone(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x544FC0
 static int32_t Script_GetCurrentMapDungeonLevel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x546C50
 static int32_t Script_SetMapByID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545050
 static int32_t Script_IsZoomOutAvailable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x546E80
 static int32_t Script_ProcessMapClick(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545110
 static int32_t Script_UpdateMapHighlight(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545880
 static int32_t Script_GetPlayerMapPosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545950
 static int32_t Script_GetCorpseMapPosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5459C0
 static int32_t Script_GetDeathReleasePosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x543020
 static int32_t Script_GetNumMapLandmarks(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545A30
 static int32_t Script_GetMapLandmarkInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x543060
 static int32_t Script_GetNumMapOverlays(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545C80
 static int32_t Script_GetMapOverlayInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545E60
 static int32_t Script_CreateWorldMapArrowFrame(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545FF0
 static int32_t Script_InitWorldMapPing(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545F20
 static int32_t Script_CreateMiniWorldMapArrowFrame(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x545FE0
 static int32_t Script_UpdateWorldMapArrowFrames(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5430A0
 static int32_t Script_PositionWorldMapArrowFrame(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5432C0
 static int32_t Script_PositionMiniWorldMapArrowFrame(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5434E0
 static int32_t Script_ShowWorldMapArrowFrame(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x543540
 static int32_t Script_ShowMiniWorldMapArrowFrame(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x546EF0
 static int32_t Script_ClickLandmark(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x608560
 static int32_t Script_GetNumMapDebugObjects(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 static int32_t Script_GetMapDebugObjectInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 static int32_t Script_TeleportToDebugObject(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 static int32_t Script_HasDebugZoneMap(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 static int32_t Script_GetDebugZoneMap(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5435A0
 static int32_t Script_GetWintergraspWaitTime(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x543600
 static int32_t Script_CanQueueForWintergrasp(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

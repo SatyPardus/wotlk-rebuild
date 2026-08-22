@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <tempest/Rect.hpp>
 
+// OFFSET: 0x49CAD0
 int32_t CScriptRegion_IsProtected(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -21,6 +22,7 @@ int32_t CScriptRegion_IsProtected(lua_State* L) {
     return 2;
 }
 
+// OFFSET: 0x49CB60
 int32_t CScriptRegion_CanChangeProtectedState(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -29,6 +31,7 @@ int32_t CScriptRegion_CanChangeProtectedState(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49CBD0
 int32_t CScriptRegion_SetParent(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -78,6 +81,7 @@ int32_t CScriptRegion_SetParent(lua_State* L) {
     region->SetParent(nullptr);
 }
 
+// OFFSET: 0x49CE50
 int32_t CScriptRegion_GetRect(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -106,6 +110,7 @@ int32_t CScriptRegion_GetRect(lua_State* L) {
     return 4;
 }
 
+// OFFSET: 0x49CF90
 int32_t CScriptRegion_GetCenter(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -134,6 +139,7 @@ int32_t CScriptRegion_GetCenter(lua_State* L) {
     return 2;
 }
 
+// OFFSET: 0x49D0B0
 int32_t CScriptRegion_GetLeft(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -154,6 +160,7 @@ int32_t CScriptRegion_GetLeft(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49D170
 int32_t CScriptRegion_GetRight(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -174,6 +181,7 @@ int32_t CScriptRegion_GetRight(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49D230
 int32_t CScriptRegion_GetTop(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -194,6 +202,7 @@ int32_t CScriptRegion_GetTop(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49D2F0
 int32_t CScriptRegion_GetBottom(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -214,6 +223,7 @@ int32_t CScriptRegion_GetBottom(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49D3B0
 int32_t CScriptRegion_GetWidth(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -239,6 +249,7 @@ int32_t CScriptRegion_GetWidth(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49D480
 int32_t CScriptRegion_SetWidth(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -263,6 +274,7 @@ int32_t CScriptRegion_SetWidth(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49D550
 int32_t CScriptRegion_GetHeight(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -288,6 +300,7 @@ int32_t CScriptRegion_GetHeight(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49D620
 int32_t CScriptRegion_SetHeight(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -312,6 +325,7 @@ int32_t CScriptRegion_SetHeight(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49D7A0
 int32_t CScriptRegion_SetSize(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -340,6 +354,7 @@ int32_t CScriptRegion_SetSize(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49D6F0
 int32_t CScriptRegion_GetSize(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -371,6 +386,7 @@ int32_t CScriptRegion_GetSize(lua_State* L) {
     return 2;
 }
 
+// OFFSET: 0x49D8B0
 int32_t CScriptRegion_GetNumPoints(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -389,10 +405,12 @@ int32_t CScriptRegion_GetNumPoints(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49D950
 int32_t CScriptRegion_GetPoint(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49DB10
 int32_t CScriptRegion_SetPoint(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -485,6 +503,7 @@ int32_t CScriptRegion_SetPoint(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49DE40
 int32_t CScriptRegion_SetAllPoints(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -530,6 +549,7 @@ int32_t CScriptRegion_SetAllPoints(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49E010
 int32_t CScriptRegion_ClearAllPoints(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));
@@ -548,22 +568,27 @@ int32_t CScriptRegion_ClearAllPoints(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49E350
 int32_t CScriptRegion_CreateAnimationGroup(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E260
 int32_t CScriptRegion_GetAnimationGroups(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E070
 int32_t CScriptRegion_StopAnimating(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E0B0
 int32_t CScriptRegion_IsDragging(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E100
 int32_t CScriptRegion_IsMouseOver(lua_State* L) {
     int32_t type = CScriptRegion::GetObjectType();
     auto region = static_cast<CScriptRegion*>(FrameScript_GetObjectThis(L, type));

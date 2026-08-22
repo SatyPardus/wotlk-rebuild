@@ -4,54 +4,67 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5A3860
 static int32_t Script_GetArenaTeam(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2930
 static int32_t Script_GetNumArenaTeamMembers(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2FC0
 static int32_t Script_GetArenaTeamRosterInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A3260
 static int32_t Script_GetArenaTeamGdfInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A3370
 static int32_t Script_SetArenaTeamRosterSelection(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A3410
 static int32_t Script_GetArenaTeamRosterSelection(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A3490
 static int32_t Script_SortArenaTeamRoster(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A35E0
 static int32_t Script_SetArenaTeamRosterShowOffline(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2A00
 static int32_t Script_GetArenaTeamRosterShowOffline(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 static int32_t Script_CloseArenaTeamRoster(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A3CF0
 static int32_t Script_ArenaTeamRoster(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2A40
 static int32_t Script_GetCurrentArenaSeason(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2A70
 static int32_t Script_GetPreviousArenaSeason(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

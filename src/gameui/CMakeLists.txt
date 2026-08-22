@@ -23,6 +23,7 @@ target_link_libraries(gameui
         gx
         math
         model
+        sound
         ui
         util
     PUBLIC

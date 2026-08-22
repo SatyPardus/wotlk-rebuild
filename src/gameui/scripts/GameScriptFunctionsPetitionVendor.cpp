@@ -4,34 +4,42 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5A24F0
 static int32_t Script_ClosePetitionVendor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A1F70
 static int32_t Script_GetNumPetitionItems(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A1FB0
 static int32_t Script_GetPetitionItemInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2530
 static int32_t Script_BuyPetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2200
 static int32_t Script_ClickPetitionButton(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2600
 static int32_t Script_TurnInPetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A26D0
 static int32_t Script_TurnInArenaPetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A2820
 static int32_t Script_HasFilledPetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

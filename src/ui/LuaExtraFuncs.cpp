@@ -44,22 +44,27 @@ luaL_Reg FrameScriptInternal::extra_funcs[31] = {
     { nullptr, nullptr }
 };
 
+// OFFSET: 0x8168D0
 int32_t sub_8168D0(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x816910
 int32_t sub_816910(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x816960
 int32_t strtrim(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x816A60
 int32_t strsplit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x816B60
 int32_t strjoin(lua_State* L) {
     size_t length = 0;
     auto v9 = luaL_checklstring(L, 1, &length);
@@ -94,32 +99,39 @@ int32_t strjoin(lua_State* L) {
     }
 }
 
+// OFFSET: 0x816C40
 int32_t sub_816C40(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x816D80
 int32_t sub_816D80(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x817C70
 int32_t strlenutf8(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x816DA0
 int32_t issecure(lua_State* L) {
     // TODO
     lua_pushnil(L);
     return 1;
 }
 
+// OFFSET: 0x816DE0
 int32_t issecurevariable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x816F00
 int32_t forceinsecure(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x816F30
 int32_t securecall(lua_State* L) {
     // TODO: tainted
     if (lua_isstring(L, 1)) {
@@ -143,46 +155,57 @@ int32_t securecall(lua_State* L) {
     return lua_gettop(L);
 }
 
+// OFFSET: 0x817170
 int32_t hooksecurefunc(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 int32_t debugload(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 int32_t debuginfo(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x8E5250
 int32_t debugprint(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 int32_t debugdump(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 int32_t debugbreak(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 int32_t debughook(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8E5250
 int32_t debugtimestamp(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x817350
 int32_t debugprofilestart(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x817370
 int32_t debugprofilestop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8173C0
 int32_t seterrorhandler(lua_State* L) {
     if (lua_type(L, 1) != LUA_TFUNCTION) {
         luaL_error(L, "Usage: seterrorhandler(errfunc)");
@@ -198,30 +221,37 @@ int32_t seterrorhandler(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x817420
 int32_t geterrorhandler(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x817450
 int32_t os_date(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x817650
 int32_t os_time(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8178A0
 int32_t os_difftime(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x8178F0
 int32_t debugstack(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x819A60
 int32_t debuglocals(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x817BF0
 int32_t scrub(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

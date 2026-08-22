@@ -4,22 +4,27 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x57B940
 static int32_t Script_BankButtonIDToInvSlotID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x57BAB0
 static int32_t Script_GetNumBankSlots(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x57BB30
 static int32_t Script_GetBankSlotCost(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x57BBC0
 static int32_t Script_PurchaseSlot(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x57B9C0
 static int32_t Script_CloseBankFrame(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

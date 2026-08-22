@@ -5,6 +5,7 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5E7D60
 static int32_t Script_GetInventorySlotInfo(lua_State* L) {
     const char* buttonName = nullptr;
 
@@ -40,126 +41,157 @@ static int32_t Script_GetInventorySlotInfo(lua_State* L) {
     return 3;
 }
 
+// OFFSET: 0x5E95C0
 static int32_t Script_GetInventoryItemsForSlot(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E9BC0
 static int32_t Script_GetInventoryItemTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E9D80
 static int32_t Script_GetInventoryItemBroken(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E9E40
 static int32_t Script_GetInventoryItemCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA040
 static int32_t Script_GetInventoryItemQuality(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E7E60
 static int32_t Script_GetInventoryItemCooldown(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA170
 static int32_t Script_GetInventoryItemDurability(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA270
 static int32_t Script_GetInventoryItemLink(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA3E0
 static int32_t Script_GetInventoryItemID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA4F0
 static int32_t Script_GetInventoryItemGems(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E7700
 static int32_t Script_KeyRingButtonIDToInvSlotID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA5F0
 static int32_t Script_PickupInventoryItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA630
 static int32_t Script_UseInventoryItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA6A0
 static int32_t Script_SocketInventoryItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA6E0
 static int32_t Script_IsInventoryItemLocked(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA780
 static int32_t Script_PutItemInBag(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA7F0
 static int32_t Script_PutItemInBackpack(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA840
 static int32_t Script_PickupBagFromSlot(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA880
 static int32_t Script_CursorCanGoInSlot(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA930
 static int32_t Script_ShowInventorySellCursor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EA9B0
 static int32_t Script_SetInventoryPortraitTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EAAF0
 static int32_t Script_GetGuildInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E7FA0
 static int32_t Script_GetInventoryAlertStatus(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EAC00
 static int32_t Script_UpdateInventoryAlertStatus(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EAC10
 static int32_t Script_OffhandHasWeapon(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E7780
 static int32_t Script_HasInspectHonorData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EAC90
 static int32_t Script_RequestInspectHonorData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E77C0
 static int32_t Script_GetInspectHonorData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E8030
 static int32_t Script_GetInspectArenaTeamData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5E7890
 static int32_t Script_ClearInspectPlayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EACA0
 static int32_t Script_GetWeaponEnchantInfo(lua_State* L) {
     // TODO
     lua_pushnil(L);
@@ -171,6 +203,7 @@ static int32_t Script_GetWeaponEnchantInfo(lua_State* L) {
     return 6;
 }
 
+// OFFSET: 0x5EAE90
 static int32_t Script_HasWandEquipped(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

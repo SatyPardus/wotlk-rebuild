@@ -4,6 +4,7 @@
 #include "util/Unimplemented.hpp"
 #include <cstdint>
 
+// OFFSET: 0x960530
 int32_t CSimpleModel_SetModel(lua_State* L) {
     auto type = CSimpleModel::GetObjectType();
     auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
@@ -23,22 +24,27 @@ int32_t CSimpleModel_SetModel(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x9605D0
 int32_t CSimpleModel_GetModel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x960620
 int32_t CSimpleModel_ClearModel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x960660
 int32_t CSimpleModel_SetPosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9606E0
 int32_t CSimpleModel_SetFacing(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x960760
 int32_t CSimpleModel_SetScale(lua_State* L) {
     auto type = CSimpleModel::GetObjectType();
     auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
@@ -53,6 +59,7 @@ int32_t CSimpleModel_SetScale(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x9607E0
 int32_t CSimpleModel_SetSequence(lua_State* L) {
     auto type = CSimpleModel::GetObjectType();
     auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
@@ -72,6 +79,7 @@ int32_t CSimpleModel_SetSequence(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x9608B0
 int32_t CSimpleModel_SetSequenceTime(lua_State* L) {
     auto type = CSimpleModel::GetObjectType();
     auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
@@ -87,6 +95,7 @@ int32_t CSimpleModel_SetSequenceTime(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x960970
 int32_t CSimpleModel_SetCamera(lua_State* L) {
     auto type = CSimpleModel::GetObjectType();
     auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
@@ -101,26 +110,32 @@ int32_t CSimpleModel_SetCamera(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x960D20
 int32_t CSimpleModel_SetLight(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x960DD0
 int32_t CSimpleModel_GetLight(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x960FC0
 int32_t CSimpleModel_GetPosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x961040
 int32_t CSimpleModel_GetFacing(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x961090
 int32_t CSimpleModel_GetScale(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9610E0
 int32_t CSimpleModel_AdvanceTime(lua_State* L) {
     auto type = CSimpleModel::GetObjectType();
     auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
@@ -130,38 +145,47 @@ int32_t CSimpleModel_AdvanceTime(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x961120
 int32_t CSimpleModel_ReplaceIconTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9611A0
 int32_t CSimpleModel_SetFogColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x961200
 int32_t CSimpleModel_GetFogColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9612D0
 int32_t CSimpleModel_SetFogNear(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x961350
 int32_t CSimpleModel_GetFogNear(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9613A0
 int32_t CSimpleModel_SetFogFar(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x961420
 int32_t CSimpleModel_GetFogFar(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x961470
 int32_t CSimpleModel_ClearFog(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9614B0
 int32_t CSimpleModel_SetGlow(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

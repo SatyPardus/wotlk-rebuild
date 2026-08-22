@@ -4,118 +4,147 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5A5CE0
 static int32_t Script_QueryGuildBankTab(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A43C0
 static int32_t Script_SetCurrentGuildBankTab(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A4410
 static int32_t Script_GetCurrentGuildBankTab(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A6000
 static int32_t Script_GetGuildBankItemInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A6A00
 static int32_t Script_SetGuildBankTabInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A4D30
 static int32_t Script_GetGuildBankItemLink(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A6200
 static int32_t Script_PickupGuildBankItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A63F0
 static int32_t Script_AutoStoreGuildBankItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A6600
 static int32_t Script_SplitGuildBankItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A44D0
 static int32_t Script_GetNumGuildBankTabs(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A67F0
 static int32_t Script_GetGuildBankTabInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A6B20
 static int32_t Script_GetGuildBankTabCost(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A5D30
 static int32_t Script_BuyGuildBankTab(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A5E20
 static int32_t Script_DepositGuildBankMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A5EF0
 static int32_t Script_WithdrawGuildBankMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A5F60
 static int32_t Script_CanWithdrawGuildBankMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A4330
 static int32_t Script_PickupGuildBankMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A4440
 static int32_t Script_GetGuildBankMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A44A0
 static int32_t Script_GetGuildBankWithdrawMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A4500
 static int32_t Script_CloseGuildBankFrame(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A6BA0
 static int32_t Script_GetGuildTabardFileNames(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A6D50
 static int32_t Script_QueryGuildBankLog(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A4520
 static int32_t Script_GetNumGuildBankTransactions(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A6DC0
 static int32_t Script_GetGuildBankTransaction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A45B0
 static int32_t Script_GetNumGuildBankMoneyTransactions(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A4E50
 static int32_t Script_GetGuildBankMoneyTransaction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A7110
 static int32_t Script_QueryGuildBankText(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A45E0
 static int32_t Script_GetGuildBankText(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A7180
 static int32_t Script_SetGuildBankText(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

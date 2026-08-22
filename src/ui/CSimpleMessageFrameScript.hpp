@@ -3,7 +3,7 @@
 
 #include "ui/FrameScript.hpp"
 
-#define NUM_SIMPLE_MESSAGE_FRAME_SCRIPT_METHODS 12
+#define NUM_SIMPLE_MESSAGE_FRAME_SCRIPT_METHODS 28
 
 extern FrameScript_Method SimpleMessageFrameMethods[NUM_SIMPLE_MESSAGE_FRAME_SCRIPT_METHODS];
 

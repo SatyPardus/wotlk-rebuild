@@ -4,14 +4,17 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5CF950
 static int32_t Script_StartDuel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CFDB0
 static int32_t Script_AcceptDuel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CFDC0
 static int32_t Script_CancelDuel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

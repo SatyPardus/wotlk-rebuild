@@ -4,123 +4,151 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5A8F10
 static int32_t Script_GetActionInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A9B30
 static int32_t Script_GetActionTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A7D10
 static int32_t Script_GetActionCount(lua_State* L) {
     // TODO
     lua_pushnumber(L, 0.0);
     return 1;
 }
 
+// OFFSET: 0x5A91C0
 static int32_t Script_GetActionCooldown(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A9290
 static int32_t Script_GetActionAutocast(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A7D90
 static int32_t Script_GetActionText(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A8220
 static int32_t Script_HasAction(lua_State* L) {
     // TODO
     lua_pushnil(L);
     return 1;
 }
 
+// OFFSET: 0x5AC000
 static int32_t Script_UseAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AC090
 static int32_t Script_PickupAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AB840
 static int32_t Script_PlaceAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A9BA0
 static int32_t Script_IsAttackAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AAD40
 static int32_t Script_IsCurrentAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A9C10
 static int32_t Script_IsAutoRepeatAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A7E60
 static int32_t Script_IsUsableAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A9C80
 static int32_t Script_IsConsumableAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A8720
 static int32_t Script_IsStackableAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A8BC0
 static int32_t Script_IsEquippedAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A9CF0
 static int32_t Script_ActionHasRange(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A9D50
 static int32_t Script_IsActionInRange(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A7F20
 static int32_t Script_GetBonusBarOffset(lua_State* L) {
     // TODO
     lua_pushnumber(L, 0.0);
     return 1;
 }
 
+// OFFSET: 0x5B71E0
 static int32_t Script_GetMultiCastBarOffset(lua_State* L) {
     lua_pushnumber(L, 6.0);
     return 1;
 }
 
+// OFFSET: 0x5A7F60
 static int32_t Script_ChangeActionBarPage(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A7FD0
 static int32_t Script_GetActionBarPage(lua_State* L) {
     // TODO
     lua_pushinteger(L, 1);
     return 1;
 }
 
+// OFFSET: 0x5A8790
 static int32_t Script_GetActionBarToggles(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A8290
 static int32_t Script_SetActionBarToggles(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A8820
 static int32_t Script_IsPossessBarVisible(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5A8330
 static int32_t Script_GetMultiCastTotemSpells(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AB8A0
 static int32_t Script_SetMultiCastSpell(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

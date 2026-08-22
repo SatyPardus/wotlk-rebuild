@@ -4,122 +4,152 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x59F750
 static int32_t Script_CloseAuctionHouse(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59BC90
 static int32_t Script_GetAuctionHouseDepositRate(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59D270
 static int32_t Script_CalculateAuctionDeposit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59D410
 static int32_t Script_ClickAuctionSellItemButton(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59F760
 static int32_t Script_GetAuctionSellItemInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59F990
 static int32_t Script_StartAuction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59BCF0
 static int32_t Script_QueryAuctionItems(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59D4F0
 static int32_t Script_GetOwnerAuctionItems(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59D540
 static int32_t Script_GetBidderAuctionItems(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C1A0
 static int32_t Script_GetNumAuctionItems(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59D5E0
 static int32_t Script_GetAuctionItemInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C2D0
 static int32_t Script_GetAuctionItemLink(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59FD60
 static int32_t Script_GetAuctionItemTimeLeft(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59DA40
 static int32_t Script_PlaceAuctionBid(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C420
 static int32_t Script_GetAuctionItemClasses(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C480
 static int32_t Script_GetAuctionItemSubClasses(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C590
 static int32_t Script_GetAuctionInvTypes(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C740
 static int32_t Script_CanSendAuctionQuery(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59DD00
 static int32_t Script_SortAuctionItems(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C830
 static int32_t Script_SetSelectedAuctionItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C920
 static int32_t Script_GetSelectedAuctionItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59AB90
 static int32_t Script_IsAuctionSortReversed(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59DDF0
 static int32_t Script_CancelAuction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59C9F0
 static int32_t Script_CanCancelAuction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59AD40
 static int32_t Script_GetAuctionSort(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59AE70
 static int32_t Script_SortAuctionClearSort(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59AF10
 static int32_t Script_SortAuctionSetSort(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59CAB0
 static int32_t Script_SortAuctionApplySort(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59B040
 static int32_t Script_CancelSell(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59B0B0
 static int32_t Script_SetAuctionsTabShowing(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

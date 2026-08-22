@@ -2,22 +2,27 @@
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
 
+// OFFSET: 0x5ECE80
 static int32_t Script_SetCooldown(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EC9A0
 static int32_t Script_SetReverse(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5EC9F0
 static int32_t Script_GetReverse(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5ECA30
 static int32_t Script_SetDrawEdge(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5ECA80
 static int32_t Script_GetDrawEdge(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

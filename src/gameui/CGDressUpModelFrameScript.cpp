@@ -2,14 +2,17 @@
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
 
+// OFFSET: 0x597E90
 static int32_t Script_Undress(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x597ED0
 static int32_t Script_Dress(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x598830
 static int32_t Script_TryOn(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

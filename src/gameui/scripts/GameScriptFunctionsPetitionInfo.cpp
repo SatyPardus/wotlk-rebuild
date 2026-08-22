@@ -4,34 +4,42 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5CF020
 static int32_t Script_ClosePetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CECE0
 static int32_t Script_GetPetitionInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CEAC0
 static int32_t Script_GetNumPetitionNames(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CEE30
 static int32_t Script_GetPetitionNameInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CF040
 static int32_t Script_CanSignPetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CF140
 static int32_t Script_SignPetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CF220
 static int32_t Script_OfferPetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5CF450
 static int32_t Script_RenamePetition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

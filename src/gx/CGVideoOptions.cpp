@@ -55,6 +55,7 @@ void SetupFormats() {
     }
 }
 
+// OFFSET: 0x54F430
 int32_t Script_GetScreenResolutions(lua_State* L) {
     SetupFormats();
     lua_checkstack(L, s_resolutions.Count());
@@ -66,6 +67,7 @@ int32_t Script_GetScreenResolutions(lua_State* L) {
     return s_resolutions.Count();
 }
 
+// OFFSET: 0x54F4A0
 int32_t Script_GetCurrentResolution(lua_State* L) {
     SetupFormats();
     auto v1 = CVar::Lookup("gxResolution");
@@ -92,35 +94,42 @@ int32_t Script_GetCurrentResolution(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x54F570
 int32_t Script_SetScreenResolution(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x54F690
 int32_t Script_GetRefreshRates(lua_State* L) {
     // TODO
     lua_pushnumber(L, 60);
     return 1;
 }
 
+// OFFSET: 0x54ED80
 int32_t Script_SetupFullscreenScale(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x54F820
 int32_t Script_GetMultisampleFormats(lua_State* L) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x54F8B0
 int32_t Script_GetCurrentMultisampleFormat(lua_State* L) {
     // TODO
     lua_pushnumber(L, 1.0);
     return 1;
 }
 
+// OFFSET: 0x54F980
 int32_t Script_SetMultisampleFormat(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x54EE60
 int32_t Script_GetVideoCaps(lua_State* L) {
     auto v1 = g_theGxDevicePtr->Caps();
     if (v1.m_texFilterAnisotropic)
@@ -151,12 +160,14 @@ int32_t Script_GetVideoCaps(lua_State* L) {
     return 7;
 }
 
+// OFFSET: 0x54EA60
 int32_t Script_GetGamma(lua_State* L) {
     auto v1 = CVar::Lookup("gamma");
     lua_pushnumber(L, 1.0f - v1->m_floatValue);
     return 1;
 }
 
+// OFFSET: 0x54EA90
 int32_t Script_SetGamma(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         luaL_error(L, "Usage: SetGamma(value)");
@@ -169,16 +180,19 @@ int32_t Script_SetGamma(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x54EB10
 int32_t Script_GetTerrainMip(lua_State* L) {
     auto v1 = CVar::Lookup("shadowLevel");
     lua_pushnumber(L, 1.0f - v1->GetInt());
     return 1;
 }
 
+// OFFSET: 0x54EB40
 int32_t Script_SetTerrainMip(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x54EF90
 int32_t Script_IsStereoVideoAvailable(lua_State* L) {
     if (g_theGxDevicePtr->Caps().m_stereoAvailable)
         lua_pushnumber(L, 1.0);
@@ -187,6 +201,7 @@ int32_t Script_IsStereoVideoAvailable(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x54EBC0
 int32_t Script_IsPlayerResolutionAvailable(lua_State* L) {
     if (OsGetProcessorCount() <= 1)
         lua_pushnil(L);

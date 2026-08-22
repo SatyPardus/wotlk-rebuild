@@ -5,6 +5,7 @@
 #include <common/Time.hpp>
 #include <cstdint>
 
+// OFFSET: 0x6081F0
 int32_t Script_GetTime(lua_State* L) {
     uint64_t ms = OsGetAsyncTimeMs();
     lua_pushnumber(L, static_cast<double>(ms) / 1000.0);
@@ -12,14 +13,17 @@ int32_t Script_GetTime(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x608230
 int32_t Script_GetGameTime(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x608270
 int32_t Script_ConsoleExec(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x510BB0
 int32_t Script_AccessDenied(lua_State* L) {
     return luaL_error(L, "Access Denied");
 }

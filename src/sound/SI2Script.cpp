@@ -3,35 +3,42 @@
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
 
+// OFFSET: 0x9858B0
 int32_t Script_PlaySound(lua_State* L) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x985950
 int32_t Script_PlayMusic(lua_State* L) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x9859B0
 int32_t Script_PlaySoundFile(lua_State* L) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x985A10
 int32_t Script_StopMusic(lua_State* L) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x985BB0
 int32_t Script_Sound_GameSystem_GetNumInputDrivers(lua_State* L) {
     lua_pushnumber(L, 0.0);
     return 1;
 }
 
+// OFFSET: 0x985BE0
 int32_t Script_Sound_GameSystem_GetInputDriverNameByIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985C70
 int32_t Script_Sound_GameSystem_GetNumOutputDrivers(lua_State* L) {
     // TODO:
     // NumOutputDrivers = (double)(int)SE3::GetNumOutputDrivers(SE3::sm_pGameSystem, v3);
@@ -39,66 +46,82 @@ int32_t Script_Sound_GameSystem_GetNumOutputDrivers(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x985CA0
 int32_t Script_Sound_GameSystem_GetOutputDriverNameByIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985D30
 int32_t Script_Sound_GameSystem_RestartSoundSystem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985A20
 int32_t Script_Sound_ChatSystem_GetNumInputDrivers(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985A50
 int32_t Script_Sound_ChatSystem_GetInputDriverNameByIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985AE0
 int32_t Script_Sound_ChatSystem_GetNumOutputDrivers(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985B10
 int32_t Script_Sound_ChatSystem_GetOutputDriverNameByIndex(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985EF0
 int32_t Script_VoiceChat_StartCapture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985D50
 int32_t Script_VoiceChat_StopCapture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985D60
 int32_t Script_VoiceChat_RecordLoopbackSound(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985DD0
 int32_t Script_VoiceChat_StopRecordingLoopbackSound(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985DE0
 int32_t Script_VoiceChat_PlayLoopbackSound(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985DF0
 int32_t Script_VoiceChat_StopPlayingLoopbackSound(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985E00
 int32_t Script_VoiceChat_IsRecordingLoopbackSound(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985E30
 int32_t Script_VoiceChat_IsPlayingLoopbackSound(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985E60
 int32_t Script_VoiceChat_GetCurrentMicrophoneSignalLevel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x985E90
 int32_t Script_VoiceChat_ActivatePrimaryCaptureCallback(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

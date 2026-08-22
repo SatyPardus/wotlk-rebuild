@@ -4,26 +4,32 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5B71E0
 static int32_t Script_GetNumGlyphSockets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5B7260
 static int32_t Script_GetGlyphSocketInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5B7410
 static int32_t Script_GlyphMatchesSocket(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5B75A0
 static int32_t Script_PlaceGlyphInSocket(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5B7660
 static int32_t Script_RemoveGlyphFromSocket(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5B7740
 static int32_t Script_GetGlyphLink(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

@@ -9,6 +9,7 @@
 #include "db/Db.hpp"
 #include "clientobject/Unit_C.hpp"
 
+// OFFSET: 0x4E2F60
 int32_t Script_SetCharSelectModelFrame(lua_State* L) {
     if (!lua_isstring(L, 1)) {
         return luaL_error(L, "Usage: SetCharSelectModelFrame(\"frameName\")");
@@ -25,6 +26,7 @@ int32_t Script_SetCharSelectModelFrame(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E44E0
 int32_t Script_SetCharSelectBackground(lua_State* L) {
     if (!lua_isstring(L, 1)) {
         return luaL_error(L, "Usage: SetCharSelectBackground(\"filename\")");
@@ -36,16 +38,19 @@ int32_t Script_SetCharSelectBackground(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E4530
 int32_t Script_GetCharacterListUpdate(lua_State* L) {
     CCharacterSelection::OnGetCharacterList();
     return 0;
 }
 
+// OFFSET: 0x4E3140
 int32_t Script_GetNumCharacters(lua_State* L) {
     lua_pushnumber(L, CCharacterSelection::GetNumCharacters());
     return 1;
 }
 
+// OFFSET: 0x4E3170
 int32_t Script_GetCharacterInfo(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         luaL_error(L, "Usage: GetCharacterInfo(index)");
@@ -102,6 +107,7 @@ int32_t Script_GetCharacterInfo(lua_State* L) {
     return 10;
 }
 
+// OFFSET: 0x4E4580
 int32_t Script_SelectCharacter(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         luaL_error(L, "Usage: SelectCharacter(index)");
@@ -118,6 +124,7 @@ int32_t Script_SelectCharacter(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E33A0
 int32_t Script_DeleteCharacter(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         luaL_error(L, "Usage: DeleteCharacter(index)");
@@ -130,10 +137,12 @@ int32_t Script_DeleteCharacter(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E3410
 int32_t Script_RenameCharacter(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4E3530
 int32_t Script_DeclineCharacter(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
@@ -145,12 +154,14 @@ int32_t Script_UpdateSelectionCustomizationScene(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4E3000
 int32_t Script_GetCharacterSelectFacing(lua_State* L) {
     // Radian to Degree
     lua_pushnumber(L, CCharacterSelection::m_charFacing * 57.29578f);
     return 1;
 }
 
+// OFFSET: 0x4E3030
 int32_t Script_SetCharacterSelectFacing(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         luaL_error(L, "Usage: SetCharacterSelectFacing(degrees)");
@@ -161,6 +172,7 @@ int32_t Script_SetCharacterSelectFacing(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4E3620
 int32_t Script_GetSelectBackgroundModel(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: GetSelectBackgroundModel(index)");

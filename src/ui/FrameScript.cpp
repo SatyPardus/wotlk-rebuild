@@ -769,6 +769,7 @@ int32_t FrameScript_GetVariable(const char* a1, const char** a2) {
     return v3;
 }
 
+// OFFSET: 0x819730
 int32_t FrameScript_HandleError(lua_State* L) {
     if (!lua_isstring(L, -1)) {
         lua_pushstring(L, "UNKNOWN ERROR");

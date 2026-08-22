@@ -5,18 +5,22 @@
 #include "util/Unimplemented.hpp"
 #include <cstdint>
 
+// OFFSET: 0x972210
 int32_t CSimpleScrollFrame_SetScrollChild(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x972410
 int32_t CSimpleScrollFrame_GetScrollChild(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x972490
 int32_t CSimpleScrollFrame_SetHorizontalScroll(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x972560
 int32_t CSimpleScrollFrame_SetVerticalScroll(lua_State* L) {
     auto type = CSimpleScrollFrame::GetObjectType();
     auto scrollFrame = static_cast<CSimpleScrollFrame*>(FrameScript_GetObjectThis(L, type));
@@ -40,6 +44,7 @@ int32_t CSimpleScrollFrame_SetVerticalScroll(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x972630
 int32_t CSimpleScrollFrame_GetHorizontalScroll(lua_State* L) {
     auto type = CSimpleScrollFrame::GetObjectType();
     auto scrollFrame = static_cast<CSimpleScrollFrame*>(FrameScript_GetObjectThis(L, type));
@@ -52,6 +57,7 @@ int32_t CSimpleScrollFrame_GetHorizontalScroll(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x972690
 int32_t CSimpleScrollFrame_GetVerticalScroll(lua_State* L) {
     auto type = CSimpleScrollFrame::GetObjectType();
     auto scrollFrame = static_cast<CSimpleScrollFrame*>(FrameScript_GetObjectThis(L, type));
@@ -64,6 +70,7 @@ int32_t CSimpleScrollFrame_GetVerticalScroll(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x9726F0
 int32_t CSimpleScrollFrame_GetHorizontalScrollRange(lua_State* L) {
     auto type = CSimpleScrollFrame::GetObjectType();
     auto scrollFrame = static_cast<CSimpleScrollFrame*>(FrameScript_GetObjectThis(L, type));
@@ -76,6 +83,7 @@ int32_t CSimpleScrollFrame_GetHorizontalScrollRange(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x972750
 int32_t CSimpleScrollFrame_GetVerticalScrollRange(lua_State* L) {
     auto type = CSimpleScrollFrame::GetObjectType();
     auto scrollFrame = static_cast<CSimpleScrollFrame*>(FrameScript_GetObjectThis(L, type));
@@ -88,6 +96,7 @@ int32_t CSimpleScrollFrame_GetVerticalScrollRange(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x9727B0
 int32_t CSimpleScrollFrame_UpdateScrollChildRect(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

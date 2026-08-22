@@ -4,62 +4,76 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x587940
 static int32_t Script_CloseTrade(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5879D0
 static int32_t Script_ClickTradeButton(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x586C80
 static int32_t Script_ClickTargetTradeButton(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x587C60
 static int32_t Script_GetTradeTargetItemInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5865F0
 static int32_t Script_GetTradeTargetItemLink(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x587EB0
 static int32_t Script_GetTradePlayerItemInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x586D00
 static int32_t Script_GetTradePlayerItemLink(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5866E0
 static int32_t Script_AcceptTrade(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x586730
 static int32_t Script_CancelTradeAccept(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x586780
 static int32_t Script_GetPlayerTradeMoney(lua_State* L) {
     // TODO
     lua_pushnumber(L, 0.0);
     return 1;
 }
 
+// OFFSET: 0x5867D0
 static int32_t Script_GetTargetTradeMoney(lua_State* L) {
     // TODO
     lua_pushnumber(L, 0.0);
     return 1;
 }
 
+// OFFSET: 0x586810
 static int32_t Script_PickupTradeMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x586D90
 static int32_t Script_AddTradeMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x586870
 static int32_t Script_SetTradeMoney(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

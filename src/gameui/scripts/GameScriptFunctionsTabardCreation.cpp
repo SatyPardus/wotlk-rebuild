@@ -4,10 +4,12 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x598F30
 static int32_t Script_CloseTabardCreation(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x598DD0
 static int32_t Script_GetTabardCreationCost(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

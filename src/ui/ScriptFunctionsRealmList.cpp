@@ -10,19 +10,23 @@
 #include <cstdint>
 #include <storm/String.hpp>
 
+// OFFSET: 0x4DE430
 int32_t Script_RequestRealmList(lua_State* L) {
     CGlueMgr::GetRealmList(StringToBOOL(L, 1, 0));
     return 0;
 }
 
+// OFFSET: 0x4DE450
 int32_t Script_RealmListUpdateRate(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4DE4B0
 int32_t Script_CancelRealmListQuery(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4DEAF0
 int32_t Script_GetNumRealms(lua_State* L) {
     if (lua_isnumber(L, 1)) {
         int32_t categoryIndex = lua_tonumber(L, 1) - 1;
@@ -54,6 +58,7 @@ int32_t Script_GetNumRealms(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4DEBC0
 int32_t Script_GetRealmInfo(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: GetRealmInfo(category, index)");
@@ -191,6 +196,7 @@ int32_t Script_GetRealmInfo(lua_State* L) {
     return 14;
 }
 
+// OFFSET: 0x4DEFB0
 int32_t Script_ChangeRealm(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: ChangeRealm(category, index)");
@@ -238,10 +244,12 @@ int32_t Script_ChangeRealm(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4DF110
 int32_t Script_GetRealmCategories(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4DF3A0
 int32_t Script_SetPreferredInfo(lua_State* L) {
     if (!lua_isnumber(L, 1)) {
         return luaL_error(L, "Usage: SetPreferredInfo(index, pvp, rp)");
@@ -256,10 +264,12 @@ int32_t Script_SetPreferredInfo(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4DF420
 int32_t Script_SortRealms(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4DF4F0
 int32_t Script_GetSelectedCategory(lua_State* L) {
     if (CRealmList::s_categories.Count() == 0) {
         lua_pushnumber(L, 1.0);
@@ -284,18 +294,22 @@ int32_t Script_GetSelectedCategory(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4DE4C0
 int32_t Script_RealmListDialogCancelled(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4DF1C0
 int32_t Script_IsInvalidTournamentRealmCategory(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4DF270
 int32_t Script_IsTournamentRealmCategory(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4DF2F0
 int32_t Script_IsInvalidLocale(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

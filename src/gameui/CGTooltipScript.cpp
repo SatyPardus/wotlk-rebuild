@@ -8,6 +8,7 @@
 #include "util/Unimplemented.hpp"
 #include "util/StringTo.hpp"
 
+// OFFSET: 0x6201F0
 static int32_t Script_AddFontStrings(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -38,6 +39,7 @@ static int32_t Script_AddFontStrings(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x61D040
 static int32_t Script_SetMinimumWidth(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -51,6 +53,7 @@ static int32_t Script_SetMinimumWidth(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x61D0D0
 static int32_t Script_GetMinimumWidth(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -63,6 +66,7 @@ static int32_t Script_GetMinimumWidth(lua_State* L) {
     return 2;
 }
 
+// OFFSET: 0x61D150
 static int32_t Script_SetPadding(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -73,6 +77,7 @@ static int32_t Script_SetPadding(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x61D1C0
 static int32_t Script_GetPadding(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -80,6 +85,7 @@ static int32_t Script_GetPadding(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x61D210
 static int32_t Script_IsOwned(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -108,6 +114,7 @@ static int32_t Script_IsOwned(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x61D350
 static int32_t Script_GetOwner(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -124,6 +131,7 @@ static int32_t Script_GetOwner(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x61EB40
 static int32_t Script_SetOwner(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -172,6 +180,7 @@ static int32_t Script_SetOwner(lua_State* L) {
     tooltip->SetOwner(frame, static_cast<TOOLTIP_ANCHORPOINT>(anchorPoint), xoffset, yoffset);
 }
 
+// OFFSET: 0x61D650
 static int32_t Script_GetAnchorType(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -179,6 +188,7 @@ static int32_t Script_GetAnchorType(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x61D3D0
 static int32_t Script_SetAnchorType(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -208,6 +218,7 @@ static int32_t Script_SetAnchorType(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x61D7D0
 static int32_t Script_ClearLines(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -215,6 +226,7 @@ static int32_t Script_ClearLines(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x620340
 static int32_t Script_AddLine(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -232,6 +244,7 @@ static int32_t Script_AddLine(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x6203F0
 static int32_t Script_AddDoubleLine(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -255,10 +268,12 @@ static int32_t Script_AddDoubleLine(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x61D810
 static int32_t Script_AddTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6204E0
 static int32_t Script_SetText(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -281,10 +296,12 @@ static int32_t Script_SetText(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x61EE90
 static int32_t Script_AppendText(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x61D940
 static int32_t Script_FadeOut(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -292,122 +309,152 @@ static int32_t Script_FadeOut(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x62DAE0
 static int32_t Script_SetHyperlink(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x631000
 static int32_t Script_SetAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x625470
 static int32_t Script_SetPetAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x625630
 static int32_t Script_SetShapeshift(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6257C0
 static int32_t Script_SetPossession(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x625940
 static int32_t Script_SetTracking(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6259E0
 static int32_t Script_SetSpell(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x625B90
 static int32_t Script_SetSpellByID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x625D00
 static int32_t Script_SetGlyph(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62E050
 static int32_t Script_SetInventoryItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62E520
 static int32_t Script_SetLootItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62E670
 static int32_t Script_SetQuestItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62E790
 static int32_t Script_SetQuestLogItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62E900
 static int32_t Script_SetTrainerService(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62EAE0
 static int32_t Script_SetTradeSkillItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62ED70
 static int32_t Script_SetMerchantItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62EE70
 static int32_t Script_SetMerchantCostItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62EFF0
 static int32_t Script_SetTradePlayerItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62F1E0
 static int32_t Script_SetTradeTargetItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62F420
 static int32_t Script_SetBagItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x625E10
 static int32_t Script_SetUnit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6262C0
 static int32_t Script_SetUnitBuff(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x626350
 static int32_t Script_SetUnitDebuff(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x626240
 static int32_t Script_SetUnitAura(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62F740
 static int32_t Script_SetTalent(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62F8B0
 static int32_t Script_SetSendMailItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62F9E0
 static int32_t Script_SetInboxItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62FC20
 static int32_t Script_SetAuctionSellItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62FCF0
 static int32_t Script_SetAuctionItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x61D9C0
 static int32_t Script_NumLines(lua_State* L) {
     auto type = CGTooltip::GetObjectType();
     auto tooltip = static_cast<CGTooltip*>(FrameScript_GetObjectThis(L, type));
@@ -415,90 +462,112 @@ static int32_t Script_NumLines(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x6263E0
 static int32_t Script_SetQuestRewardSpell(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x626440
 static int32_t Script_SetQuestLogRewardSpell(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x631B60
 static int32_t Script_SetHyperlinkCompareItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x62FF60
 static int32_t Script_SetBuybackItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6300A0
 static int32_t Script_SetLootRollItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6301A0
 static int32_t Script_SetSocketedItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x630250
 static int32_t Script_SetSocketGem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x630370
 static int32_t Script_SetExistingSocketGem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6304A0
 static int32_t Script_SetGuildBankItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x61DA20
 static int32_t Script_IsUnit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x61DAD0
 static int32_t Script_GetUnit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x61EF10
 static int32_t Script_GetItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x61F0F0
 static int32_t Script_GetSpell(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6205C0
 static int32_t Script_SetTotem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x630620
 static int32_t Script_SetCurrencyToken(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6307E0
 static int32_t Script_SetBackpackToken(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x61F1F0
 static int32_t Script_IsEquippedItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x630990
 static int32_t Script_SetQuestLogSpecialItem(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x6264D0
 static int32_t Script_SetEquipmentSet(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x626560
 static int32_t Script_SetFrameStack(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x630A80
 static int32_t Script_SetLFGDungeonReward(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x630B90
 static int32_t Script_SetLFGCompletionReward(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

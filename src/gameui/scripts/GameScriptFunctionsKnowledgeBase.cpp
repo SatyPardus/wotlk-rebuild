@@ -4,90 +4,112 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x551720
 static int32_t Script_KBSetup_BeginLoading(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551760
 static int32_t Script_KBSetup_IsLoaded(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551790
 static int32_t Script_KBSetup_GetLanguageCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5517D0
 static int32_t Script_KBSetup_GetLanguageData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5518C0
 static int32_t Script_KBSetup_GetCategoryCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551900
 static int32_t Script_KBSetup_GetCategoryData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5523A0
 static int32_t Script_KBSetup_GetSubCategoryCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x552440
 static int32_t Script_KBSetup_GetSubCategoryData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5519F0
 static int32_t Script_KBSetup_GetArticleHeaderCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551A30
 static int32_t Script_KBSetup_GetArticleHeaderData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551B40
 static int32_t Script_KBSetup_GetTotalArticleCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x552580
 static int32_t Script_KBQuery_BeginLoading(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551B90
 static int32_t Script_KBQuery_IsLoaded(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551BC0
 static int32_t Script_KBQuery_GetArticleHeaderCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551C00
 static int32_t Script_KBQuery_GetArticleHeaderData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551D10
 static int32_t Script_KBQuery_GetTotalArticleCount(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551D60
 static int32_t Script_KBArticle_BeginLoading(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551DA0
 static int32_t Script_KBArticle_IsLoaded(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551DD0
 static int32_t Script_KBArticle_GetData(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551FB0
 static int32_t Script_KBSystem_GetMOTD(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551FD0
 static int32_t Script_KBSystem_GetServerStatus(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x551FF0
 static int32_t Script_KBSystem_GetServerNotice(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

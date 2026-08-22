@@ -2,42 +2,52 @@
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
 
+// OFFSET: 0x5997C0
 static int32_t Script_InitializeTabardColors(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5994C0
 static int32_t Script_Save(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x599500
 static int32_t Script_CycleVariation(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5991D0
 static int32_t Script_GetUpperBackgroundFileName(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x599240
 static int32_t Script_GetLowerBackgroundFileName(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5992B0
 static int32_t Script_GetUpperEmblemFileName(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x599320
 static int32_t Script_GetLowerEmblemFileName(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x599890
 static int32_t Script_GetUpperEmblemTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x599B20
 static int32_t Script_GetLowerEmblemTexture(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x598FA0
 static int32_t Script_CanSaveTabardNow(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

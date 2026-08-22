@@ -4,62 +4,77 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5AD070
 static int32_t Script_GetGMTicket(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD080
 static int32_t Script_NewGMTicket(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD0F0
 static int32_t Script_UpdateGMTicket(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD140
 static int32_t Script_DeleteGMTicket(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD150
 static int32_t Script_GMResponseNeedMoreHelp(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD1B0
 static int32_t Script_GMResponseResolve(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD1C0
 static int32_t Script_GetGMStatus(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AC750
 static int32_t Script_GMSurveyQuestion(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AC870
 static int32_t Script_GMSurveyNumAnswers(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AC7D0
 static int32_t Script_GMSurveyAnswer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AC390
 static int32_t Script_GMSurveyAnswerSubmit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AC480
 static int32_t Script_GMSurveyCommentSubmit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD230
 static int32_t Script_GMSurveySubmit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD020
 static int32_t Script_GMReportLag(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AC320
 static int32_t Script_RegisterStaticConstants(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

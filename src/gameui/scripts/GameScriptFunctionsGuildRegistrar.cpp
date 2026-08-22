@@ -4,22 +4,27 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x599F00
 static int32_t Script_CloseGuildRegistrar(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x599F40
 static int32_t Script_GetGuildCharterCost(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59A130
 static int32_t Script_BuyGuildCharter(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59A1C0
 static int32_t Script_TurnInGuildCharter(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x59A1F0
 static int32_t Script_GetTabardInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

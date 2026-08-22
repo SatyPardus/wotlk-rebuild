@@ -2,18 +2,22 @@
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
 
+// OFFSET: 0x5978E0
 static int32_t Script_SetUnit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x597960
 static int32_t Script_SetCreature(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x597B00
 static int32_t Script_RefreshUnit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x597A10
 static int32_t Script_SetRotation(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

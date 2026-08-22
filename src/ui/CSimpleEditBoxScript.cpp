@@ -4,126 +4,157 @@
 #include "util/Unimplemented.hpp"
 #include <cstdint>
 
+// OFFSET: 0x975310
 int32_t CSimpleEditBox_SetFontObject(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975370
 int32_t CSimpleEditBox_GetFontObject(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9753D0
 int32_t CSimpleEditBox_SetFont(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975430
 int32_t CSimpleEditBox_GetFont(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975490
 int32_t CSimpleEditBox_SetTextColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9754F0
 int32_t CSimpleEditBox_GetTextColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975550
 int32_t CSimpleEditBox_SetShadowColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9755B0
 int32_t CSimpleEditBox_GetShadowColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975610
 int32_t CSimpleEditBox_SetShadowOffset(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975670
 int32_t CSimpleEditBox_GetShadowOffset(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9756D0
 int32_t CSimpleEditBox_SetSpacing(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975730
 int32_t CSimpleEditBox_GetSpacing(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975790
 int32_t CSimpleEditBox_SetJustifyH(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9757F0
 int32_t CSimpleEditBox_GetJustifyH(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975850
 int32_t CSimpleEditBox_SetJustifyV(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9758B0
 int32_t CSimpleEditBox_GetJustifyV(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975910
 int32_t CSimpleEditBox_SetIndentedWordWrap(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975970
 int32_t CSimpleEditBox_GetIndentedWordWrap(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9759D0
 int32_t CSimpleEditBox_SetAutoFocus(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975A20
 int32_t CSimpleEditBox_IsAutoFocus(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975A80
 int32_t CSimpleEditBox_SetCountInvisibleLetters(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975AD0
 int32_t CSimpleEditBox_IsCountInvisibleLetters(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975B30
 int32_t CSimpleEditBox_SetMultiLine(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975B80
 int32_t CSimpleEditBox_IsMultiLine(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975BE0
 int32_t CSimpleEditBox_SetNumeric(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975C30
 int32_t CSimpleEditBox_IsNumeric(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975C90
 int32_t CSimpleEditBox_SetPassword(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975CE0
 int32_t CSimpleEditBox_IsPassword(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975D40
 int32_t CSimpleEditBox_SetBlinkSpeed(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975DC0
 int32_t CSimpleEditBox_GetBlinkSpeed(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x975E10
 int32_t CSimpleEditBox_Insert(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
@@ -142,6 +173,7 @@ int32_t CSimpleEditBox_SetText(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x975F10
 int32_t CSimpleEditBox_GetText(lua_State* L) {
     int32_t type = CSimpleEditBox::GetObjectType();
     CSimpleEditBox* editBox = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
@@ -157,14 +189,17 @@ int32_t CSimpleEditBox_GetText(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x975F80
 int32_t CSimpleEditBox_SetNumber(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976010
 int32_t CSimpleEditBox_GetNumber(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976080
 int32_t CSimpleEditBox_HighlightText(lua_State* L) {
     int32_t type = CSimpleEditBox::GetObjectType();
     CSimpleEditBox* editBox = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
@@ -179,22 +214,27 @@ int32_t CSimpleEditBox_HighlightText(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x976110
 int32_t CSimpleEditBox_AddHistoryLine(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9761A0
 int32_t CSimpleEditBox_ClearHistory(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9761E0
 int32_t CSimpleEditBox_SetTextInsets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976330
 int32_t CSimpleEditBox_GetTextInsets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976410
 int32_t CSimpleEditBox_SetFocus(lua_State* L) {
     int32_t type = CSimpleEditBox::GetObjectType();
     auto object = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
@@ -203,6 +243,7 @@ int32_t CSimpleEditBox_SetFocus(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x976450
 int32_t CSimpleEditBox_ClearFocus(lua_State* L) {
     int32_t type = CSimpleEditBox::GetObjectType();
     auto object = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
@@ -211,66 +252,82 @@ int32_t CSimpleEditBox_ClearFocus(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x976490
 int32_t CSimpleEditBox_HasFocus(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9764E0
 int32_t CSimpleEditBox_SetMaxBytes(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976580
 int32_t CSimpleEditBox_GetMaxBytes(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9765D0
 int32_t CSimpleEditBox_SetMaxLetters(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976650
 int32_t CSimpleEditBox_GetMaxLetters(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9766A0
 int32_t CSimpleEditBox_GetNumLetters(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976720
 int32_t CSimpleEditBox_GetHistoryLines(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976770
 int32_t CSimpleEditBox_SetHistoryLines(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976800
 int32_t CSimpleEditBox_GetInputLanguage(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976850
 int32_t CSimpleEditBox_ToggleInputLanguage(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976890
 int32_t CSimpleEditBox_SetAltArrowKeyMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9768E0
 int32_t CSimpleEditBox_GetAltArrowKeyMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976940
 int32_t CSimpleEditBox_IsInIMECompositionMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x9769A0
 int32_t CSimpleEditBox_SetCursorPosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976A20
 int32_t CSimpleEditBox_GetCursorPosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x976A70
 int32_t CSimpleEditBox_GetUTF8CursorPosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

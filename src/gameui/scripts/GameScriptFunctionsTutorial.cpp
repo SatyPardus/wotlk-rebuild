@@ -4,34 +4,42 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x530700
 static int32_t Script_CanResetTutorials(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x530750
 static int32_t Script_FlagTutorial(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5307A0
 static int32_t Script_IsTutorialFlagged(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5308D0
 static int32_t Script_TriggerTutorial(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x530820
 static int32_t Script_ClearTutorials(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x530830
 static int32_t Script_ResetTutorials(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5301D0
 static int32_t Script_GetNextCompleatedTutorial(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x530240
 static int32_t Script_GetPrevCompleatedTutorial(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

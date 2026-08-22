@@ -14,14 +14,17 @@
 #include <limits>
 
 
+// OFFSET: 0x49E5B0
 int32_t CSimpleFrame_GetTitleRegion(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E630
 int32_t CSimpleFrame_CreateTitleRegion(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A2010
 int32_t CSimpleFrame_CreateTexture(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -76,10 +79,12 @@ int32_t CSimpleFrame_CreateTexture(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x4A2240
 int32_t CSimpleFrame_CreateFontString(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E700
 int32_t CSimpleFrame_GetBoundsRect(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -116,30 +121,37 @@ int32_t CSimpleFrame_GetBoundsRect(lua_State* L) {
     return 4;
 }
 
+// OFFSET: 0x4A1E80
 int32_t CSimpleFrame_GetNumRegions(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1F10
 int32_t CSimpleFrame_GetRegions(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A2490
 int32_t CSimpleFrame_GetNumChildren(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A2510
 int32_t CSimpleFrame_GetChildren(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E830
 int32_t CSimpleFrame_GetFrameStrata(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E880
 int32_t CSimpleFrame_SetFrameStrata(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49E980
 int32_t CSimpleFrame_GetFrameLevel(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -149,6 +161,7 @@ int32_t CSimpleFrame_GetFrameLevel(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49E9D0
 int32_t CSimpleFrame_SetFrameLevel(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -175,10 +188,12 @@ int32_t CSimpleFrame_SetFrameLevel(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49EAB0
 int32_t CSimpleFrame_HasScript(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49EB70
 int32_t CSimpleFrame_GetScript(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -205,6 +220,7 @@ int32_t CSimpleFrame_GetScript(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49EC80
 int32_t CSimpleFrame_SetScript(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -231,10 +247,12 @@ int32_t CSimpleFrame_SetScript(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49EDB0
 int32_t CSimpleFrame_HookScript(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49EFE0
 int32_t CSimpleFrame_RegisterEvent(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -250,6 +268,7 @@ int32_t CSimpleFrame_RegisterEvent(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49F060
 int32_t CSimpleFrame_UnregisterEvent(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -261,26 +280,32 @@ int32_t CSimpleFrame_UnregisterEvent(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49F0E0
 int32_t CSimpleFrame_RegisterAllEvents(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F120
 int32_t CSimpleFrame_UnregisterAllEvents(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F160
 int32_t CSimpleFrame_IsEventRegistered(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F210
 int32_t CSimpleFrame_AllowAttributeChanges(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F260
 int32_t CSimpleFrame_CanChangeAttributes(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F2D0
 int32_t CSimpleFrame_GetAttribute(lua_State* L) {
     auto type = CSimpleFrame::GetObjectType();
     auto frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -345,6 +370,7 @@ int32_t CSimpleFrame_GetAttribute(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49F610
 int32_t CSimpleFrame_SetAttribute(lua_State* L) {
     auto type = CSimpleFrame::GetObjectType();
     auto frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -373,14 +399,17 @@ int32_t CSimpleFrame_SetAttribute(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49F790
 int32_t CSimpleFrame_GetEffectiveScale(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F7D0
 int32_t CSimpleFrame_GetScale(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F820
 int32_t CSimpleFrame_SetScale(lua_State* L) {
     auto type = CSimpleFrame::GetObjectType();
     auto frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -403,14 +432,17 @@ int32_t CSimpleFrame_SetScale(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49F900
 int32_t CSimpleFrame_GetEffectiveAlpha(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F980
 int32_t CSimpleFrame_GetAlpha(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49F9E0
 int32_t CSimpleFrame_SetAlpha(lua_State* L) {
     auto type = CSimpleFrame::GetObjectType();
     auto frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -426,6 +458,7 @@ int32_t CSimpleFrame_SetAlpha(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49FAB0
 int32_t CSimpleFrame_GetID(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -435,6 +468,7 @@ int32_t CSimpleFrame_GetID(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49FB00
 int32_t CSimpleFrame_SetID(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -455,22 +489,27 @@ int32_t CSimpleFrame_SetID(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49FBB0
 int32_t CSimpleFrame_SetToplevel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49FC30
 int32_t CSimpleFrame_IsToplevel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49FC90
 int32_t CSimpleFrame_EnableDrawLayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49FD00
 int32_t CSimpleFrame_DisableDrawLayer(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49FD70
 int32_t CSimpleFrame_Show(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -485,6 +524,7 @@ int32_t CSimpleFrame_Show(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49FDD0
 int32_t CSimpleFrame_Hide(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -499,6 +539,7 @@ int32_t CSimpleFrame_Hide(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49FE30
 int32_t CSimpleFrame_IsVisible(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -512,6 +553,7 @@ int32_t CSimpleFrame_IsVisible(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49FE90
 int32_t CSimpleFrame_IsShown(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -525,6 +567,7 @@ int32_t CSimpleFrame_IsShown(lua_State* L) {
     return 1;
 }
 
+// OFFSET: 0x49FEF0
 int32_t CSimpleFrame_Raise(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -541,98 +584,122 @@ int32_t CSimpleFrame_Raise(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x49FF50
 int32_t CSimpleFrame_Lower(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x49FFB0
 int32_t CSimpleFrame_GetHitRectInsets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0090
 int32_t CSimpleFrame_SetHitRectInsets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0230
 int32_t CSimpleFrame_GetClampRectInsets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0310
 int32_t CSimpleFrame_SetClampRectInsets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0480
 int32_t CSimpleFrame_GetMinResize(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0520
 int32_t CSimpleFrame_SetMinResize(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0640
 int32_t CSimpleFrame_GetMaxResize(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A06E0
 int32_t CSimpleFrame_SetMaxResize(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0800
 int32_t CSimpleFrame_SetMovable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0850
 int32_t CSimpleFrame_IsMovable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A08C0
 int32_t CSimpleFrame_SetDontSavePosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0910
 int32_t CSimpleFrame_GetDontSavePosition(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0980
 int32_t CSimpleFrame_SetResizable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A09D0
 int32_t CSimpleFrame_IsResizable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0A40
 int32_t CSimpleFrame_StartMoving(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0B10
 int32_t CSimpleFrame_StartSizing(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0C20
 int32_t CSimpleFrame_StopMovingOrSizing(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0C70
 int32_t CSimpleFrame_SetUserPlaced(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0D00
 int32_t CSimpleFrame_IsUserPlaced(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0D70
 int32_t CSimpleFrame_SetClampedToScreen(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0DC0
 int32_t CSimpleFrame_IsClampedToScreen(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0E20
 int32_t CSimpleFrame_RegisterForDrag(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0EC0
 int32_t CSimpleFrame_EnableKeyboard(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -653,46 +720,57 @@ int32_t CSimpleFrame_EnableKeyboard(lua_State* L) {
     }
 }
 
+// OFFSET: 0x4A0F60
 int32_t CSimpleFrame_IsKeyboardEnabled(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A0FD0
 int32_t CSimpleFrame_EnableMouse(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1060
 int32_t CSimpleFrame_IsMouseEnabled(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A10D0
 int32_t CSimpleFrame_EnableMouseWheel(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1160
 int32_t CSimpleFrame_IsMouseWheelEnabled(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A11D0
 int32_t CSimpleFrame_EnableJoystick(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1260
 int32_t CSimpleFrame_IsJoystickEnabled(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A12D0
 int32_t CSimpleFrame_GetBackdrop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A15A0
 int32_t CSimpleFrame_SetBackdrop(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A19A0
 int32_t CSimpleFrame_GetBackdropColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1A80
 int32_t CSimpleFrame_SetBackdropColor(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     auto object = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -707,10 +785,12 @@ int32_t CSimpleFrame_SetBackdropColor(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4A1AF0
 int32_t CSimpleFrame_GetBackdropBorderColor(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1BD0
 int32_t CSimpleFrame_SetBackdropBorderColor(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     auto object = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
@@ -725,22 +805,27 @@ int32_t CSimpleFrame_SetBackdropBorderColor(lua_State* L) {
     return 0;
 }
 
+// OFFSET: 0x4A1C40
 int32_t CSimpleFrame_SetDepth(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1CC0
 int32_t CSimpleFrame_GetDepth(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1D20
 int32_t CSimpleFrame_GetEffectiveDepth(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1D80
 int32_t CSimpleFrame_IgnoreDepth(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x4A1E00
 int32_t CSimpleFrame_IsIgnoringDepth(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

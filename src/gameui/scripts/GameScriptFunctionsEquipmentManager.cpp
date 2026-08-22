@@ -4,70 +4,87 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5AF9C0
 static int32_t Script_SaveEquipmentSet(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AE800
 static int32_t Script_DeleteEquipmentSet(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AF910
 static int32_t Script_RenameEquipmentSet(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD770
 static int32_t Script_EquipmentManagerIgnoreSlotForSave(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD7C0
 static int32_t Script_EquipmentManagerIsSlotIgnoredForSave(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD820
 static int32_t Script_EquipmentManagerClearIgnoredSlotsForSave(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD830
 static int32_t Script_EquipmentManagerUnignoreSlotForSave(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AE860
 static int32_t Script_GetEquipmentSetLocations(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AEF90
 static int32_t Script_GetEquipmentSetItemIDs(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AF0D0
 static int32_t Script_GetNumEquipmentSets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AF120
 static int32_t Script_GetEquipmentSetInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AF1D0
 static int32_t Script_GetEquipmentSetInfoByName(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AF320
 static int32_t Script_EquipmentSetContainsLockedItems(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AF250
 static int32_t Script_PickupEquipmentSetByName(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AF2C0
 static int32_t Script_PickupEquipmentSet(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AF380
 static int32_t Script_UseEquipmentSet(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5AD880
 static int32_t Script_CanUseEquipmentSets(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

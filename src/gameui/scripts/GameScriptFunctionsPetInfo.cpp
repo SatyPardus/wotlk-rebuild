@@ -4,126 +4,157 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5D3720
 static int32_t Script_PetHasActionBar(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D4EC0
 static int32_t Script_GetPetActionInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5280
 static int32_t Script_GetPetActionCooldown(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D53C0
 static int32_t Script_GetPetActionsUsable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5400
 static int32_t Script_GetPetActionSlotUsable(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3160
 static int32_t Script_IsPetAttackActive(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D65C0
 static int32_t Script_PickupPetAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D66F0
 static int32_t Script_TogglePetAutocast(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D67B0
 static int32_t Script_CastPetAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D54C0
 static int32_t Script_PetPassiveMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D54F0
 static int32_t Script_PetDefensiveMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5520
 static int32_t Script_PetAggressiveMode(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5550
 static int32_t Script_PetWait(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5580
 static int32_t Script_PetFollow(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D55B0
 static int32_t Script_PetAttack(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5640
 static int32_t Script_PetStopAttack(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5650
 static int32_t Script_PetAbandon(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5660
 static int32_t Script_PetDismiss(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5670
 static int32_t Script_PetRename(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3780
 static int32_t Script_PetCanBeAbandoned(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3820
 static int32_t Script_PetCanBeDismissed(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D38C0
 static int32_t Script_PetCanBeRenamed(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3180
 static int32_t Script_GetPetTimeRemaining(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3960
 static int32_t Script_HasPetUI(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3A20
 static int32_t Script_GetPetExperience(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3B00
 static int32_t Script_GetPetHappiness(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3BD0
 static int32_t Script_GetPetFoodTypes(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3CE0
 static int32_t Script_GetPetIcon(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D3D80
 static int32_t Script_GetPetTalentTree(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5820
 static int32_t Script_GetPossessInfo(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x5D5A10
 static int32_t Script_IsPetAttackAction(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

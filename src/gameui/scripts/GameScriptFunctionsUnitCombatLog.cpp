@@ -4,46 +4,57 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x74FA60
 static int32_t Script_CombatLogResetFilter(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74FF70
 static int32_t Script_CombatLogAddFilter(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74D5B0
 static int32_t Script_CombatLogSetRetentionTime(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74D9E0
 static int32_t Script_CombatLogGetRetentionTime(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74FA70
 static int32_t Script_CombatLogGetNumEntries(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74FAE0
 static int32_t Script_CombatLogSetCurrentEntry(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74F2B0
 static int32_t Script_CombatLogGetCurrentEntry(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74FC20
 static int32_t Script_CombatLogAdvanceEntry(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x751120
 static int32_t Script_CombatLogClearEntries(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74D600
 static int32_t Script_CombatLog_Object_IsA(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x74D580
 static int32_t Script_CombatTextSetActiveUnit(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

@@ -4,6 +4,7 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x5761F0
 static int32_t Script_PlayDance(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }

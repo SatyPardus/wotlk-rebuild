@@ -4,10 +4,12 @@
 #include "util/Unimplemented.hpp"
 
 
+// OFFSET: 0x57B3A0
 static int32_t Script_GetAutoCompleteResults(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
 
+// OFFSET: 0x57B500
 static int32_t Script_GetAutoCompletePresenceID(lua_State* L) {
     WHOA_UNIMPLEMENTED(0);
 }
