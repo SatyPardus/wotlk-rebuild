@@ -11,6 +11,7 @@
 #include <common/DataMgr.hpp>
 #include <common/ObjectAlloc.hpp>
 #include <tempest/Math.hpp>
+#include "model/M2Internal.hpp"
 
 uint32_t CM2Model::s_loadingSequence = 0xFFFFFFFF;
 uint8_t* CM2Model::s_sequenceBase;
@@ -76,7 +77,81 @@ uint16_t CM2Model::Sub8260C0(M2Data* data, uint32_t sequenceId, int32_t a3) {
 }
 
 CM2Model::~CM2Model() {
+    if (this->model30) {
+        this->model30->Release();
+    }
+    //this->CancelAllDeferredSequences();
+    this->UnlinkFromCallbackList();
+    //ukn17 = this->ukn17;
+    //if (ukn17)
+    //    *ukn17 = this->ukn18;
+    //ukn18 = this->ukn18;
+    //if (ukn18)
+    //    *(ukn18 + 64) = this->ukn17;
+    //ukn27 = this->ukn27;
+    //if (ukn27)
+    //    *ukn27 = this->ukn28;
+    //ukn28 = this->ukn28;
+    //if (ukn28)
+    //    *(ukn28 + 104) = this->ukn27;
+    //ukn191 = this->ukn191;
+    //if (ukn191)
+    //    *ukn191 = this->ukn192;
+    //ukn192 = this->ukn192;
+    //if (ukn192)
+    //    *(ukn192 + 712) = this->ukn191;
+    //ukn195 = this->ukn195;
+    //if (ukn195)
+    //    *ukn195 = this->ukn196;
+    //ukn196 = this->ukn196;
+    //if (ukn196)
+    //    *(ukn196 + 728) = this->ukn195;
+    this->DetachFromScene();
+    if (this->m_shared) {
+        //this->FreeExternalResources();
+        //this->FreeInternalResources();
+        this->m_shared->Release();
+        this->m_shared = nullptr;
+    }
+    while (this->m_attachList) {
+        auto attachList = this->m_attachList;
+        auto attachPrev = attachList->m_attachPrev;
+        if (attachPrev)
+            *attachPrev = attachList->m_attachNext;
+        auto attachNext = attachList->m_attachNext;
+        if (attachNext)
+            attachNext->m_attachPrev = attachList->m_attachPrev;
+        attachList->f_flags &= ~0x40000u;
+        attachList->m_refCount--;
+        attachList->m_attachPrev = 0;
+        attachList->m_attachNext = 0;
+        attachList->m_attachParent = 0;
+        //attachList->ukn21 = -1;
+        //attachList->ukn74.a1 = 0.0;
+        if (attachList->m_refCount == 0) {
+            attachList->~CM2Model();
+            ObjectFree(*g_modelPool, attachList->m_handle);
+        }
+    }
+    if (this->m_attachPrev) {
+        *this->m_attachPrev = this->m_attachNext;
+    }
 
+    if (this->m_attachNext) {
+        this->m_attachNext->m_attachPrev = this->m_attachPrev;
+    }
+    while (this->m_modelCallList) {
+        CM2ModelCall* call = this->m_modelCallList;
+        this->m_modelCallList = call->modelCallNext;
+        //if (!call->type && call->args[1])
+        //    HandleClose(call->args[1]);
+        delete call;
+    }
+    this->UnoptimizeVisibleGeometry();
+    SMemAlignedFree(this->m_boneMatrices);
+    SMemAlignedFree(this->m_textureMatrices);
+    this->m_attachParent = nullptr;
+    //this->unk183 = 0;
 }
 
 void CM2Model::Animate() {
@@ -741,7 +816,36 @@ void CM2Model::CancelDeferredSequences(uint32_t boneIndex, bool a3) {
 }
 
 void CM2Model::DetachFromScene() {
-    // TODO
+    if (this->m_scenePrev) {
+        *this->m_scenePrev = this->m_sceneNext;
+    }
+
+    if (this->m_sceneNext) {
+        this->m_sceneNext->m_scenePrev = this->m_scenePrev;
+    }
+
+    this->m_scenePrev = nullptr;
+    this->m_sceneNext = nullptr;
+    if ((this->f_flags & 1) == 0) {
+        for (CM2ModelCall* i = this->m_modelCallList; i; i = i->modelCallNext) {
+            i->time -= this->m_scene->m_time;
+        }
+        this->m_scene = nullptr;
+        return;
+    }
+
+    if (!this->m_shared->m_data->lights.Count()) {
+        this->m_scene = nullptr;
+        return;
+    }
+
+    for (int32_t i = 0; i < this->m_shared->m_data->lights.Count(); i++) {
+        CM2Light* light = &this->m_lights[i].light;
+        light->Unlink();
+        light->m_scene = nullptr;
+    }
+
+    this->m_scene = nullptr;
 }
 
 void CM2Model::DetachFromParent() {
@@ -759,9 +863,10 @@ void CM2Model::DetachFromParent() {
     this->m_attachParent = nullptr;
     this->m_attachmentId = static_cast<uint32_t>(-1);
     // this->dword174 = 0;
-    if (--this->m_refCount == 0) {
-        this->~CM2Model();
-        // TODO: ObjectFree
+    this->m_refCount--;
+    if (this->m_refCount == 0) {
+        delete this;
+        ObjectFree(*g_modelPool, this->m_handle);
     }
 }
 
@@ -1116,7 +1221,7 @@ int32_t CM2Model::InitializeLoaded() {
 
     if (this->m_shared->m_data->textureTransforms.Count()) {
         this->m_textureTransforms = reinterpret_cast<M2ModelTextureTransform*>(&data[0]);
-        data += (sizeof(M2ModelTextureTransform) * this->m_shared->m_data->textureWeights.Count());
+        data += (sizeof(M2ModelTextureTransform) * this->m_shared->m_data->textureTransforms.Count());
 
         for (int32_t i = 0; i < this->m_shared->m_data->textureTransforms.Count(); i++) {
             new (&this->m_textureTransforms[i]) M2ModelTextureTransform();
@@ -1414,8 +1519,14 @@ void CM2Model::ProcessCallbacksRecursive() {
     this->Release();
 }
 
+// OFFSET: 0x824ED0
 void CM2Model::Release() {
-    // TODO
+    this->m_refCount--;
+    if (this->m_refCount == 0) {
+        uint32_t handle = this->m_handle;
+        this->~CM2Model();
+        ObjectFree(*g_modelPool, handle);
+    }
 }
 
 void CM2Model::SetAnimating(int32_t animating) {

@@ -27,6 +27,7 @@ class CM2Scene {
         static int32_t SortTransparent(uint32_t a, uint32_t b, const void* userArg);
 
         // Member variables
+        int32_t m_refCount;
         CM2Cache* m_cache;
         CM2Model* m_modelList = nullptr;
         uint32_t m_time = 0;
@@ -52,6 +53,7 @@ class CM2Scene {
         CM2Model* CreateModel(const char* file, uint32_t a3);
         int32_t Draw(M2PASS pass);
         void SelectLights(CM2Lighting* lighting);
+        void Release();
 };
 
 #endif

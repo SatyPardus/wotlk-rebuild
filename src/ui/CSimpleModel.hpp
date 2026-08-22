@@ -55,6 +55,7 @@ class CSimpleModel : public CSimpleFrame {
 
         // Member functions
         CSimpleModel(CSimpleFrame* parent);
+        ~CSimpleModel();
         CM2Scene* GetScene();
         void SetCamera(HCAMERA camera);
         void SetCameraByID(uint32_t id);

@@ -212,8 +212,9 @@ CCharacterComponent* CCharacterComponent::AllocComponent() {
 }
 
 void CCharacterComponent::FreeComponent(CCharacterComponent* component) {
+    uint32_t handle = component->m_heapIndex;
     component->~CCharacterComponent();
-    // TODO: ObjectFree()
+    ObjectFree(*CCharacterComponent::s_heap, handle);
 }
 
 void CCharacterComponent::ValidateComponentData(ComponentData* data, COMPONENT_CONTEXT context) {
@@ -243,6 +244,45 @@ CCharacterComponent::CCharacterComponent() {
 }
 
 CCharacterComponent::~CCharacterComponent() {
+    if (this->m_request) {
+        //*m_request &= ~1u;
+        this->m_request = nullptr;
+    }
+    if (this->m_baseSkinTexture) {
+        CGxTex* gxTex = TextureGetGxTex(this->m_baseSkinTexture, 1, 0);
+        //GxTexSetCannotUpdate(gxTex);
+        HandleClose(this->m_baseSkinTexture);
+        this->m_baseSkinTexture = nullptr;
+    }
+    if (this->m_data.m_model) {
+        this->m_data.m_model->Release();
+        this->m_data.m_model = nullptr;
+    }
+    this->m_link.Unlink();
+    //m_itemDisplayID = this->m_itemDisplayID;
+    //v17 = 9;
+    //while (1) {
+    //    m_itemDisplayID -= 15;
+    //    do {
+    //        if (m_itemDisplayID[v3])
+    //            TextureCacheDestroyTexture(m_itemDisplayID[v3]);
+    //        m_itemDisplayID[v3] = 0;
+    //        m_itemDisplayID[v3++ + 7] = 0;
+    //    } while (v3 < 7);
+    //    if (--v17 < 0)
+    //        break;
+    //    v3 = 0;
+    //}
+    //m_section = this->m_section;
+    //for (i = 4; i >= 0; --i) {
+    //    m_section = (m_section - 12);
+    //    for (j = 0; j < 7; ++j) {
+    //        result = m_section->layerTex[j];
+    //        if (result)
+    //            result = TextureCacheDestroyTexture(m_section->layerTex[j]->gap0);
+    //        m_section->layerTex[j] = 0;
+    //    }
+    //}
 }
 
 void CCharacterComponent::SetRandomSkin(COMPONENT_CONTEXT context) {

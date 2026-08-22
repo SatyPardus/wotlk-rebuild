@@ -123,6 +123,7 @@ class CSimpleFrame : public CScriptRegion {
         virtual bool UpdateScale(bool a2);
         virtual void UpdateDepth(bool a2);
         virtual void ParentFrame(CSimpleFrame* frame);
+        virtual void UnparentFrame(CSimpleFrame* frame);
         virtual void OnFrameSizeChanged(const CRect& rect);
         virtual void SetParent(CSimpleFrame* parent);
 

@@ -657,16 +657,26 @@ void CSimpleTop::NotifyFrameMovedOrResized(CSimpleFrame* frame) {
 }
 
 int32_t CSimpleTop::RaiseFrame(CSimpleFrame* frame, int32_t checkOcclusion) {
-    while (frame && frame->m_flags & 0x01) {
+    if (!(frame->m_flags & 0x01)) {
         frame = frame->m_parent;
-    }
 
-    if (!frame) {
-        return 0;
+        if (!frame) {
+            return 0;
+        }
+
+        while (!(frame->m_flags & 0x01)) {
+            frame = frame->m_parent;
+
+            if (!frame) {
+                return 0;
+            }
+        }
     }
 
     if (checkOcclusion) {
-        if (!(static_cast<CLayoutFrame*>(frame)->m_flags & 0x01) || this->IsResizePending()) {
+        auto layout = static_cast<CLayoutFrame*>(frame);
+
+        if (!(layout->m_flags & 0x100) || layout->IsResizePending()) {
             frame->Resize(1);
         }
 

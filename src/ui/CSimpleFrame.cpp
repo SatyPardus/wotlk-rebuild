@@ -71,6 +71,13 @@ CSimpleFrame::~CSimpleFrame() {
 
     this->m_top->UnregisterFrame(this);
 
+    this->m_top = nullptr;
+    if (this->m_titleRegion)
+        delete this->m_titleRegion;
+
+    if (this->m_parent)
+        this->m_parent->UnparentFrame(this);
+
     // TODO
 }
 
@@ -1286,6 +1293,19 @@ void CSimpleFrame::ParentFrame(CSimpleFrame* frame) {
     node->frame = frame;
 }
 
+void CSimpleFrame::UnparentFrame(CSimpleFrame* frame) {
+    auto node = this->m_children.Head();
+
+    while (node) {
+        if (node->frame == frame) {
+            this->m_children.DeleteNode(node);
+            return;
+        }
+
+        node = this->m_children.Link(node)->Next();
+    }
+}
+
 void CSimpleFrame::PostLoadXML_Frames(XMLNode *node, CStatus* status) {
     // Call this function with all inherited nodes
 
@@ -1499,9 +1519,8 @@ void CSimpleFrame::SetParent(CSimpleFrame* parent) {
     }
 
     if (this->m_parent) {
-        // TODO
-        // this->OnProtectedDetach(this->m_parent);
-        // (this->m_parent->vfptr + 56)(this);
+        this->OnProtectedDetach(this->m_parent);
+        this->m_parent->UnparentFrame(this);
     }
 
     if (this->m_visible) {

@@ -135,6 +135,18 @@ CSimpleModel::CSimpleModel(CSimpleFrame* parent) : CSimpleFrame(parent) {
     this->m_fogColor = { 0xFF, 0xFF, 0xFF, 0xFF };
 }
 
+CSimpleModel::~CSimpleModel() {
+    if (this->m_camera)
+        HandleClose(this->m_camera);
+    if (this->m_model)
+        this->m_model->Release();
+    if (this->m_scene)
+        this->m_scene->Release();
+    //UnregisterFrameEvent(&this->m_onAnimFinished.luaRef);
+    //UnregisterFrameEvent(&this->m_onUpdateModel.luaRef);
+    this->m_light.Unlink();
+}
+
 CM2Scene* CSimpleModel::GetScene() {
     if (!this->m_scene) {
         this->m_scene = M2CreateScene();

@@ -87,6 +87,7 @@ class CLayoutFrame {
         float Left();
         int32_t OnFrameResize();
         void OnProtectedAttach(CLayoutFrame* frame);
+        void OnProtectedDetach(CLayoutFrame* frame);
         int32_t PtInFrameRect(const C2Vector& pt);
         void RegisterResize(CLayoutFrame* frame, uint32_t dep);
         void Resize(int32_t force);

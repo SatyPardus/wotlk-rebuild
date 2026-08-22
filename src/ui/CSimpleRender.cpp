@@ -138,9 +138,9 @@ void CSimpleRender::DrawBatch(CRenderBatch* batch) {
             CGxBatch batch;
             batch.m_primType = GxPrim_Triangles;
             batch.m_start = 0;
-            batch.m_count = 6;
+            batch.m_count = idxCount;
             batch.m_minIndex = 0;
-            batch.m_maxIndex = 3;
+            batch.m_maxIndex = posCount ? posCount - 1 : 0;
 
             GxDraw(&batch, 1);
         }

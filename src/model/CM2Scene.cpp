@@ -718,3 +718,11 @@ void CM2Scene::SelectLights(CM2Lighting* lighting) {
 
     // TODO
 }
+
+// OFFSET: 0x823040
+void CM2Scene::Release() {
+    this->m_refCount--;
+    if (this->m_refCount <= 0) {
+        delete this;
+    }
+}

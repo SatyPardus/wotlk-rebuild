@@ -13,7 +13,7 @@ int32_t SortByTexture(const void* a, const void* b) {
     auto meshB = reinterpret_cast<const CSimpleBatchedMesh*>(b);
 
     if (meshA->textureID != meshB->textureID) {
-        return meshA->textureID - meshB->textureID;
+        return meshA->textureID < meshB->textureID ? -1 : 1;
     }
 
     if (meshA->alphaMode != meshB->alphaMode) {
@@ -27,7 +27,7 @@ int32_t SortByTexture(const void* a, const void* b) {
     }
 
     if (meshA->shader != meshB->shader) {
-        return meshA->shader - meshB->shader;
+        return meshA->shader < meshB->shader ? -1 : 1;
     }
 
     return 0;

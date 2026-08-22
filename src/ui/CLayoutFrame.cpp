@@ -630,6 +630,11 @@ void CLayoutFrame::OnProtectedAttach(CLayoutFrame* frame) {
     }
 }
 
+void CLayoutFrame::OnProtectedDetach(CLayoutFrame* frame) {
+    if ((this->m_layoutFlags & 0x70000) != 0)
+        frame->SetProtectFlag(0x400);
+}
+
 int32_t CLayoutFrame::PtInFrameRect(const C2Vector& pt) {
     // TODO
     return 0;
