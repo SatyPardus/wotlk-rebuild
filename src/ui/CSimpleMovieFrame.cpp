@@ -384,8 +384,7 @@ void CSimpleMovieFrame::StopMovie() {
 
 int32_t CSimpleMovieFrame::ParseAVIFile(const char* filename) {
     char path[STORM_MAX_PATH];
-    // WARNING(workaround): Remove "Data/enGB/" substring
-    SStrPrintf(path, STORM_MAX_PATH, "Data/enGB/%s.avi", filename);
+    SStrPrintf(path, STORM_MAX_PATH, "Data/enUS/%s.avi", filename);
 
     SFile* videoFile = nullptr;
     if (!SFile::OpenEx(nullptr, path, 1, &videoFile)) {

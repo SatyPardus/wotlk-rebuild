@@ -149,3 +149,21 @@ add_subdirectory(lib)
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(vendor)
+
+# Movie decoder module
+#
+# Built by default when a vendored xvidcore is present, since the shipped
+# DivxDecoder.dll is 32-bit only and cannot be loaded by a 64-bit client.
+
+file(GLOB WHOA_XVIDCORE_VENDOR_DIRS "${CMAKE_SOURCE_DIR}/vendor/libxvidcore-*")
+if (WHOA_XVIDCORE_VENDOR_DIRS)
+    set(WHOA_BUILD_XVID_DECODER_DEFAULT 1)
+else ()
+    set(WHOA_BUILD_XVID_DECODER_DEFAULT 0)
+endif ()
+unset(WHOA_XVIDCORE_VENDOR_DIRS)
+
+option(WHOA_BUILD_XVID_DECODER "Disable/Enable building XvidDecoder, a movie decoder module implementing Blizzard's DivxDecoder ABI on top of a statically linked xvidcore. See tools/xviddecoder/README.md." ${WHOA_BUILD_XVID_DECODER_DEFAULT})
+if (WHOA_BUILD_XVID_DECODER)
+    add_subdirectory(tools/xviddecoder)
+endif ()
