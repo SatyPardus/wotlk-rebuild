@@ -349,7 +349,7 @@ int32_t CScriptRegion_SetSize(lua_State* L) {
     float ndcHeight = height / (CoordinateGetAspectCompensation() * 1024.0f);
     float ddcHeight = NDCToDDCWidth(ndcHeight);
 
-    region->SetSize(width, height);
+    region->SetSize(ddcWidth, ddcHeight);
 
     return 0;
 }
