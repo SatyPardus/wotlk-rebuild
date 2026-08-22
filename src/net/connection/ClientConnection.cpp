@@ -69,7 +69,7 @@ void ClientConnection::CharacterCreate(const CHARACTER_CREATE_INFO* info) {
     this->Initiate(COP_CREATE_CHARACTER, 46, nullptr);
     if (this->m_connected) {
         CDataStore msg;
-        msg.Put(static_cast<uint32_t>(CMSG_CREATE_CHARACTER));
+        msg.Put(static_cast<uint32_t>(CMSG_CHAR_CREATE));
         msg.PutString(info->name);
         msg.Put(info->raceID);
         msg.Put(info->classID);

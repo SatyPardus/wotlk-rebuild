@@ -19,17 +19,17 @@ int32_t RealmConnection::MessageHandler(void* param, NETMESSAGE msgId, uint32_t 
         break;
     }
 
-    case SMSG_CREATE_CHAR: {
+    case SMSG_CHAR_CREATE: {
         result = connection->HandleCharacterCreate(msgId, time, msg);
         break;
     }
 
-    case SMSG_ENUM_CHARACTERS_RESULT: {
+    case SMSG_CHAR_ENUM: {
         result = connection->HandleCharEnum(msgId, time, msg);
         break;
     }
 
-    case SMSG_DELETE_CHAR: {
+    case SMSG_CHAR_DELETE: {
         result = connection->HandleCharacterDelete(msgId, time, msg);
         break;
     }
@@ -90,14 +90,14 @@ RealmConnection::RealmConnection(RealmResponse* realmResponse) {
     this->SetMessageHandler(SMSG_AUTH_CHALLENGE, &RealmConnection::MessageHandler, this);
     this->SetMessageHandler(SMSG_AUTH_RESPONSE, &RealmConnection::MessageHandler, this);
     this->SetMessageHandler(SMSG_ADDON_INFO, &RealmConnection::MessageHandler, this);
-    this->SetMessageHandler(SMSG_ENUM_CHARACTERS_RESULT, &RealmConnection::MessageHandler, this);
-    this->SetMessageHandler(SMSG_CREATE_CHAR, &RealmConnection::MessageHandler, this);
+    this->SetMessageHandler(SMSG_CHAR_ENUM, &RealmConnection::MessageHandler, this);
+    this->SetMessageHandler(SMSG_CHAR_CREATE, &RealmConnection::MessageHandler, this);
     this->SetMessageHandler(SMSG_CHARACTER_LOGIN_FAILED, &RealmConnection::MessageHandler, this);
     this->SetMessageHandler(SMSG_LOGOUT_COMPLETE, &RealmConnection::MessageHandler, this);
     this->SetMessageHandler(SMSG_LOGOUT_CANCEL_ACK, &RealmConnection::MessageHandler, this);
     this->SetMessageHandler(SMSG_LOGOUT_RESPONSE, &RealmConnection::MessageHandler, this);
-    this->SetMessageHandler(SMSG_DELETE_CHAR, &RealmConnection::MessageHandler, this);
-    this->SetMessageHandler(SMSG_CACHE_VERSION, &RealmConnection::MessageHandler, this);
+    this->SetMessageHandler(SMSG_CHAR_DELETE, &RealmConnection::MessageHandler, this);
+    this->SetMessageHandler(SMSG_CLIENTCACHE_VERSION, &RealmConnection::MessageHandler, this);
 
     RealmConnection::s_AllRealmConnectionsCrit.Enter();
     auto node = RealmConnection::s_AllRealmConnections.NewNode(2, 0, 0x0);
@@ -292,7 +292,7 @@ void RealmConnection::SetSelectedRealm(uint32_t a2, uint32_t a3, uint32_t a4) {
 
 void RealmConnection::RequestCharacterEnum() {
     CDataStore msg;
-    msg.Put(static_cast<uint32_t>(CMSG_ENUM_CHARACTERS));
+    msg.Put(static_cast<uint32_t>(CMSG_CHAR_ENUM));
     msg.Finalize();
     this->Send(&msg);
 }

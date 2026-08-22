@@ -1112,7 +1112,7 @@ void CGlueMgr::Suspend() {
     // TODO
 
     FrameXML_FreeHashNodes();
-    ClientServices::ClearMessageHandler(SMSG_CHARACTER_RENAME_RESULT);
+    ClientServices::ClearMessageHandler(SMSG_CHAR_RENAME);
     ClientServices::ClearMessageHandler(SMSG_SET_PLAYER_DECLINED_NAMES_RESULT);
     ClientServices::ClearMessageHandler(SMSG_CHAR_CUSTOMIZE);
     ClientServices::ClearMessageHandler(SMSG_REALM_SPLIT);
