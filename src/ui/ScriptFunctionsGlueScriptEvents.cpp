@@ -48,13 +48,15 @@ int32_t Script_GetLocale(lua_State* L) {
 }
 
 int32_t Script_GetSavedAccountName(lua_State* L) {
-    // TODO
-    lua_pushstring(L, "");
+    lua_pushstring(L, Client::g_accountNameVar->GetString());
     return 1;
 }
 
 int32_t Script_SetSavedAccountName(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1))
+        luaL_error(L, "Usage: SetSavedAccountName(\"accountName\")");
+    Client::g_accountNameVar->Set(lua_tolstring(L, 1, 0), 1, 0, 0, 1);
+    return 0;
 }
 
 int32_t Script_GetUsesToken(lua_State* L) {
