@@ -67,6 +67,8 @@ void TextureCacheNewTexture(CTexture*, CGxTexFlags);
 
 void TextureCacheNewTexture(CTexture*, const CImVector&);
 
+HTEXTURE TextureCreate(const char*, CStatus*);
+
 HTEXTURE TextureCreate(const char*, CGxTexFlags, CStatus*, int32_t);
 
 HTEXTURE TextureCreate(uint32_t, uint32_t, EGxTexFormat, EGxTexFormat, CGxTexFlags, void*, void (*)(EGxTexCommand, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint32_t&, const void*&), const char*, int32_t);

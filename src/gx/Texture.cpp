@@ -1014,6 +1014,14 @@ void TextureCacheNewTexture(CTexture* texture, const CImVector& color) {
     // TODO
 }
 
+HTEXTURE TextureCreate(const char* fileName, CStatus* status) {
+    STORM_ASSERT(fileName);
+    STORM_ASSERT(*fileName);
+
+    CGxTexFlags flags = CGxTexFlags(GxTex_LinearMipNearest, 0, 0, 0, 0, 0, 1);
+    return TextureCreate(fileName, flags, status, 0);
+}
+
 HTEXTURE TextureCreate(const char* fileName, CGxTexFlags texFlags, CStatus* status, int32_t createFlags) {
     STORM_ASSERT(fileName);
     STORM_ASSERT(*fileName);

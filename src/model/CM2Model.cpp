@@ -1323,9 +1323,9 @@ int32_t CM2Model::InitializeLoaded() {
 
             case 1: {
                 this->SetGeometryVisible(
-                    modelCall->args[0],
-                    modelCall->args[1],
-                    modelCall->args[2]);
+                    *reinterpret_cast<uint32_t*>(modelCall->args[0]),
+                    *reinterpret_cast<uint32_t*>(modelCall->args[1]),
+                    *reinterpret_cast<uint32_t*>(modelCall->args[2]));
                 break;
             }
 
@@ -1346,13 +1346,13 @@ int32_t CM2Model::InitializeLoaded() {
 
             case 5: {
                 this->SetBoneSequence(
-                    modelCall->args[0],
-                    modelCall->args[1],
-                    modelCall->args[2],
-                    modelCall->args[3],
+                    *reinterpret_cast<uint32_t*>(modelCall->args[0]),
+                    *reinterpret_cast<uint32_t*>(modelCall->args[1]),
+                    *reinterpret_cast<uint32_t*>(modelCall->args[2]),
+                    *reinterpret_cast<uint32_t*>(modelCall->args[3]),
                     *reinterpret_cast<float*>(&modelCall->args[4]),
-                    modelCall->args[5],
-                    modelCall->args[6]
+                    *reinterpret_cast<uint32_t*>(modelCall->args[5]),
+                    *reinterpret_cast<uint32_t*>(modelCall->args[6])
                 );
 
                 break;
@@ -1407,7 +1407,7 @@ int32_t CM2Model::InitializeLoaded() {
         this->m_modelCallList = modelCall->modelCallNext;
 
         if (modelCall->type == 0) {
-            HTEXTURE texture = reinterpret_cast<HTEXTURE>(&modelCall->args[1]);
+            HTEXTURE texture = *reinterpret_cast<HTEXTURE*>(&modelCall->args[1]);
 
             if (texture) {
                 HandleClose(texture);
@@ -1573,13 +1573,13 @@ void CM2Model::SetBoneSequence(uint32_t boneId, uint32_t sequenceId, uint32_t a4
         modelCall->type = 5;
         modelCall->modelCallNext = nullptr;
         modelCall->time = this->m_scene->m_time;
-        modelCall->args[0] = boneId;
-        modelCall->args[1] = sequenceId;
-        modelCall->args[2] = a4;
-        modelCall->args[3] = time;
+        modelCall->args[0] = &boneId;
+        modelCall->args[1] = &sequenceId;
+        modelCall->args[2] = &a4;
+        modelCall->args[3] = &time;
         *reinterpret_cast<float*>(&modelCall->args[4]) = a6;
-        modelCall->args[5] = a7;
-        modelCall->args[6] = a8;
+        modelCall->args[5] = &a7;
+        modelCall->args[6] = &a8;
 
         *this->m_modelCallTail = modelCall;
         this->m_modelCallTail = &modelCall->modelCallNext;
@@ -1989,11 +1989,52 @@ void CM2Model::SetGeometryVisible(uint32_t start, uint32_t end, int32_t visible)
         modelCall->type = 1;
         modelCall->modelCallNext = nullptr;
         modelCall->time = this->m_scene->m_time;
-        modelCall->args[0] = start;
-        modelCall->args[1] = end;
-        modelCall->args[2] = static_cast<uint32_t>(visible);
+        modelCall->args[0] = &start;
+        modelCall->args[1] = &end;
+        modelCall->args[2] = &visible;
 
         *this->m_modelCallTail = modelCall;
         this->m_modelCallTail = &modelCall->modelCallNext;
     }
+}
+
+void CM2Model::ReplaceTexture(uint32_t textureId, HTEXTURE texture) {
+    if ((this->f_flags & 0x1) == 0) {
+        auto call = new (STORM_ALLOC(sizeof(CM2ModelCall))) CM2ModelCall();
+        if (!call)
+            return;
+
+        call->type = 0;
+        call->modelCallNext = nullptr;
+        call->time = this->m_scene->m_time;
+        call->args[0] = &textureId;
+        call->args[1] = texture ? HandleDuplicate(texture) : nullptr;
+
+        *this->m_modelCallTail = call;
+        this->m_modelCallTail = &call->modelCallNext;
+        return;
+    }
+
+    auto data = this->m_shared->m_data;
+
+    for (uint32_t i = 0; i < data->textures.count; i++) {
+        if (data->textures[i].textureId != textureId)
+            continue;
+
+        if (this->m_textures[i])
+            HandleClose(this->m_textures[i]);
+
+        if (!texture) {
+            this->m_textures[i] = 0;
+            continue;
+        }
+
+        this->m_textures[i] = HandleDuplicate(texture);
+        if (!TextureGetGxTex(this->m_textures[i], 0, nullptr))
+            this->f_flags &= ~0x2u;
+    }
+
+    // TODO ribbon and particle stuff
+
+    this->f_flags &= ~0x10u;
 }

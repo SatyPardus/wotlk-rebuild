@@ -148,12 +148,24 @@ void BuildComponentArray(uint32_t numRaceSexPairs, st_race** out) {
     *out = lookup;
 }
 
+// OFFSET: 0x4F41B0
+void CountFacialFeatures(uint32_t numRaceSexPairs, uint32_t** out) {
+    uint32_t* lookup = reinterpret_cast<uint32_t*>(SMemAlloc(numRaceSexPairs * sizeof(uint32_t), __FILE__, __LINE__, 0x8));
+
+    for (uint32_t i = 0; i < g_characterFacialHairStylesDB.GetNumRecords(); i++) {
+        auto rec = g_characterFacialHairStylesDB.GetRecordByIndex(i);
+        lookup[rec->m_raceID * 2 + rec->m_sexID]++;
+    }
+    
+    *out = lookup;
+}
+
 // OFFSET: 0x4F3BA0
-CharSectionsRec* ComponentGetSectionsRecord(st_race* lookup, uint32_t raceId, uint32_t genderId, uint32_t variation, uint32_t variationIndex, uint32_t colorIndex, bool* found) {
+CharSectionsRec* ComponentGetSectionsRecord(st_race* lookup, uint32_t raceId, uint32_t genderId, COMPONENT_VARIATIONS variation, uint32_t variationIndex, uint32_t colorIndex, bool* found) {
     if (found)
         *found = false;
 
-    if (variation > 4)
+    if (variation >= NUM_COMPONENT_VARIATIONS)
         return nullptr;
 
     auto v7 = &lookup[2 * raceId + genderId].m_variation[variation];
@@ -171,8 +183,8 @@ CharSectionsRec* ComponentGetSectionsRecord(st_race* lookup, uint32_t raceId, ui
 }
 
 // OFFSET: 0x4F3B50
-bool ComponentValidateBase(st_race* lookup, uint32_t raceId, uint32_t genderId, uint32_t variation, uint32_t variationIndex, uint32_t colorIndex) {
-    if (variation > 4)
+bool ComponentValidateBase(st_race* lookup, uint32_t raceId, uint32_t genderId, COMPONENT_VARIATIONS variation, uint32_t variationIndex, uint32_t colorIndex) {
+    if (variation >= NUM_COMPONENT_VARIATIONS)
         return false;
 
     auto v7 = &lookup[2 * raceId + genderId].m_variation[variation];
@@ -204,7 +216,7 @@ uint32_t GetConditionalGeoset(CHARACTER_PREFERENCES* preferences) {
 CharacterFacialHairStylesRec* GetConditionalFacialHairStyle(CHARACTER_PREFERENCES* preferences) {
     for (uint32_t i = 0; i < g_characterFacialHairStylesDB.GetNumRecords(); i++) {
         auto rec = g_characterFacialHairStylesDB.GetRecordByIndex(i);
-        if (preferences->raceID == rec->m_raceID && preferences->sexID == rec->m_sexID && preferences->hairStyleID == rec->m_variationID) {
+        if (preferences->raceID == rec->m_raceID && preferences->sexID == rec->m_sexID && preferences->facialHairStyleID == rec->m_variationID) {
             return rec;
         }
     }
@@ -224,9 +236,23 @@ uint32_t GetSelectionFromContext(COMPONENT_CONTEXT context, uint32_t a2) {
     return a2 == 6 ? 1 : 0;
 }
 
+COMPONENT_CONTEXT GetContextFromSelection(uint32_t selection) {
+    switch (selection) {
+    case 2:
+    case 3:
+        return CONTEXT_1;
+    case 4:
+        return CONTEXT_2;
+    case 5:
+    case 6:
+        return CONTEXT_3;
+    }
+    return CONTEXT_CHAR_CREATE;
+}
+
 // OFFSET: 0x4F3B10
-uint32_t ComponentGetNumColors(st_race* lookup, uint32_t raceId, uint32_t genderId, uint32_t variation, uint32_t variationIndex) {
-    if (variation > 4)
+uint32_t ComponentGetNumColors(st_race* lookup, uint32_t raceId, uint32_t genderId, COMPONENT_VARIATIONS variation, uint32_t variationIndex) {
+    if (variation >= NUM_COMPONENT_VARIATIONS)
         return 0;
 
     auto v7 = &lookup[2 * raceId + genderId].m_variation[variation];
@@ -273,13 +299,13 @@ bool ComponentFlagsMatch(uint32_t flags, uint32_t selection) {
 
 // OFFSET: 0x4E7E90
 int32_t ComponentGetSkinColor(uint32_t raceId, uint32_t sexId, uint32_t index, uint32_t selection) {
-    uint32_t numColors = ComponentGetNumColors(CCharacterComponent::s_chrVarArray, raceId, sexId, 0, 0);
+    uint32_t numColors = ComponentGetNumColors(CCharacterComponent::s_chrVarArray, raceId, sexId, VARIATION_SKIN, 0);
     if (!numColors)
         return -1;
 
     uint32_t match = 0;
     for (uint32_t i = 0; i < numColors; i++) {
-        auto rec = ComponentGetSectionsRecord(CCharacterComponent::s_chrVarArray, raceId, sexId, 0, 0, i, nullptr);
+        auto rec = ComponentGetSectionsRecord(CCharacterComponent::s_chrVarArray, raceId, sexId, VARIATION_SKIN, 0, i, nullptr);
         if (!rec || !ComponentFlagsMatch(rec->m_flags, selection))
             continue;
         if (match == index)
@@ -290,8 +316,8 @@ int32_t ComponentGetSkinColor(uint32_t raceId, uint32_t sexId, uint32_t index, u
 }
 
 // OFFSET: 0x4F3AE0
-uint32_t ComponentGetNumVariations(st_race* lookup, uint32_t raceId, uint32_t genderId, uint32_t variation) {
-    if (variation > 4)
+uint32_t ComponentGetNumVariations(st_race* lookup, uint32_t raceId, uint32_t genderId, COMPONENT_VARIATIONS variation) {
+    if (variation >= NUM_COMPONENT_VARIATIONS)
         return 0;
 
     auto v7 = &lookup[2 * raceId + genderId].m_variation[variation];
@@ -303,14 +329,50 @@ uint32_t ComponentGetNumVariations(st_race* lookup, uint32_t raceId, uint32_t ge
 }
 
 // OFFSET: 0x4E7F20
-uint32_t ComponentGetHairVariation(uint32_t raceId, uint32_t sexId, uint32_t colorId, uint32_t index, uint32_t selection) {
-    uint32_t numVariations = ComponentGetNumVariations(CCharacterComponent::s_chrVarArray, raceId, sexId, 3);
+int32_t ComponentGetHairVariation(uint32_t raceId, uint32_t sexId, uint32_t colorId, uint32_t index, uint32_t selection) {
+    uint32_t numVariations = ComponentGetNumVariations(CCharacterComponent::s_chrVarArray, raceId, sexId, VARIATION_HAIR);
     if (!numVariations)
         return -1;
 
     uint32_t match = 0;
     for (uint32_t i = 0; i < numVariations; i++) {
-        auto rec = ComponentGetSectionsRecord(CCharacterComponent::s_chrVarArray, raceId, sexId, 3, i, colorId, nullptr);
+        auto rec = ComponentGetSectionsRecord(CCharacterComponent::s_chrVarArray, raceId, sexId, VARIATION_HAIR, i, colorId, nullptr);
+        if (!rec || !ComponentFlagsMatch(rec->m_flags, selection))
+            continue;
+        if (match == index)
+            return rec->m_variationIndex;
+        match++;
+    }
+    return -1;
+}
+
+// OFFSET: 0x4E7FB0
+int32_t ComponentGetHairColor(uint32_t raceId, uint32_t sexId, uint32_t variationIndex, uint32_t index, uint32_t selection) {
+    uint32_t numColors = ComponentGetNumColors(CCharacterComponent::s_chrVarArray, raceId, sexId, VARIATION_HAIR, 0);
+    if (!numColors)
+        return -1;
+
+    uint32_t match = 0;
+    for (uint32_t i = 0; i < numColors; i++) {
+        auto rec = ComponentGetSectionsRecord(CCharacterComponent::s_chrVarArray, raceId, sexId, VARIATION_HAIR, variationIndex, i, nullptr);
+        if (!rec || !ComponentFlagsMatch(rec->m_flags, selection))
+            continue;
+        if (match == index)
+            return rec->m_colorIndex;
+        match++;
+    }
+    return -1;
+}
+
+// OFFSET: 0x4E8050
+int32_t ComponentGetFaceVariation(uint32_t raceId, uint32_t sexId, uint32_t colorId, uint32_t index, uint32_t selection) {
+    uint32_t numVariations = ComponentGetNumVariations(CCharacterComponent::s_chrVarArray, raceId, sexId, VARIATION_FACE);
+    if (!numVariations)
+        return -1;
+
+    uint32_t match = 0;
+    for (uint32_t i = 0; i < numVariations; i++) {
+        auto rec = ComponentGetSectionsRecord(CCharacterComponent::s_chrVarArray, raceId, sexId, VARIATION_FACE, i, colorId, nullptr);
         if (!rec || !ComponentFlagsMatch(rec->m_flags, selection))
             continue;
         if (match == index)

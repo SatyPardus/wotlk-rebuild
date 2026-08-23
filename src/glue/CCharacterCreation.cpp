@@ -8,6 +8,7 @@
 #include "clientobject/Player_C.hpp"
 #include "client/ClientServices.hpp"
 #include "db/Db.hpp"
+#include "tempest/Random.hpp"
 
 int32_t CCharacterCreation::m_selectedClassID;
 int32_t CCharacterCreation::m_existingCharacterIndex;
@@ -154,11 +155,20 @@ void CCharacterCreation::ResetCharCustomizeInfo() {
     CCharacterCreation::Sub4E6AE0(CCharacterCreation::m_character, 1);
 }
 
+// OFFSET: 0x4DFF10
 void CCharacterCreation::GetRandomRaceAndSex(ComponentData* data) {
-    // TODO
-    // WORKAROUND
-    data->m_preferences.sexID = 0;
-    data->m_preferences.raceID = 1;
+    data->m_preferences.sexID = CRandom::dice(2, g_rndSeed);
+    data->m_preferences.raceID = 0;
+
+    ChrRacesRec* raceRec = nullptr;
+    uint32_t raceId = 0;
+    do {
+        if (CCharacterCreation::m_races.Count()) {
+            data->m_preferences.raceID = CCharacterCreation::m_races[CRandom::dice(CCharacterCreation::m_races.Count(), g_rndSeed)];
+        }
+
+        raceRec = g_chrRacesDB.GetRecord(data->m_preferences.raceID);
+    } while (raceRec->m_requiredExpansion > ClientServices::GetInstance()->GetExpansionLevel());
 }
 
 void CCharacterCreation::CalcClasses(uint32_t raceID) {
@@ -242,11 +252,11 @@ void CCharacterCreation::InitCharacterComponent(ComponentData* data, int32_t ran
 }
 
 void CCharacterCreation::RandomizeCharFeatures() {
-    CCharacterCreation::m_character->SetRandomSkin();
-    CCharacterCreation::m_character->SetRandomHairColor();
-    CCharacterCreation::m_character->SetRandomHairStyle();
-    CCharacterCreation::m_character->SetRandomFace();
-    CCharacterCreation::m_character->SetRandomFacialFeature();
+    CCharacterCreation::m_character->SetRandomSkin(CONTEXT_CHAR_CREATE);
+    CCharacterCreation::m_character->SetRandomHairColor(CONTEXT_CHAR_CREATE);
+    CCharacterCreation::m_character->SetRandomHairStyle(CONTEXT_CHAR_CREATE);
+    CCharacterCreation::m_character->SetRandomFace(CONTEXT_CHAR_CREATE);
+    CCharacterCreation::m_character->SetRandomFacialFeature(CONTEXT_CHAR_CREATE);
 
     const auto& info = CCharacterCreation::m_character->m_data.m_preferences;
     CCharacterCreation::m_prevSkinIndex = info.skinID;
@@ -309,7 +319,7 @@ void CCharacterCreation::SetSelectedRace(int32_t raceIndex) {
             CCharacterCreation::m_selectedClassID = CCharacterCreation::GetRandomClassID();
         }
         data.m_preferences.classID = CCharacterCreation::m_selectedClassID;
-        CCharacterComponent::ValidateComponentData(&data);
+        CCharacterComponent::ValidateComponentData(&data, CONTEXT_CHAR_CREATE);
         CCharacterCreation::InitCharacterComponent(&data, 0);
     } else {
         data.m_preferences.sexID = sexID;
@@ -378,7 +388,7 @@ void CCharacterCreation::SetSelectedSex(int32_t sexID) {
     if (preferences) {
         data.m_preferences = *preferences;
         data.m_preferences.classID = CCharacterCreation::m_selectedClassID;
-        CCharacterComponent::ValidateComponentData(&data);
+        CCharacterComponent::ValidateComponentData(&data, CONTEXT_CHAR_CREATE);
         CCharacterCreation::InitCharacterComponent(&data, 0);
     } else {
         data.m_preferences.raceID = CCharacterCreation::m_character->m_data.m_preferences.raceID;
@@ -400,7 +410,7 @@ void CCharacterCreation::SetSelectedClass(int32_t classID) {
     ComponentData data;
     data.m_preferences = CCharacterCreation::m_character->m_data.m_preferences;
     data.m_preferences.classID = classID;
-    CCharacterComponent::ValidateComponentData(&data);
+    CCharacterComponent::ValidateComponentData(&data, CONTEXT_CHAR_CREATE);
     CCharacterCreation::InitCharacterComponent(&data, 0);
     CCharacterCreation::Dress();
 
@@ -411,33 +421,33 @@ void CCharacterCreation::CycleCharCustomization(CHAR_CUSTOMIZATION_TYPE customiz
     switch (customization) {
     case CHAR_CUSTOMIZATION_SKIN:
         if (delta <= 0)
-            CCharacterCreation::m_character->SetPrevSkin(DEFAULT_CONTEXT);
+            CCharacterCreation::m_character->SetPrevSkin(CONTEXT_CHAR_CREATE);
         else
-            CCharacterCreation::m_character->SetNextSkin(DEFAULT_CONTEXT);
+            CCharacterCreation::m_character->SetNextSkin(CONTEXT_CHAR_CREATE);
         break;
     case CHAR_CUSTOMIZATION_FACE:
         if (delta <= 0)
-            CCharacterCreation::m_character->SetPrevFace(DEFAULT_CONTEXT, CCharacterCreation::m_prevSkinIndex);
+            CCharacterCreation::m_character->SetPrevFace(CONTEXT_CHAR_CREATE, CCharacterCreation::m_prevSkinIndex);
         else
-            CCharacterCreation::m_character->SetNextFace(DEFAULT_CONTEXT, CCharacterCreation::m_prevSkinIndex);
+            CCharacterCreation::m_character->SetNextFace(CONTEXT_CHAR_CREATE, CCharacterCreation::m_prevSkinIndex);
         break;
     case CHAR_CUSTOMIZATION_HAIR_STYLE:
         if (delta <= 0)
-            CCharacterCreation::m_character->SetPrevHairStyle(DEFAULT_CONTEXT);
+            CCharacterCreation::m_character->SetPrevHairStyle(CONTEXT_CHAR_CREATE);
         else
-            CCharacterCreation::m_character->SetNextHairStyle(DEFAULT_CONTEXT);
+            CCharacterCreation::m_character->SetNextHairStyle(CONTEXT_CHAR_CREATE);
         break;
     case CHAR_CUSTOMIZATION_HAIR_COLOR:
         if (delta <= 0)
-            CCharacterCreation::m_character->SetPrevHairColor(DEFAULT_CONTEXT);
+            CCharacterCreation::m_character->SetPrevHairColor(CONTEXT_CHAR_CREATE);
         else
-            CCharacterCreation::m_character->SetNextHairColor(DEFAULT_CONTEXT);
+            CCharacterCreation::m_character->SetNextHairColor(CONTEXT_CHAR_CREATE);
         break;
     case CHAR_CUSTOMIZATION_FACIAL_FEATURE:
         if (delta <= 0)
-            CCharacterCreation::m_character->SetPrevFacialFeature(DEFAULT_CONTEXT);
+            CCharacterCreation::m_character->SetPrevFacialFeature(CONTEXT_CHAR_CREATE);
         else
-            CCharacterCreation::m_character->SetNextFacialFeature(DEFAULT_CONTEXT);
+            CCharacterCreation::m_character->SetNextFacialFeature(CONTEXT_CHAR_CREATE);
         break;
     }
     CCharacterCreation::Sub4E6AE0(CCharacterCreation::m_character, 1);
@@ -513,7 +523,7 @@ void CCharacterCreation::SetToExistingCharacter(uint32_t index) {
 void CCharacterCreation::Sub4E6AE0(CCharacterComponent* component, int32_t a2) {
     // This method can be an analogue of CGlueLoading::StartLoad
 
-    if (SFile::IsTrial) {
+    if (SFile::IsTrial()) {
         // TODO
         return;
     }

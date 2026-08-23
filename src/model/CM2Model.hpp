@@ -27,7 +27,7 @@ struct CM2ModelCall {
     uint32_t type = -1;
     CM2ModelCall* modelCallNext;
     uint32_t time;
-    uint32_t args[8];
+    void* args[8];
 };
 
 class CM2Model {
@@ -199,6 +199,7 @@ class CM2Model {
         void WaitForLoad(const char* a2);
         void UnoptimizeVisibleGeometry();
         void SetGeometryVisible(uint32_t start, uint32_t end, int32_t visible);
+        void ReplaceTexture(uint32_t textureId, HTEXTURE texture);
 };
 
 #endif
