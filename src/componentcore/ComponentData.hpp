@@ -16,8 +16,8 @@ class ComponentData {
 
     public:
     /* 0000 */ CHARACTER_PREFERENCES m_preferences;
-    /* 0020 */ CM2Model* m_model;
-    /* 0024 */ uint32_t m_flags;
+    /* 0020 */ CM2Model* m_model = nullptr;
+    /* 0024 */ uint32_t m_flags = 0;
     /* 0028 */ char m_npcSkinTexture[260];
     /* 012C */ uint32_t m_geosets[19];
 };

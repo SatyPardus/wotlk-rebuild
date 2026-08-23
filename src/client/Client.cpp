@@ -40,6 +40,7 @@
 #include <clientobject/ObjectMgrClient.hpp>
 #include <console/DebugScreen.hpp>
 #include <world/CWorldParam.hpp>
+#include <tempest/Random.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -605,8 +606,8 @@ int32_t InitializeGlobal() {
 
     // OsIMEInitialize();
 
-    // uint32_t v13 = OsGetAsyncTimeMs();
-    // g_rndSeed.SetSeed(v13);
+    uint32_t v13 = OsGetAsyncTimeMs();
+    g_rndSeed.SetSeed(v13);
 
     Client::g_clientEventContext = EventCreateContextEx(
         1,

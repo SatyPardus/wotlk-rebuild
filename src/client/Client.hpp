@@ -3,6 +3,7 @@
 
 #include "event/Event.hpp"
 #include "tempest/Vector.hpp"
+#include "tempest/Random.hpp"
 #include <cstdint>
 
 class CVar;

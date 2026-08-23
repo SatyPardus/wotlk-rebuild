@@ -296,8 +296,6 @@ int32_t Script_CycleCharCustomization(lua_State* L) {
         return luaL_error(L, "Usage: CycleCharCustomization(index, delta)");
     }
 
-    using CHAR_CUSTOMIZATION_TYPE = CCharacterCreation::CHAR_CUSTOMIZATION_TYPE;
-
     auto customization = static_cast<CHAR_CUSTOMIZATION_TYPE>(lua_tonumber(L, 1) - 1.0);
     int32_t delta = static_cast<int32_t>(lua_tonumber(L, 2));
 

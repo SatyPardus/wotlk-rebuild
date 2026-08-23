@@ -2,6 +2,7 @@
 #define GLUE_C_CHARACTER_CREATION_HPP
 
 #include "net/Types.hpp"
+#include "componentcore/Types.hpp"
 #include <storm/Array.hpp>
 
 class CSimpleModel;
@@ -13,15 +14,6 @@ class ChrClassesRec;
 
 
 class CCharacterCreation {
-    public:
-    enum CHAR_CUSTOMIZATION_TYPE {
-        CHAR_CUSTOMIZATION_SKIN           = 0,
-        CHAR_CUSTOMIZATION_FACE           = 1,
-        CHAR_CUSTOMIZATION_HAIR_STYLE     = 2,
-        CHAR_CUSTOMIZATION_HAIR_COLOR     = 3,
-        CHAR_CUSTOMIZATION_FACIAL_FEATURE = 4
-    };
-
     public:
     // Static variables
     static int32_t m_selectedClassID;

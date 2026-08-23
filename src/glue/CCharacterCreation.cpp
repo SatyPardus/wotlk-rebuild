@@ -408,7 +408,39 @@ void CCharacterCreation::SetSelectedClass(int32_t classID) {
 }
 
 void CCharacterCreation::CycleCharCustomization(CHAR_CUSTOMIZATION_TYPE customization, int32_t delta) {
-    // TODO
+    switch (customization) {
+    case CHAR_CUSTOMIZATION_SKIN:
+        if (delta <= 0)
+            CCharacterCreation::m_character->SetPrevSkin(DEFAULT_CONTEXT);
+        else
+            CCharacterCreation::m_character->SetNextSkin(DEFAULT_CONTEXT);
+        break;
+    case CHAR_CUSTOMIZATION_FACE:
+        if (delta <= 0)
+            CCharacterCreation::m_character->SetPrevFace(DEFAULT_CONTEXT, CCharacterCreation::m_prevSkinIndex);
+        else
+            CCharacterCreation::m_character->SetNextFace(DEFAULT_CONTEXT, CCharacterCreation::m_prevSkinIndex);
+        break;
+    case CHAR_CUSTOMIZATION_HAIR_STYLE:
+        if (delta <= 0)
+            CCharacterCreation::m_character->SetPrevHairStyle(DEFAULT_CONTEXT);
+        else
+            CCharacterCreation::m_character->SetNextHairStyle(DEFAULT_CONTEXT);
+        break;
+    case CHAR_CUSTOMIZATION_HAIR_COLOR:
+        if (delta <= 0)
+            CCharacterCreation::m_character->SetPrevHairColor(DEFAULT_CONTEXT);
+        else
+            CCharacterCreation::m_character->SetNextHairColor(DEFAULT_CONTEXT);
+        break;
+    case CHAR_CUSTOMIZATION_FACIAL_FEATURE:
+        if (delta <= 0)
+            CCharacterCreation::m_character->SetPrevFacialFeature(DEFAULT_CONTEXT);
+        else
+            CCharacterCreation::m_character->SetNextFacialFeature(DEFAULT_CONTEXT);
+        break;
+    }
+    CCharacterCreation::Sub4E6AE0(CCharacterCreation::m_character, 1);
 }
 
 void CCharacterCreation::RandomizeCharCustomization() {
