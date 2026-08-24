@@ -12,6 +12,7 @@
 #include <common/ObjectAlloc.hpp>
 #include <tempest/Math.hpp>
 #include "model/M2Internal.hpp"
+#include <db/StaticDb.hpp>
 
 uint32_t CM2Model::s_loadingSequence = 0xFFFFFFFF;
 uint8_t* CM2Model::s_sequenceBase;
@@ -33,7 +34,7 @@ CM2Model* CM2Model::AllocModel(uint32_t* heapId) {
     return nullptr;
 }
 
-bool CM2Model::Sub825E00(M2Data* data, uint32_t a2) {
+bool CM2Model::HasSequence(M2Data* data, uint32_t a2) {
     if (data->sequenceIdxHashById.Count() == 0) {
         for (int32_t i = 0; i < data->sequences.Count(); i++) {
             auto& sequence = data->sequences[i];
@@ -71,9 +72,70 @@ bool CM2Model::Sub825E00(M2Data* data, uint32_t a2) {
     }
 }
 
+// OFFSET: 0x8260C0
 uint16_t CM2Model::Sub8260C0(M2Data* data, uint32_t sequenceId, int32_t a3) {
-    // TODO
-    return -1;
+    uint32_t index = 0xFFFF;
+
+    uint32_t hashCount = data->sequenceIdxHashById.Count();
+
+    if (hashCount) {
+        uint32_t slot = sequenceId % hashCount;
+        uint16_t probe = data->sequenceIdxHashById[slot];
+
+        if (probe != 0xFFFF) {
+            if (data->sequences[probe].id == sequenceId) {
+                index = probe;
+            } else {
+                int32_t step = 1;
+
+                do {
+                    slot = (slot + step * step) % hashCount;
+                    probe = data->sequenceIdxHashById[slot];
+
+                    if (probe == 0xFFFF) {
+                        break;
+                    }
+
+                    step++;
+
+                    if (data->sequences[probe].id == sequenceId) {
+                        index = probe;
+                        break;
+                    }
+                } while (true);
+            }
+        }
+    } else {
+        for (uint32_t i = 0; i < data->sequences.Count(); i++) {
+            if (data->sequences[i].id == sequenceId) {
+                index = i;
+                break;
+            }
+        }
+    }
+
+    uint32_t count = data->sequences.Count();
+
+    if (index >= count) {
+        return 0xFFFF;
+    }
+
+    uint32_t cur = index;
+
+    while (a3) {
+        cur = data->sequences[cur].variationNext;
+        a3--;
+
+        if (cur >= count) {
+            break;
+        }
+    }
+
+    if (cur >= count || a3) {
+        return 0xFFFF;
+    }
+
+    return static_cast<uint16_t>(cur);
 }
 
 CM2Model::~CM2Model() {
@@ -143,8 +205,9 @@ CM2Model::~CM2Model() {
     while (this->m_modelCallList) {
         CM2ModelCall* call = this->m_modelCallList;
         this->m_modelCallList = call->modelCallNext;
-        //if (!call->type && call->args[1])
-        //    HandleClose(call->args[1]);
+        if (call->type == 0 && call->replaceTexture.texture) {
+            HandleClose(call->replaceTexture.texture);
+        }
         delete call;
     }
     this->UnoptimizeVisibleGeometry();
@@ -1317,15 +1380,17 @@ int32_t CM2Model::InitializeLoaded() {
 
         switch (modelCall->type) {
             case 0: {
-                // TODO
+                this->ReplaceTexture(
+                    modelCall->replaceTexture.textureId,
+                    modelCall->replaceTexture.texture);
                 break;
             }
 
             case 1: {
                 this->SetGeometryVisible(
-                    *reinterpret_cast<uint32_t*>(modelCall->args[0]),
-                    *reinterpret_cast<uint32_t*>(modelCall->args[1]),
-                    *reinterpret_cast<uint32_t*>(modelCall->args[2]));
+                    modelCall->setGeometryVisible.start,
+                    modelCall->setGeometryVisible.end,
+                    modelCall->setGeometryVisible.visible);
                 break;
             }
 
@@ -1346,15 +1411,13 @@ int32_t CM2Model::InitializeLoaded() {
 
             case 5: {
                 this->SetBoneSequence(
-                    *reinterpret_cast<uint32_t*>(modelCall->args[0]),
-                    *reinterpret_cast<uint32_t*>(modelCall->args[1]),
-                    *reinterpret_cast<uint32_t*>(modelCall->args[2]),
-                    *reinterpret_cast<uint32_t*>(modelCall->args[3]),
-                    *reinterpret_cast<float*>(&modelCall->args[4]),
-                    *reinterpret_cast<uint32_t*>(modelCall->args[5]),
-                    *reinterpret_cast<uint32_t*>(modelCall->args[6])
-                );
-
+                    modelCall->setBoneSequence.boneId,
+                    modelCall->setBoneSequence.sequenceId,
+                    modelCall->setBoneSequence.variationIndex,
+                    modelCall->setBoneSequence.time,
+                    modelCall->setBoneSequence.blendTime,
+                    modelCall->setBoneSequence.a7,
+                    modelCall->setBoneSequence.a8);
                 break;
             }
 
@@ -1406,12 +1469,8 @@ int32_t CM2Model::InitializeLoaded() {
 
         this->m_modelCallList = modelCall->modelCallNext;
 
-        if (modelCall->type == 0) {
-            HTEXTURE texture = *reinterpret_cast<HTEXTURE*>(&modelCall->args[1]);
-
-            if (texture) {
-                HandleClose(texture);
-            }
+        if (modelCall->type == 0 && modelCall->replaceTexture.texture) {
+            HandleClose(modelCall->replaceTexture.texture);
         }
 
         SMemFree(modelCall);
@@ -1573,13 +1632,14 @@ void CM2Model::SetBoneSequence(uint32_t boneId, uint32_t sequenceId, uint32_t a4
         modelCall->type = 5;
         modelCall->modelCallNext = nullptr;
         modelCall->time = this->m_scene->m_time;
-        modelCall->args[0] = &boneId;
-        modelCall->args[1] = &sequenceId;
-        modelCall->args[2] = &a4;
-        modelCall->args[3] = &time;
-        *reinterpret_cast<float*>(&modelCall->args[4]) = a6;
-        modelCall->args[5] = &a7;
-        modelCall->args[6] = &a8;
+
+        modelCall->setBoneSequence.boneId = boneId;
+        modelCall->setBoneSequence.sequenceId = sequenceId;
+        modelCall->setBoneSequence.variationIndex = a4;
+        modelCall->setBoneSequence.time = time;
+        modelCall->setBoneSequence.blendTime = a6;
+        modelCall->setBoneSequence.a7 = a7;
+        modelCall->setBoneSequence.a8 = a8;
 
         *this->m_modelCallTail = modelCall;
         this->m_modelCallTail = &modelCall->modelCallNext;
@@ -1605,7 +1665,7 @@ void CM2Model::SetBoneSequence(uint32_t boneId, uint32_t sequenceId, uint32_t a4
     }
 
     M2SequenceFallback fallback;
-    this->Sub826350(fallback, sequenceId);
+    this->SequenceFallbackById(fallback, sequenceId);
     int32_t v33 = a4 == -1;
 
     uint16_t v15 = CM2Model::Sub8260C0(this->m_shared->m_data, fallback.uint0, a4 != -1 ? a4 : 0);
@@ -1874,28 +1934,64 @@ void CM2Model::SetWorldTransform(const C3Vector& position, float orientation, fl
     this->m_flag8000 = 1;
 }
 
-void CM2Model::Sub826350(M2SequenceFallback& fallback, uint32_t sequenceId) {
+// OFFSET: 0x826350
+void CM2Model::SequenceFallbackById(M2SequenceFallback& fallback, uint32_t sequenceId) {
     auto data = this->m_shared->m_data;
 
-    int32_t v12;
-    if (CM2Model::Sub825E00(data, 0)) {
-        v12 = 0;
-    } else if (CM2Model::Sub825E00(data, 147)) {
-        v12 = 147;
+    uint32_t defaultId;
+    if (CM2Model::HasSequence(data, 0)) {
+        defaultId = 0;
+    } else if (CM2Model::HasSequence(data, 147)) {
+        defaultId = 147;
     } else {
-        v12 = data->sequences[0].id;
+        defaultId = data->sequences[0].id;
     }
 
-    uint32_t v10[506];
-    memset(v10, 0, sizeof(v10));
-
-    if (CM2Model::Sub825E00(data, sequenceId)) {
+    if (CM2Model::HasSequence(data, sequenceId)) {
         fallback.uint0 = sequenceId;
         fallback.uint2 = 0;
         return;
     }
 
-    // TODO
+    bool visited[506] = {};
+
+    uint32_t id = sequenceId;
+    int32_t direction = 1;
+    int32_t swaps = 0;
+
+    do {
+        auto rec = g_animationDataDB.GetRecord(id);
+
+        if (id >= 506 || visited[id] || !rec || id == static_cast<uint32_t>(rec->m_fallback)) {
+            fallback.uint0 = defaultId;
+            fallback.uint2 = 0;
+            return;
+        }
+
+        visited[id] = true;
+
+        int32_t flags = rec->m_flags;
+        id = rec->m_fallback;
+
+        if (flags & 0x10) {
+            swaps += direction;
+            direction = -direction;
+        }
+
+        if (flags & 0x20) { 
+            swaps += direction;
+            direction = 0;
+        }
+    } while (!CM2Model::HasSequence(data, id));
+
+    if (direction > 0) {
+        fallback.uint0 = id;
+        fallback.uint2 = 0;
+        return;
+    }
+
+    fallback.uint0 = id;
+    fallback.uint2 = (direction == 0) ? ((swaps > 0) ? 3 : 2) : 1;
 }
 
 int32_t CM2Model::Sub8269C0(uint32_t boneId, uint16_t boneIndex) {
@@ -1989,9 +2085,10 @@ void CM2Model::SetGeometryVisible(uint32_t start, uint32_t end, int32_t visible)
         modelCall->type = 1;
         modelCall->modelCallNext = nullptr;
         modelCall->time = this->m_scene->m_time;
-        modelCall->args[0] = &start;
-        modelCall->args[1] = &end;
-        modelCall->args[2] = &visible;
+
+        modelCall->setGeometryVisible.start = start;
+        modelCall->setGeometryVisible.end = end;
+        modelCall->setGeometryVisible.visible = visible;
 
         *this->m_modelCallTail = modelCall;
         this->m_modelCallTail = &modelCall->modelCallNext;
@@ -2007,8 +2104,9 @@ void CM2Model::ReplaceTexture(uint32_t textureId, HTEXTURE texture) {
         call->type = 0;
         call->modelCallNext = nullptr;
         call->time = this->m_scene->m_time;
-        call->args[0] = &textureId;
-        call->args[1] = texture ? HandleDuplicate(texture) : nullptr;
+
+        call->replaceTexture.textureId = textureId;
+        call->replaceTexture.texture = texture ? HandleDuplicate(texture) : nullptr;
 
         *this->m_modelCallTail = call;
         this->m_modelCallTail = &call->modelCallNext;

@@ -27,7 +27,32 @@ struct CM2ModelCall {
     uint32_t type = -1;
     CM2ModelCall* modelCallNext;
     uint32_t time;
-    void* args[8];
+
+    union {
+        // type 0 -- ReplaceTexture (0x8253A6)
+        struct {
+            uint32_t textureId;
+            HTEXTURE texture;
+        } replaceTexture;
+
+        // type 1 -- SetGeometryVisible (0x82C860)
+        struct {
+            uint32_t start;
+            uint32_t end;
+            int32_t visible;
+        } setGeometryVisible;
+
+        // type 5 -- SetBoneSequence (0x832AFB)
+        struct {
+            uint32_t boneId;
+            uint32_t sequenceId;
+            uint32_t variationIndex;
+            uint32_t time;
+            float blendTime;
+            int32_t a7;
+            int32_t a8;
+        } setBoneSequence;
+    };
 };
 
 class CM2Model {
@@ -40,7 +65,7 @@ class CM2Model {
 
         // Static functions
         static CM2Model* AllocModel(uint32_t* heapId);
-        static bool Sub825E00(M2Data* data, uint32_t a2);
+        static bool HasSequence(M2Data* data, uint32_t a2);
         static uint16_t Sub8260C0(M2Data* data, uint32_t sequenceId, int32_t a3);
 
         // Member variables
@@ -190,7 +215,7 @@ class CM2Model {
         void SetupLighting();
         void SetVisible(int32_t visible);
         void SetWorldTransform(const C3Vector& position, float orientation, float scale);
-        void Sub826350(M2SequenceFallback& fallback, uint32_t sequenceId);
+        void SequenceFallbackById(M2SequenceFallback& fallback, uint32_t sequenceId);
         int32_t Sub8269C0(uint32_t boneId, uint16_t boneIndex);
         void Sub826E60(uint32_t* a2, uint32_t* a3);
         void UnlinkFromCallbackList();
