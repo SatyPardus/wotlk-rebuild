@@ -1146,6 +1146,35 @@ HTEXTURE TextureCreateSolid(const CImVector& color) {
     return textureHandle;
 }
 
+// OFFSET: 0x4B5600
+uint32_t TextureDiscoverFileType(const char* fileName) {
+    auto LastChar = SStrChrR(fileName, '.');
+    if (!LastChar || SStrLen(LastChar) != 4)
+        return 0;
+    if (SStrCmpI(LastChar, ".TGA", 0x7FFFFFFFu))
+        return SStrCmpI(LastChar, ".BLP", 0x7FFFFFFFu) != 0 ? 0 : 2;
+    return 1;
+}
+
+// OFFSET: 0x4B5670
+uint32_t TexturePickAlternateFilename(const char* fileName, uint32_t fileType, char* out, uint32_t size) {
+    if (fileName != out)
+        SStrCopy(out, fileName, size);
+    if (!fileType)
+        return 0;
+    auto LastChar = SStrChrR(out, '.');
+    if (LastChar)
+        *LastChar = 0;
+    if (fileType == 1) {
+        SStrPack(out, ".BLP", size);
+        return 2;
+    } else if (fileType == 2) {
+        SStrPack(out, ".TGA", size);
+        return 1;
+    }
+    return fileType;
+}
+
 int32_t TextureGetDimensions(CTexture* texture, uint32_t* width, uint32_t* height, int32_t force) {
     if (texture->asyncObject) {
         if (!force) {

@@ -45,6 +45,8 @@ bool GxTexReusable(CGxTexParms&);
 
 void GxTexSetWrap(CGxTex* texId, EGxTexWrapMode wrapU, EGxTexWrapMode wrapV);
 
+MipBits* TextureAllocMippedImg(PIXEL_FORMAT format, uint32_t width, uint32_t height);
+
 void GxTexUpdate(CGxTex*, int32_t, int32_t, int32_t, int32_t, int32_t);
 
 void GxTexUpdate(CGxTex*, CiRect&, int32_t);
@@ -77,6 +79,10 @@ HTEXTURE TextureCreate(EGxTexTarget, uint32_t, uint32_t, uint32_t, EGxTexFormat,
 
 HTEXTURE TextureCreateSolid(const CImVector&);
 
+uint32_t TextureDiscoverFileType(const char* fileName);
+
+uint32_t TexturePickAlternateFilename(const char* fileName, uint32_t fileType, char* out, uint32_t size);
+
 int32_t TextureGetDimensions(HTEXTURE, uint32_t*, uint32_t*, int32_t);
 
 void TextureIncreasePriority(CTexture*);
@@ -88,6 +94,8 @@ void AsyncTextureHandler();
 int32_t AsyncTextureStatus();
 
 int32_t TextureIsSame(HTEXTURE textureHandle, const char* fileName);
+
+int32_t TextureCalcMipCount(uint32_t width, uint32_t height);
 
 MipBits* TextureLoadImage(const char* filename, uint32_t* width, uint32_t* height, PIXEL_FORMAT* dataFormat, int32_t* isOpaque, CStatus* status, uint32_t* alphaBits, int32_t a8);
 
