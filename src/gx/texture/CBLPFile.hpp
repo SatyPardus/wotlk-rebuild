@@ -29,31 +29,31 @@ struct BlpPalPixel {
 
 static_assert(sizeof(BlpPalPixel) == 4);
 
-class CBLPFile {
 #pragma pack(push, 1)
-    struct BLPHeader {
-        uint32_t magic = 0x32504C42;
-        uint32_t formatVersion = 1;
-        uint8_t colorEncoding;
-        uint8_t alphaSize;
-        uint8_t preferredFormat = 2;
-        uint8_t hasMips;
-        uint32_t width;
-        uint32_t height;
-        uint32_t mipOffsets[16];
-        uint32_t mipSizes[16];
+struct BLPHeader {
+    uint32_t magic = 0x32504C42;
+    uint32_t formatVersion = 1;
+    uint8_t colorEncoding;
+    uint8_t alphaSize;
+    uint8_t preferredFormat = 2;
+    uint8_t hasMips;
+    uint32_t width;
+    uint32_t height;
+    uint32_t mipOffsets[16];
+    uint32_t mipSizes[16];
 
-        union {
-            BlpPalPixel palette[256];
+    union {
+        BlpPalPixel palette[256];
 
-            struct {
-                uint32_t headerSize;
-                uint8_t headerData[1020];
-            } jpeg;
-        } extended;
-    };
+        struct {
+            uint32_t headerSize;
+            uint8_t headerData[1020];
+        } jpeg;
+    } extended;
+};
 #pragma pack(pop)
 
+class CBLPFile {
     public:
         // Static variables
         static TSGrowableArray<uint8_t> s_blpFileLoadBuffer;
@@ -94,6 +94,8 @@ class CBLPFile {
         int32_t Open(const char*, int32_t);
         void Close(void);
         int32_t Source(void*);
+
+        static bool ValidateHeader(BLPHeader* header);
 };
 
 #endif

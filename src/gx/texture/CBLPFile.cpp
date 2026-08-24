@@ -406,3 +406,7 @@ int32_t CBLPFile::Source(void* fileBits) {
 
     return 1;
 }
+
+bool CBLPFile::ValidateHeader(BLPHeader* header) {
+    return header->magic == 0x32504C42 && header->formatVersion == 1;
+}
