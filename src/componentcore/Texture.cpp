@@ -1,6 +1,9 @@
 #include "componentcore/Texture.hpp"
 #include <common/ObjectAlloc.hpp>
 #include "async/AsyncFileRead.hpp"
+#include "util/SFile.hpp"
+#include <gx/texture/CBLPFile.hpp>
+#include <gx/Texture.hpp>
 
 uint32_t* s_entryHeap;
 TSHashTable<CACHEENTRY, HASHKEY_NONE> s_cacheTable;
@@ -39,6 +42,52 @@ void CACHEENTRY::Unlink() {
         this->m_linktoslot.Unlink();
         this->m_linktofull.Unlink();
     }
+}
+
+bool CACHEENTRY::LoadTexture() {
+    SFile* file = nullptr;
+    if (!SFile::OpenEx(0, this->m_fileName, 0, &file)) {
+        auto v3 = TextureDiscoverFileType(m_fileName);
+        char alternateFile[260];
+        TexturePickAlternateFilename(m_fileName, v3, alternateFile, 260);
+        SFile::OpenEx(0, alternateFile, 0, &file);
+    }
+    if (file) {
+        CAsyncObject* asyncObject = AsyncFileReadAllocObject();
+        this->m_asyncObject = asyncObject;
+        asyncObject->userArg = this;
+        this->m_asyncObject->userPostloadCallback = &CACHEENTRY::LoadSuccessCallback;
+        this->m_asyncObject->file = file;
+        this->m_asyncObject->size = SFile::GetFileSize(file, 0);
+        this->m_asyncObject->priority = -126;
+        this->m_flags ^= (this->m_flags ^ this->m_asyncObject->size) & 0xFFFFF;
+        auto v6 = STORM_ALLOC(this->m_flags & 0xFFFFF);
+        this->m_data = v6;
+        this->m_asyncObject->buffer = v6;
+        AsyncFileReadObject(this->m_asyncObject, 0);
+        return 1;
+    } else {
+        this->m_flags |= 0x100000u;
+        return 0;
+    }
+}
+
+// OFFSET: 0x4F2B70
+void CACHEENTRY::LoadSuccessCallback(void* handle) {
+    auto entry = static_cast<CACHEENTRY*>(handle);
+
+    AsyncFileReadDestroyObject(entry->m_asyncObject);
+    entry->m_asyncObject = nullptr;
+
+    auto header = static_cast<BLPHeader*>(entry->m_data);
+    CBLPFile::ValidateHeader(header);
+
+    auto& info = entry->m_info;
+    info.width = header->width;
+    info.height = header->height;
+    info.alphaSize = header->alphaSize;
+    info.opaque = header->alphaSize == 0;
+    info.mipCount = TextureCalcMipCount(info.width, info.height);
 }
 
 // OFFSET: 0x4F31A0
@@ -101,4 +150,65 @@ void TextureCacheFreeRequest(void* obj) {
     void* buffer = asyncObject->buffer;
     AsyncFileReadDestroyObject(asyncObject);
     STORM_FREE(buffer);
+}
+
+// OFFSET: 0x4F2D80
+bool TextureCacheHasMips(CACHEENTRY* entry) {
+    return entry && entry->m_data && (entry->m_flags & 0x100000) == 0;
+}
+
+// OFFSET: 0x4F2E50
+bool TextureCacheGetInfo(CACHEENTRY* entry, TCTEXTUREINFO* info, bool a3) {
+    if (!entry)
+        return false;
+
+    if ((entry->m_flags & 0x100000) == 0) {
+        if (!entry->m_data)
+            entry->LoadTexture();
+        if ((entry->m_flags & 0x100000) == 0 && !entry->m_info.width && entry->m_asyncObject) {
+            if (!a3) {
+                //if (SFile::IsStreamingMode()) {
+                //    AsyncFile::EnterQueueLock();
+                //    m_asyncObject = a1->m_asyncObject;
+                //    if (sub_4B50A0(m_asyncObject))
+                //        maybe_TextureTouchPriority(m_asyncObject);
+                //    AsyncFile::LeaveQueueLock();
+                //}
+                return false;
+            }
+            AsyncFileReadWait(entry->m_asyncObject);
+        }
+    }
+    *info = entry->m_info;
+    return true;
+}
+
+// OFFSET: 0x4F2D40
+BlpPalPixel* TextureCacheGetPal(CACHEENTRY* entry) {
+    if (entry && (entry->m_flags & 0x100000) == 0 && entry->m_data) {
+        auto header = static_cast<BLPHeader*>(entry->m_data);
+        if (header->colorEncoding == 1) {
+            return header->extended.palette;
+        }
+    }
+    return nullptr;
+}
+
+// OFFSET: 0x4F2D00
+void* TextureCacheGetMip(CACHEENTRY* entry, uint32_t mipLevel) {
+    if (!entry)
+        return nullptr;
+
+    if (entry->m_flags & 0x100000)
+        return nullptr;
+
+    if (!entry->m_data)
+        return nullptr;
+
+    if (mipLevel >= entry->m_info.mipCount)
+        return nullptr;
+
+    auto header = static_cast<BLPHeader*>(entry->m_data);
+
+    return static_cast<uint8_t*>(entry->m_data) + header->mipOffsets[mipLevel];
 }

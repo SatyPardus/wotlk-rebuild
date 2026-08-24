@@ -5,6 +5,7 @@
 #include "storm/Hash.hpp"
 
 class CAsyncObject;
+class BlpPalPixel;
 
 struct TCTEXTUREINFO {
     uint16_t width;
@@ -28,11 +29,18 @@ class CACHEENTRY : public TSHashObject<CACHEENTRY, HASHKEY_NONE> {
     CACHEENTRY();
     ~CACHEENTRY();
     void Unlink();
+    bool LoadTexture();
+
+    static void LoadSuccessCallback(void* handle);
 };
 
 void TextureCacheDestroyTexture(CACHEENTRY* entry);
 CACHEENTRY* TextureCacheAllocEntry();
 CACHEENTRY* TextureCacheCreateTexture(const char* file);
 void TextureCacheFreeRequest(void* asyncObject);
+bool TextureCacheHasMips(CACHEENTRY* entry);
+bool TextureCacheGetInfo(CACHEENTRY* entry, TCTEXTUREINFO* info, bool a3);
+BlpPalPixel* TextureCacheGetPal(CACHEENTRY* entry);
+void* TextureCacheGetMip(CACHEENTRY* entry, uint32_t mipLevel);
 
 #endif // COMPONENT_CORE_TEXTURE_HPP

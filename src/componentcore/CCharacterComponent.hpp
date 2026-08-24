@@ -6,10 +6,23 @@
 #include "gx/Types.hpp"
 #include <storm/Array.hpp>
 #include "componentcore/ComponentData.hpp"
+#include "tempest/vector/C2iVector.hpp"
 
 class CSimpleModelFFX;
 class CM2Model;
 class CVar;
+class ItemDisplayInfoRec;
+class CCharacterComponent;
+struct TCTEXTUREINFO;
+class BlpPalPixel;
+
+struct CompSectionInfo {
+    C2iVector pos;
+    C2iVector size;
+};
+
+typedef void (CCharacterComponent::*ITEM_FUNC)(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+typedef void (CCharacterComponent::*PREP_FUNC)();
 
 class CCharacterComponent {
     public:
@@ -23,17 +36,30 @@ class CCharacterComponent {
     static st_race* s_chrVarArray;
     static uint32_t* s_characterFacialHairStylesList;
     static EGxTexFormat s_gxFormatHigh;
+    static EGxTexFormat s_gxFormat;
+    static uint32_t s_textureSize;
 
     static char s_path[260];
     static char* s_pathEnd;
     static CStatus s_status;
 
+    static ITEM_FUNC s_itemFunc[NUM_COMPONENT_SECTIONS];
+    static uint32_t s_mipLevels;
+    static PREP_FUNC s_prepFunc[NUM_COMPONENT_SECTIONS];
+    static CompSectionInfo s_sectionInfo[NUM_COMPONENT_SECTIONS];
+    static CompSectionInfo s_sectionInfoRaw[NUM_COMPONENT_SECTIONS];
+
+    static bool s_bInRenderPrep;
+    static MipBits* s_textureBuffer;
+
     // Static functions
     static void Initialize();
     static void Initialize(EGxTexFormat format, uint32_t mipLevels, int32_t useThreads, int32_t useCompression);
+    static int32_t Update(const void*, void*);
     static CCharacterComponent* AllocComponent();
     static void FreeComponent(CCharacterComponent* component);
     static void ValidateComponentData(ComponentData* data, COMPONENT_CONTEXT context);
+    static void UpdateBaseTexture(EGxTexCommand cmd, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels);
 
     CCharacterComponent();
     ~CCharacterComponent();
@@ -79,8 +105,33 @@ class CCharacterComponent {
     void ReplaceExtraSkinTexture(const char* a2);
     bool RenderPrep(int32_t a2);
     void RenderPrepSections();
+    void PrepSections();
+    void RenderPrepAll();
+    void DestroyRenderTextures();
+    bool VariationsLoaded(bool a2);
+    void RenderPrepAL();
+    void RenderPrepAU();
+    void RenderPrepFO();
+    void RenderPrepHA();
+    void RenderPrepHL();
+    void RenderPrepHU();
+    void RenderPrepLL();
+    void RenderPrepLU();
+    void RenderPrepTL();
+    void RenderPrepTU();
+    void CreateBaseTexture();
     void GeosRenderPrep();
     void GetPreferences(CHARACTER_PREFERENCES* info);
+
+    void PasteFromSkin(COMPONENT_SECTIONS section, CACHEENTRY* entry, MipBits* bits);
+    void PasteToSection(COMPONENT_SECTIONS section, CACHEENTRY* entry, MipBits* bits);
+    void Paste(CACHEENTRY* entry, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo, int32_t srcMipLevel);
+    void PasteCrappyGreen(MipBits* dstMips, C2iVector dstPos, uint32_t pixelStrideInBytes, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel);
+    void PasteTransparent1Bit(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel);
+    void PasteTransparent4Bit(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel);
+    void PasteTransparent8Bit(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel);
+    void PasteOpaque(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel);
+    void PasteScale(CACHEENTRY* entry, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo);
 
     public:
     TSLink<CCharacterComponent> m_link;

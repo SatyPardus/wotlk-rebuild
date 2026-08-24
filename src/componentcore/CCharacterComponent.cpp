@@ -11,6 +11,10 @@
 #include "componentcore/ComponentUtils.hpp"
 #include <tempest/Random.hpp>
 #include "componentcore/Texture.hpp"
+#include <gx/Device.hpp>
+#include <gx/Texture.hpp>
+#include "gx/texture/CBLPFile.hpp"
+#include <event/Event.hpp>
 
 CVar* CCharacterComponent::g_componentTextureLevelVar = nullptr;
 CVar* CCharacterComponent::g_componentThreadVar = nullptr;
@@ -21,10 +25,52 @@ uint32_t CCharacterComponent::s_chrVarArrayLength = 0;
 st_race* CCharacterComponent::s_chrVarArray = nullptr;
 uint32_t* CCharacterComponent::s_characterFacialHairStylesList = nullptr;
 EGxTexFormat CCharacterComponent::s_gxFormatHigh;
+EGxTexFormat CCharacterComponent::s_gxFormat;
+uint32_t CCharacterComponent::s_textureSize;
 
 char CCharacterComponent::s_path[260];
 char* CCharacterComponent::s_pathEnd;
 CStatus CCharacterComponent::s_status;
+
+ITEM_FUNC CCharacterComponent::s_itemFunc[];
+uint32_t CCharacterComponent::s_mipLevels;
+PREP_FUNC CCharacterComponent::s_prepFunc[];
+CompSectionInfo CCharacterComponent::s_sectionInfo[];
+
+bool CCharacterComponent::s_bInRenderPrep;
+MipBits* CCharacterComponent::s_textureBuffer;
+
+static STORM_EXPLICIT_LIST(CCharacterComponent, m_link) s_queue;
+
+CompSectionInfo CCharacterComponent::s_sectionInfoRaw[] = {
+    { { 0,   0   }, { 256, 128 } }, // SECTION_ARM_UPPER
+    { { 0,   128 }, { 256, 128 } }, // SECTION_ARM_LOWER
+    { { 0,   256 }, { 256, 64  } }, // SECTION_HAND
+    { { 256, 0,  }, { 256, 128 } }, // SECTION_TORSO_UPPER
+    { { 256, 128 }, { 256, 64  } }, // SECTION_TORSO_LOWER
+    { { 256, 192 }, { 256, 128 } }, // SECTION_LEG_UPPER
+    { { 256, 320 }, { 256, 128 } }, // SECTION_LEG_LOWER
+    { { 256, 448 }, { 256, 64  } }, // SECTION_FOOT
+    { { 0,   320 }, { 256, 64  } }, // SECTION_HEAD_UPPER
+    { { 0,   384 }, { 256, 128 } }, // SECTION_HEAD_LOWER
+};
+
+const char* s_componentSections[] = {
+    "ArmUpperTexture",
+    "ArmLowerTexture",
+    "HandTexture",
+    "TorsoUpperTexture",
+    "TorsoLowerTexture",
+    "LegUpperTexture",
+    "LegLowerTexture",
+    "FootTexture"
+};
+
+const char* s_fileDecorations[] = {
+    "M",
+    "F",
+    "U"
+};
 
 
 static bool ComponentVarHandler(CVar*, const char*, const char*, void*) {
@@ -92,7 +138,7 @@ void CCharacterComponent::Initialize() {
 }
 
 // OFFSET: 0x4F1A20
-void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t mipLevels, int32_t useThreads, int32_t useCompression) {
+void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t textureLevel, int32_t useThreads, int32_t useCompression) {
     CCharacterComponent::s_heap = static_cast<uint32_t*>(ALLOC(sizeof(uint32_t)));
     if (CCharacterComponent::s_heap) {
         *CCharacterComponent::s_heap = ObjectAllocAddHeap(sizeof(CCharacterComponent), 32, "CCharacterComponent", true);
@@ -100,16 +146,16 @@ void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t mipLevels, in
 
     s_pathEnd = s_path;
     //s_pathEnd2 = path;
-    //CCharacterComponent::m_prepFunc[0] = CCharacterComponent::RenderPrepAU;
-    //CCharacterComponent::m_prepFunc[1] = CCharacterComponent::RenderPrepAL;
-    //CCharacterComponent::m_prepFunc[2] = CCharacterComponent::RenderPrepHA;
-    //CCharacterComponent::m_prepFunc[8] = CCharacterComponent::RenderPrepHU;
-    //CCharacterComponent::m_prepFunc[9] = CCharacterComponent::RenderPrepHL;
-    //CCharacterComponent::m_prepFunc[3] = CCharacterComponent::RenderPrepTU;
-    //CCharacterComponent::m_prepFunc[4] = CCharacterComponent::RenderPrepTL;
-    //CCharacterComponent::m_prepFunc[5] = CCharacterComponent::RenderPrepLU;
-    //CCharacterComponent::m_prepFunc[6] = CCharacterComponent::RenderPrepLL;
-    //CCharacterComponent::m_prepFunc[7] = CCharacterComponent::RenderPrepFO;
+    CCharacterComponent::s_prepFunc[0] = &CCharacterComponent::RenderPrepAU;
+    CCharacterComponent::s_prepFunc[1] = &CCharacterComponent::RenderPrepAL;
+    CCharacterComponent::s_prepFunc[2] = &CCharacterComponent::RenderPrepHA;
+    CCharacterComponent::s_prepFunc[8] = &CCharacterComponent::RenderPrepHU;
+    CCharacterComponent::s_prepFunc[9] = &CCharacterComponent::RenderPrepHL;
+    CCharacterComponent::s_prepFunc[3] = &CCharacterComponent::RenderPrepTU;
+    CCharacterComponent::s_prepFunc[4] = &CCharacterComponent::RenderPrepTL;
+    CCharacterComponent::s_prepFunc[5] = &CCharacterComponent::RenderPrepLU;
+    CCharacterComponent::s_prepFunc[6] = &CCharacterComponent::RenderPrepLL;
+    CCharacterComponent::s_prepFunc[7] = &CCharacterComponent::RenderPrepFO;
     //CCharacterComponent::m_itemFunc[0] = CCharacterComponent::UpdateItemAU;
     //CCharacterComponent::m_itemFunc[1] = CCharacterComponent::UpdateItemAL;
     //CCharacterComponent::m_itemFunc[2] = CCharacterComponent::UpdateItemHA;
@@ -120,56 +166,27 @@ void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t mipLevels, in
     //CCharacterComponent::m_itemFunc[5] = CCharacterComponent::UpdateItemLU;
     //CCharacterComponent::m_itemFunc[6] = CCharacterComponent::UpdateItemLL;
     //CCharacterComponent::m_itemFunc[7] = CCharacterComponent::UpdateItemFO;
-    //if (a2 <= 9) {
-    //    if (a2 < 6)
-    //        v5 = 6;
-    //} else {
-    //    v5 = 9;
-    //}
-    //if (!a4 && v5 > 8)
-    //    v5 = 8;
-    //bnl_CCharacterComponent__s_mipLevels = v5;
-    //dword_B6B5FC = 1 << v5;
-    //dword_B6B888[0] = dword_B6B928 >> (9 - v5);
-    //dword_B6B88C = dword_B6B92C >> (9 - v5);
-    //dword_B6B890[0] = dword_B6B930 >> (9 - v5);
-    //dword_B6B894[0] = dword_B6B934 >> (9 - v5);
-    //dword_B6B898 = dword_B6B938 >> (9 - v5);
-    //dword_B6B89C = dword_B6B93C >> (9 - v5);
-    //dword_B6B8A0 = dword_B6B940 >> (9 - v5);
-    //dword_B6B8A4 = dword_B6B944 >> (9 - v5);
-    //dword_B6B8A8 = dword_B6B948 >> (9 - v5);
-    //dword_B6B8AC = dword_B6B94C >> (9 - v5);
-    //dword_B6B8B0 = dword_B6B950 >> (9 - v5);
-    //dword_B6B8B4 = dword_B6B954 >> (9 - v5);
-    //dword_B6B8B8 = dword_B6B958 >> (9 - v5);
-    //dword_B6B8BC = dword_B6B95C >> (9 - v5);
-    //dword_B6B8C0 = dword_B6B960 >> (9 - v5);
-    //dword_B6B8C4 = dword_B6B964 >> (9 - v5);
-    //dword_B6B8C8 = dword_B6B968 >> (9 - v5);
-    //dword_B6B8CC = dword_B6B96C >> (9 - v5);
-    //dword_B6B8D0 = dword_B6B970 >> (9 - v5);
-    //dword_B6B8D4 = dword_B6B974 >> (9 - v5);
-    //dword_B6B8D8 = dword_B6B978 >> (9 - v5);
-    //dword_B6B8DC = dword_B6B97C >> (9 - v5);
-    //dword_B6B8E0 = dword_B6B980 >> (9 - v5);
-    //dword_B6B8E4 = dword_B6B984 >> (9 - v5);
-    //dword_B6B8E8 = dword_B6B988 >> (9 - v5);
-    //dword_B6B8EC = dword_B6B98C >> (9 - v5);
-    //dword_B6B8F0 = dword_B6B990 >> (9 - v5);
-    //dword_B6B8F4 = dword_B6B994 >> (9 - v5);
-    //dword_B6B8F8 = dword_B6B998 >> (9 - v5);
-    //dword_B6B8FC = dword_B6B99C >> (9 - v5);
-    //dword_B6B900 = dword_B6B9A0 >> (9 - v5);
-    //dword_B6B904 = dword_B6B9A4 >> (9 - v5);
-    //dword_B6B908 = dword_B6B9A8 >> (9 - v5);
-    //dword_B6B90C = dword_B6B9AC >> (9 - v5);
-    //dword_B6B910 = dword_B6B9B0 >> (9 - v5);
-    //dword_B6B914 = dword_B6B9B4 >> (9 - v5);
-    //dword_B6B918 = dword_B6B9B8 >> (9 - v5);
-    //dword_B6B91C = dword_B6B9BC >> (9 - v5);
-    //dword_B6B920 = dword_B6B9C0 >> (9 - v5);
-    //dword_B6B924 = dword_B6B9C4 >> (9 - v5);
+
+    uint32_t mipLevels = std::min(std::max(textureLevel, 6u), 9u);
+
+    // Cap mip levels to 8 if compression isn't enabled
+    if (!useCompression && mipLevels > 8) {
+        mipLevels = 8;
+    }
+    CCharacterComponent::s_mipLevels = mipLevels;
+    CCharacterComponent::s_textureSize = 1 << mipLevels;
+
+    // Scale section info to match mip levels
+    for (int32_t i = 0; i < NUM_COMPONENT_SECTIONS; i++) {
+        auto& info = CCharacterComponent::s_sectionInfo[i];
+        auto& infoRaw = CCharacterComponent::s_sectionInfoRaw[i];
+
+        info.pos.x = infoRaw.pos.x >> (9 - mipLevels);
+        info.pos.y = infoRaw.pos.y >> (9 - mipLevels);
+        info.size.x = infoRaw.size.x >> (9 - mipLevels);
+        info.size.y = infoRaw.size.y >> (9 - mipLevels);
+    }
+
     //bn_TextureCacheResetLoadCount_0();
     auto v6 = 2 * g_chrRacesDB.GetNumRecords() + 2;
     CCharacterComponent::s_chrVarArrayLength = v6;
@@ -177,7 +194,7 @@ void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t mipLevels, in
     CountFacialFeatures(v6, &CCharacterComponent::s_characterFacialHairStylesList);
     //CCharacterComponent::s_bComponentThread = a3;
     //CCharacterComponent::s_bComponentCompression = 0;
-    //CCharacterComponent::s_gxFormat = a1;
+    CCharacterComponent::s_gxFormat = format;
     //if (a3) {
     //    if (a4) {
     //        CCharacterComponent::s_bComponentCompression = 1;
@@ -197,15 +214,56 @@ void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t mipLevels, in
     //    dword_B6B4DC = 0;
     //}
     CCharacterComponent::s_gxFormatHigh = GxTex_Argb8888;
-    //dword_B6B870 = 0;
+    CCharacterComponent::s_textureBuffer = nullptr;
     //dword_B6B86C = 0;
     //dword_B6B868 = 0;
-    //dword_B6B870 = bn_TextureAllocMippedImg(2, dword_B6B5FC, dword_B6B5FC);
+    CCharacterComponent::s_textureBuffer = TextureAllocMippedImg(PIXEL_ARGB8888, CCharacterComponent::s_textureSize, CCharacterComponent::s_textureSize);
     //if (CCharacterComponent::s_bComponentCompression)
     //    dword_B6B86C = bn_TextureAllocMippedImg(0, dword_B6B5FC, dword_B6B5FC);
     //if (CCharacterComponent::s_bComponentThread && CCharacterComponent::s_bComponentCompression)
     //    dword_B6B868 = bn_TextureAllocMippedImg(2, dword_B6B5FC, dword_B6B5FC);
-    //EventRegisterEx(EVENT_ON_POLL, bn_CCharacterComponent_Update, 0, 0.0);
+    EventRegisterEx(EVENT_ID_POLL, CCharacterComponent::Update, 0, 0.0);
+}
+
+int32_t CCharacterComponent::Update(const void*, void*) {
+    bool hasContext = false;
+    if (g_theGxDevicePtr)
+        hasContext = g_theGxDevicePtr->CapsHasContext(-1);
+
+    for (CCharacterComponent* component = s_queue.Head(); component;) {
+        CCharacterComponent* next = s_queue.Next(component);
+
+        if (component->m_request) {
+            //if (!HasContext)
+            //    goto LABEL_24;
+            //if ((*v1 & 2) == 0)
+            //    goto LABEL_24;
+            //CCharacterComponent::ProcessFinishedRequest(m_next);
+            component->m_link.Unlink();
+        } else {
+            bool variationsUpdated = component->VariationsLoaded(0);
+            if (!variationsUpdated /* || !itemsUpdated */) {
+                component = next;
+                continue;
+            }
+
+            component->m_flags |= 8;
+            //if (CCharacterComponent::s_bComponentThread) {
+            //    CCharacterComponent::CreateComponentRequest(m_next);
+            //} else {
+                if (hasContext) {
+                    component->RenderPrepSections();
+                    component->m_link.Unlink();
+                }
+            //}
+        }
+
+        component = next;
+    }
+
+    //if (CCharacterComponent::s_bComponentThread)
+    //    CCharacterComponent::ProcessComponentFinishedList(0);
+    return 1;
 }
 
 // OFFSET: 0x4F0980
@@ -383,6 +441,45 @@ void CCharacterComponent::ValidateComponentData(ComponentData* data, COMPONENT_C
     //}
 }
 
+void CCharacterComponent::UpdateBaseTexture(EGxTexCommand cmd, uint32_t width, uint32_t height, uint32_t depth, uint32_t mipLevel, void* userArg, uint32_t& texelStrideInBytes, const void*& texels) {
+    CCharacterComponent* component = reinterpret_cast<CCharacterComponent*>(userArg);
+
+    switch (cmd) {
+    case GxTex_Lock:
+        if (!CCharacterComponent::s_bInRenderPrep)
+            component->RenderPrepAll();
+        break;
+    case GxTex_Latch:
+        if (component->m_gxTexFormat == GxTex_Dxt1) {
+            STORM_ASSERT(false);
+            //BaseTextureSection = maybe_GetBaseTextureSection(0);
+            //v9 = BaseTextureSection * (width >> 2);
+            //*texelStrideInBytes = v9;
+            //if (v9 < BaseTextureSection)
+            //    *texelStrideInBytes = BaseTextureSection;
+        } else {
+            texelStrideInBytes = 4 * width;
+        }
+        if (component->m_request) {
+            STORM_ASSERT(false);
+            //*texels = *(*m_request[2] + 4 * miplevel);
+        } else {
+            texels = CCharacterComponent::s_textureBuffer->mip[mipLevel];
+            //v11 = dword_B6B86C;
+            //if (userArg->m_gxTexFormat != GxTex_Dxt1)
+            //    v11 = CCharacterComponent::s_textureBuffer;
+            //*texels = v11[miplevel];
+        }
+        break;
+    case GxTex_3:
+        //if ((userArg->m_data.m_flags & 2) == 0) {
+        //    sub_4E8E50(userArg);
+        //    sub_4E8E20(userArg, -1);
+        //}
+        break;
+    }
+}
+
 // OFFSET: 0x4EFBE0
 CCharacterComponent::CCharacterComponent() {
     this->m_link.m_prevlink = nullptr;
@@ -400,7 +497,7 @@ CCharacterComponent::CCharacterComponent() {
     this->m_dirtySections = -1;
     this->m_request = nullptr;
     this->m_baseSkinTexture = nullptr;
-    //this->m_gxTexFormat = CCharacterComponent::s_gxFormat;
+    this->m_gxTexFormat = CCharacterComponent::s_gxFormat;
     memset(this->m_itemDisplayID, 0, sizeof(this->m_itemDisplayID));
     memset(this->m_itemSlotForAttachSlot, -1, sizeof(this->m_itemSlotForAttachSlot));
     this->m_flags &= ~0x20u;
@@ -479,7 +576,7 @@ void CCharacterComponent::LoadBaseVariation(COMPONENT_VARIATIONS variation, uint
         return;
 
     auto v4 = CCharacterComponent::s_chrVarArray[2 * this->m_data.m_preferences.raceID + this->m_data.m_preferences.sexID].m_variation[variation].variation[variationIndex].color[colorIndex]->m_textureName[textureIndex];
-    if (v4) {
+    if (*v4) {
         SStrCopy(s_path, v4);
         CACHEENTRY* texture = TextureCacheCreateTexture(s_path);
         this->m_baseVariation[variation].m_texture[textureIndex] = texture;
@@ -1527,8 +1624,8 @@ bool CCharacterComponent::RenderPrep(int32_t a2) {
     }
 
     if ((this->m_flags & 0x1) == 0) {
-        //if (!this->m_link.Next())
-        //    TSList::LinkToTail_0(&stru_AC46E4, this);
+        if (!this->m_link.IsLinked())
+            s_queue.LinkToTail(this);
         return true;
     }
 
@@ -1537,32 +1634,282 @@ bool CCharacterComponent::RenderPrep(int32_t a2) {
             //*m_request &= ~1u;
             this->m_request = nullptr;
         }
-        //CCharacterComponent::sub_4ED640(this, 1);
-        //CCharacterComponent::ItemsLoaded(this, 1);
+        this->VariationsLoaded(1);
+        // this->ItemsLoaded(1);
         this->m_flags |= 8u;
         this->RenderPrepSections();
         this->m_link.Unlink();
         return true;
     }
 
-    // if (!this->m_link.Next())
-    //     TSList::LinkToTail_0(&stru_AC46E4, this);
+    if (!this->m_link.IsLinked())
+        s_queue.LinkToTail(this);
     return false;
 }
 
 // OFFSET: 0x4F14A0
 void CCharacterComponent::RenderPrepSections() {
-    //dword_B6B884 = 1;
+    CCharacterComponent::s_bInRenderPrep = true;
     if ((this->m_flags & 4) != 0)
         this->GeosRenderPrep();
-    //if (!this->m_baseSkinTexture)
-    //    this->CreateBaseTexture();
-    //this->PrepSections();
-    //this->m_flags &= ~1u;
-    //this->m_dirtySections = 0;
-    //this->DestroyRenderTextures();
+    if (!this->m_baseSkinTexture)
+        this->CreateBaseTexture();
+    this->PrepSections();
+    this->m_flags &= ~1u;
+    this->m_dirtySections = 0;
+    this->DestroyRenderTextures();
     this->m_link.Unlink();
-    //dword_B6B884 = 0;
+    CCharacterComponent::s_bInRenderPrep = false;
+}
+
+// OFFSET: 0x4EE0D0
+void CCharacterComponent::PrepSections() {
+    CGxTex* tex = nullptr;
+    for (int32_t i = 0; i < 10; i++) {
+        if (((1 << i) & this->m_dirtySections) != 0) {
+            (this->*CCharacterComponent::s_prepFunc[i])();
+            if ((this->m_flags & 1) == 0 && this->m_gxTexFormat != GxTex_Dxt1) {
+                tex = TextureGetGxTex(this->m_baseSkinTexture, 1, nullptr);
+                GxTexUpdate(tex, s_sectionInfo[i].pos.x, s_sectionInfo[i].pos.y, s_sectionInfo[i].pos.x + s_sectionInfo[i].size.x, s_sectionInfo[i].pos.y + s_sectionInfo[i].size.y, 1);
+            }
+        }
+    }
+
+    if ((this->m_flags & 1) != 0 || this->m_gxTexFormat == GxTex_Dxt1) {
+        //if (this->m_gxTexFormat == GxTex_Dxt1)
+        //    CCharacterComponent__ComputeMipLevelsSIMD(CCharacterComponent::s_textureBuffer, dword_B6B86C);
+        if ((this->m_flags & 1) != 0) {
+            tex = TextureGetGxTex(this->m_baseSkinTexture, 1, 0);
+            GxTexUpdate(tex, 0, 0, s_textureSize, s_textureSize, 1);
+        } else {
+            for (int32_t i = 0; i < 10; i++) {
+                if (((1 << i) & this->m_dirtySections) != 0) {
+                    tex = TextureGetGxTex(this->m_baseSkinTexture, 1, nullptr);
+                    GxTexUpdate(tex, s_sectionInfo[i].pos.x, s_sectionInfo[i].pos.y, s_sectionInfo[i].pos.x + s_sectionInfo[i].size.x, s_sectionInfo[i].pos.y + s_sectionInfo[i].size.y, 1);
+                }
+            }
+        }
+    }
+}
+
+// OFFSET: 0x4EE2A0
+void CCharacterComponent::RenderPrepAll() {
+    this->m_flags |= 1u;
+    if (this->m_request) {
+        //*this->m_request &= ~1u;
+        this->m_request = 0;
+    }
+    this->m_flags &= ~8u;
+    this->m_dirtySections = -1;
+    if (this->m_request) {
+        //*this->m_request &= ~1u;
+        this->m_request = 0;
+    }
+    this->m_flags &= ~8u;
+    this->VariationsLoaded(1);
+    //this->ItemsLoaded(1);
+    for (uint32_t i = 0; i < NUM_COMPONENT_SECTIONS; i++) {
+        (this->*CCharacterComponent::s_prepFunc[i])();
+    }
+    //if (this->m_gxTexFormat == GxTex_Dxt1)
+    //    CCharacterComponent__ComputeMipLevelsSIMD(dword_B6B870, dword_B6B86C);
+    this->m_flags &= ~1u;
+    this->m_dirtySections = 0;
+    this->DestroyRenderTextures();
+    this->m_link.Unlink();
+}
+
+// OFFSET: 0x4E7650
+void CCharacterComponent::DestroyRenderTextures() {
+    for (int32_t s = 0; s < NUM_COMPONENT_SECTIONS; s++) {
+        CharacterSection& section = this->m_section[s];
+
+        for (int32_t i = 0; i < 7; i++) {
+            if (section.layerItemDisplayId[i] == 0) {
+                continue;
+            }
+
+            if (section.layerTex[i]) {
+                TextureCacheDestroyTexture(section.layerTex[i]);
+                section.layerTex[i] = nullptr;
+            }
+        }
+    }
+}
+
+// OFFSET: 0x4ED640
+bool CCharacterComponent::VariationsLoaded(bool a2) {
+    TCTEXTUREINFO info;
+    for (uint32_t i = 0; i < 5; i++) {
+        for (uint32_t j = 0; j < 3; j++) {
+            if (this->m_baseVariation[i].m_texture[j] && !TextureCacheGetInfo(this->m_baseVariation[i].m_texture[j], &info, a2)) {
+                return false;
+            }
+        }
+    }
+    this->m_flags &= ~2;
+    return true;
+}
+
+// OFFSET: 0x4F0A30
+void CCharacterComponent::RenderPrepAL() {
+    this->PasteFromSkin(SECTION_ARM_LOWER, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+
+    CharacterSection* section = &this->m_section[SECTION_ARM_LOWER];
+    for (int32_t i = 0; i < 7; i++) {
+        if (((1 << i) & section->layerMask) != 0) {
+            this->PasteToSection(SECTION_ARM_LOWER, section->layerTex[i], CCharacterComponent::s_textureBuffer);
+        }
+    }
+}
+
+// OFFSET: 0x4F09D0
+void CCharacterComponent::RenderPrepAU() {
+    this->PasteFromSkin(SECTION_ARM_UPPER, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+
+    CharacterSection* section = &this->m_section[SECTION_ARM_UPPER];
+    for (int32_t i = 0; i < 2; i++) {
+        if (((1 << i) & section->layerMask) != 0) {
+            this->PasteToSection(SECTION_ARM_UPPER, section->layerTex[i], CCharacterComponent::s_textureBuffer);
+        }
+    }
+}
+
+// OFFSET: 0x4F0E40
+void CCharacterComponent::RenderPrepFO() {
+    this->PasteFromSkin(SECTION_FOOT, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+
+    if ((this->m_section[SECTION_FOOT].layerMask & 1) != 0)
+        this->PasteToSection(SECTION_FOOT, this->m_section[SECTION_FOOT].layerTex[0], CCharacterComponent::s_textureBuffer);
+}
+
+// OFFSET: 0x4F0A90
+void CCharacterComponent::RenderPrepHA() {
+    this->PasteFromSkin(SECTION_HAND, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+    if ((this->m_section[SECTION_HAND].layerMask & 1) != 0)
+        this->PasteToSection(SECTION_HAND, this->m_section[SECTION_HAND].layerTex[0], CCharacterComponent::s_textureBuffer);
+}
+
+// OFFSET: 0x4F0B70
+void CCharacterComponent::RenderPrepHL() {
+    auto sectionRecord = ComponentGetSectionsRecord(CCharacterComponent::s_chrVarArray, this->m_data.m_preferences.raceID, this->m_data.m_preferences.sexID, VARIATION_SKIN, 0, this->m_data.m_preferences.skinID, nullptr);
+    if (sectionRecord && (sectionRecord->m_flags & 8) != 0)
+        this->PasteFromSkin(SECTION_HEAD_LOWER, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+    auto v3 = this->m_baseVariation[VARIATION_FACE].m_texture[0];
+    if (v3)
+        this->PasteToSection(SECTION_HEAD_LOWER, v3, CCharacterComponent::s_textureBuffer);
+    auto v4 = this->m_baseVariation[VARIATION_FACIAL_HAIR].m_texture[0];
+    if (v4)
+        this->PasteToSection(SECTION_HEAD_LOWER, v4, CCharacterComponent::s_textureBuffer);
+    auto v5 = this->m_baseVariation[VARIATION_HAIR].m_texture[1];
+    if (v5)
+        this->PasteToSection(SECTION_HEAD_LOWER, v5, CCharacterComponent::s_textureBuffer);
+}
+
+// OFFSET: 0x4F0AD0
+void CCharacterComponent::RenderPrepHU() {
+    auto sectionRecord = ComponentGetSectionsRecord(CCharacterComponent::s_chrVarArray, this->m_data.m_preferences.raceID, this->m_data.m_preferences.sexID, VARIATION_SKIN, 0, this->m_data.m_preferences.skinID, nullptr);
+    if (sectionRecord && (sectionRecord->m_flags & 8) != 0)
+        this->PasteFromSkin(SECTION_HEAD_UPPER, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+    auto v3 = this->m_baseVariation[VARIATION_FACE].m_texture[1];
+    if (v3)
+        this->PasteToSection(SECTION_HEAD_UPPER, v3, CCharacterComponent::s_textureBuffer);
+    auto v4 = this->m_baseVariation[VARIATION_FACIAL_HAIR].m_texture[1];
+    if (v4)
+        this->PasteToSection(SECTION_HEAD_UPPER, v4, CCharacterComponent::s_textureBuffer);
+    auto v5 = this->m_baseVariation[VARIATION_HAIR].m_texture[2];
+    if (v5)
+        this->PasteToSection(SECTION_HEAD_UPPER, v5, CCharacterComponent::s_textureBuffer);
+}
+
+// OFFSET: 0x4F0DB0
+void CCharacterComponent::RenderPrepLL() {
+    this->PasteFromSkin(SECTION_LEG_LOWER, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+
+    CharacterSection* section = &this->m_section[SECTION_LEG_LOWER];
+
+    int32_t first = (this->m_flags & 0x20) != 0 ? 1 : 0;
+    int32_t last = (this->m_flags & 0x20) != 0 ? 4 : 6;
+
+    for (int32_t i = first; i < last; i++) {
+        if (((1 << i) & section->layerMask) != 0) {
+            this->PasteToSection(SECTION_LEG_LOWER, section->layerTex[i], CCharacterComponent::s_textureBuffer);
+        }
+    }
+}
+
+// OFFSET: 0x4F0D00
+void CCharacterComponent::RenderPrepLU() {
+    this->PasteFromSkin(SECTION_LEG_UPPER, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+
+    CharacterSection* section = &this->m_section[SECTION_LEG_UPPER];
+
+    if ((this->m_flags & 0x20) != 0 || (section->layerMask & 3) == 0) {
+        auto v2 = this->m_baseVariation[VARIATION_UNDERWEAR].m_texture[0];
+        if (v2)
+            this->PasteToSection(SECTION_LEG_UPPER, v2, CCharacterComponent::s_textureBuffer);
+    }
+    int32_t first = (this->m_flags & 0x20) != 0 ? 1 : 0;
+    int32_t last = (this->m_flags & 0x20) != 0 ? 2 : 3;
+
+    for (int32_t i = first; i < last; i++) {
+        if (((1 << i) & section->layerMask) != 0) {
+            this->PasteToSection(SECTION_LEG_UPPER, section->layerTex[i], CCharacterComponent::s_textureBuffer);
+        }
+    }
+}
+
+// OFFSET: 0x4F0CA0
+void CCharacterComponent::RenderPrepTL() {
+    this->PasteFromSkin(SECTION_TORSO_LOWER, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+    CharacterSection* section = &this->m_section[SECTION_TORSO_LOWER];
+    for (int32_t i = 0; i < 7; i++) {
+        if (((1 << i) & section->layerMask) != 0) {
+            this->PasteToSection(SECTION_TORSO_LOWER, section->layerTex[i], CCharacterComponent::s_textureBuffer);
+        }
+    }
+}
+
+// OFFSET: 0x4F0C10
+void CCharacterComponent::RenderPrepTU() {
+    this->PasteFromSkin(SECTION_TORSO_UPPER, this->m_baseVariation[VARIATION_SKIN].m_texture[0], CCharacterComponent::s_textureBuffer);
+    if ((this->m_section[3].layerMask & 7) == 0 && this->m_baseVariation[VARIATION_UNDERWEAR].m_texture[1]) {
+        this->PasteToSection(SECTION_TORSO_UPPER, this->m_baseVariation[VARIATION_UNDERWEAR].m_texture[1], CCharacterComponent::s_textureBuffer);
+    }
+    CharacterSection* section = &this->m_section[SECTION_TORSO_UPPER];
+    for (int32_t i = 0; i < 5; i++) {
+        if (((1 << i) & section->layerMask) != 0) {
+            this->PasteToSection(SECTION_TORSO_UPPER, section->layerTex[i], CCharacterComponent::s_textureBuffer);
+        }
+    }
+}
+
+
+// OFFSET: 0x4EFF10
+void CCharacterComponent::CreateBaseTexture() {
+    auto dataFormat = this->m_gxTexFormat == GxTex_Dxt1
+                          ? GxTex_Dxt1
+                          : GxTex_Argb8888;
+
+    CGxTexFlags flags = CGxTexFlags(GxTex_LinearMipLinear, 0, 0, 0, 0, 0, 1);
+    if (GxDevApi() == GxApi_GLL) {
+        flags.m_bit14 = 1;
+    }
+
+    auto baseTexture = TextureCreate(
+        CCharacterComponent::s_textureSize,
+        CCharacterComponent::s_textureSize,
+        this->m_gxTexFormat,
+        dataFormat,
+        flags,
+        this,
+        &CCharacterComponent::UpdateBaseTexture,
+        "CharacterBaseSkin",
+        1);
+
+    this->m_baseSkinTexture = baseTexture;
+
+    this->m_data.m_model->ReplaceTexture(1, this->m_baseSkinTexture);
 }
 
 // OFFSET: 0x4ED900
@@ -1596,4 +1943,322 @@ void CCharacterComponent::GetPreferences(CHARACTER_PREFERENCES* info) {
     if (info) {
         *info = this->m_data.m_preferences;
     }
+}
+
+// OFFSET: 0x4F07D0
+void CCharacterComponent::PasteFromSkin(COMPONENT_SECTIONS section, CACHEENTRY* entry, MipBits* bits) {
+    if (!TextureCacheHasMips(entry))
+        return;
+
+    TCTEXTUREINFO info;
+    TextureCacheGetInfo(entry, &info, true);
+
+    CompSectionInfo sectionInfo = s_sectionInfo[section];
+
+    info.alphaSize = 0;
+    if (info.width >= s_textureSize || info.height >= s_textureSize) {
+        uint32_t v4 = 0;
+        uint32_t width = info.width;
+        while (width != s_textureSize) {
+            width >>= 1;
+            v4++;
+        }
+        this->Paste(entry, bits, sectionInfo.pos, sectionInfo.pos, sectionInfo.size, info, v4);
+    } else {
+        this->PasteScale(entry, bits, sectionInfo.pos, sectionInfo.pos, sectionInfo.size, info);
+    }
+}
+
+// OFFSET: 0x4F08A0
+void CCharacterComponent::PasteToSection(COMPONENT_SECTIONS section, CACHEENTRY* entry, MipBits* bits) {
+    if (!TextureCacheHasMips(entry))
+        return;
+
+    TCTEXTUREINFO info;
+    TextureCacheGetInfo(entry, &info, true);
+
+    C2iVector srcPos = C2iVector(0, 0);
+    CompSectionInfo sectionInfo = s_sectionInfo[section];
+
+    if (info.width >= sectionInfo.size.x || info.height >= sectionInfo.size.y) {
+        uint32_t v4 = 0;
+        uint32_t width = info.width;
+        while (width != sectionInfo.size.x) {
+            width >>= 1;
+            v4++;
+        }
+        this->Paste(entry, bits, sectionInfo.pos, srcPos, sectionInfo.size, info, v4);
+    } else {
+        this->PasteScale(entry, bits, sectionInfo.pos, srcPos, sectionInfo.size, info);
+    }
+}
+
+// OFFSET: 0x4EC550
+void CCharacterComponent::Paste(CACHEENTRY* entry, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo, int32_t srcMipLevel) {
+    auto pal = TextureCacheGetPal(entry);
+
+    C2iVector src = srcPos;
+    C2iVector dst = dstPos;
+
+    if (!pal) {
+        this->PasteCrappyGreen(dstMips, dst, 4 * s_textureSize, src, srcInfo, srcMipLevel, -srcMipLevel);
+    } else {
+        switch (srcInfo.alphaSize) {
+        case 0:
+            this->PasteOpaque(entry, pal, dstMips, dst, 4 * s_textureSize, src, srcSize, srcInfo, srcMipLevel, -srcMipLevel);
+            break;
+        case 1:
+            this->PasteTransparent1Bit(entry, pal, dstMips, dst, 4 * s_textureSize, src, srcSize, srcInfo, srcMipLevel, -srcMipLevel);
+            break;
+        case 4:
+            this->PasteTransparent4Bit(entry, pal, dstMips, dst, 4 * s_textureSize, src, srcSize, srcInfo, srcMipLevel, -srcMipLevel);
+            break;
+        case 8:
+            this->PasteTransparent8Bit(entry, pal, dstMips, dst, 4 * s_textureSize, src, srcSize, srcInfo, srcMipLevel, -srcMipLevel);
+            break;
+        }
+    }
+}
+
+// OFFSET: 0x4E82D0
+void CCharacterComponent::PasteCrappyGreen(MipBits* dstMips, C2iVector dstPos, uint32_t pixelStrideInBytes, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel) {
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    while (srcMipLevel < srcInfo.mipCount) {
+        auto dstMip = reinterpret_cast<uint8_t*>(dstMips->mip[invSrcMipLevel + srcMipLevel]);
+        auto dstRow = dstMip + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+        auto dstEnd = dstRow + pixelStrideInBytes * copyHeight;
+
+        for (; dstRow < dstEnd; dstRow += pixelStrideInBytes) {
+            auto dst = reinterpret_cast<uint32_t*>(dstRow);
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                dst[x] = 0xFF00FF00; // 0x4E8339 -- memset32
+            }
+        }
+
+        copyWidth = (copyWidth >> 1) ? (copyWidth >> 1) : 1;
+        copyHeight = (copyHeight >> 1) ? (copyHeight >> 1) : 1;
+
+        dstPos.x >>= 1;
+        dstPos.y >>= 1;
+        pixelStrideInBytes >>= 1;
+
+        srcMipLevel++;
+    }
+}
+
+// OFFSET: 0x4E84F0
+void CCharacterComponent::PasteTransparent1Bit(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel) {
+    uint32_t srcRowPitch = srcInfo.width >> srcMipLevel;
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    while (srcMipLevel < srcInfo.mipCount) {
+        auto dstMip = reinterpret_cast<uint8_t*>(dstMips->mip[invSrcMipLevel + srcMipLevel]);
+
+        auto src = static_cast<const uint8_t*>(TextureCacheGetMip(entry, srcMipLevel));
+        auto alpha = src + srcRowPitch * copyHeight;
+        auto srcEnd = alpha;
+
+        auto dstRow = dstMip + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+
+        while (src < srcEnd) {
+            auto dst = reinterpret_cast<C4Pixel*>(dstRow);
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                if ((alpha[x >> 3] & (1 << (x & 7))) == 0)
+                    continue;
+
+                const BlpPalPixel& texel = pal[src[x]];
+
+                dst[x].b = texel.b;
+                dst[x].g = texel.g;
+                dst[x].r = texel.r;
+                dst[x].a = 0xFF;
+            }
+
+            src += srcRowPitch;
+            dstRow += pixelStrideInBytes;
+            alpha += srcRowPitch >> 3;
+        }
+
+        copyWidth = (copyWidth >> 1) ? (copyWidth >> 1) : 1;
+        copyHeight = (copyHeight >> 1) ? (copyHeight >> 1) : 1;
+
+        dstPos.x >>= 1;
+        dstPos.y >>= 1;
+        srcPos.x >>= 1;
+        srcPos.y >>= 1;
+
+        srcRowPitch >>= 1;
+        pixelStrideInBytes >>= 1;
+
+        srcMipLevel++;
+    }
+}
+
+// OFFSET: 0x4E8660
+void CCharacterComponent::PasteTransparent4Bit(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel) {
+    uint32_t srcRowPitch = srcInfo.width >> srcMipLevel;
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    while (srcMipLevel < srcInfo.mipCount) {
+        auto dstMip = reinterpret_cast<uint8_t*>(dstMips->mip[invSrcMipLevel + srcMipLevel]);
+
+        auto src = static_cast<const uint8_t*>(TextureCacheGetMip(entry, srcMipLevel));
+        auto srcEnd = src + srcRowPitch * copyHeight;
+        auto alpha = srcEnd; // 0x4E86D4
+
+        auto dstRow = dstMip + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+
+        while (src < srcEnd) {
+            auto dst = reinterpret_cast<C4Pixel*>(dstRow);
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t shift = 4 * (x & 1);
+                uint32_t nibble = (alpha[x] & (15 << shift)) >> shift;
+                uint32_t a = (nibble << 4) | nibble;
+
+                const BlpPalPixel& texel = pal[src[x]];
+
+                dst[x].b = ((255 - a) * dst[x].b + a * texel.b) >> 8;
+                dst[x].g = ((255 - a) * dst[x].g + a * texel.g) >> 8;
+                dst[x].r = ((255 - a) * dst[x].r + a * texel.r) >> 8;
+                dst[x].a = 0xFF;
+            }
+
+            src += srcRowPitch;
+            dstRow += pixelStrideInBytes;
+            alpha += srcRowPitch >> 1;
+        }
+
+        copyWidth = (copyWidth >> 1) ? (copyWidth >> 1) : 1;
+        copyHeight = (copyHeight >> 1) ? (copyHeight >> 1) : 1;
+
+        dstPos.x >>= 1;
+        dstPos.y >>= 1;
+        srcPos.x >>= 1;
+        srcPos.y >>= 1;
+
+        srcRowPitch >>= 1;
+        pixelStrideInBytes >>= 1;
+
+        srcMipLevel++;
+    }
+}
+
+// OFFSET: 0x4E8840
+void CCharacterComponent::PasteTransparent8Bit(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel) {
+    uint32_t srcRowPitch = srcInfo.width >> srcMipLevel;
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    while (srcMipLevel < srcInfo.mipCount) {
+        auto dstMip = reinterpret_cast<uint8_t*>(dstMips->mip[invSrcMipLevel + srcMipLevel]);
+
+        auto src = static_cast<const uint8_t*>(TextureCacheGetMip(entry, srcMipLevel));
+        auto srcEnd = src + srcRowPitch * copyHeight;
+        auto alpha = srcEnd;
+
+        auto dstRow = dstMip + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+
+        while (src < srcEnd) {
+            auto dst = reinterpret_cast<C4Pixel*>(dstRow);
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t a = alpha[x];
+
+                const BlpPalPixel& texel = pal[src[x]];
+
+                dst[x].b = ((255 - a) * dst[x].b + a * texel.b) >> 8;
+                dst[x].g = ((255 - a) * dst[x].g + a * texel.g) >> 8;
+                dst[x].r = ((255 - a) * dst[x].r + a * texel.r) >> 8;
+                dst[x].a = 0xFF;
+            }
+
+            src += srcRowPitch;
+            dstRow += pixelStrideInBytes;
+            alpha += srcRowPitch;
+        }
+
+        copyWidth = (copyWidth >> 1) ? (copyWidth >> 1) : 1;
+        copyHeight = (copyHeight >> 1) ? (copyHeight >> 1) : 1;
+
+        dstPos.x >>= 1;
+        dstPos.y >>= 1;
+        srcPos.x >>= 1;
+        srcPos.y >>= 1;
+
+        srcRowPitch >>= 1;
+        pixelStrideInBytes >>= 1;
+
+        srcMipLevel++;
+    }
+}
+
+// OFFSET: 0x4E83A0
+void CCharacterComponent::PasteOpaque(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel) {
+    uint32_t srcRowPitch = srcInfo.width >> srcMipLevel;
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    while (srcMipLevel < srcInfo.mipCount) {
+        auto dstMip = reinterpret_cast<uint8_t*>(dstMips->mip[invSrcMipLevel + srcMipLevel]);
+
+        auto src = static_cast<const uint8_t*>(TextureCacheGetMip(entry, srcMipLevel)) + srcPos.x + srcRowPitch * srcPos.y;
+        auto srcEnd = src + srcRowPitch * copyHeight;
+
+        auto dstRow = dstMip + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+
+        while (src < srcEnd) {
+            auto dst = reinterpret_cast<C4Pixel*>(dstRow);
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                const BlpPalPixel& texel = pal[src[x]];
+
+                dst[x].b = texel.b;
+                dst[x].g = texel.g;
+                dst[x].r = texel.r;
+                dst[x].a = 0xFF;
+            }
+
+            src += srcRowPitch;
+            dstRow += pixelStrideInBytes;
+        }
+        copyWidth = (copyWidth >> 1) ? (copyWidth >> 1) : 1;
+        copyHeight = (copyHeight >> 1) ? (copyHeight >> 1) : 1;
+
+        dstPos.x >>= 1;
+        dstPos.y >>= 1;
+        srcPos.x >>= 1;
+        srcPos.y >>= 1;
+
+        srcRowPitch >>= 1;
+        pixelStrideInBytes >>= 1;
+
+        srcMipLevel++;
+    }
+}
+
+void CCharacterComponent::PasteScale(CACHEENTRY* entry, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
+    C2iVector dst = dstPos;
+    C2iVector src = srcPos;
+    C2iVector size = srcSize;
+
+    //switch (srcInfo.alphaSize) {
+    //case 0:
+    //    this->PasteOpaqueScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
+    //    break;
+    //case 1:
+    //    this->PasteTransparent1BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
+    //    break;
+    //case 4:
+    //    this->PasteTransparent4BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
+    //    break;
+    //case 8:
+    //    this->PasteTransparent8BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
+    //    break;
+    //}
 }

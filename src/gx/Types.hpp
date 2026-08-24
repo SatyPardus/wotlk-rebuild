@@ -258,7 +258,8 @@ enum EGxTexCommand {
     GxTex_Lock = 0,
     GxTex_Latch = 1,
     GxTex_Unlock = 2,
-    GxTexCommands_Last = 3
+    GxTex_3 = 3,
+    GxTexCommands_Last
 };
 
 enum EGxTexFilter {
