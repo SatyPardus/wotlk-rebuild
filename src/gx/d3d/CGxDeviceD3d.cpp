@@ -2776,8 +2776,20 @@ void CGxDeviceD3d::ITexUpload(CGxTex* texId) {
                 goto UNLOCK;
             }
 
+            const void* src = texels;
+
             if (texId->m_flags.m_bit15) {
-                // TODO
+                src = texels;
+            } else if (texId->m_dataFormat == GxTex_Dxt1 || texId->m_dataFormat == GxTex_Dxt3 || texId->m_dataFormat == GxTex_Dxt5) {
+                uint32_t bytesPerBlock = CGxDevice::s_texFormatBytesPerBlock[texId->m_dataFormat];
+                uint32_t offset = (bytesPerBlock * (rect.left >> 2)) + (texelStrideInBytes * (rect.top >> 2));
+
+                src = static_cast<const char*>(texels) + offset;
+            } else {
+                uint32_t bitDepth = CGxDevice::s_texFormatBitDepth[texId->m_dataFormat];
+                uint32_t offset = ((bitDepth * rect.left) >> 3) + (texelStrideInBytes * rect.top);
+
+                src = static_cast<const char*>(texels) + offset;
             }
 
             C2iVector size = { rect.right - rect.left, rect.bottom - rect.top };
@@ -2785,13 +2797,12 @@ void CGxDeviceD3d::ITexUpload(CGxTex* texId) {
             Blit(
                 size,
                 BlitAlpha_0,
-                texels,
+                src,
                 texelStrideInBytes,
                 GxGetBlitFormat(texId->m_dataFormat),
                 lockedRect.pBits,
                 lockedRect.Pitch,
-                GxGetBlitFormat(texId->m_format)
-            );
+                GxGetBlitFormat(texId->m_format));
 
             surface->UnlockRect();
             surface->Release();
