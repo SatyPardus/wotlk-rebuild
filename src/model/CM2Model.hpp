@@ -22,6 +22,7 @@ struct M2ModelTextureWeight;
 struct M2SequenceFallback;
 struct M2TrackBase;
 struct M2ModelTextureTransform;
+struct M2ModelAttachment;
 
 struct CM2ModelCall {
     uint32_t type = -1;
@@ -69,11 +70,11 @@ class CM2Model {
         static uint16_t Sub8260C0(M2Data* data, uint32_t sequenceId, int32_t a3);
 
         // Member variables
-        uint32_t m_refCount = 1;
-        uint32_t m_flags = 0;
-        CM2Model** m_scenePrev = nullptr;
-        CM2Model* m_sceneNext = nullptr;
-        union {
+        /* 0000 */ uint32_t m_refCount = 1;
+        /* 0004 */ uint32_t m_flags = 0;
+        /* 0008 */ CM2Model** m_scenePrev = nullptr;
+        /* 000C */ CM2Model* m_sceneNext = nullptr;
+        /* 0010 */ union {
             struct {
                 uint32_t m_loaded : 1;
                 uint32_t m_flag2 : 1;
@@ -101,52 +102,60 @@ class CM2Model {
             };
             uint32_t f_flags;
         };
-        CM2Model** m_callbackPrev = nullptr;
-        CM2Model* m_callbackNext = nullptr;
-        void (*m_loadedCallback)(CM2Model*, void*) = nullptr;
-        void* m_loadedArg = nullptr;
-        CM2Scene* m_scene = nullptr;
-        CM2Shared* m_shared = nullptr;
-        CM2Model* model30 = nullptr;
-        CM2ModelCall* m_modelCallList = nullptr;
-        CM2ModelCall** m_modelCallTail = nullptr;
-        CM2Model** m_animatePrev = nullptr;
-        CM2Model* m_animateNext = nullptr;
-        CM2Model* m_attachParent = nullptr;
-        uint32_t m_attachmentId;
-        uint16_t m_attachmentIndex;
-        CM2Model* m_attachList = nullptr;
-        CM2Model** m_attachPrev = nullptr;
-        CM2Model* m_attachNext = nullptr;
-        uint32_t m_time = 0;
-        CM2Model** m_drawPrev = nullptr;
-        CM2Model* m_drawNext = nullptr;
-        uint32_t* m_loops = nullptr;
-        uint32_t uint74 = 0;
-        float float88 = 0.0f;
-        uint32_t uint90 = 0;
-        M2ModelBone* m_bones = nullptr;
-        C44Matrix* m_boneMatrices = nullptr;
-        uint32_t* m_skinSections = nullptr;
-        M2ModelColor* m_colors = nullptr;
-        HTEXTURE* m_textures = nullptr;
-        M2ModelTextureWeight* m_textureWeights = nullptr;
-        M2ModelTextureTransform* m_textureTransforms = nullptr;
-        C44Matrix* m_textureMatrices = nullptr;
-        C44Matrix matrixB4;
-        C44Matrix matrixF4;
-        float float198 = 1.0f;
-        float alpha19C = 1.0f;
-        C3Vector m_currentDiffuse = { 1.0f, 1.0f, 1.0f };
-        C3Vector m_currentEmissive = { 0.0f, 0.0f, 0.0f };
-        M2ModelLight* m_lights;
-        CM2Lighting m_lighting;
-        CM2Lighting* m_currentLighting = nullptr;
-        void (*m_lightingCallback)(CM2Model*, CM2Lighting*, void*) = nullptr;
-        void* m_lightingArg = nullptr;
-        M2ModelCamera* m_cameras = nullptr;
-        void* ptr2D0 = nullptr;
-        uint32_t m_handle = 0;
+        /* 0018 */ CM2Model** m_callbackPrev = nullptr;
+        /* 001C */ CM2Model* m_callbackNext = nullptr;
+        /* 0020 */ void (*m_loadedCallback)(CM2Model*, void*) = nullptr;
+        /* 0024 */ void* m_loadedArg = nullptr;
+        /* 0028 */ CM2Scene* m_scene = nullptr;
+        /* 002C */ CM2Shared* m_shared = nullptr;
+        /* 0030 */ CM2Model* model30 = nullptr;
+        /* 0034 */ CM2ModelCall* m_modelCallList = nullptr;
+        /* 0038 */ CM2ModelCall** m_modelCallTail = nullptr;
+        /* 003C */ uint32_t m_frameStamp = 0;
+        /* 0040 */ CM2Model** m_animatePrev = nullptr;
+        /* 0044 */ CM2Model* m_animateNext = nullptr;
+        /* 0048 */ CM2Model* m_attachParent = nullptr;
+        /* 004C */ M2ModelAttachment* m_attachments;
+        /* 0050 */ uint32_t m_attachmentId;
+        /* 0054 */ uint16_t m_attachmentIndex;
+        /* 0058 */ CM2Model* m_attachList = nullptr;
+        /* 005C */ CM2Model** m_attachPrev = nullptr;
+        /* 0060 */ CM2Model* m_attachNext = nullptr;
+        /* 0064 */ uint32_t m_lastAnimTime = 0;
+        /* 0000 */ CM2Model** m_drawPrev = nullptr;
+        /* 0000 */ CM2Model* m_drawNext = nullptr;
+        /* 0070 */ uint32_t* m_loops = nullptr;
+        /* 0074 */ uint32_t m_loopOrigin = 0;
+        /* 0078 */
+        /* 007C */
+        /* 0080 */
+        /* 0084 */
+        /* 0088 */ float float88 = 0.0f;
+        /* 008C */ uint32_t m_lastEmitterTime = 0;
+        /* 0090 */ uint32_t uint90 = 0;
+        /* 0094 */ M2ModelBone* m_bones = nullptr;
+        /* 0098 */ C44Matrix* m_boneMatrices = nullptr;
+        /* 009C */ uint32_t* m_skinSections = nullptr;
+        /* 00A0 */ M2ModelColor* m_colors = nullptr;
+        /* 00A4 */ HTEXTURE* m_textures = nullptr;
+        /* 00A8 */ M2ModelTextureWeight* m_textureWeights = nullptr;
+        /* 00AC */ M2ModelTextureTransform* m_textureTransforms = nullptr;
+        /* 00B0 */ C44Matrix* m_textureMatrices = nullptr;
+        /* 00B4 */ C44Matrix m_worldTransform;
+        /* 00F4 */ C44Matrix matrixF4;
+
+        /* 0000 */ float float198 = 1.0f;
+        /* 0000 */ float alpha19C = 1.0f;
+        /* 0000 */ C3Vector m_currentDiffuse = { 1.0f, 1.0f, 1.0f };
+        /* 0000 */ C3Vector m_currentEmissive = { 0.0f, 0.0f, 0.0f };
+        /* 0000 */ M2ModelLight* m_lights;
+        /* 0000 */ CM2Lighting m_lighting;
+        /* 0000 */ CM2Lighting* m_currentLighting = nullptr;
+        /* 0000 */ void (*m_lightingCallback)(CM2Model*, CM2Lighting*, void*) = nullptr;
+        /* 0000 */ void* m_lightingArg = nullptr;
+        /* 0000 */ M2ModelCamera* m_cameras = nullptr;
+        /* 0000 */ void* ptr2D0 = nullptr;
+        /* 0000 */ uint32_t m_handle = 0;
 
         // Member functions
         CM2Model()

@@ -144,30 +144,28 @@ CM2Model::~CM2Model() {
     }
     //this->CancelAllDeferredSequences();
     this->UnlinkFromCallbackList();
-    //ukn17 = this->ukn17;
-    //if (ukn17)
-    //    *ukn17 = this->ukn18;
-    //ukn18 = this->ukn18;
-    //if (ukn18)
-    //    *(ukn18 + 64) = this->ukn17;
-    //ukn27 = this->ukn27;
-    //if (ukn27)
-    //    *ukn27 = this->ukn28;
-    //ukn28 = this->ukn28;
-    //if (ukn28)
-    //    *(ukn28 + 104) = this->ukn27;
-    //ukn191 = this->ukn191;
-    //if (ukn191)
-    //    *ukn191 = this->ukn192;
-    //ukn192 = this->ukn192;
-    //if (ukn192)
-    //    *(ukn192 + 712) = this->ukn191;
-    //ukn195 = this->ukn195;
-    //if (ukn195)
-    //    *ukn195 = this->ukn196;
-    //ukn196 = this->ukn196;
-    //if (ukn196)
-    //    *(ukn196 + 728) = this->ukn195;
+    if (this->m_animatePrev)
+        *this->m_animatePrev = this->m_animateNext;
+    if (this->m_animateNext)
+        this->m_animateNext->m_animatePrev = this->m_animatePrev;
+    //unk_0068 = this->unk_0068;
+    //if (unk_0068)
+    //    *unk_0068 = this->unk_006C;
+    //unk_006C = this->unk_006C;
+    //if (unk_006C)
+    //    *(unk_006C + 104) = this->unk_0068;
+    //unk_02C8 = this->unk_02C8;
+    //if (unk_02C8)
+    //    *unk_02C8 = this->unk_02CC;
+    //unk_02CC = this->unk_02CC;
+    //if (unk_02CC)
+    //    *(unk_02CC + 712) = this->unk_02C8;
+    //unk_02D8 = this->unk_02D8;
+    //if (unk_02D8)
+    //    *unk_02D8 = this->unk_02DC;
+    //unk_02DC = this->unk_02DC;
+    //if (unk_02DC)
+    //    *(unk_02DC + 728) = this->unk_02D8;
     this->DetachFromScene();
     if (this->m_shared) {
         //this->FreeExternalResources();
@@ -188,8 +186,8 @@ CM2Model::~CM2Model() {
         attachList->m_attachPrev = 0;
         attachList->m_attachNext = 0;
         attachList->m_attachParent = 0;
-        //attachList->ukn21 = -1;
-        //attachList->ukn74.a1 = 0.0;
+        attachList->m_attachmentId = -1;
+        //attachList->unk_0170.a1 = 0.0;
         if (attachList->m_refCount == 0) {
             attachList->~CM2Model();
             ObjectFree(*g_modelPool, attachList->m_handle);
@@ -214,11 +212,64 @@ CM2Model::~CM2Model() {
     SMemAlignedFree(this->m_boneMatrices);
     SMemAlignedFree(this->m_textureMatrices);
     this->m_attachParent = nullptr;
-    //this->unk183 = 0;
+    //this->ukn_02A8 = 0;
 }
 
+// OFFSET: 0x830DC0
 void CM2Model::Animate() {
-    // TODO
+    if (this->m_frameStamp == this->m_scene->m_frameStamp)
+        return;
+
+    if (this->m_attachParent) {
+        this->m_attachParent->Animate();
+    } else {
+        C3Vector oneVector = C3Vector(1.0f, 1.0f, 1.0f);
+        C3Vector zeroVector = C3Vector(0.0f, 0.0f, 0.0f);
+        if ((this->f_flags & 0x1000) != 0) {
+            this->AnimateMTSimple(&this->m_scene->m_view, oneVector, zeroVector, 1.0f, 1.0f);
+        } else {
+            this->AnimateMT(&this->m_scene->m_view, oneVector, zeroVector, 1.0f, 1.0f);
+        }
+    }
+
+    if (this->m_frameStamp == this->m_scene->m_frameStamp)
+        return;
+
+    if (!this->m_attachParent || (this->f_flags & 1) == 0) {
+        if (this->m_attachParent) {
+            this->matrixF4 = this->m_attachParent->matrixF4;
+        } else {
+            this->matrixF4 = this->m_worldTransform * this->m_scene->m_view;
+        }
+    } else {
+        const C44Matrix* p_matrix_00F4 = &this->m_attachParent->matrixF4;
+
+        C44Matrix mat;
+        if ((this->m_attachParent->f_flags & 1) != 0 && this->m_attachParent->m_frameStamp == this->m_scene->m_frameStamp) {
+            if (this->m_attachmentIndex != 0xFFFF) {
+                auto& att = this->m_attachParent->m_shared->m_data->attachments[this->m_attachmentIndex];
+                mat = this->m_attachParent->m_boneMatrices[att.boneIndex];
+                mat.Translate(att.position);
+                p_matrix_00F4 = &mat;
+            }
+        }
+        //v10 = this->m_attachParent;
+        //c3 = v10->unk_0170.c3;
+        //c2_low = SLODWORD(v10->unk_0170.c2);
+        //p_d3 = &v10->unk_0170.d3;
+        //p_d0 = &v10->unk_0170.d0;
+        //if ((this->f_flags & 0x1000) != 0)
+        //    this->AnimateMTSimple(&p_matrix_00F4, p_d0, p_d3, c2_low, c3);
+        //else
+        //    this->AnimateMT(&p_matrix_00F4, p_d0, *&p_d3, *&c2_low, c3);
+        //if (this->m_frameStamp != this->m_scene->m_frameStamp) {
+        //    if (this->m_attachParent) {
+        //        this->matrixF4 = this->m_attachParent->matrixF4;
+        //    } else {
+        //        this->matrixF4 = this->m_worldTransform * this->m_scene->m_view;
+        //    }
+        //}
+    }
 }
 
 void CM2Model::AnimateCamerasST() {
@@ -240,7 +291,7 @@ void CM2Model::AnimateCamerasST() {
 
 // OFFSET: 0x82F0F0
 void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vector& a4, float a5, float a6) {
-    if (!this->m_loaded /* TODO other conditionals */) {
+    if (!this->m_loaded || this->m_frameStamp == this->m_scene->m_frameStamp) {
         return;
     }
 
@@ -248,10 +299,10 @@ void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vect
 
     for (int32_t i = 0; i < this->m_shared->m_data->loops.Count(); i++) {
         auto loopLength = this->m_shared->m_data->loops[i].length;
-        this->m_loops[i] = loopLength ? (this->m_scene->m_time - this->uint74) % loopLength : 0;
+        this->m_loops[i] = loopLength ? (this->m_scene->m_time - this->m_loopOrigin) % loopLength : 0;
     }
 
-    this->matrixF4 = this->matrixB4 * *view;
+    this->matrixF4 = this->m_worldTransform * *view;
 
     this->float88 = !this->m_attachParent || this->m_attachParent->m_flags & 0x1
         ? this->matrixF4.d2 * this->matrixF4.d2 + this->matrixF4.d1 * this->matrixF4.d1 + this->matrixF4.d0 * this->matrixF4.d0
@@ -264,9 +315,9 @@ void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vect
     // TODO
 
     uint32_t elapsedTime = 0;
-    if (this->m_time && this->m_scene->m_time) {
-        elapsedTime = this->m_scene->m_time - this->m_time;
-        this->m_time = this->m_scene->m_time;
+    if (this->m_lastAnimTime && this->m_scene->m_time) {
+        elapsedTime = this->m_scene->m_time - this->m_lastAnimTime;
+        this->m_lastAnimTime = this->m_scene->m_time;
     }
 
     for (int32_t i = 0; i < this->m_shared->m_data->bones.Count(); i++) {
@@ -286,7 +337,7 @@ void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vect
                 modelBone.sequence.uint6 = this->m_bones[bone.parentIndex].sequence.uint6;
             }
         } else {
-            if (this->m_time) {
+            if (this->m_lastAnimTime) {
                 modelBone.sequence.uintC += elapsedTime;
                 modelBone.sequence.uint10 += elapsedTime;
             }
@@ -620,11 +671,15 @@ void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vect
         }
     }
 
-    if (this->m_attachList) {
+    this->f_flags &= ~0x400u;
+    //if (v194->particles.count)
+    //    bn_CM2Model_AnimateParticlesMT(this);
+
+    if (/*this->m_attachments ||*/ this->m_attachList) {
         this->AnimateAttachmentsMT();
     }
 
-    // TODO
+    this->m_frameStamp = this->m_scene->m_frameStamp;
 }
 
 void CM2Model::AnimateMTSimple(const C44Matrix* view, const C3Vector& a3, const C3Vector& a4, float a5, float a6) {
@@ -708,7 +763,7 @@ void CM2Model::AnimateST() {
         }
 
         modelLight.light.SetVisible(visible);
-        modelLight.light.m_stamp = this->m_scene->m_lightStamp;
+        modelLight.light.m_stamp = this->m_scene->m_frameStamp;
     }
 
     if (this->m_shared->m_data->cameras.Count()) {
@@ -862,14 +917,14 @@ uint16_t CM2Model::AttachToParent(CM2Model* parent, uint32_t attachmentId, const
         transform = transform.AffineInverse(v12);
 
         if (!this->m_flag8000) {
-            this->matrixB4.Identity();
+            this->m_worldTransform.Identity();
         }
 
         transform.Translate(*a4);
 
-        this->matrixB4.d0 = transform.a0;
-        this->matrixB4.d1 = transform.a1;
-        this->matrixB4.d2 = transform.a2;
+        this->m_worldTransform.d0 = transform.a0;
+        this->m_worldTransform.d1 = transform.a1;
+        this->m_worldTransform.d2 = transform.a2;
         this->m_flag8000 = 1;
     }
 
@@ -960,7 +1015,7 @@ void CM2Model::DetachAllChildrenById(uint32_t id) {
                 // attachmentBase->dword174 = 0;
                 if (--attachmentBase->m_refCount == 0) {
                     attachmentBase->~CM2Model();
-                    // ObjectFree(*v7, attachmentBase->m_handle);
+                    ObjectFree(*g_modelPool, attachmentBase->m_handle);
                     attachmentNext = v8;
                 }
             }
@@ -1157,26 +1212,35 @@ C3Vector CM2Model::GetPosition() {
     return reinterpret_cast<C3Vector&>(this->matrixF4.d0) * this->m_scene->m_viewInv;
 }
 
+// OFFSET: 0x834810
 int32_t CM2Model::Initialize(CM2Scene* scene, CM2Shared* shared, CM2Model* a4, uint32_t flags) {
     this->AttachToScene(scene);
-
-    // TODO
-    // this->dword30[23] = this->m_scene->dwordC;
-
+    this->m_lastEmitterTime = this->m_scene->m_time;
     this->m_shared = shared;
     this->m_shared->AddRef();
+    this->model30 = a4;
 
     if (a4) {
         a4->m_refCount++;
     }
 
     this->m_flags = flags;
-
     this->m_modelCallTail = &this->m_modelCallList;
+    this->m_loopOrigin = this->m_scene->m_time;
 
-    this->uint74 = this->m_scene->m_time;
-
-    // TODO
+    if (this->model30) {
+        for (CM2Model* i = this->model30->m_attachList; i; i = i->m_attachNext) {
+            CM2Model* v9 = this->m_scene->DuplicateModel(i, 0);
+            if (v9) {
+                v9->AttachToParent(this, i->m_attachmentId, nullptr, 0);
+                v9->m_refCount--;
+                if (v9->m_refCount == 0) {
+                    v9->~CM2Model();
+                    ObjectFree(*g_modelPool, v9->m_handle);
+                }
+            }
+        }
+    }
 
     return this->m_shared->CallbackWhenLoaded(this);
 }
@@ -1590,34 +1654,47 @@ void CM2Model::Release() {
     }
 }
 
+// OFFSET: 0x823F10
 void CM2Model::SetAnimating(int32_t animating) {
-    if (!animating) {
-        if (this->m_animatePrev) {
-            *this->m_animatePrev = this->m_animateNext;
+    if ((this->m_flags & 0x20) != 0) {
+        if (!animating) {
+            if (!this->m_animatePrev) {
+                this->m_animatePrev = &this->m_scene->m_animateList;
+                this->m_animateNext = this->m_scene->m_animateList;
+                this->m_scene->m_animateList = this;
+
+                if (this->m_animateNext) {
+                    this->m_animateNext->m_animatePrev = &this->m_animateNext;
+                }
+            }
+        }
+        if ((this->f_flags & 1) == 0)
+            this->WaitForLoad(nullptr);
+    }
+
+    if (animating) {
+        if (!this->m_animatePrev) {
+            this->m_animatePrev = &this->m_scene->m_animateList;
+            this->m_animateNext = this->m_scene->m_animateList;
+            this->m_scene->m_animateList = this;
 
             if (this->m_animateNext) {
-                this->m_animateNext->m_animatePrev = this->m_animatePrev;
+                this->m_animateNext->m_animatePrev = &this->m_animateNext;
             }
-
-            this->m_animatePrev = nullptr;
-            this->m_animateNext = nullptr;
         }
 
         return;
     }
 
-    if (this->m_flags & 0x20 && !this->m_loaded) {
-        this->WaitForLoad(nullptr);
-    }
-
-    if (!this->m_animatePrev) {
-        this->m_animatePrev = &this->m_scene->m_animateList;
-        this->m_animateNext = this->m_scene->m_animateList;
-        this->m_scene->m_animateList = this;
+    if (this->m_animatePrev) {
+        *this->m_animatePrev = this->m_animateNext;
 
         if (this->m_animateNext) {
-            this->m_animateNext->m_animatePrev = &this->m_animateNext;
+            this->m_animateNext->m_animatePrev = this->m_animatePrev;
         }
+
+        this->m_animatePrev = nullptr;
+        this->m_animateNext = nullptr;
     }
 }
 
@@ -1924,14 +2001,15 @@ void CM2Model::SetVisible(int32_t visible) {
     }
 }
 
+// OFFSET: 0x8251D0
 void CM2Model::SetWorldTransform(const C3Vector& position, float orientation, float scale) {
-    this->matrixB4 = C44Matrix();
+    this->m_worldTransform = C44Matrix();
 
-    this->matrixB4.RotateAroundZ(orientation);
-    this->matrixB4.Scale(scale);
-    this->matrixB4.d0 = position.x;
-    this->matrixB4.d1 = position.y;
-    this->matrixB4.d2 = position.z;
+    this->m_worldTransform.RotateAroundZ(orientation);
+    this->m_worldTransform.Scale(scale);
+    this->m_worldTransform.d0 = position.x;
+    this->m_worldTransform.d1 = position.y;
+    this->m_worldTransform.d2 = position.z;
 
     this->m_flag8000 = 1;
 }

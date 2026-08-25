@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <tempest/Math.hpp>
+#include <common/ObjectAlloc.hpp>
 
 uint32_t CM2Scene::s_optFlags = 0xFFFFFFFF;
 
@@ -379,7 +380,7 @@ void CM2Scene::AdvanceTime(uint32_t a2) {
 }
 
 void CM2Scene::Animate(const C3Vector& cameraPos) {
-    this->m_lightStamp++;
+    this->m_frameStamp++;
 
     uint32_t optFlags = this->m_cache->m_flags & 0xE000;
     if (CM2Scene::s_optFlags != optFlags) {
@@ -739,7 +740,7 @@ void CM2Scene::SelectLights(CM2Lighting* lighting) {
             while (light) {
                 CM2Light* next = light->m_lightNext;
 
-                if (!light->m_scene || light->m_stamp == this->m_lightStamp) {
+                if (!light->m_scene || light->m_stamp == this->m_frameStamp) {
                     lighting->AddLight(light);
                 } else {
                     light->SetVisible(0);
@@ -769,4 +770,20 @@ void CM2Scene::Release() {
     if (this->m_refCount <= 0) {
         delete this;
     }
+}
+
+// OFFSET: 0x81F970
+CM2Model* CM2Scene::DuplicateModel(CM2Model* a2, uint32_t a3) {
+    if (!a2)
+        return nullptr;
+
+    CM2Model* model = CM2Model::AllocModel(g_modelPool);
+    if (model) {
+        if (!model->Initialize(this, a2->m_shared, a2, a3)) {
+            model->~CM2Model();
+            ObjectFree(*g_modelPool, model->m_handle);
+            return nullptr;
+        }
+    }
+    return model;
 }

@@ -5,7 +5,7 @@
 void CM2Light::Initialize(CM2Scene* scene) {
     this->m_scene = scene;
 
-    this->m_stamp = scene ? scene->m_lightStamp - 1 : 0;
+    this->m_stamp = scene ? scene->m_frameStamp - 1 : 0;
     // TODO
 }
 

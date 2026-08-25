@@ -32,7 +32,7 @@ class CM2Scene {
     /* 0008 */ CM2Model* m_modelList = nullptr;
     /* 000C */ uint32_t m_time = 0;
     /* 0010 */ uint32_t uint10;
-    /* 0014 */ uint32_t m_lightStamp = 0;
+    /* 0014 */ uint32_t m_frameStamp = 0;
     /* 0018 */
     /* 001C */ uint32_t m_flags = 0;
     /* 0020 */ CM2Light* m_lightList = nullptr;
@@ -56,6 +56,7 @@ class CM2Scene {
     int32_t Draw(M2PASS pass);
     void SelectLights(CM2Lighting* lighting);
     void Release();
+    CM2Model* DuplicateModel(CM2Model* a2, uint32_t a3);
 };
 
 #endif

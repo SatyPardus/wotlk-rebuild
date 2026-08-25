@@ -703,7 +703,7 @@ CMapDoodadDef* CMap::CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3V
     mapDoodadDef->model = CWorldScene::s_m2Scene->CreateModel(fileName, 32);
     if (mapDoodadDef->model) {
         mapDoodadDef->model->m_flag8000 = 1;
-        mapDoodadDef->model->matrixB4 = mapDoodadDef->mat;
+        mapDoodadDef->model->m_worldTransform = mapDoodadDef->mat;
         //CWorldScene::LoadModel(v5->model, COERCE_FLOAT(CMapStaticEntity::ModelEventCallback), *(float *)&v5, 0.0);
         //mapDoodadDef->model->m_lightingCallback = MapStaticEntity::ModelLightingCallback;
         mapDoodadDef->model->m_lightingCallback = CMapDoodadLightingCallback;
