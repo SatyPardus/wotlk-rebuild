@@ -1578,8 +1578,32 @@ bool CCharacterComponent::Init(ComponentData* data, const char* a3) {
 }
 
 // OFFSET: 0x4F1FC0
-void CCharacterComponent::SkinNPC(const char* a2) {
+bool CCharacterComponent::SkinNPC(const char* a2) {
+    this->m_data.m_flags &= ~1;
+    if (!this->m_data.m_npcSkinTexture[0])
+        return false;
 
+    CStatus status;
+    SStrCopy(s_path, this->m_data.m_npcSkinTexture);
+    CGxTexFlags flags = CGxTexFlags(GxTex_LinearMipNearest, 0, 0, 0, 0, 0, 1);
+    auto tex = TextureCreate(s_path, flags, &status, 0);
+    if (tex) {
+        this->m_data.m_model->ReplaceTexture(1, tex);
+        HandleClose(tex);
+        this->ReplaceExtraSkinTexture(a2);
+        this->m_data.m_flags |= 1;
+        this->m_flags |= 5;
+        if (this->m_request) {
+            //*m_request &= ~1u;
+            this->m_request = nullptr;
+        }
+        this->m_flags &= ~8u;
+        //CStatus::Destroy(v11);
+        return 1;
+    } else {
+        //CStatus::Destroy(v11);
+        return false;
+    }
 }
 
 // OFFSET: 0x4EA0B0

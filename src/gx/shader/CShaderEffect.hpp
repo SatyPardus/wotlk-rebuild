@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <storm/Hash.hpp>
+#include "tempest/vector/C4Vector.hpp"
 
 class C3Vector;
 class C4Vector;
@@ -16,7 +17,11 @@ class CShaderEffect : public TSHashObject<CShaderEffect, HASHKEY_STRI> {
     public:
         // Structs
         struct LocalLights {
-            float float0[44];
+            C4Vector color[4];
+            C4Vector position[4];
+            float attenConstant[4];
+            float attenLinear[4];
+            float attenQuadratic[4];
         };
 
         // Static variables

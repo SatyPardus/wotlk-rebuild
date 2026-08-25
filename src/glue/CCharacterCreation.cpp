@@ -111,6 +111,9 @@ void CCharacterCreation::SetCharCustomizeModel(char const* filename) {
         return;
     }
 
+    CCharacterCreation::m_charCustomizeFrame->m_lightArray2[0].unk_01BC = 1;
+    model->m_lightingCallback = CCharacterSelection::GenericLightingCallback;
+    model->m_lightingArg = CCharacterCreation::m_charCustomizeFrame->m_lightArray2;
     // LOBYTE(CCharacterCreation::m_charCustomizeFrame[1].m_onEnable.unk) = 1;
     // TODO: LightingCallback + Particles
     model->IsDrawable(1, 1);

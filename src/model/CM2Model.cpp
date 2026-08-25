@@ -650,6 +650,7 @@ void CM2Model::AnimateAttachmentsMT() {
     }
 }
 
+// OFFSET: 0x828A00
 void CM2Model::AnimateST() {
     if (!this->m_loaded) {
         return;
@@ -682,7 +683,9 @@ void CM2Model::AnimateST() {
             visible = 1;
 
             if (light.lightType == M2LIGHT_1) {
-                // TODO
+                C3Vector pos = this->m_boneMatrices[light.boneIndex].TransformPoint(light.position);
+                pos = this->m_scene->m_viewInv.TransformPoint(pos);
+                modelLight.light.SetPosition(pos);
             } else {
                 float v10 = -this->m_boneMatrices[light.boneIndex].c0;
                 float v11 = -this->m_boneMatrices[light.boneIndex].c1;
@@ -705,8 +708,7 @@ void CM2Model::AnimateST() {
         }
 
         modelLight.light.SetVisible(visible);
-
-        // TODO modelLight.light.dword4 = this->m_scene->uint14;
+        modelLight.light.m_stamp = this->m_scene->m_lightStamp;
     }
 
     if (this->m_shared->m_data->cameras.Count()) {

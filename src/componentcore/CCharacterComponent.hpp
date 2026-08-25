@@ -101,7 +101,7 @@ class CCharacterComponent {
     CharSectionsRec* GetSectionsRecord(COMPONENT_VARIATIONS variation, uint32_t variationIndex, uint32_t colorId, bool* found);
 
     bool Init(ComponentData* data, const char* a3);
-    void SkinNPC(const char* a2);
+    bool SkinNPC(const char* a2);
     void ReplaceExtraSkinTexture(const char* a2);
     bool RenderPrep(int32_t a2);
     void RenderPrepSections();

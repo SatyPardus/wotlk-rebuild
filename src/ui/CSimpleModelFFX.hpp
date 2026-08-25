@@ -11,9 +11,9 @@ class CSimpleModelFFX : public CSimpleModel {
         static int32_t s_metatable;
 
         // Member variables
-        //CM2LightArray m_lightArray1[2];
-        //CM2LightArray m_lightArray2[2];
-        //CM2LightArray m_lightArray3[2];
+        CM2LightArray m_lightArray1[2];
+        CM2LightArray m_lightArray2[2];
+        CM2LightArray m_lightArray3[2];
         /* 0DE8 */ float m_glow;
 
         // Static functions

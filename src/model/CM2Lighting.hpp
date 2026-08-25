@@ -24,6 +24,7 @@ class CM2Lighting {
         C3Vector m_sunSpecular;
         C3Vector m_sunDir;
         CM2Light* m_lights[4];
+        float m_lightDist[4];
         uint32_t m_lightCount;
         float m_fogStart;
         float m_fogEnd;
@@ -43,6 +44,7 @@ class CM2Lighting {
         void SetFog(const C3Vector& fogColor, float fogStart, float fogEnd, float fogDensity);
         void SetupGxLights(const C3Vector* a2);
         void SetupSunlight();
+        void Reset();
 };
 
 #endif

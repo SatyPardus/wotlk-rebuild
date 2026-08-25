@@ -3,9 +3,11 @@
 
 #include <cstdint>
 #include <tempest/Rect.hpp>
+#include "model/CM2Light.hpp"
 
 struct lua_State;
 class CSimpleFrame;
+class CSimpleModelFFX;
 
 enum DRAWLAYER {
     DRAWLAYER_BACKGROUND        = 0,
@@ -108,6 +110,20 @@ struct GXUFONTHYPERLINKINFO {
     CRect extent;
     const char* link;
     uint32_t linkLength;
+};
+
+struct CM2LightArray {
+    uint32_t m_lightCount = 0;
+    CM2Light m_lights[4];
+    bool m_hasCustomLight = false;
+    uint8_t unk_01B5 = 0;
+    uint8_t unk_01B6 = 0;
+    uint8_t unk_01B7 = 0;
+    CSimpleModelFFX* m_modelFrame = nullptr;
+    uint8_t unk_01BC = 0;
+    uint8_t unk_01BD = 0;
+    uint8_t unk_01BE = 0;
+    uint8_t unk_01BF = 0;
 };
 
 

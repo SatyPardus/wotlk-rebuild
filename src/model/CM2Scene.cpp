@@ -379,7 +379,7 @@ void CM2Scene::AdvanceTime(uint32_t a2) {
 }
 
 void CM2Scene::Animate(const C3Vector& cameraPos) {
-    this->uint14++;
+    this->m_lightStamp++;
 
     uint32_t optFlags = this->m_cache->m_flags & 0xE000;
     if (CM2Scene::s_optFlags != optFlags) {
@@ -711,12 +711,56 @@ int32_t CM2Scene::Draw(M2PASS pass) {
     return 1;
 }
 
+// OFFSET: 0x81E400
 void CM2Scene::SelectLights(CM2Lighting* lighting) {
     for (auto light = this->m_lightList; light; light = light->m_lightNext) {
         lighting->AddLight(light);
     }
 
-    // TODO
+    if (!this->m_lightGrid) {
+        return;
+    }
+
+    const CAaSphere& s = lighting->sphere4;
+
+    int32_t x0 = static_cast<int32_t>(std::floor((s.c.x - s.r) * 0.05f - 0.5f)) & 0x3F;
+    int32_t x1 = static_cast<int32_t>(std::floor((s.c.x + s.r) * 0.05f + 0.5f)) & 0x3F;
+    int32_t y0 = static_cast<int32_t>(std::floor((s.c.y - s.r) * 0.05f - 0.5f)) & 0x3F;
+    int32_t y1 = static_cast<int32_t>(std::floor((s.c.y + s.r) * 0.05f + 0.5f)) & 0x3F;
+
+    int32_t y = y0;
+
+    for (;;) {
+        int32_t x = x0;
+
+        for (;;) {
+            CM2Light* light = this->m_lightGrid[x + 64 * y];
+
+            while (light) {
+                CM2Light* next = light->m_lightNext;
+
+                if (!light->m_scene || light->m_stamp == this->m_lightStamp) {
+                    lighting->AddLight(light);
+                } else {
+                    light->SetVisible(0);
+                }
+
+                light = next;
+            }
+
+            if (x == x1) {
+                break;
+            }
+
+            x = (x + 1) & 0x3F;
+        }
+
+        if (y == y1) {
+            break;
+        }
+
+        y = (y + 1) & 0x3F;
+    }
 }
 
 // OFFSET: 0x823040

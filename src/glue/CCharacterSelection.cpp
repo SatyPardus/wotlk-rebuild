@@ -59,14 +59,76 @@ void CCharacterSelection::SetBackgroundModel(const char* modelPath) {
 
     CCharacterSelection::m_modelFrame->SetModel(modelPath);
 
-    // TODO BYTE1(CCharacterSelection::m_modelFrame->simplemodelffx_dword510[3]) = 1;
+    CCharacterSelection::m_modelFrame->m_lightArray1[0].unk_01B5 = 1;
 
     model = CCharacterSelection::m_modelFrame->m_model;
 
     if (model) {
-        // TODO lighting callback + arg
+        CCharacterSelection::m_modelFrame->m_lightArray1[0].unk_01BC = 1;
+        model->m_lightingCallback = CCharacterSelection::GenericLightingCallback;
+        model->m_lightingArg = CCharacterSelection::m_modelFrame->m_lightArray1;
 
         model->IsDrawable(1, 1);
+    }
+}
+
+// OFFSET: 0x4E3A20
+void CCharacterSelection::GenericLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
+    CharacterSelectionDisplay* character = nullptr;
+    if (CCharacterSelection::m_selectionIndex >= 0 && CCharacterSelection::m_selectionIndex < CCharacterSelection::s_characterList.Count())
+        character = &CCharacterSelection::s_characterList[CCharacterSelection::m_selectionIndex];
+
+    CM2LightArray* lightArray = reinterpret_cast<CM2LightArray*>(userArg);
+    if (!lightArray->unk_01BC && character && (character->m_characterInfo.flags & 0x2000) != 0) {
+        lightArray++;
+        if (!lightArray->m_hasCustomLight) {
+            //ModelWorldTransform = maybe_GetModelWorldTransform(a1, &v20);
+            //a3.c.x = ModelWorldTransform->x;
+            //a3.c.y = ModelWorldTransform->y;
+            //z = ModelWorldTransform->z;
+            //a3.r = 0.0;
+            //m_scene = a1->m_scene;
+            //a3.c.z = z;
+            //CM2Lighting::Initialize(a2, m_scene, &a3);
+            //Row = ClientDB::GetRow(&bnl_g_lightParamsDB.funcTable2, 3);
+            //maybe_CCharacterSelection__LoadLightIntBand(v19, 0, Row, 0);
+            //maybe_CCharacterSelection__LoadLightIntBand(&arg8, 0, Row, 1);
+            //CM2Light::CM2Light(&v17);
+            //CM2Light::SetLightType(&v17, 0);
+            //v17.m_ambientColor = *C3Vector::C3Vector(&v20, &arg8);
+            //v8 = C3Vector::C3Vector(&v20, v19);
+            //v17.m_dirColor.x = v8->x;
+            //v17.m_dirColor.y = v8->y;
+            //v9 = v8->z;
+            //v20.x = 0.0;
+            //v20.y = 0.0;
+            //v20.z = -1.0;
+            //v17.m_dirColor.z = v9;
+            //CM2Light::SetDirection(&v17, &v20);
+            //CM2Light::SetVisible(&v17, 1u);
+            //CM2Lighting::AddLight(a2, &v17);
+            //CM2Light::Unlink(&v17);
+            return;
+        }
+
+        lighting->Reset();
+        for (int32_t i = 0; i < lightArray->m_lightCount; i++) {
+            lighting->AddLight(&lightArray->m_lights[i]);
+        }
+    }
+
+    if (lightArray->m_hasCustomLight) {
+        lighting->Reset();
+        for (int32_t i = 0; i < lightArray->m_lightCount; i++) {
+            lighting->AddLight(&lightArray->m_lights[i]);
+        }
+    }
+
+    if (lightArray->unk_01B5) {
+        if ((lightArray->m_modelFrame->m_flags & 1) != 0) {
+            C3Vector vec = C3Vector(lightArray->m_modelFrame->m_fogColor);
+            lighting->SetFog(vec, lightArray->m_modelFrame->m_fogNear, lightArray->m_modelFrame->m_fogFar);
+        }
     }
 }
 
@@ -136,6 +198,9 @@ void CCharacterSelection::ShowCharacter() {
 
     character.m_component = CCharacterComponent::AllocComponent();
     character.m_component->Init(&componentData, 0);
+
+    model->m_lightingCallback = CCharacterSelection::GenericLightingCallback;
+    model->m_lightingArg = CCharacterSelection::m_modelFrame->m_lightArray2;
 
     // TODO: set model ribbon emitters & particles
     model->SetBoneSequence(0xFFFFFFFF, 0, 0xFFFFFFFF, 0, 1.0f, 1, 1);

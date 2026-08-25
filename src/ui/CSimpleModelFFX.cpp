@@ -41,7 +41,13 @@ void CSimpleModelFFX::RegisterScriptMethods(lua_State* L) {
 }
 
 CSimpleModelFFX::CSimpleModelFFX(CSimpleFrame* parent) : CSimpleModel(parent) {
-    // TODO
+    this->m_glow = 0.30000001;
+    this->m_lightArray1[0].m_modelFrame = this;
+    this->m_lightArray1[1].m_modelFrame = this;
+    this->m_lightArray2[0].m_modelFrame = this;
+    this->m_lightArray2[1].m_modelFrame = this;
+    this->m_lightArray3[0].m_modelFrame = this;
+    this->m_lightArray3[1].m_modelFrame = this;
 }
 
 int32_t CSimpleModelFFX::GetScriptMetaTable() {

@@ -23,6 +23,7 @@ class CSimpleModel : public CSimpleFrame {
         static void ModelLoaded(CM2Model* model, void* arg);
         static void RegisterScriptMethods(lua_State* L);
         static void RenderModel(void* arg);
+        static bool SetLightHelper(lua_State* L, int32_t index, CM2Light* light);
 
         // Member variables
         CM2Scene* m_scene = nullptr;
@@ -68,6 +69,7 @@ class CSimpleModel : public CSimpleFrame {
         void SetScale(float scale);
         void SetSequence(uint32_t sequence);
         int32_t SetSequenceTime(uint32_t sequence, int32_t time);
+        void SetLight(CM2Light* light);
 };
 
 #endif

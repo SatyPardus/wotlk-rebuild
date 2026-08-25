@@ -112,7 +112,22 @@ int32_t CSimpleModel_SetCamera(lua_State* L) {
 
 // OFFSET: 0x960D20
 int32_t CSimpleModel_SetLight(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleModel::GetObjectType();
+    auto model = static_cast<CSimpleModel*>(FrameScript_GetObjectThis(L, type));
+
+    auto name = "model";
+    if (!model) {
+        return luaL_error(L, "Usage: %s:SetLight(enabled[, omni, dirX, dirY, dirZ, ambIntensity[, ambR, ambG, ambB], dirIntensity[, dirR, dirG, dirB]])", name);
+    }
+
+    CM2Light light = CM2Light();
+    if (!CSimpleModel::SetLightHelper(L, 2, &light)) {
+        name = model->GetDisplayName();
+        light.Unlink();
+        return luaL_error(L, "Usage: %s:SetLight(enabled[, omni, dirX, dirY, dirZ, ambIntensity[, ambR, ambG, ambB], dirIntensity[, dirR, dirG, dirB]])", name);
+    }
+    model->SetLight(&light);
+    light.Unlink();
 }
 
 // OFFSET: 0x960DD0

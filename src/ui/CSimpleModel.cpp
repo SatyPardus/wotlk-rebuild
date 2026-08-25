@@ -11,6 +11,7 @@
 #include "ui/LoadXML.hpp"
 #include <common/XML.hpp>
 #include <tempest/Math.hpp>
+#include "util/Lua.hpp"
 
 int32_t CSimpleModel::s_metatable;
 int32_t CSimpleModel::s_objectType;
@@ -27,6 +28,67 @@ int32_t CSimpleModel::GetObjectType() {
     }
 
     return CSimpleModel::s_objectType;
+}
+
+bool CSimpleModel::SetLightHelper(lua_State* L, int32_t index, CM2Light* light) {
+    if (!lua_isnumber(L, index))
+        return false;
+
+    light->SetVisible(static_cast<int32_t>(lua_tonumber(L, index)) != 0);
+
+    if (!light->m_visible)
+        return true;
+
+    for (int32_t i = 1; i <= 5; i++) {
+        if (!lua_isnumber(L, index + i))
+            return false;
+    }
+
+    light->SetLightType(static_cast<int32_t>(lua_tonumber(L, index + 1)) != 0 ? M2LIGHT_1 : M2LIGHT_0);
+
+    C3Vector v = {
+        static_cast<float>(lua_tonumber(L, index + 2)),
+        static_cast<float>(lua_tonumber(L, index + 3)),
+        static_cast<float>(lua_tonumber(L, index + 4)),
+    };
+
+    if (light->m_type == M2LIGHT_1) {
+        light->SetPosition(v);
+    } else {
+        light->SetDirection(v);
+    }
+
+    index += 5;
+
+    float intensity = static_cast<float>(lua_tonumber(L, index));
+    index++;
+
+    CImVector color = { 0xFF, 0xFF, 0xFF };
+    if (NotEqual(intensity, 0.0f, WHOA_EPSILON_1) && lua_isnumber(L, index) && lua_isnumber(L, index + 1) && lua_isnumber(L, index + 2)) {
+        FrameScript_GetColorNoAlpha(L, index, color);
+        index += 3;
+    }
+
+    light->m_ambColor.x = color.r * (1.0f / 255.0f) * intensity;
+    light->m_ambColor.y = color.g * (1.0f / 255.0f) * intensity;
+    light->m_ambColor.z = color.b * (1.0f / 255.0f) * intensity;
+
+    if (!lua_isnumber(L, index))
+        return true;
+
+    intensity = static_cast<float>(lua_tonumber(L, index));
+    index++;
+
+    color = { 0xFF, 0xFF, 0xFF };
+    if (NotEqual(intensity, 0.0f, WHOA_EPSILON_1) && lua_isnumber(L, index) && lua_isnumber(L, index + 1) && lua_isnumber(L, index + 2)) {
+        FrameScript_GetColorNoAlpha(L, index, color);
+    }
+
+    light->m_dirColor.x = color.r * (1.0f / 255.0f) * intensity;
+    light->m_dirColor.y = color.g * (1.0f / 255.0f) * intensity;
+    light->m_dirColor.z = color.b * (1.0f / 255.0f) * intensity;
+
+    return true;
 }
 
 void CSimpleModel::LightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
@@ -420,4 +482,8 @@ void CSimpleModel::UpdateModel() {
     float scale = NDCToDDCHeight(1.0f) * 1.6666666 * (this->m_scale * this->m_layoutScale);
 
     this->m_model->SetWorldTransform(position, this->m_facing, scale);
+}
+
+void CSimpleModel::SetLight(CM2Light* light) {
+    memcpy(&this->m_light, light, sizeof(this->m_light));
 }

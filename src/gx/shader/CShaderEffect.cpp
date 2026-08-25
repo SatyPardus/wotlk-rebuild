@@ -7,6 +7,8 @@
 #include "model/CM2Lighting.hpp"
 #include <algorithm>
 #include <cstring>
+#include "model/CM2Light.hpp"
+#include "tempest/Vector.hpp"
 
 CShaderEffect* CShaderEffect::s_curEffect;
 int32_t CShaderEffect::s_enableShaders;
@@ -22,8 +24,68 @@ C3Vector CShaderEffect::s_sunDir;
 int32_t CShaderEffect::s_useAlphaRef;
 int32_t CShaderEffect::s_usePcfFiltering;
 
-void CShaderEffect::ComputeLocalLights(LocalLights* localLights, uint32_t localLightsCount, CM2Light** lights, const C3Vector* a4) {
-    // TODO
+// OFFSET: 0x872900
+void CShaderEffect::ComputeLocalLights(LocalLights* localLights, uint32_t localLightsCount, CM2Light** lights, const C3Vector* origin) {
+    uint32_t i = 0;
+
+    if (localLightsCount) {
+        C44Matrix xform;
+
+        if (origin) {
+            xform = g_theGxDevicePtr->m_xforms[GxXform_World].m_mtx[g_theGxDevicePtr->m_xforms[GxXform_World].m_level];
+        }
+
+        do {
+            CM2Light* light = lights[i];
+
+            if (light->m_type == 1) {
+                localLights->color[i].x = light->m_dirColor.x;
+                localLights->color[i].y = light->m_dirColor.y;
+                localLights->color[i].z = light->m_dirColor.z;
+                localLights->color[i].w = 1.0f;
+
+                if (origin) {
+                    C3Vector rel = {
+                        light->m_pos.x - origin->x,
+                        light->m_pos.y - origin->y,
+                        light->m_pos.z - origin->z,
+                    };
+
+                    C3Vector pos = xform.TransformPoint(rel);
+
+                    localLights->position[i].x = pos.x;
+                    localLights->position[i].y = pos.y;
+                    localLights->position[i].z = pos.z;
+                } else {
+                    localLights->position[i].x = light->m_viewPos.x;
+                    localLights->position[i].y = light->m_viewPos.y;
+                    localLights->position[i].z = light->m_viewPos.z;
+                }
+
+                localLights->position[i].w = 1.0f;
+
+                localLights->attenConstant[i] = light->m_constantAttenuation;
+                localLights->attenLinear[i] = light->m_linearAttenuation;
+                localLights->attenQuadratic[i] = light->m_quadraticAttenuation;
+            } else {
+                localLights->color[i].x = 0.0f;
+                localLights->color[i].y = 0.0f;
+                localLights->color[i].z = 0.0f;
+                localLights->color[i].w = 0.0f;
+            }
+
+            i++;
+        } while (i < localLightsCount);
+    }
+
+    while (i < 4) {
+        localLights->color[i].x = 0.0f;
+        localLights->color[i].y = 0.0f;
+        localLights->color[i].z = 0.0f;
+        localLights->color[i].w = 0.0f;
+
+        i++;
+    }
 }
 
 void CShaderEffect::InitShaderSystem(int32_t enableShaders, int32_t usePcf) {

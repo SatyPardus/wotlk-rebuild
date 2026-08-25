@@ -7,6 +7,7 @@
 class CSimpleModelFFX;
 class CM2Model;
 class CCharacterComponent;
+class CM2Lighting;
 
 struct CharacterSelectionDisplay {
     CharacterSelectionDisplay() = default;
@@ -39,6 +40,7 @@ class CCharacterSelection {
         static void Initialize();
         static void RenderPrep();
         static void SetBackgroundModel(const char* modelPath);
+        static void GenericLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg);
         static void EnumerateCharactersCallback(CHARACTER_INFO& info, void* param);
         static void ShowCharacter();
         static void SetCharFacing(float facing);
