@@ -130,11 +130,11 @@ void CWorld::Initialize() {
         (CWorld::s_enables2 & Enables2::Enable_HwPcf) != 0
     );
 
-    //CShaderEffectManager::AddEffectFile("MapObj.wfx");
-    //CShaderEffectManager::AddEffectFile("MapObjU.wfx");
-    //CShaderEffectManager::AddEffectFile("Model2.wfx");
-    //CShaderEffectManager::AddEffectFile("Particle.wfx");
-    //CShaderEffectManager::AddEffectFile("ShadowMap.wfx");
+    CShaderEffectManager::AddEffectFile("MapObj.wfx");
+    CShaderEffectManager::AddEffectFile("MapObjU.wfx");
+    CShaderEffectManager::AddEffectFile("Model2.wfx");
+    CShaderEffectManager::AddEffectFile("Particle.wfx");
+    CShaderEffectManager::AddEffectFile("ShadowMap.wfx");
     //CShadowQuery::Initialize();
 
     CWorldScene::Initialize();

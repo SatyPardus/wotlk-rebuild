@@ -148,7 +148,7 @@ void CMapChunk::Create(SIffChunk* headerChunk, bool a3) {
     if ((this->header->flags & 2) != 0)
         this->flags = MAPOBJ_FLAG_IMPASSABLE;
     CMapBaseObjLink* link = this->parentLinkList.Head();
-    CMapArea* area = (CMapArea*)link->ref;
+    CMapArea* area = static_cast<CMapArea*>(link->ref);
     this->CreateRefs(area, this->MCRF_ptr, this->header->nDoodadRefs, this->header->nMapObjRefs);
     area->mapChunks[16 * this->aIndex.y + this->aIndex.x] = this;
     this->flags |= MAPOBJ_FLAG_PREPARED;
@@ -361,7 +361,7 @@ void CMapChunk::Batch() {
 
     if (CMap::enableChunkBatching) {
         auto next = this->parentLinkList.Head();
-        auto ref = (CMapArea*)next->ref;
+        auto ref = static_cast<CMapArea*>(next->ref);
         C2iVector pos = C2iVector(this->aIndex.x & 0xFFFFFFFE, this->aIndex.y & 0xFFFFFFFE);
         ref->BatchChunks(pos);
     } else {

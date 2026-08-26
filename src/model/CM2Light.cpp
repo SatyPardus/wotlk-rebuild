@@ -1,5 +1,6 @@
 #include "model/CM2Light.hpp"
 #include "model/CM2Scene.hpp"
+#include "gx/Device.hpp"
 
 // OFFSET: 0x8348D0
 void CM2Light::Initialize(CM2Scene* scene) {
@@ -105,4 +106,36 @@ void CM2Light::Unlink() {
 
     this->m_lightPrev = nullptr;
     this->m_lightNext = nullptr;
+}
+
+// OFFSET: 0x834B50
+void CM2Light::ApplyGxLight(uint32_t index) {
+    CGxLight light;
+
+    light.m_flags = (light.m_flags & ~0x1u) | (this->m_visible & 0x1u);
+
+    if (this->m_type) {
+        light.m_flags |= 0x2;
+
+        light.m_dir = this->m_pos;
+
+        light.m_ambientColor = { 0.0f, 0.0f, 0.0f };
+        light.m_specularColor = { 0.0f, 0.0f, 0.0f };
+    } else {
+        light.m_flags &= ~0x2u;
+
+        light.m_dir = this->m_dir;
+        light.m_ambientColor = this->m_ambColor;
+        light.m_specularColor = this->m_specColor;
+    }
+
+    light.m_dirColor = this->m_dirColor;
+    light.m_constantAttenuation = this->m_constantAttenuation;
+    light.m_linearAttenuation = this->m_linearAttenuation;
+    light.m_quadraticAttenuation = this->m_quadraticAttenuation;
+
+    C3Vector origin = { 0.0f, 0.0f, 0.0f };
+
+    g_theGxDevicePtr->LightSet(index, light, origin);
+    g_theGxDevicePtr->LightEnable(index, 1);
 }

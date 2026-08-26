@@ -11,12 +11,12 @@ class LightParamsRec {
         int32_t m_ID;
         int32_t m_highlightSky;
         int32_t m_lightSkyboxID;
+        int32_t m_cloudTypeID;
         float m_glow;
         float m_waterShallowAlpha;
         float m_waterDeepAlpha;
         float m_oceanShallowAlpha;
         float m_oceanDeepAlpha;
-        int32_t m_flags;
 
         static const char* GetFilename();
         static uint32_t GetNumColumns();

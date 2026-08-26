@@ -64,7 +64,7 @@ CMapObjDef::CMapObjDef() {
     //this->lightsArray.m_count = 0;
     //this->lightsArray.m_data = 0;
     //this->lightsArray.m_chunk = 0;
-    this->argbColor = 0;
+    this->argbColor = { 0, 0, 0, 0 };
     this->nameId = 0;
     this->owner = 0;
     this->unk_F8 = 0;

@@ -12,6 +12,7 @@ class CGWorldFrame : public CSimpleFrame {
     CGWorldFrame(CSimpleFrame* parent);
 
     void UpdateObject(CGObject_C* obj, int a3);
+    void UpdateDayNightInfo(float delta);
 
     virtual void OnFrameRender(CRenderBatch* batch, uint32_t layer);
     virtual int32_t OnLayerKeyDown(const CKeyEvent& evt);

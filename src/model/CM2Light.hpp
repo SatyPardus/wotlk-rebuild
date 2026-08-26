@@ -33,6 +33,7 @@ class CM2Light {
     void SetLightType(M2LIGHTTYPE lightType);
     void SetVisible(int32_t visible);
     void Unlink();
+    void ApplyGxLight(uint32_t index);
 };
 
 #endif

@@ -2,6 +2,7 @@
 #define GX_SHADER_C_SHADER_EFFECT_MANAGER_HPP
 
 #include <storm/Hash.hpp>
+#include "gx/shader/CShaderEffectParser.hpp"
 
 class CShaderEffect;
 
@@ -13,6 +14,8 @@ class CShaderEffectManager {
         // Static functions
         static CShaderEffect* CreateEffect(const char* effectKey);
         static CShaderEffect* GetEffect(const char* effectKey);
+        static void AddEffectFile(const char* fileName);
+        static void ParseEffectCallback(EffectParseResult* parsed, void* userArg);
 };
 
 #endif

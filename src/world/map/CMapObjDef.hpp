@@ -7,6 +7,7 @@
 #include "world/map/CMapObjDefGroup.hpp"
 #include "world/map/Types.hpp"
 #include "storm/Hash.hpp"
+#include "tempest/vector/CImVector.hpp"
 
 union CMapObjDefGroupStorage {
     CMapObjDefGroup* m_inline[4];
@@ -39,7 +40,7 @@ class CMapObjDef : public CMapBaseObj, public TSHashObject<CMapObjDef, uint32_t>
     CMapObjDefGroupStorage defGroups;
     uint32_t groupCount;
     //TSGrowableArray unk;
-    uint32_t argbColor;
+    CImVector argbColor;
     int32_t unk_148;
     int32_t unk_14C;
     int32_t unk_150;

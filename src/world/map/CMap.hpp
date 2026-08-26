@@ -15,6 +15,7 @@
 #include "world/map/CMapObj.hpp"
 #include "world/map/CMapEntity.hpp"
 #include <tempest/facet/CFacet.hpp>
+#include "world/map/CMapLight.hpp"
 
 class CMap {
     public:
@@ -32,6 +33,7 @@ class CMap {
     static STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) s_mapRenderChunkUpdateList;
     static STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) doodadDefList;
     static STORM_EXPLICIT_LIST(CMapEntity, lameAssLink) entityList;
+    static STORM_EXPLICIT_LIST(CMapLight, lameAssLink) lightList;
     static TSHashTable<CMapDoodadDef, uint32_t> doodadDefHashtable;
     static TSHashTable<CMapObjDef, uint32_t> mapObjDefHashtable;
     static int32_t uniqueId;
@@ -43,6 +45,7 @@ class CMap {
     static uint32_t cCount;
     static bool bPreload;
     static bool bIsStreamingMode;
+    static CMapLight* s_mapLight;
 
     static CGxShader* vertexShader_Terrain[128];
     static CGxShader* pixelShader_Terrain0[3];
@@ -100,8 +103,10 @@ class CMap {
     static CMapEntity* AllocEntity(bool linkToHead);
     static CMapObjGroup* AllocMapObjGroup();
     static CMapObjDefGroup* AllocMapObjDefGroup();
+    static CMapLight* AllocLight();
     static CMapDoodadDef* CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3Vector* position);
     static CMapObjDef* CreateMapObjDef(char* fileName, SMMapObjDef* mapObjectDef, C3Vector* center, bool cached);
+    static CMapLight* CreateLight(uint8_t a1, uint8_t a2);
     static void FreeBaseObjLink(CMapBaseObjLink* link);
     static CMapArea* PrepareArea(int32_t areaIndexX, int32_t areaIndexY);
     static void LoadArea(CMapArea* area);
@@ -118,6 +123,8 @@ class CMap {
     static CMapEntity* ObjectCreate(CM2Model* model, MAP_OBJECT_FUNC func, void* funcParam, uint64_t param64, uint32_t param32, uint32_t a7);
     static void ObjectUpdate(CMapEntity* entity, C44Matrix& mat, CAaBox& box, CAaSphere& sphere, C3Vector& vec, bool a6, uint32_t a7);
     static void PrepareEntitys(bool a1);
+    static void EnableLight(CMapLight* light);
+    static void UpdateLight(CMapLight* light);
 
     static bool VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);
     static bool VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);

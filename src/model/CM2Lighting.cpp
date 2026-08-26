@@ -2,8 +2,55 @@
 #include "model/CM2Light.hpp"
 #include "model/CM2Scene.hpp"
 #include "tempest/Matrix.hpp"
+#include "tempest/Sphere.hpp"
 #include "gx/Device.hpp"
 #include <cstring>
+
+CM2Lighting::CM2Lighting() {
+
+}
+
+CM2Lighting::CM2Lighting(CAaSphere& sphere) {
+    this->sphere4.c.x = 0.0;
+    this->sphere4.r = 0.0;
+    this->sphere4.c.y = 0.0;
+    this->sphere4.c.z = 0.0;
+    this->vector18.x = 0.0;
+    this->vector18.y = 0.0;
+    this->vector18.z = 0.0;
+    this->vector24.x = 0.0;
+    this->vector24.y = 0.0;
+    this->vector24.z = 0.0;
+    this->vector30.x = 0.0;
+    this->vector30.y = 0.0;
+    this->vector30.z = 0.0;
+    this->vector3C.x = 0.0;
+    this->vector3C.y = 0.0;
+    this->vector3C.z = 0.0;
+    this->vector48.x = 0.0;
+    this->vector48.y = 0.0;
+    this->vector48.z = 0.0;
+    this->m_sunAmbient.x = 0.0;
+    this->m_sunAmbient.y = 0.0;
+    this->m_sunAmbient.z = 0.0;
+    this->m_sunDiffuse.x = 0.0;
+    this->m_sunDiffuse.y = 0.0;
+    this->m_sunDiffuse.z = 0.0;
+    this->m_sunSpecular.x = 0.0;
+    this->m_sunSpecular.y = 0.0;
+    this->m_sunSpecular.z = 0.0;
+    this->m_sunDir.x = 0.0;
+    this->m_sunDir.y = 0.0;
+    this->m_sunDir.z = 0.0;
+    this->m_fogColor.x = 0.0;
+    this->m_fogColor.y = 0.0;
+    this->m_fogColor.z = 0.0;
+    this->m_liquidPlane.n.x = 0.0;
+    this->m_liquidPlane.n.y = 0.0;
+    this->m_liquidPlane.d = 0.0;
+    this->m_liquidPlane.n.z = 1.0;
+    this->Initialize(nullptr, sphere);
+}
 
 void CM2Lighting::AddAmbient(const C3Vector& ambColor) {
     this->m_sunAmbient = this->m_sunAmbient + ambColor;
@@ -228,6 +275,11 @@ void CM2Lighting::SetupGxLights(const C3Vector* origin) {
         g_theGxDevicePtr->LightEnable(slot, 0);
         slot++;
     }
+}
+
+// OFFSET: 0x835750
+void CM2Lighting::SetupGxFog() {
+    // TODO
 }
 
 void CM2Lighting::SetupSunlight() {

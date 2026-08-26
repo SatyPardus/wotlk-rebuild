@@ -44,6 +44,7 @@ STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkFree
 STORM_EXPLICIT_LIST(CMapRenderChunk, renderChunkLink) CMap::s_mapRenderChunkUpdateList;
 STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) CMap::doodadDefList;
 STORM_EXPLICIT_LIST(CMapEntity, lameAssLink) CMap::entityList;
+STORM_EXPLICIT_LIST(CMapLight, lameAssLink) CMap::lightList;
 TSHashTable<CMapDoodadDef, uint32_t> CMap::doodadDefHashtable;
 TSHashTable<CMapObjDef, uint32_t> CMap::mapObjDefHashtable;
 int32_t CMap::uniqueId;
@@ -55,6 +56,7 @@ uint32_t CMap::scCollideCnt;
 uint32_t CMap::cCount;
 bool CMap::bPreload;
 bool CMap::bIsStreamingMode;
+CMapLight* CMap::s_mapLight;
 
 CGxShader* CMap::vertexShader_Terrain[128];
 CGxShader* CMap::pixelShader_Terrain0[3];
@@ -94,7 +96,7 @@ TSGrowableArray<uint16_t> CMap::debugIndexArray;
 void CMap::Initialize() {
     //NOP();
     CMapChunk::Initialize();
-    //CMapObjRender::Initialize();
+    CMapObj::Initialize();
     CMapObjGroup::Initialize();
     //CDetailDoodad::Initialize();
     //sub_7A03C0();
@@ -241,7 +243,7 @@ CGxShader* CMap::GetPixelShader(bool a1, bool a2, bool a3) {
 
 void CMap::MapMemInitialize() {
     CMap::lightHeap = NEW(uint32_t);
-    *CMap::lightHeap = ObjectAllocAddHeap(212, 128, "WLIGHT", true);
+    *CMap::lightHeap = ObjectAllocAddHeap(sizeof(CMapLight), 128, "WLIGHT", true);
 
     CMap::cacheLightHeap = NEW(uint32_t);
     *CMap::cacheLightHeap = ObjectAllocAddHeap(132, 256, "WCACHELIGHT", true);
@@ -296,10 +298,10 @@ void CMap::Load(const char* mapName, int32_t zoneID) {
     SStrCopy(&CMap::mapPath[length], mapName, STORM_MAX_STR);
     SStrCopy(CMap::mapName, mapName, STORM_MAX_STR);
     SStrPrintf(CMap::wdtFilename, 0x100u, "%s\\%s.wdt", CMap::mapPath, CMap::mapName);
-    //s_mapLight = CMap::CreateLight(1, 0);
-    //CM2Light::SetLightType(&s_mapLight->unk14, 0);
-    //CMap::EnableLight(s_mapLight);
-    //CMap::UpdateLight(s_mapLight);
+    CMap::s_mapLight = CMap::CreateLight(1, 0);
+    CMap::s_mapLight->m_light.SetLightType(M2LIGHT_0);
+    CMap::EnableLight(s_mapLight);
+    CMap::UpdateLight(s_mapLight);
     //CMap::PurgeMaps();
     //CMapObj::ClearCache();
     //sub_79FA10();
@@ -592,6 +594,22 @@ CMapObjDefGroup* CMap::AllocMapObjDefGroup() {
     return nullptr;
 }
 
+// OFFSET: 0x7C08A0
+CMapLight* CMap::AllocLight() {
+    uint32_t memHandle;
+    void* object = nullptr;
+
+    if (ObjectAlloc(*CMap::lightHeap, &memHandle, &object, 0)) {
+        CMapLight* def = new (object) CMapLight();
+
+        def->m_memHandle = memHandle;
+        CMap::lightList.LinkToTail(def);
+        return def;
+    }
+
+    return nullptr;
+}
+
 // Debug function
 void CMapDoodadLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
     lighting->AddAmbient({ 1.0f, 1.0f, 1.0f });
@@ -658,6 +676,31 @@ CMapObjDef* CMap::CreateMapObjDef(char* fileName, SMMapObjDef* objectDef, C3Vect
 	//mapObjectDef->TSGrowableArray__m_count = 0;
     mapObjectDef->owner = CMapObj::Create(fileName);
     return mapObjectDef;
+}
+
+// OFFSET: 0x7D9BD0
+CMapLight* CMap::CreateLight(uint8_t a1, uint8_t a2) {
+    auto light = CMap::AllocLight();
+    light->flags = 0;
+    light->unk_0024 = 0.0;
+    light->unk_0028 = 0.0;
+    light->unk_0054 = 0.0;
+    light->unk_0048 = 0.0;
+    light->unk_002C = 0.0;
+    light->unk_004C = 0.0;
+    light->unk_0050 = 0.0;
+    light->unk_0030 = 0.0;
+    light->unk_0034 = 0.0;
+    light->unk_00CC = 0.0;
+    light->unk_00C8 = 0.0;
+    light->unk_003C = 0.0;
+    light->unk_00C4 = 0.0;
+    light->unk_0038 = 0.0;
+    light->unk_0040 = 0.0;
+    light->unk_0044 = 0.0;
+    light->unk_00D0 = a1;
+    light->unk_00D1 = a2;
+    return light;
 }
 
 // OFFSET: 0x7BECD0
@@ -885,7 +928,7 @@ void CMap::PurgeArea(CMapArea* area) {
 void CMap::PurgeMaps() {
     for (auto link = CMap::mapAreaList.Head(); link;) {
         auto next = CMap::mapAreaList.Next(link);
-        CMapArea* area = (CMapArea*)link->owner;
+        CMapArea* area = static_cast<CMapArea*>(link->owner);
         CMap::FreeBaseObjLink(link);
         CMap::PurgeArea(area);
         link = next;
@@ -1118,7 +1161,7 @@ void CMap::PrepareMapObjDefs(bool a1) {
         for (auto mapObjDefGroupLink = mapObjDef->mapObjDefGroupLinkList.Head(); mapObjDefGroupLink;) {
             auto next = mapObjDef->mapObjDefGroupLinkList.Next(mapObjDefGroupLink);
 
-            CMapObjDefGroup* mapObjDefGroup = reinterpret_cast<CMapObjDefGroup*>(mapObjDefGroupLink->owner);
+            CMapObjDefGroup* mapObjDefGroup = static_cast<CMapObjDefGroup*>(mapObjDefGroupLink->owner);
             CMapObjGroup* mapObjGroup = mapObjDef->owner->GetGroup(mapObjDefGroup->groupNum, true);
             if (mapObjDefGroup->bbox.t.x >= CWorld::s_objectAreaOfInterest.b.x
                 && mapObjDefGroup->bbox.t.y >= CWorld::s_objectAreaOfInterest.b.y
@@ -1413,6 +1456,35 @@ void CMap::PrepareEntitys(bool a1) {
 
         entity = next;
     }
+}
+
+// OFFSET: 0x7D9D50
+void CMap::EnableLight(CMapLight* light) {
+    light->flags &= ~20;
+    light->m_light.SetVisible(1);
+}
+
+// OFFSET: 0x7DA100
+void CMap::UpdateLight(CMapLight* light) {
+    //m_next = a1->parentLinkList.m_terminator.m_next;
+    //if (((m_next & 1) != 0 || !m_next) && !a1->m_light.m_type) {
+    //    v2 = CMap::AllocBaseObjLink(a1);
+    //    v2->ref = 0;
+    //    TSList::LinkToTail_0(&stru_AF16CC, v2);
+    //}
+    //if (CMap::bActive && a1->m_light.m_type) {
+    //    v3 = a1->parentLinkList.m_terminator.m_next;
+    //    if ((v3 & 1) != 0 || !v3)
+    //        v3 = 0;
+    //    while ((v3 & 1) == 0 && v3) {
+    //        v4 = *(&v3->owner + a1->parentLinkList.m_linkoffset);
+    //        CMap::FreeBaseObjLink(v3);
+    //        v3 = v4;
+    //    }
+    //    CMap::UpdateLightBounds(a1);
+    //    CMap::LinkLightToMapObjDefs(a1);
+    //    CMap::LinkLightToChunks(a1);
+    //}
 }
 
 // OFFSET: 0x7A39F0
@@ -1727,7 +1799,7 @@ bool CMap::LocateViewerMapObjs(C3Vector& start, C3Vector& end, float dist, CMapO
         int isOutdoor = 0;
 
         for (auto mapObjDefGroupLink = mapObjDef->mapObjDefGroupLinkList.Head(); mapObjDefGroupLink; mapObjDefGroupLink = mapObjDef->mapObjDefGroupLinkList.Next(mapObjDefGroupLink)) {
-            CMapObjDefGroup* mapObjDefGroup = reinterpret_cast<CMapObjDefGroup*>(mapObjDefGroupLink->owner);
+            CMapObjDefGroup* mapObjDefGroup = static_cast<CMapObjDefGroup*>(mapObjDefGroupLink->owner);
             CMapObjGroup* group = mapObjDef->owner->GetGroup(mapObjDefGroup->groupNum, false);
 
             if (!group)

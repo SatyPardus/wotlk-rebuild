@@ -69,6 +69,8 @@ TSGrowableArray<CPortalView> CWorldScene::s_pendingPortalViews;
 TSGrowableArray<CRect> CWorldScene::s_coveredRects;
 int32_t CWorldScene::s_curGroupIsInterior;
 
+int32_t CWorldScene::s_fogPermute;
+
 bool CWorldScene::s_entityCanLink;
 
 char CWorldScene::s_debugMapName[260];
@@ -716,7 +718,7 @@ void CWorldScene::CullMapObjDefGroups(CSortEntry* entry, CRect* a2, uint32_t a3)
         mapObjDefGroup->sortEntryLink.Unlink();
 
         auto parent = mapObjDefGroup->parentLinkList.Head();
-        auto mapObjDef = reinterpret_cast<CMapObjDef*>(parent->ref);
+        auto mapObjDef = static_cast<CMapObjDef*>(parent->ref);
 
         if (!CWorldScene::FrustumCull(&mapObjDefGroup->bbox)
             && !CWorldOcclusion::QueryVolumes(&mapObjDefGroup->sphere)
@@ -1169,7 +1171,7 @@ void CWorldScene::RenderChunks() {
     //     goto LABEL_58;
     // }
     DayNight::DNInfo* activeDayNight = DayNight::GetInfo();
-    GxRsSet(GxRs_FogColor, activeDayNight->fogInfo.color.value);
+    GxRsSet(GxRs_FogColor, activeDayNight->m_fog.color.value);
     GxRsSet(GxRs_Fog, 1);
     GxRsSet(GxRs_ColorOp0, 1);
     GxRsSet(GxRs_AlphaOp0, 0);
@@ -1218,7 +1220,7 @@ void CWorldScene::RenderMapObjDefGroups() {
 
         mapObjDefGroup->sortTableLink.Unlink();
         auto v8 = mapObjDefGroup->parentLinkList.Head();
-        CMapObjDef* mapObjDef = reinterpret_cast<CMapObjDef*>(v8->ref);
+        CMapObjDef* mapObjDef = static_cast<CMapObjDef*>(v8->ref);
 
         if ((CWorld::s_enables & CWorld::Enables::Enable_WMO) != 0) {
             C44Matrix mat = mapObjDef->mat;
@@ -1228,17 +1230,16 @@ void CWorldScene::RenderMapObjDefGroups() {
             mat *= camTranslate;
             CWorldScene::SetWorldProjection(mat);
             //unk_68 = mapObjDefGroup->unk_68;
-            //v13 = (mapObjDefGroup->flags >> 15) & 1;
             //if (unk_68 && *(unk_68 + 16))
             //    (*(**(unk_68 + 16) + 8))(*(unk_68 + 16), (mapObjDefGroup->flags >> 15) & 1);
-            //maybe_CM2Lighting__Clear(v29, &mapObjDefGroup->sphere);
-            //CM2Scene::SelectLights(s_m2Scene, v29);
-            //(mapObjDefGroup->__vftable[1].unk)(mapObjDefGroup, v29);
+            CM2Lighting lighting = CM2Lighting(mapObjDefGroup->sphere);
+            s_m2Scene->SelectLights(&lighting);
+            mapObjDefGroup->SelectLights(&lighting);
+            CWorldScene::SetupLighting(&lighting, &CWorldScene::s_activeWorldView);
             //ActiveDayNight = DayNight::GetActiveDayNight();
-            //CWorldScene::SetupLighting(v29, &CWorldScene::s_activeWorldView.x);
             //if (*&ref->unk_148 && ref->unk_148 == dword_CD7770 && ref->unk_14C == dword_CD7774)
             //    sub_7A8430(ActiveDayNight->unk107);
-            //dword_CFBEB8 = v13;
+            s_curGroupIsInterior = (mapObjDefGroup->flags >> 15) & 1;
             mapObjDef->owner->RenderGroup(mapObjDefGroup->groupNum, mapObjDef->invMat, &mapObjDefGroup->frustumList);
         }
         for (auto frustum = mapObjDefGroup->frustumList.Head(); frustum;) {
@@ -1260,15 +1261,15 @@ void CWorldScene::RenderMapObjDefGroups() {
 // OFFSET: 0x7A8320
 void CWorldScene::SetWorldProjection(C44Matrix& mat) {
     if (CShaderEffect::s_enableShaders) {
-        C44Matrix v9;
-        g_theGxDevicePtr->XformView(v9);
-        v9 *= mat;
-        v9.Transpose();
-        g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 31, reinterpret_cast<C4Vector*>(&v9), 4);
-        g_theGxDevicePtr->XformSet(GxXform_World, mat);
-    } else {
-        g_theGxDevicePtr->XformSet(GxXform_World, mat);
+        C44Matrix view;
+        g_theGxDevicePtr->XformView(view);
+
+        C44Matrix worldView = (mat * view).Transpose();
+
+        g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 31, reinterpret_cast<C4Vector*>(&worldView), 4);
     }
+
+    g_theGxDevicePtr->XformSet(GxXform_World, mat);
 }
 
 void CWorldScene::RenderChunksSinglePass() {
@@ -1296,7 +1297,7 @@ void CWorldScene::RenderChunksSinglePass() {
             for (auto renderChunk = CWorldScene::sortTable.renderChunkLists[layerIndex].Head(); renderChunk;) {
                 auto next = CWorldScene::sortTable.renderChunkLists[layerIndex].Next(renderChunk);
                 renderChunk->RenderSetup(1);
-                // if ((CWorld::enables & Enable_Terrain) != 0) {
+                //if ((CWorld::s_enables & CWorld::Enables::Enable_Terrain) != 0) {
                 //     if (*v36) {
                 //         if (CMap::enableTerrainShaderVertex)
                 //             sub_7D2D70((int)v2);
@@ -2037,4 +2038,21 @@ void CWorldScene::AddInteriorPortalView(CMapObj* mapObj, SMOPortal* portal, SMOP
 
 void CWorldScene::MergeIntoFrustumRect(CPortalView* portalView) {
     CWorldScene::frustumPortalView.Merge(portalView);
+}
+
+// OFFSET: 0x7A9160
+void CWorldScene::SetupLighting(CM2Lighting* lighting, C3Vector* view) {
+    if (CShaderEffect::s_enableShaders) {
+        CWorldScene::s_fogPermute = lighting->m_lightCount;
+        if (CWorldScene::s_fogPermute) {
+            CShaderEffect::LocalLights lights;
+            //sub_7A8A60(lights);
+            CShaderEffect::ComputeLocalLights(&lights, CWorldScene::s_fogPermute, lighting->m_lights, view);
+            g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 17, reinterpret_cast<C4Vector*>(&lights), 11);
+        }
+        //dword_D1BEFC = 0;
+    } else {
+        lighting->SetupGxLights(view);
+        //dword_D1BEFC = 0;
+    }
 }

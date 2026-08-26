@@ -244,7 +244,7 @@ struct SMOHeader {
     uint32_t nDoodadNames;
     uint32_t nDoodadDefs;
     uint32_t nDoodadSets;
-    uint32_t ambColor;
+    CImVector ambColor;
     uint32_t wmoID;
     CAaBox bounding_box;
     uint16_t flags;

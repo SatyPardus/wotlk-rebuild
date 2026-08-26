@@ -38,11 +38,14 @@ class CShaderEffect : public TSHashObject<CShaderEffect, HASHKEY_STRI> {
         static C3Vector s_sunDir;
         static int32_t s_useAlphaRef;
         static int32_t s_usePcfFiltering;
+        static int32_t s_shadowValue;
 
         // Static functions
         static void ComputeLocalLights(LocalLights* localLights, uint32_t localLightsCount, CM2Light** lights, const C3Vector* a4);
         static void InitShaderSystem(int32_t enableShaders, int32_t usePcf);
         static void SetAlphaRef(float alphaRef);
+        static int32_t SelectShadowShader();
+        static void SetAlphaRefDefault();
         static void SetDiffuse(const C4Vector& diffuse);
         static void SetEmissive(const C4Vector& emissive);
         static void SetFogEnabled(int32_t fogEnabled);
@@ -55,11 +58,15 @@ class CShaderEffect : public TSHashObject<CShaderEffect, HASHKEY_STRI> {
         static void UpdateProjMatrix(void);
 
         // Member variables
-        CGxShader* m_vertexShaders[90];
-        CGxShader* m_pixelShaders[16];
+        /* 0018 */ uint32_t m_fixedFuncOpCount;
+        /* 001C */ uint32_t m_colorOps[2];
+        /* 0024 */ uint32_t m_alphaOps[2];
+        /* 0028 */ CGxShader* m_vertexShaders[90];
+        /* 002C */ CGxShader* m_pixelShaders[16];
 
         // Member functions
         void InitEffect(const char* vsName, const char* psName);
+        void InitFixedFuncPass(const uint32_t* colorOps, const uint32_t* alphaOps, uint32_t count);
         void SetCurrent(void);
 };
 

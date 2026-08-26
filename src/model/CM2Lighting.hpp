@@ -34,6 +34,8 @@ class CM2Lighting {
         C4Plane m_liquidPlane;
 
         // Member functions
+        CM2Lighting();
+        CM2Lighting(CAaSphere& sphere);
         void AddAmbient(const C3Vector& ambColor);
         void AddDiffuse(const C3Vector& dirColor, const C3Vector& dir);
         void AddLight(CM2Light* light);
@@ -43,6 +45,7 @@ class CM2Lighting {
         void SetFog(const C3Vector& fogColor, float fogStart, float fogEnd);
         void SetFog(const C3Vector& fogColor, float fogStart, float fogEnd, float fogDensity);
         void SetupGxLights(const C3Vector* a2);
+        void SetupGxFog();
         void SetupSunlight();
         void Reset();
 };

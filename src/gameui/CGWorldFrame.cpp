@@ -22,6 +22,8 @@
 #include <common/Time.hpp>
 #include <cmath>
 #include <clientobject/ObjectMgrClient.hpp>
+#include <world/daynight/DayNight.hpp>
+#include <world/daynight/DNInfo.hpp>
 
 
 CGWorldFrame* CGWorldFrame::s_currentWorldFrame = nullptr;
@@ -258,6 +260,8 @@ void CGWorldFrame::OnWorldUpdate() {
     CGWorldFrame::s_currentWorldFrame->GetRect(&rect);
     CGWorldFrame::GetActiveCamera()->SetupWorldProjection(rect);
 
+    CGWorldFrame::s_currentWorldFrame->UpdateDayNightInfo(0.0f);
+
     C3Vector position = camPos;
 
     CWorld::Update(&camPos, &camTarget, &position);
@@ -308,6 +312,22 @@ void CGWorldFrame::OnWorldRender() {
     }
 
     GxRsPop();
+}
+
+// OFFSET: 0x4F8410
+void CGWorldFrame::UpdateDayNightInfo(float delta) {
+    auto dayNight = DayNight::GetInfo();
+
+    static uint64_t lastTime;
+
+    float elapsed = static_cast<float>(OsGetAsyncTimeMs() - lastTime) / 1000.0f;
+    dayNight->m_dayProgression += elapsed * 0.01f;
+    if (dayNight->m_dayProgression >= 1.0f)
+        dayNight->m_dayProgression = 0.0f;
+    lastTime = OsGetAsyncTimeMs();
+
+    dayNight->m_cameraPos = this->m_camera->m_position;
+    dayNight->m_lightRefPos = this->m_camera->m_position;
 }
 
 CGCamera* CGWorldFrame::GetActiveCamera() {

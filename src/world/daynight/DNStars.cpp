@@ -34,9 +34,9 @@ void DNStars::Destroy() {
 void DNStars::Update() {
     auto info = DayNight::GetInfo();
 
-    this->m_pos = info->cameraPos;
+    this->m_pos = info->m_cameraPos;
 
-    auto fade = DayNight::InterpTable(DNStars::m_fadeTable, 4, info->dayProgression);
+    auto fade = DayNight::InterpTable(DNStars::m_fadeTable, 4, info->m_dayProgression);
     this->m_color.a = static_cast<uint8_t>(fade * 254.0 + 1.0);
 }
 

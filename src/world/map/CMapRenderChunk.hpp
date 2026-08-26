@@ -56,8 +56,7 @@ class CMapRenderChunk {
     float lastUpdateTime;
     CMapChunk* mapChunkPtrs[2];
     C3Vector vec1;
-    C3Vector vec2;
-    float radius;
+    CAaSphere sphere;
     CMapRenderChunkLayer layers[4];
     HTEXTURE terrainBlendTexture;
     HTEXTURE shadowTexture;
@@ -129,6 +128,7 @@ class CMapRenderChunk {
     static void RenderMultiPassAlpha(CMapRenderChunk* renderChunk);
     static void RenderMultiPassAdditive(CMapRenderChunk* renderChunk);
     static void SetShaders(int32_t a1, int32_t a2);
+    static void SelectLights(CM2Lighting* lighting);
 };
 
 #endif

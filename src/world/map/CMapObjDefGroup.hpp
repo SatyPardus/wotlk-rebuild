@@ -7,6 +7,7 @@
 #include "world/map/Types.hpp"
 #include <tempest/Vector.hpp>
 #include "world/map/CFrustum.hpp"
+#include "model/CM2Lighting.hpp"
 
 class CMapObjDefGroup : public CMapBaseObj {
     public:
@@ -16,7 +17,7 @@ class CMapObjDefGroup : public CMapBaseObj {
     uint32_t groupNum;
     uint32_t unkFlags;
     int32_t unk_58;
-    uint32_t ambientColor;
+    CImVector ambientColor;
     int32_t unk_60;
     int32_t unk_64;
     int32_t unk_68;
@@ -35,6 +36,8 @@ class CMapObjDefGroup : public CMapBaseObj {
     TSLink<CMapObjDefGroup> sortTableLink;
     //DWORD unk_B8;
     //DWORD unk_BC;
+
+    virtual void SelectLights(CM2Lighting* lighting);
 
     void MarkPrepared();
 };

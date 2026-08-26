@@ -23,6 +23,7 @@ C3Vector CShaderEffect::s_sunDiffuse;
 C3Vector CShaderEffect::s_sunDir;
 int32_t CShaderEffect::s_useAlphaRef;
 int32_t CShaderEffect::s_usePcfFiltering;
+int32_t CShaderEffect::s_shadowValue = 0;
 
 // OFFSET: 0x872900
 void CShaderEffect::ComputeLocalLights(LocalLights* localLights, uint32_t localLightsCount, CM2Light** lights, const C3Vector* origin) {
@@ -105,6 +106,22 @@ void CShaderEffect::SetAlphaRef(float alphaRef) {
         GxShaderConstantsSet(GxSh_Pixel, 2, reinterpret_cast<C4Vector*>(&CShaderEffect::s_fogColorAlphaRef), 1);
     }
 }
+
+// OFFSET: 0x872DE0
+int32_t CShaderEffect::SelectShadowShader() {
+    if (CShaderEffect::s_fogColorAlphaRef.w <= 0.0f || (GxCaps().int130 && !CShaderEffect::s_shadowValue)) {
+
+        return CShaderEffect::s_shadowValue + 4 * CShaderEffect::s_usePcfFiltering;
+    }
+
+    return CShaderEffect::s_shadowValue + 4 * (CShaderEffect::s_usePcfFiltering + 2);
+}
+
+// OFFSET: 0x873EE0
+void CShaderEffect::SetAlphaRefDefault() {
+    float alpha = CGxDevice::s_alphaRef[g_theGxDevicePtr->m_appRenderStates[GxRs_BlendingMode].m_value.m_data.i[0]] / 255.0f;
+    CShaderEffect::SetAlphaRef(alpha);
+ }
 
 void CShaderEffect::SetDiffuse(const C4Vector& diffuse) {
     if (CShaderEffect::s_enableShaders) {
@@ -295,14 +312,23 @@ void CShaderEffect::InitEffect(const char* vsName, const char* psName) {
     memset(this->m_vertexShaders, 0, sizeof(this->m_vertexShaders));
     memset(this->m_pixelShaders, 0, sizeof(this->m_pixelShaders));
 
-    // TODO
-    // this->dword18 = 0;
+    this->m_fixedFuncOpCount = 0;
 
     if (CShaderEffect::s_enableShaders) {
         if (vsName && psName) {
             g_theGxDevicePtr->ShaderCreate(this->m_vertexShaders, GxSh_Vertex, "Shaders\\Vertex", vsName, 90);
             g_theGxDevicePtr->ShaderCreate(this->m_pixelShaders, GxSh_Pixel, "Shaders\\Pixel", psName, 16);
         }
+    }
+}
+
+// OFFSET: 0x8728C0
+void CShaderEffect::InitFixedFuncPass(const uint32_t* colorOps, const uint32_t* alphaOps, uint32_t count) {
+    this->m_fixedFuncOpCount = count;
+
+    for (uint32_t i = 0; i < count; i++) {
+        this->m_colorOps[i] = colorOps[i];
+        this->m_alphaOps[i] = alphaOps[i];
     }
 }
 

@@ -8,6 +8,9 @@
 #include "gx/Draw.hpp"
 #include "gx/Transform.hpp"
 #include <tempest/matrix/C44Matrix.hpp>
+#include "model/CM2Scene.hpp"
+#include <world/daynight/DayNight.hpp>
+#include <world/daynight/DNInfo.hpp>
 
 STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, bufLink) CMapRenderChunk::s_bufList;
 STORM_EXPLICIT_LIST(CMapRenderChunkBufBlock, blockLink) CMapRenderChunk::s_chunkBufBlockFreeList;
@@ -150,7 +153,7 @@ void CMapRenderChunk::CreateLayers() {
         if (!link || ((uintptr_t)link & 1))
             continue;
 
-        CMapArea* area = (CMapArea*)link->ref;
+        CMapArea* area = static_cast<CMapArea*>(link->ref);
         bool a4 = (i != 0);
 
         for (int32_t j = 0; j < chunk->header->nLayers; j++)
@@ -237,7 +240,7 @@ void CMapRenderChunk::AllocShaderTexture() {
     this->terrainBlendTexture = nullptr;
 
     CMapBaseObjLink* link = this->mapChunkPtrs[0]->parentLinkList.Head();
-    CMapArea* area = (CMapArea*)link->ref;
+    CMapArea* area = static_cast<CMapArea*>(link->ref);
     int32_t v4 = 64 >> area->header->mamp_value;
 
     if ((this->unk_0A & 0x8) != 0) {
@@ -271,7 +274,7 @@ void CMapRenderChunk::AllocLayerTexture(CMapRenderChunkLayer* layer) {
     bool v5 = v4 && !layer->layerIndex;
     if ((layer->flags & 0x100) != 0 || v5) {
         CMapBaseObjLink* link = this->mapChunkPtrs[0]->parentLinkList.Head();
-        CMapArea* area = (CMapArea*)link->ref;
+        CMapArea* area = static_cast<CMapArea*>(link->ref);
         int32_t v10 = 64 >> area->header->mamp_value;
 
         if ((this->unk_0A & 0x8) != 0) {
@@ -296,7 +299,7 @@ void CMapRenderChunk::AllocShadowTexture() {
     if ((CWorld::s_enables & CWorld::Enables::Enable_Shadow) != 0) {
         if ((this->mapChunkPtrs[0]->header->flags & 1) != 0) {
             CMapBaseObjLink* link = this->mapChunkPtrs[0]->parentLinkList.Head();
-            CMapArea* area = (CMapArea*)link->ref;
+            CMapArea* area = static_cast<CMapArea*>(link->ref);
             int32_t v4 = 64 >> area->header->mamp_value;
 
             if ((this->unk_0A & 0x8) != 0) {
@@ -507,7 +510,7 @@ void CMapRenderChunk::CreateShaderTexture() {
 
     CMapBaseObjLink* areaLink = chunk->parentLinkList.Head();
 
-    const uint8_t mampValue = reinterpret_cast<CMapArea*>(areaLink->ref)->header->mamp_value;
+    const uint8_t mampValue = static_cast<CMapArea*>(areaLink->ref)->header->mamp_value;
 
     const uint32_t size = 64u >> mampValue;
     int destPitch = static_cast<int>(64u >> mampValue);
@@ -633,7 +636,7 @@ void CMapRenderChunk::CreateChunkLayerTex(CMapRenderChunkLayer* layer) {
         shadowMap = this->mapChunkPtrs[0]->shadowMap;
 
     CMapBaseObjLink* link = this->mapChunkPtrs[0]->parentLinkList.Head();
-    CMapArea* area = (CMapArea*)link->ref;
+    CMapArea* area = static_cast<CMapArea*>(link->ref);
     unsigned int texSize = 64 >> area->header->mamp_value;
 
     this->UnpackAlphaBits(CMapRenderChunk::s_defaultTex, texSize, &layerInfo, shadowMap, layerMode, chunkHeaderFlags & 0x8000);
@@ -951,11 +954,11 @@ void CMapRenderChunk::RenderSetup(int32_t a2) {
     worldMatrix.d1 = this->vec1.y - CWorldScene::s_activeWorldView.y;
     worldMatrix.d2 = this->vec1.z - CWorldScene::s_activeWorldView.z;
     g_theGxDevicePtr->XformSet(GxXform_World, worldMatrix);
-    //    sub_790440(v10, &this->vec2.x);
-    //    CM2Scene::SelectLights(s_m2Scene, v10);
-    //    CMapRenderChunk::SelectLights((int)v10);
-    //    CM2Lighting::SetupGxLights(v10, &CWorldScene::s_activeWorldView.x);
-    //    CM2Lighting::SetupGxFog(v10);
+    CM2Lighting lighting = CM2Lighting(this->sphere);
+    CWorldScene::s_m2Scene->SelectLights(&lighting);
+    CMapRenderChunk::SelectLights(&lighting);
+    lighting.SetupGxLights(&CWorldScene::s_activeWorldView);
+    lighting.SetupGxFog();
     //}
 
     if (this->chunkBuf) {
@@ -1573,6 +1576,13 @@ void CMapRenderChunk::SetShaders(int32_t a1, int32_t a2) {
     //} else {
         CMapRenderChunk::s_renderLayersFunc = CMapRenderChunk::RenderMultiPassAlpha;
     //}
+}
+
+void CMapRenderChunk::SelectLights(CM2Lighting* lighting) {
+    lighting->AddLight(&CMap::s_mapLight->m_light);
+    auto dayNight = DayNight::GetInfo();
+    C3Vector fogColor = C3Vector(dayNight->m_fog.color);
+    lighting->SetFog(fogColor, dayNight->m_fog.start, dayNight->m_fog.end, dayNight->m_fog.m_density);
 }
 
 // OFFSET: 0x7B9830

@@ -5,6 +5,8 @@
 #include "gx/Draw.hpp"
 #include <tempest/Math.hpp>
 #include <tempest/Matrix.hpp>
+#include "world/daynight/DayNight.hpp"
+#include "world/daynight/DNInfo.hpp"
 
 namespace DayNight {
 
@@ -12,10 +14,32 @@ float DNSky::m_stripSizes[SKY_NUMBANDS] = { 0.0f, 0.17f, 0.2f, 0.23f, 0.23999999
 float DNSky::m_fadeAngle[SKY_NUMBANDS];
 float DNSky::m_darkAngle[SKY_NUMBANDS];
 
+static const C2Vector s_highlightCurve[6] = {
+    { 0.125f, 0.0f },
+    { 0.270833f, 1.0f },
+    { 0.291667f, 0.0f },
+    { 0.854167f, 0.0f },
+    { 0.895833f, 1.0f },
+    { 0.999306f, 0.0f },
+};
+
+static const C2Vector s_ringCurve[6] = {
+    { 0.125f, 1.0f },
+    { 0.375f, 0.0f },
+    { 0.500f, -0.5f },
+    { 0.625f, -0.7f },
+    { 0.750f, -0.5f },
+    { 0.875f, 0.0f },
+};
+
+// OFFSET: 0x9ACB00
 void DNSky::Render() {
+    GxXformPush(GxXform_World);
+    g_theGxDevicePtr->m_xforms[GxXform_World].Identity();
+
     C44Matrix worldScale;
     worldScale.Scale(6.6666665f);
-    GxXformPush(GxXform_World, worldScale);
+    GxXformSet(GxXform_World, worldScale);
     GxRsPush();
     GxRsSet(GxRs_Lighting, 0);
     GxRsSet(GxRs_Fog, 0);
@@ -36,6 +60,7 @@ void DNSky::Render() {
     GxRsPop();
 }
 
+// OFFSET: 0x7F2470
 void DNSky::GenSphere(float sphRadius) {
     const uint16_t totalSlices = 24;
     const uint16_t totalIndices = (totalSlices + 1) * 2;
@@ -67,7 +92,7 @@ void DNSky::GenSphere(float sphRadius) {
             float theta = static_cast<float>(j) / static_cast<float>(totalSlices) * CMath::TWO_PI;
             vertex.x = CMath::sin(theta) * sinPhi * sphRadius;
             vertex.y = CMath::cos(theta) * sinPhi * sphRadius;
-            vertex.z = cosPhi * sphRadius;
+            vertex.z = cosPhi * sphRadius - 0.70710678f;
 
             if (CMath::fequal(phi, 0.0f) || CMath::fequal(phi, CMath::PI)) {
                 break;
@@ -91,11 +116,88 @@ void DNSky::GenSphere(float sphRadius) {
     this->m_nIndices = lastIndex; // Should be always equal to 300
 }
 
+// OFFSET: 0x7F0530
 void DNSky::SetColors() {
-    // TODO
-    for (uint32_t i = 0; i < this->m_clrVerts.Count(); ++i) {
-        this->m_clrVerts[i] = { 0xFF, 0, 0xFF, 0xFF };
+    CImVector* out = this->m_clrVerts.Ptr();
+
+    const float h = InterpTable(s_highlightCurve, 6, g_dnInfo.m_dayProgression) * g_dnInfo.m_bands.m_highlightSky;
+
+    if (s_lightFlags & 1) {
+        CImVector* band = &g_dnInfo.m_bands.m_sky0;
+
+        for (int32_t i = 0; i < 6; ++i) {
+            const uint8_t t = (uint8_t)(int32_t)((1.0f - s_glowBlend) * 255.0f);
+            CImVector glow = s_glowColor;
+
+            if (t) {
+                InterpColor(&band[i], t, &glow);
+            }
+        }
     }
+
+    CImVector ring[6] = {};
+
+    for (int32_t i = 0; i < 5; ++i) {
+        ColorLerpBytes(&ring[i + 1], &(&g_dnInfo.m_bands.m_sky1)[i], &g_dnInfo.m_bands.m_sky1, h);
+    }
+
+    *out++ = DarkenColor(g_dnInfo.m_bands.m_sky0, 1.0f);
+
+    const float step = -1.0f / (float)this->m_sphThetaTess;
+
+    for (int32_t ringIdx = 1; ringIdx <= 4; ++ringIdx) {
+        float u = g_dnInfo.m_faceAngle * 0.15915494f + 0.25f;
+
+        if (u > 1.0f) {
+            u -= 1.0f;
+        }
+
+        for (int32_t i = 0; i < this->m_sphThetaTess; ++i) {
+            if (u < 0.0f) {
+                u += 1.0f;
+            }
+
+            const float v = InterpTable(s_ringCurve, 6, u);
+
+            CImVector colour;
+
+            if (v < 0.0f) {
+                CImVector darkened;
+                ColorLerpBytes(&darkened, &ring[ringIdx], &g_dnInfo.m_bands.m_sky0, h * 0.69999999f);
+                ColorLerpBytes(&colour, &ring[ringIdx], &darkened, -v * h);
+            } else {
+                ColorLerpBytes(&colour, &(&g_dnInfo.m_bands.m_sky0)[ringIdx], &ring[ringIdx], (1.0f - v) * h);
+            }
+
+            if (g_dnInfo.m_flashBlend) {
+                CImVector flash = *(const CImVector*)g_dnInfo.m_flashColorBGRA;
+                InterpColor(&colour, g_dnInfo.m_flashBlend, &flash);
+            }
+
+            *out++ = colour;
+            u += step;
+        }
+    }
+
+    CImVector horizon = g_dnInfo.m_bands.m_skyFog;
+
+    if (g_dnInfo.m_flashBlend) {
+        CImVector flash = *(const CImVector*)g_dnInfo.m_flashColorBGRA;
+        InterpColor(&horizon, g_dnInfo.m_flashBlend, &flash);
+    }
+
+    for (int32_t i = 0; i < this->m_sphThetaTess; ++i) {
+        *out++ = horizon;
+    }
+
+    CImVector nadir = g_dnInfo.m_bands.m_skyFog;
+
+    if (g_dnInfo.m_flashBlend) {
+        CImVector flash = *(const CImVector*)g_dnInfo.m_flashColorBGRA;
+        InterpColor(&nadir, g_dnInfo.m_flashBlend, &flash);
+    }
+
+    *out = nadir;
 }
 
 } // namespace DayNight

@@ -10,6 +10,8 @@
 #include <gx/Transform.hpp>
 #include <world/CWorldMath.hpp>
 #include <tempest/Intersect.hpp>
+#include "world/daynight/DayNight.hpp"
+#include "gx/shader/CShaderEffect.hpp"
 
 TSHashTable<CMapObj, HASHKEY_STRI> CMapObj::mapObjHashtable;
 uint32_t CMapObj::s_renderMode = 5;
@@ -18,6 +20,8 @@ RENDER_FUNC CMapObj::s_renderGroupInteriorFunc;
 RENDER_CALLBACK CMapObj::gRenderCallback;
 void* CMapObj::gRenderUserParam;
 CImVector CMapObj::s_lastSidnColor;
+CShaderEffect* CMapObj::s_unifiedShaders[14];
+int32_t CMapObj::s_lightingMode = -1;
 
 // OFFSET: 0x7D80C0
 bool CMapObj::Read(char* fileName) {
@@ -282,6 +286,39 @@ CMapObjGroup* CMapObj::GetGroup(int32_t index, bool a3) {
     return result;
 }
 
+// OFFSET: 0x7AFEE0
+void CMapObj::Initialize() {
+    CWorldScene::s_portalStamp = 0;
+    CWorldScene::s_curMapObjDef = nullptr;
+    CWorldScene::s_stampedMapObjDef = nullptr;
+    //dword_ADFF50 = 2048;
+    //if (stru_D1BEE8.m_count + 1024 > stru_D1BEE8.m_alloc)
+    //    maybe_Liquid__AddConfigChangedCallback(&stru_D1BEE8, stru_D1BEE8.m_count + 1024);
+    //stru_D1BEE8.m_chunk = 1024;
+    CMapObj::s_unifiedShaders[7] = CShaderEffectManager::GetEffect("MapObjDiffuse");
+    CMapObj::s_unifiedShaders[8] = CShaderEffectManager::GetEffect("MapObjSpecular");
+    CMapObj::s_unifiedShaders[9] = CShaderEffectManager::GetEffect("MapObjMetal");
+    CMapObj::s_unifiedShaders[10] = CShaderEffectManager::GetEffect("MapObjEnv");
+    CMapObj::s_unifiedShaders[11] = CShaderEffectManager::GetEffect("MapObjOpaque");
+    CMapObj::s_unifiedShaders[12] = CShaderEffectManager::GetEffect("MapObjEnvMetal");
+    CMapObj::s_unifiedShaders[13] = 0;
+    CMapObj::s_unifiedShaders[0] = CShaderEffectManager::GetEffect("MapObjUDiffuse");
+    CMapObj::s_unifiedShaders[1] = CShaderEffectManager::GetEffect("MapObjUSpecular");
+    CMapObj::s_unifiedShaders[2] = CShaderEffectManager::GetEffect("MapObjUMetal");
+    CMapObj::s_unifiedShaders[3] = CShaderEffectManager::GetEffect("MapObjUEnv");
+    CMapObj::s_unifiedShaders[4] = CShaderEffectManager::GetEffect("MapObjUOpaque");
+    CMapObj::s_unifiedShaders[5] = CShaderEffectManager::GetEffect("MapObjUEnvMetal");
+    CMapObj::s_unifiedShaders[6] = CShaderEffectManager::GetEffect("MapObjUComposite");
+    //CMapObj::bPoolsDirty = 1;
+    //v0 = SMemAlloc(4, ".\\MapObj.cpp", 88, 0);
+    //if (v0) {
+    //    *v0 = ObjectAllocAddHeap(36, 128, "MAPOBJOCC", 1);
+    //    CMapObj::occluderHeap = v0;
+    //} else {
+    //    CMapObj::occluderHeap = 0;
+    //}
+}
+
 // OFFSET: 0x7AD020
 void CMapObj::PrepareUpdate() {
     ++CWorldScene::s_portalStamp;
@@ -395,7 +432,7 @@ void CMapObj::PostloadCallback(void* arg) {
     //    *p_unk_1C4 = 0;
     //    a1->unk_1C8 = 0;
     //}
-    //savedregs = v10;
+    //savedregs = material;
     mapObj->Load();
     mapObj->CreateMaterials();
     mapObj->argb_color = mapObj->header->ambColor;
@@ -620,11 +657,11 @@ void CMapObj::RenderGroupCollidable(CMapObj* mapObj, CMapObjGroup* mapObjGroup, 
     g_theGxDevicePtr->MasterEnableSet(GxMasterEnable_PolygonFill, 1);
     g_theGxDevicePtr->RsSet(GxRs_BlendingMode, 0);
     //m_data = v7->m_appRenderStates.m_data;
-    //v10 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
+    //material = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
     //p_m_data = &v7->m_appRenderStates.m_data;
-    //if (m_data[7].m_value.m_data.i[0] != v10) {
+    //if (m_data[7].m_value.m_data.i[0] != material) {
     //    CGxDevice::IRsDirty(v7, GxRs_AlphaRef);
-    //    (*p_m_data)[7].m_value.m_data.i[0] = v10;
+    //    (*p_m_data)[7].m_value.m_data.i[0] = material;
     //    v7 = g_theGxDevicePtr;
     //}
     g_theGxDevicePtr->RsSet(GxRs_MatDiffuse, 0x80CCCCCC);
@@ -761,8 +798,8 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         //if (!shader && !material->blendMode && !maybe_IsSceneObjectEnabled(material->runTimeData_2))
         //    shader = 4;
         
-        //    SetShaderFogFromDayNight(~v10->flags & 2);
-        //    maybe_SetWorldLightingMode(v6, (v10->flags & 1) == 0);
+        //    SetShaderFogFromDayNight(~material->flags & 2);
+        //    maybe_SetWorldLightingMode(v6, (material->flags & 1) == 0);
         //    if ((v6->flags & 0x48) != 0) {
         //        if (dword_CFBEA8) {
         //            dword_CFBEA8 = 0;
@@ -792,14 +829,13 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
 
         CMapObj::SetEmissiveColor(color);
         GxRsSet(GxRs_BlendingMode, material->blendMode);
-        //    bn_CShaderEffect_SetAlphaRefDefault();
+        CShaderEffect::SetAlphaRefDefault();
         
         GxTexSetWrap(texture1, (material->flags & 0x40) == 0 ? GxTex_Wrap : GxTex_Clamp, (material->flags & 0x80) == 0 ? GxTex_Wrap : GxTex_Clamp);
-        //    v20 = CMapObjRender::s_unifiedShaders[shader + 7];
         g_theGxDevicePtr->RsSet(GxRs_Texture0, texture1);
         g_theGxDevicePtr->RsSet(GxRs_Texture1, texture2);
-        //    bn_CShaderEffect_SetCurrent(v20);
-        //    maybe_SelectWorldShaders();
+        CMapObj::s_unifiedShaders[shader + 7]->SetCurrent();
+        CMapObj::SelectWorldShaders();
 
         CGxBatch v26;
         v26.m_count = batch->indexCount;
@@ -844,8 +880,8 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         }
 
         batch->flags |= 0xF0u;
-        SMOMaterial* v10 = &mapObj->materialList[batch->texture];
-        CGxTex* v11 = TextureGetGxTex(v10->runTimeData_2, 0, 0);
+        SMOMaterial* material = &mapObj->materialList[batch->texture];
+        CGxTex* v11 = TextureGetGxTex(material->runTimeData_2, 0, 0);
         if (!v11) {
             if (!gxTex)
                 continue;
@@ -853,21 +889,21 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         }
 
         CGxTex* v49 = nullptr;
-        if (v10->runTimeData_3) {
-            v49 = TextureGetGxTex(v10->runTimeData_3, 0, 0);
+        if (material->runTimeData_3) {
+            v49 = TextureGetGxTex(material->runTimeData_3, 0, 0);
             if (!v49)
                 v49 = gxTex;
         }
         
-        uint32_t v47 = v10->shader;
-        //if (!v47 && !v10->blendMode && !maybe_IsSceneObjectEnabled(a1))
+        uint32_t v47 = material->shader;
+        //if (!v47 && !material->blendMode && !maybe_IsSceneObjectEnabled(a1))
         //    v47 = 4;
 
-        GxRsSet(GxRs_Culling, ((v10->flags & 4) == 0));
+        GxRsSet(GxRs_Culling, ((material->flags & 4) == 0));
 
-         CImVector color = { 0x00, 0x00, 0x00, 0x00 };
-        if ((v10->flags & 0x10) != 0)
-             color = v10->frameSidnColor;
+        CImVector color = { 0x00, 0x00, 0x00, 0x00 };
+        if ((material->flags & 0x10) != 0)
+             color = material->frameSidnColor;
 
         // TODO
         CImVector dword_D1BEFC = { 0x00, 0x00, 0x00, 0x00 };
@@ -878,11 +914,10 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         color.value = ((sat >> 1) & 0x007F7F7F) | (sat & 0xFF000000);
 
         CMapObj::SetEmissiveColor(color);
-        GxTexSetWrap(v11, (v10->flags & 0x40) == 0 ? GxTex_Wrap : GxTex_Clamp, (v10->flags & 0x80) == 0 ? GxTex_Wrap : GxTex_Clamp);
-        //v17 = CMapObjRender::s_unifiedShaders[v47 + 7];
+        GxTexSetWrap(v11, (material->flags & 0x40) == 0 ? GxTex_Wrap : GxTex_Clamp, (material->flags & 0x80) == 0 ? GxTex_Wrap : GxTex_Clamp);
         GxRsSet(GxRs_Texture0, v11);
         GxRsSet(GxRs_Texture1, v49);
-        //bn_CShaderEffect_SetCurrent(v16);
+        CMapObj::s_unifiedShaders[v47 + 7]->SetCurrent();
         //transparencyBatchesCount = a2->transparencyBatchesCount;
         //if (v40 >= transparencyBatchesCount) {
         //    v27 = v40 < transparencyBatchesCount + a2->intBatchCount;
@@ -912,43 +947,34 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         //        bn_CShadowCache_SetShadowMapGenericInterior(1);
         //        dword_D43010 = CShadowCache::GetShadowValue() != 0;
         //    }
-        GxRsSet(GxRs_BlendingMode, v10->blendMode);
-        //    bn_CShaderEffect_SetAlphaRefDefault();
-        //    maybe_SelectWorldShaders();
-        CGxBatch v26;
-        v26.m_count = batch->indexCount;
-        v26.m_start = batch->indexStart;
-        v26.m_minIndex = batch->vertexStart;
-        v26.m_maxIndex = batch->vertexEnd;
-        v26.m_primType = GxPrim_Triangles;
-        g_theGxDevicePtr->Draw(&v26, 1);
+        //GxRsSet(GxRs_BlendingMode, material->blendMode);
+        //CShaderEffect::SetAlphaRefDefault();
+        //CMapObj::SelectWorldShaders();
+        //CGxBatch v26;
+        //v26.m_count = batch->indexCount;
+        //v26.m_start = batch->indexStart;
+        //v26.m_minIndex = batch->vertexStart;
+        //v26.m_maxIndex = batch->vertexEnd;
+        //v26.m_primType = GxPrim_Triangles;
+        //g_theGxDevicePtr->Draw(&v26, 1);
         //} else {
         //    if (dword_CFBEA8) {
         //        dword_CFBEA8 = 0;
         //        bn_CShadowCache_SetShadowMapGenericInterior(0);
         //        dword_D43010 = CShadowCache::GetShadowValue();
         //    }
-        //    CMapObjGroup::SetLighting(a2, ((v9->flags & 0x20) != 0) + 1);
+        mapObjGroup->SetLighting(((material->flags & 0x20) != 0) + 1);
         //    SetShaderFogFromDayNight(~v9->flags & 2);
-        //    if (g_theGxDevicePtr->m_context) {
-        //        v18 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
-        //        if (v18->m_value.m_data.i[0] != 9) {
-        //            CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-        //            v18->m_value.m_data.i[0] = 9;
-        //        }
-        //    }
-        //    bn_CShaderEffect_SetAlphaRefDefault();
-        //    maybe_SelectWorldShaders();
-        //    v19 = v42;
-        //    v20 = v42->indexStart;
-        //    v21 = v42->vertexStart;
-        //    v35.m_count = v42->indexCount;
-        //    vertexEnd = v42->vertexEnd;
-        //    v35.m_start = v20;
-        //    v35.m_minIndex = v21;
-        //    v35.m_maxIndex = vertexEnd;
-        //    v35.m_primType = GxPrim_Triangles;
-        //    g_theGxDevicePtr->Draw(g_theGxDevicePtr, &v35, 1);
+        GxRsSet(GxRs_BlendingMode, 9);
+        CShaderEffect::SetAlphaRefDefault();
+        CMapObj::SelectWorldShaders();
+        CGxBatch v27;
+        v27.m_count = batch->indexCount;
+        v27.m_start = batch->indexStart;
+        v27.m_minIndex = batch->vertexStart;
+        v27.m_maxIndex = batch->vertexEnd;
+        v27.m_primType = GxPrim_Triangles;
+        g_theGxDevicePtr->Draw(&v27, 1);
         //    if (dword_CFBEAC) {
         //        dword_CFBEAC = 0;
         //        DayNight::GetActiveDayNight();
@@ -971,24 +997,16 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         //        bn_CShadowCache_SetShadowMapGenericInterior(1);
         //        dword_D43010 = CShadowCache::GetShadowValue() != 0;
         //    }
-        //    if (g_theGxDevicePtr->m_context) {
-        //        v23 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
-        //        if (v23->m_value.m_data.i[0] != 7) {
-        //            CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-        //            v23->m_value.m_data.i[0] = 7;
-        //        }
-        //    }
-        //    bn_CShaderEffect_SetAlphaRefDefault();
-        //    maybe_SelectWorldShaders();
-        //    v24 = v19->indexStart;
-        //    v25 = v19->vertexStart;
-        //    v33.m_count = v19->indexCount;
-        //    v26 = v19->vertexEnd;
-        //    v33.m_start = v24;
-        //    v33.m_minIndex = v25;
-        //    v33.m_maxIndex = v26;
-        //    v33.m_primType = GxPrim_Triangles;
-        //    g_theGxDevicePtr->Draw(g_theGxDevicePtr, &v33, 1);
+        GxRsSet(GxRs_BlendingMode, 7);
+        CShaderEffect::SetAlphaRefDefault();
+        CMapObj::SelectWorldShaders();
+        CGxBatch v26;
+        v26.m_count = batch->indexCount;
+        v26.m_start = batch->indexStart;
+        v26.m_minIndex = batch->vertexStart;
+        v26.m_maxIndex = batch->vertexEnd;
+        v26.m_primType = GxPrim_Triangles;
+        g_theGxDevicePtr->Draw(&v26, 1);
         //}
     }
 
@@ -1003,14 +1021,14 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
     mapObjGroup->SetVertexVB();
     g_theGxDevicePtr->RsPush();
     //dword_CFBEB0 = -1;
-    //dword_CFBEAC = -1;
+    CMapObj::s_lightingMode = -1;
     s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
     //dword_CFBEA8 = -1;
     if (!CShaderEffect::s_enableShaders) {
         g_theGxDevicePtr->RsSet(GxRs_ColorMaterial, 2);
     }
     //v67 = 2 - (dword_CFBEB8 != 0);
-    CGxTex* GxTex = nullptr;
+    CGxTex* gxTex = nullptr;
     //if (CMap::s_isStreamingMode)
     //    GxTex = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, 0);
     auto batchList = mapObjGroup->batchList;
@@ -1023,295 +1041,189 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
         }
 
         batchList->flags |= 0xF0u;
-        //########## TESTING
-        g_theGxDevicePtr->RsSet(GxRs_Fog, 0);
-        g_theGxDevicePtr->RsSet(GxRs_ColorMaterial, 2);
-        CMapObj::SetRenderModeLight();
-        // SetRenderModeLight();
-        // m_data = v7->m_appRenderStates.m_data;
-        // v10 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
-        // p_m_data = &v7->m_appRenderStates.m_data;
-        // if (m_data[7].m_value.m_data.i[0] != v10) {
-        //     CGxDevice::IRsDirty(v7, GxRs_AlphaRef);
-        //     (*p_m_data)[7].m_value.m_data.i[0] = v10;
-        //     v7 = g_theGxDevicePtr;
-        // }
-        g_theGxDevicePtr->RsSet(GxRs_MatDiffuse, 0x80CCCCCC);
-        g_theGxDevicePtr->RsSet(GxRs_DepthWrite, 1);
-        SMOMaterial* material = &mapObj->materialList[batchList->texture];
-        g_theGxDevicePtr->RsSet(GxRs_Texture0, TextureGetGxTex(material->runTimeData_2, 0, 0));
-        if (material->runTimeData_3)
-            g_theGxDevicePtr->RsSet(GxRs_Texture1, TextureGetGxTex(material->runTimeData_3, 0, 0));
-        CGxBatch v26;
-        v26.m_count = batchList->indexCount;
-        v26.m_start = batchList->indexStart;
-        v26.m_minIndex = batchList->vertexStart;
-        v26.m_maxIndex = batchList->vertexEnd;
-        v26.m_primType = GxPrim_Triangles;
-        g_theGxDevicePtr->Draw(&v26, 1);
-        //##########################
 
+        auto material = &mapObj->materialList[batchList->texture];
+        auto texture1 = TextureGetGxTex(material->runTimeData_2, 0, nullptr);
+        if (!texture1) {
+            if (!gxTex) {
+                batchList++;
+                continue;
+            }
+            texture1 = gxTex;
+        }
+        CGxTex* texture2 = nullptr;
+        if (material->runTimeData_3) {
+            texture2 = TextureGetGxTex(material->runTimeData_3, 0, nullptr);
+            if (!texture2) {
+                texture2 = gxTex;
+            }
+        }
 
-        //v7 = &v62->materialList[batchList->texture];
-        //v8 = v7->runTimeData[2];
-        //v66 = CTexture::GetGxTex(v8, 0, 0);
-        //if (!v66) {
-        //    if (!GxTex)
-        //        goto LABEL_88;
-        //    v66 = GxTex;
-        //}
-        //v9 = v7->runTimeData[3];
-        //v64 = 0;
-        //if (!v9)
-        //    goto LABEL_19;
-        //v64 = CTexture::GetGxTex(v9, 0, 0);
-        //if (v64)
-        //    goto LABEL_19;
-        //if (GxTex) {
-        //    v64 = GxTex;
-//LABEL_19:
-        //    shader = v7->shader;
-        //    if (!shader && !v7->blendMode && !maybe_IsSceneObjectEnabled(v8))
-        //        shader = 4;
-        //    v10 = (v7->flags & 4) == 0;
-        //    if (g_theGxDevicePtr->m_context) {
-        //        v4 = g_theGxDevicePtr->m_appRenderStates.m_data[17].m_value.m_data.i[0] == v10;
-        //        v70 = g_theGxDevicePtr->m_appRenderStates.m_data + 17;
-        //        if (!v4) {
-        //            CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_Culling);
-        //            v70->m_value.m_data.i[0] = v10;
-        //        }
-        //    }
-        //    if ((v7->flags & 0x10) != 0) {
-        //        p_frameSidnColor = &v7->frameSidnColor;
-        //    } else {
-        //        v63 = 0;
-        //        p_frameSidnColor = &v63;
-        //    }
-        //    v12 = dword_D1BEFC + *p_frameSidnColor;
-        //    v13 = (*p_frameSidnColor ^ dword_D1BEFC ^ v12) & 0x1010100;
-        //    v14 = v12 - v13;
-        //    v70 = (v14 | (v13 - (v13 >> 8)));
-        //    BYTE1(v70) >>= 1;
-        //    LOBYTE(v70) = v70 >> 1;
-        //    BYTE2(v70) = ((v14 | (v13 - (v13 >> 8))) >> 16) >> 1;
-        //    v44.color = v70;
-        //    maybe_SetShaderAmbientAndFog(v44);
-        //    GxTexSetWrap(v66, (v7->flags & 0x40) == 0, (v7->flags & 0x80) == 0);
-        //    v15 = CMapObjRender::s_unifiedShaders[shader];
-        //    CGxDevice::RsSet(g_theGxDevicePtr, GxRs_Texture0, v66);
-        //    CGxDevice::RsSet(g_theGxDevicePtr, GxRs_Texture1, v64);
-        //    bn_CShaderEffect_SetCurrent(v15);
-        //    v16 = mapObjGroup;
-        //    if (v65 >= mapObjGroup->transparencyBatchesCount) {
-        //        if ((mapObjGroup->flags & 0x48) != 0) {
-        //            maybe_SetWorldLightingMode(mapObjGroup, (v7->flags & 1) == 0);
-        //            if (dword_CFBEA8) {
-        //                dword_CFBEA8 = 0;
-        //                bn_CShadowCache_SetShadowMapGenericInterior(0);
-        //                dword_D43010 = CShadowCache::GetShadowValue();
-        //            }
-        //            if (dword_CFBEB0 != 2) {
-        //                dword_CFBEB0 = 2;
-        //                ActiveDayNight = DayNight::GetActiveDayNight();
-        //                color = ActiveDayNight->fogInfo.color;
-        //                bn_CShaderEffect_SetFogParams(
-        //                    ActiveDayNight->fogInfo.start,
-        //                    ActiveDayNight->fogInfo.end,
-        //                    *&ActiveDayNight->unk38,
-        //                    &color);
-        //                bn_CShaderEffect_SetFogEnabled(1);
-        //            }
-        //        } else {
-        //            if ((v7->flags & 0x20) != 0)
-        //                maybe_SetWorldLightingMode(mapObjGroup, 2);
-        //            else
-        //                maybe_SetWorldLightingMode(mapObjGroup, 3);
-        //            if (dword_CFBEA8 != 1) {
-        //                dword_CFBEA8 = 1;
-        //                bn_CShadowCache_SetShadowMapGenericInterior(1);
-        //                dword_D43010 = CShadowCache::GetShadowValue() != 0;
-        //            }
-        //            SetShaderFogFromDayNight(v67);
-        //        }
-        //        blendMode = v7->blendMode;
-        //        if (g_theGxDevicePtr->m_context) {
-        //            v40 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
-        //            if (v40->m_value.m_data.i[0] != blendMode) {
-        //                CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-        //                v40->m_value.m_data.i[0] = blendMode;
-        //            }
-        //        }
-        //        bn_CShaderEffect_SetAlphaRefDefault();
-        //        maybe_SelectWorldShaders();
-        //        indexStart = batchList->indexStart;
-        //        vertexEnd = batchList->vertexEnd;
-        //        v46[2] = batchList->indexCount;
-        //        vertexStart = batchList->vertexStart;
-        //        v46[0] = 3;
-        //        v46[1] = indexStart;
-        //        v48 = vertexEnd;
-        //        g_theGxDevicePtr->Draw(g_theGxDevicePtr, v46, 1);
-        //    } else {
-        //        SetShaderFogFromDayNight((v7->flags & 2) == 0 ? v67 : 0);
-        //        if (dword_CFBEA8) {
-        //            dword_CFBEA8 = 0;
-        //            bn_CShadowCache_SetShadowMapGenericInterior(0);
-        //            dword_D43010 = CShadowCache::GetShadowValue();
-        //        }
-        //        if (CShaderEffect::s_enableShaders) {
-        //            if ((v7->flags & 1) != 0)
-        //                v17 = 0;
-        //            else
-        //                v17 = ((v7->flags & 0x20) != 0) + 1;
-        //            maybe_SetWorldLightingMode(mapObjGroup, v17);
-        //            SetShaderFogFromDayNight(~v7->flags & 2);
-        //            if (g_theGxDevicePtr->m_context) {
-        //                v4 = g_theGxDevicePtr->m_appRenderStates.m_data[6].m_value.m_data.i[0] == 9;
-        //                shader = &g_theGxDevicePtr->m_appRenderStates.m_data[6];
-        //                if (!v4) {
-        //                    CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-        //                    *shader = 9;
-        //                }
-        //            }
-        //            bn_CShaderEffect_SetAlphaRefDefault();
-        //            maybe_SelectWorldShaders();
-        //            v18 = batchList->indexStart;
-        //            v19 = batchList->vertexStart;
-        //            v58[2] = batchList->indexCount;
-        //            v20 = batchList->vertexEnd;
-        //            v58[1] = v18;
-        //            v59 = v19;
-        //            v60 = v20;
-        //            v58[0] = 3;
-        //            g_theGxDevicePtr->Draw(g_theGxDevicePtr, v58, 1);
-        //            maybe_SetWorldLightingMode(mapObjGroup, 3);
-        //            SetShaderFogFromDayNight((v7->flags & 2) == 0 ? v67 : 0);
-        //            if (dword_CFBEA8 != 1) {
-        //                dword_CFBEA8 = 1;
-        //                bn_CShadowCache_SetShadowMapGenericInterior(1);
-        //                dword_D43010 = CShadowCache::GetShadowValue() != 0;
-        //            }
-        //            if (g_theGxDevicePtr->m_context) {
-        //                v21 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
-        //                if (v21->m_value.m_data.i[0] != 7) {
-        //                    CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-        //                    v21->m_value.m_data.i[0] = 7;
-        //                }
-        //            }
-        //            bn_CShaderEffect_SetAlphaRefDefault();
-        //            maybe_SelectWorldShaders();
-        //            v22 = batchList->indexStart;
-        //            v23 = batchList->vertexStart;
-        //            v52[2] = batchList->indexCount;
-        //            v54 = batchList->vertexEnd;
-        //            v52[0] = 3;
-        //            v52[1] = v22;
-        //            v53 = v23;
-        //            g_theGxDevicePtr->Draw(g_theGxDevicePtr, v52, 1);
-        //        } else {
-        //            if (g_theGxDevicePtr->m_context) {
-        //                v4 = g_theGxDevicePtr->m_appRenderStates.m_data[85].m_value.m_data.i[0] == 0;
-        //                shader = &g_theGxDevicePtr->m_appRenderStates.m_data[85];
-        //                if (!v4) {
-        //                    CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_ColorMaterial);
-        //                    *shader = 0;
-        //                }
-        //            }
-        //            CMapObjGroup::SetTransparencyVB(mapObjGroup);
-        //            if ((v7->flags & 1) != 0)
-        //                v24 = 0;
-        //            else
-        //                v24 = ((v7->flags & 0x20) != 0) + 1;
-        //            maybe_SetWorldLightingMode(mapObjGroup, v24);
-        //            SetShaderFogFromDayNight((v7->flags & 2) != 0 ? 0 : 6);
-        //            if (g_theGxDevicePtr->m_context) {
-        //                v4 = g_theGxDevicePtr->m_appRenderStates.m_data[6].m_value.m_data.i[0] == 9;
-        //                shader = &g_theGxDevicePtr->m_appRenderStates.m_data[6];
-        //                if (!v4) {
-        //                    CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-        //                    *shader = 9;
-        //                }
-        //            }
-        //            bn_CShaderEffect_SetAlphaRefDefault();
-        //            v25 = batchList->indexStart;
-        //            v26 = batchList->vertexStart;
-        //            v55[2] = batchList->indexCount;
-        //            v27 = batchList->vertexEnd;
-        //            v55[1] = v25;
-        //            v56 = v26;
-        //            v57 = v27;
-        //            v55[0] = 3;
-        //            g_theGxDevicePtr->Draw(g_theGxDevicePtr, v55, 1);
-        //            maybe_SetWorldLightingMode(mapObjGroup, 3);
-        //            if ((v7->flags & 2) != 0)
-        //                v28 = 0;
-        //            else
-        //                v28 = v67 | 4;
-        //            SetShaderFogFromDayNight(v28);
-        //            if (g_theGxDevicePtr->m_context) {
-        //                v29 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
-        //                if (v29->m_value.m_data.i[0] != 7) {
-        //                    CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-        //                    v29->m_value.m_data.i[0] = 7;
-        //                }
-        //                v16 = mapObjGroup;
-        //            }
-        //            bn_CShaderEffect_SetAlphaRefDefault();
-        //            v30 = batchList->indexStart;
-        //            v31 = batchList->vertexStart;
-        //            v49[2] = batchList->indexCount;
-        //            v32 = batchList->vertexEnd;
-        //            v49[1] = v30;
-        //            v50 = v31;
-        //            v51 = v32;
-        //            v49[0] = 3;
-        //            g_theGxDevicePtr->Draw(g_theGxDevicePtr, v49, 1);
-        //            CMapObjGroup::SetVertexVB(v16);
-        //            if (dword_CFBEAC) {
-        //                dword_CFBEAC = 0;
-        //                DayNight::GetActiveDayNight();
-        //                if (CShaderEffect::s_enableShaders) {
-        //                    if ((dword_D1C3AC & 1) == 0) {
-        //                        dword_D1C3AC |= 1u;
-        //                        flt_D1C39C = 0.0;
-        //                        flt_D1C3A0 = 0.0;
-        //                        flt_D1C3A4 = 0.0;
-        //                        flt_D1C3A8 = 0.5;
-        //                    }
-        //                    g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 11, &flt_D1C39C, 1);
-        //                } else {
-        //                    GxRsSet_int32_t(GxRs_Lighting, 0);
-        //                }
-        //            }
-        //            SetShaderFogFromDayNight((v7->flags & 2) == 0 ? v67 : 0);
-        //            if (g_theGxDevicePtr->m_context) {
-        //                v33 = g_theGxDevicePtr->m_appRenderStates.m_data + 6;
-        //                if (v33->m_value.m_data.i[0] != 10) {
-        //                    CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_BlendingMode);
-        //                    v33->m_value.m_data.i[0] = 10;
-        //                }
-        //            }
-        //            bn_CShaderEffect_SetAlphaRefDefault();
-        //            v34 = batchList->indexStart;
-        //            v35 = batchList->vertexStart;
-        //            v45.m_count = batchList->indexCount;
-        //            v36 = batchList->vertexEnd;
-        //            v45.m_start = v34;
-        //            v45.m_minIndex = v35;
-        //            v45.m_maxIndex = v36;
-        //            v45.m_primType = GxPrim_Triangles;
-        //            g_theGxDevicePtr->Draw(g_theGxDevicePtr, &v45, 1);
-        //            if (g_theGxDevicePtr->m_context) {
-        //                v37 = g_theGxDevicePtr->m_appRenderStates.m_data + GxRs_ColorMaterial;
-        //                if (v37->m_value.m_data.i[0] != 2) {
-        //                    CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_ColorMaterial);
-        //                    v37->m_value.m_data.i[0] = 2;
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
+        auto shader = material->shader;
+        // if (!shader && !material->blendMode && !maybe_IsSceneObjectEnabled(material->runTimeData_2))
+        //     shader = 4;
+
+        uint32_t v10 = (material->flags & 4) == 0 ? 1 : 0;
+        GxRsSet(GxRs_Culling, v10);
+        CImVector color = { 0x00, 0x00, 0x00, 0x00 };
+        if ((material->flags & 0x10) != 0)
+            color = material->frameSidnColor;
+
+        // TODO
+        CImVector dword_D1BEFC = { 0x00, 0x00, 0x00, 0x00 };
+
+        uint32_t sum = dword_D1BEFC.value + color.value;
+        uint32_t carry = (color.value ^ dword_D1BEFC.value ^ sum) & 0x01010100;
+        uint32_t sat = (sum - carry) | (carry - (carry >> 8));
+        color.value = ((sat >> 1) & 0x007F7F7F) | (sat & 0xFF000000);
+
+        CMapObj::SetEmissiveColor(color);
+        GxTexSetWrap(texture1, (material->flags & 0x40) == 0 ? GxTex_Wrap : GxTex_Clamp, (material->flags & 0x80) == 0 ? GxTex_Wrap : GxTex_Clamp);
+        GxRsSet(GxRs_Texture0, texture1);
+        GxRsSet(GxRs_Texture1, texture2);
+        CMapObj::s_unifiedShaders[shader]->SetCurrent();
+        CGxBatch batch;
+        if (i >= mapObjGroup->transparencyBatchesCount) {
+            if ((mapObjGroup->flags & 0x48) != 0) {
+                mapObjGroup->SetLighting((material->flags & 1) == 0 ? 1 : 0);
+                //if (dword_CFBEA8) {
+                //    dword_CFBEA8 = 0;
+                //    bn_CShadowCache_SetShadowMapGenericInterior(0);
+                //    dword_D43010 = CShadowCache::GetShadowValue();
+                //}
+                //if (dword_CFBEB0 != 2) {
+                //    dword_CFBEB0 = 2;
+                //    ActiveDayNight = DayNight::GetActiveDayNight();
+                //    color = ActiveDayNight->fogInfo.color;
+                //    bn_CShaderEffect_SetFogParams(ActiveDayNight->fogInfo.start, ActiveDayNight->fogInfo.end, *&ActiveDayNight->unk38, &color);
+                //    bn_CShaderEffect_SetFogEnabled(1);
+                //}
+            } else {
+                if ((material->flags & 0x20) != 0)
+                    mapObjGroup->SetLighting(2);
+                else
+                    mapObjGroup->SetLighting(3);
+                //if (dword_CFBEA8 != 1) {
+                //    dword_CFBEA8 = 1;
+                //    bn_CShadowCache_SetShadowMapGenericInterior(1);
+                //    dword_D43010 = CShadowCache::GetShadowValue() != 0;
+                //}
+                //SetShaderFogFromDayNight(v66);
+            }
+            GxRsSet(GxRs_BlendingMode, material->blendMode);
+            CShaderEffect::SetAlphaRefDefault();
+            CMapObj::SelectWorldShaders();
+            batch.m_count = batchList->indexCount;
+            batch.m_minIndex = batchList->vertexStart;
+            batch.m_primType = GxPrim_Triangles;
+            batch.m_start = batchList->indexStart;
+            batch.m_maxIndex = batchList->vertexEnd;
+            g_theGxDevicePtr->Draw(&batch, 1);
+        } else {
+            //SetShaderFogFromDayNight((v7->flags & 2) == 0 ? v66 : 0);
+            //if (dword_CFBEA8) {
+            //    dword_CFBEA8 = 0;
+            //    bn_CShadowCache_SetShadowMapGenericInterior(0);
+            //    dword_D43010 = CShadowCache::GetShadowValue();
+            //}
+            if (CShaderEffect::s_enableShaders) {
+                uint32_t lightingMode = 0;
+                if ((material->flags & 1) == 0)
+                    lightingMode = ((material->flags & 0x20) != 0 ? 1 : 0) + 1;
+                mapObjGroup->SetLighting(lightingMode);
+                //SetShaderFogFromDayNight(~v7->flags & 2);
+                GxRsSet(GxRs_BlendingMode, 9);
+                CShaderEffect::SetAlphaRefDefault();
+                CMapObj::SelectWorldShaders();
+
+                batch.m_count = batchList->indexCount;
+                batch.m_minIndex = batchList->vertexStart;
+                batch.m_primType = GxPrim_Triangles;
+                batch.m_start = batchList->indexStart;
+                batch.m_maxIndex = batchList->vertexEnd;
+                g_theGxDevicePtr->Draw(&batch, 1);
+
+                mapObjGroup->SetLighting(3);
+                //SetShaderFogFromDayNight((v7->flags & 2) == 0 ? v66 : 0);
+                //if (dword_CFBEA8 != 1) {
+                //    dword_CFBEA8 = 1;
+                //    bn_CShadowCache_SetShadowMapGenericInterior(1);
+                //    dword_D43010 = CShadowCache::GetShadowValue() != 0;
+                //}
+                GxRsSet(GxRs_BlendingMode, 7);
+                CShaderEffect::SetAlphaRefDefault();
+                CMapObj::SelectWorldShaders();
+
+                batch.m_count = batchList->indexCount;
+                batch.m_minIndex = batchList->vertexStart;
+                batch.m_primType = GxPrim_Triangles;
+                batch.m_start = batchList->indexStart;
+                batch.m_maxIndex = batchList->vertexEnd;
+                g_theGxDevicePtr->Draw(&batch, 1);
+            } else {
+                GxRsSet(GxRs_ColorMaterial, 0);
+                //mapObjGroup->SetTransparencyVB();
+                uint32_t lightingMode = 0;
+                if ((material->flags & 1) == 0)
+                    lightingMode = ((material->flags & 0x20) != 0 ? 1 : 0) + 1;
+                mapObjGroup->SetLighting(lightingMode);
+                //SetShaderFogFromDayNight((v7->flags & 2) != 0 ? 0 : 6);
+                GxRsSet(GxRs_BlendingMode, 9);
+                CShaderEffect::SetAlphaRefDefault();
+
+                batch.m_count = batchList->indexCount;
+                batch.m_minIndex = batchList->vertexStart;
+                batch.m_primType = GxPrim_Triangles;
+                batch.m_start = batchList->indexStart;
+                batch.m_maxIndex = batchList->vertexEnd;
+                g_theGxDevicePtr->Draw(&batch, 1);
+
+                mapObjGroup->SetLighting(3);
+                //uint32_t v28 = 0;
+                //if ((material->flags & 2) == 0)
+                //    v28 = v66 | 4;
+                //SetShaderFogFromDayNight(v28);
+                GxRsSet(GxRs_BlendingMode, 7);
+                CShaderEffect::SetAlphaRefDefault();
+
+                batch.m_count = batchList->indexCount;
+                batch.m_minIndex = batchList->vertexStart;
+                batch.m_primType = GxPrim_Triangles;
+                batch.m_start = batchList->indexStart;
+                batch.m_maxIndex = batchList->vertexEnd;
+                g_theGxDevicePtr->Draw(&batch, 1);
+
+                mapObjGroup->SetVertexVB();
+                if (CMapObj::s_lightingMode) {
+                    CMapObj::s_lightingMode = 0;
+                    //DayNight::GetActiveDayNight();
+                    if (CShaderEffect::s_enableShaders) {
+                        static C4Vector lightVector = C4Vector(0.0f, 0.0f, 0.0f, 0.5f);
+                        //if ((dword_D1C3AC & 1) == 0) {
+                        //    dword_D1C3AC |= 1u;
+                        //    flt_D1C39C = 0.0;
+                        //    flt_D1C3A0 = 0.0;
+                        //    flt_D1C3A4 = 0.0;
+                        //    flt_D1C3A8 = 0.5;
+                        //}
+                        g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 11, &lightVector, 1);
+                    } else {
+                        GxRsSet(GxRs_Lighting, 0);
+                    }
+                }
+                //SetShaderFogFromDayNight((v7->flags & 2) == 0 ? v66 : 0);
+                GxRsSet(GxRs_BlendingMode, 10);
+                CShaderEffect::SetAlphaRefDefault();
+
+                batch.m_count = batchList->indexCount;
+                batch.m_minIndex = batchList->vertexStart;
+                batch.m_primType = GxPrim_Triangles;
+                batch.m_start = batchList->indexStart;
+                batch.m_maxIndex = batchList->vertexEnd;
+                g_theGxDevicePtr->Draw(&batch, 1);
+                GxRsSet(GxRs_ColorMaterial, 2);
+            }
+        }
         batchList++;
     }
     g_theGxDevicePtr->RsPop();
@@ -1362,23 +1274,40 @@ void CMapObj::SetEmissiveColor(CImVector color) {
     s_lastSidnColor = color;
 
     CImVector grey = { 0x7F, 0x7F, 0x7F, 0xFF };
-    //if (CShaderEffect::s_enableShaders) {
-    //    x = s_mapLight->unk14.m_specularColor.x;
-    //    y = s_mapLight->unk14.m_specularColor.y;
-    //    v11.w = 14.0;
-    //    z = s_mapLight->unk14.m_specularColor.z;
-    //    v12 = x;
-    //    v11.x = x;
-    //    v13 = y;
-    //    v11.y = y;
-    //    v14 = z;
-    //    v11.z = z;
-    //    maybe_C4Vector__C4Vector(&v9, &v15);
-    //    maybe_C4Vector__C4Vector(&v10, &a1);
-    //    g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 28, &v9, 2);
-    //    g_theGxDevicePtr->ShaderConstantsSet(g_theGxDevicePtr, GxSh_Vertex, 13, &v11, 1);
-    //} else {
+    if (CShaderEffect::s_enableShaders) {
+        C4Vector v11;
+        v11.x = CMap::s_mapLight->m_light.m_specColor.x;
+        v11.y = CMap::s_mapLight->m_light.m_specColor.y;
+        v11.z = CMap::s_mapLight->m_light.m_specColor.z;
+        v11.w = 14.0;
+
+        C4Vector vecs[2];
+        vecs[0] = C4Vector(grey);
+        vecs[1] = C4Vector(color);
+
+        g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 28, vecs, 2);
+        g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 13, &v11, 1);
+    } else {
     GxRsSet(GxRs_MatDiffuse, grey.value);
     GxRsSet(GxRs_MatEmissive, color.value);
-    //}
+    }
+}
+
+// OFFSET: 0x7A84D0
+void CMapObj::SelectWorldShaders() {
+    if (!CShaderEffect::s_enableShaders) {
+        return;
+    }
+
+    int32_t shadow = CShaderEffect::s_shadowValue;
+
+    if (shadow > 2) {
+        shadow = 2;
+    }
+
+    int32_t vertexPermute = (CMapObj::s_lightingMode != 0) + 2 * (CWorldScene::s_fogPermute + 15 * shadow);
+
+    int32_t pixelPermute = CShaderEffect::SelectShadowShader();
+
+    CShaderEffect::SetShaders(vertexPermute, pixelPermute);
 }

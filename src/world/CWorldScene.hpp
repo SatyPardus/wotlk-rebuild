@@ -101,6 +101,8 @@ class CWorldScene {
     static TSGrowableArray<CRect> s_coveredRects;
     static int32_t s_curGroupIsInterior;
 
+    static int32_t s_fogPermute;
+
     static bool s_entityCanLink;
 
     static char s_debugMapName[260];
@@ -158,6 +160,7 @@ class CWorldScene {
     static void AddExteriorPortalView(CMapObj* mapObj, SMOPortal* portal, SMOPortalRef* ref, SPortalExt* ext, uint32_t destIsExterior);
     static void AddInteriorPortalView(CMapObj* mapObj, SMOPortal* portal, SMOPortalRef* ref, SPortalExt* ext, TSGrowableArray<CPortalView>* a5);
     static void MergeIntoFrustumRect(CPortalView* portalView);
+    static void SetupLighting(CM2Lighting* lighting, C3Vector* view);
 };
 
 #endif // WORLD_C_WORLDSCENE_HPP

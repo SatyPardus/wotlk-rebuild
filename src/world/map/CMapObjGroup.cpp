@@ -8,6 +8,9 @@
 #include "world/World.hpp"
 #include <tempest/facet/CFacet.hpp>
 #include "world/map/CMap.hpp"
+#include <world/daynight/DayNight.hpp>
+#include <world/daynight/DNInfo.hpp>
+#include <gx/RenderState.hpp>
 
 VBBList CMapObjGroup::vertexVBList;
 VBBList CMapObjGroup::indexVBList;
@@ -495,6 +498,88 @@ void CMapObjGroup::GetTrisFromQuery(uint32_t a2, BspQuery_Segment* a3, CMapObjDe
 
     batch->indices = indexSlice;
     batch->faceIndices = faceSlice;
+}
+
+// OFFSET: 0x7A8B10
+void CMapObjGroup::SetLighting(uint32_t mode) {
+    if (CMapObj::s_lightingMode == mode)
+        return;
+    CMapObj::s_lightingMode = mode;
+
+    DayNight::DNInfo* dayNight = DayNight::GetInfo();
+    C3Vector ambient = { 0.0f, 0.0f, 0.0f };
+    C3Vector diffuse = { 0.0f, 0.0f, 0.0f };
+
+    switch (mode) {
+    case 1: {
+        const CImVector& d = dayNight->m_light1.m_diffuse;
+        const CImVector& a = dayNight->m_light1.m_ambient;
+
+        diffuse = { d.r / 255.0f, d.g / 255.0f, d.b / 255.0f };
+        ambient = { a.r / 255.0f, a.g / 255.0f, a.b / 255.0f };
+        break;
+    }
+
+    case 2: {
+        const CImVector& d = dayNight->m_light1.m_mid0;
+        const CImVector& a = dayNight->m_light1.m_mid1;
+
+        diffuse = { d.r / 255.0f, d.g / 255.0f, d.b / 255.0f };
+        ambient = { a.r / 255.0f, a.g / 255.0f, a.b / 255.0f };
+        break;
+    }
+
+    case 3: {
+        const CImVector& a = this->parent->argb_color;
+
+        diffuse = { 0.0f, 0.0f, 0.0f };
+        ambient = { a.r / 255.0f, a.g / 255.0f, a.b / 255.0f };
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    CM2Light* light = &CMap::s_mapLight->m_light;
+
+    if (CShaderEffect::s_enableShaders) {
+        if (mode) {
+            C44Matrix xform;
+            g_theGxDevicePtr->XformView(xform);
+            C3Vector dir = xform.TransformDirection(light->m_dir);
+
+            g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 9, &C4Vector(ambient), 1);
+            g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 10, &C4Vector(ambient), 1);
+            g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 11, &C4Vector(diffuse), 1);
+            g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 12, &C4Vector(dir), 1);
+        } else {
+            static bool s_unlitInit = false;
+            static C4Vector s_unlitDiffuse;
+
+            if (!s_unlitInit) {
+                s_unlitInit = true;
+                s_unlitDiffuse = { 0.0f, 0.0f, 0.0f, 0.5f };
+            }
+
+            g_theGxDevicePtr->ShaderConstantsSet(GxSh_Vertex, 11, &s_unlitDiffuse, 1);
+        }
+    } else if (mode) {
+        GxRsSet(GxRs_Lighting, 1);
+
+        C3Vector savedAmb = light->m_ambColor;
+        C3Vector savedDir = light->m_dirColor;
+
+        light->m_dirColor = diffuse;
+        light->m_ambColor = ambient;
+
+        light->ApplyGxLight(0);
+
+        light->m_dirColor = savedDir;
+        light->m_ambColor = savedAmb;
+    } else {
+        GxRsSet(GxRs_Lighting, 0);
+    }
 }
 
 // OFFSET: 0x7D8570

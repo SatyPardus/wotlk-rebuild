@@ -21,6 +21,8 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     static RENDER_CALLBACK gRenderCallback;
     static void* gRenderUserParam;
     static CImVector s_lastSidnColor;
+    static CShaderEffect* s_unifiedShaders[14];
+    static int32_t s_lightingMode;
 
     char m_wmoName[260];
     SMOHeader* header;
@@ -55,7 +57,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     int32_t fogsCount;
     int32_t convexVolumePlaneCount;
     int32_t materialsCount;
-    uint32_t argb_color;
+    CImVector argb_color;
     //int32_t unk_1A4;
     CAaBox bbox;
     float distToCamera;
@@ -95,6 +97,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     bool VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, int useSphereTest);
     float CalcPortalFarthestDistance(SMOPortal* portal);
 
+    static void Initialize();
     static void PrepareUpdate();
     static CMapObj* Create(char* fileName);
     static void PostloadCallback(void* arg);
@@ -107,6 +110,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     static void SetGroupRenderCallback(RENDER_CALLBACK callback, void* param);
     static void SetRenderModeLight();
     static void SetEmissiveColor(CImVector color);
+    static void SelectWorldShaders();
 };
 
 #endif
