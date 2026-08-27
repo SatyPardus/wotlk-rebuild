@@ -4,6 +4,7 @@
 #include "util/Unimplemented.hpp"
 #include <common/Time.hpp>
 #include <cstdint>
+#include "time/CGameTime.hpp"
 
 // OFFSET: 0x6081F0
 int32_t Script_GetTime(lua_State* L) {
@@ -15,7 +16,9 @@ int32_t Script_GetTime(lua_State* L) {
 
 // OFFSET: 0x608230
 int32_t Script_GetGameTime(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, g_clientGameTime.hour);
+    lua_pushnumber(L, g_clientGameTime.minute);
+    return 2;
 }
 
 // OFFSET: 0x608270
