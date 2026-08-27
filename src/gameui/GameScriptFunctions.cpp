@@ -1192,7 +1192,16 @@ static int32_t Script_GetRealmName(lua_State* L) {
 
 // OFFSET: 0x510E20
 static int32_t Script_GetItemQualityColor(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isnumber(L, 1))
+        luaL_error(L, "Usage: GetItemQualityColor(index)");
+    uint32_t index = lua_tonumber(L, 1);
+    CImVector* color = CGTooltip::GetItemQualityColor(index);
+    lua_pushnumber(L, color->r / 255.0f);
+    lua_pushnumber(L, color->g / 255.0f);
+    lua_pushnumber(L, color->b / 255.0f);
+    const char* colorString = CGTooltip::GetItemQualityColorString(index);
+    lua_pushstring(L, colorString);
+    return 4;
 }
 
 // OFFSET: 0x516C60

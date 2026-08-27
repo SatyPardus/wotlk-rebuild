@@ -30,12 +30,16 @@ class CGTooltip : public CSimpleFrame {
     static int32_t s_metatable;
     static int32_t s_objectType;
     static CImVector s_defaultColor;
+    static CImVector s_itemQualityColors[8];
+    static const char* s_itemQualityColorStrings[8];
 
     // Static functions
     static CSimpleFrame* Create(CSimpleFrame* parent);
     static void CreateScriptMetaTable();
     static int32_t GetObjectType();
     static void RegisterScriptMethods(lua_State* L);
+    static CImVector* GetItemQualityColor(uint32_t index);
+    static const char* GetItemQualityColorString(uint32_t index);
 
     // Member functions
     CGTooltip(CSimpleFrame* parent);

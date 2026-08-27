@@ -12,6 +12,28 @@ int32_t CGTooltip::s_metatable;
 int32_t CGTooltip::s_objectType;
 CImVector CGTooltip::s_defaultColor{ 0, 210, 255, 255 };
 
+CImVector s_itemQualityColors[8] = {
+    0xFF9D9D9D,
+    0xFFFFFFFF,
+    0xFF1EFF00,
+    0xFF0070DD,
+    0xFFA335EE,
+    0xFFFF8000,
+    0xFFE6CC80,
+    0xFFE6CC80
+};
+
+const char* s_itemQualityColorStrings[8] = {
+    "|cff9d9d9d",
+    "|cffffffff",
+    "|cff1eff00",
+    "|cff0070dd",
+    "|cffa335ee",
+    "|cffff8000",
+    "|cffe6cc80",
+    "|cffe6cc80"
+};
+
 CSimpleFrame* CGTooltip::Create(CSimpleFrame* parent) {
     // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGTooltip@@", -2);
     return NEW(CGTooltip, parent);
@@ -34,6 +56,20 @@ int32_t CGTooltip::GetObjectType() {
 void CGTooltip::RegisterScriptMethods(lua_State* L) {
     CSimpleFrame::RegisterScriptMethods(L);
     FrameScript_Object::FillScriptMethodTable(L, CGTooltipMethods, NUM_CGTOOLTIP_SCRIPT_METHODS);
+}
+
+// OFFSET: 0x61A510
+CImVector* CGTooltip::GetItemQualityColor(uint32_t index) {
+    if (index >= 8)
+        index = 1;
+    return &s_itemQualityColors[index];
+}
+
+// OFFSET: 0x61A530
+const char* GetItemQualityColorString(uint32_t index) {
+    if (index >= 8)
+        index = 1;
+    return s_itemQualityColorStrings[index];
 }
 
 CGTooltip::CGTooltip(CSimpleFrame* parent)
