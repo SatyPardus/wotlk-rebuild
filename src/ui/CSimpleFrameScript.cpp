@@ -822,12 +822,27 @@ int32_t CSimpleFrame_GetEffectiveDepth(lua_State* L) {
 
 // OFFSET: 0x4A1D80
 int32_t CSimpleFrame_IgnoreDepth(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleFrame::GetObjectType();
+    auto object = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
+
+    if (lua_type(L, 2) != LUA_TBOOLEAN) {
+        return luaL_error(L, "Usage: %s:IgnoreDepth(ignore)", object->GetDisplayName());
+    }
+
+    object->m_ignoreDepth = lua_toboolean(L, 2);
+    return 0;
 }
 
 // OFFSET: 0x4A1E00
 int32_t CSimpleFrame_IsIgnoringDepth(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleFrame::GetObjectType();
+    auto object = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
+
+    if (object->m_ignoreDepth)
+        lua_pushnumber(L, 1.0);
+    else
+        lua_pushnil(L);
+    return 1;
 }
 
 FrameScript_Method SimpleFrameMethods[NUM_SIMPLE_FRAME_SCRIPT_METHODS] = {
