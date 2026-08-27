@@ -16,6 +16,7 @@
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
 #include "util/StringTo.hpp"
+#include "gameui/CGUIBindings.hpp"
 
 // External from "ui/ScriptFunctions.hpp"
 void RegisterSimpleFrameScriptMethods();
@@ -67,52 +68,119 @@ static int32_t Script_SetLayoutMode(lua_State* L) {
 
 // OFFSET: 0x514430
 static int32_t Script_IsModifierKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto bindings = CGUIBindings::s_bindings;
+    for (int32_t i = KEY_LSHIFT; i <= KEY_RALT; i++) {
+        if (bindings->m_keyStateOverride) {
+            if (((1 << i) & bindings->m_heldModifiers) != 0) {
+                lua_pushnumber(L, 1.0);
+                return 1;
+            }
+        } else {
+            if (EventIsKeyDown((KEY)i)) {
+                lua_pushnumber(L, 1.0);
+                return 1;
+            }
+        }
+    }
+
+    lua_pushnil(L);
+    return 1;
 }
 
 // OFFSET: 0x5144C0
 static int32_t Script_IsLeftShiftKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_LSHIFT)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x514520
 static int32_t Script_IsRightShiftKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_RSHIFT)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x514580
 static int32_t Script_IsShiftKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_LSHIFT)) {
+        lua_pushnumber(L, 1.0);
+    } else if (CGUIBindings::IsKeyDown(KEY_RSHIFT)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x514610
 static int32_t Script_IsLeftControlKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_LCONTROL)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x514670
 static int32_t Script_IsRightControlKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_RCONTROL)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x5146D0
 static int32_t Script_IsControlKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_LCONTROL)) {
+        lua_pushnumber(L, 1.0);
+    } else if (CGUIBindings::IsKeyDown(KEY_RCONTROL)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x514760
 static int32_t Script_IsLeftAltKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_LALT)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x5147C0
 static int32_t Script_IsRightAltKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_RALT)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x514820
 static int32_t Script_IsAltKeyDown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGUIBindings::IsKeyDown(KEY_LALT)) {
+        lua_pushnumber(L, 1.0);
+    } else if (CGUIBindings::IsKeyDown(KEY_RALT)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x5148B0

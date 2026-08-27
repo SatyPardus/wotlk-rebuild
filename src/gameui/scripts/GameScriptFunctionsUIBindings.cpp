@@ -193,7 +193,21 @@ static int32_t Script_ClearOverrideBindings(lua_State* L) {
 
 // OFFSET: 0x55E9B0
 static int32_t Script_GetBindingKey(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1))
+        luaL_error(L, "Usage: GetBindingKey(\"COMMAND\"[, mode])");
+    BINDING_MODE v6 = BINDING_MODE_4;
+    if (lua_isnumber(L, 2)) {
+        auto v1 = lua_tonumber(L, 2);
+        if ((v1 - 1) <= 3)
+            v6 = (BINDING_MODE)(v1 - 1);
+    }
+    uint32_t v2 = 0;
+    const char* command = lua_tolstring(L, 1, 0);
+    for (const char* i = CGUIBindings::s_bindings->GetCommandKey(v6, command, 0); i; i = CGUIBindings::s_bindings->GetCommandKey(v6, command, v2)) {
+        ++v2;
+        lua_pushstring(L, i);
+    }
+    return v2;
 }
 
 // OFFSET: 0x562550
@@ -243,7 +257,24 @@ static int32_t Script_SetModifiedClick(lua_State* L) {
 
 // OFFSET: 0x55FC20
 static int32_t Script_GetModifiedClick(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1))
+        luaL_error(L, "Usage: GetModifiedClick(\"action\")");
+    auto v2 = lua_tolstring(L, 1, 0);
+    if (!v2) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    auto modifiedClick = CGUIBindings::s_bindings->m_modifiedClicks.Ptr(v2);
+    if (modifiedClick) {
+        char clickName[128];
+        modifiedClick->GetBinding(BINDING_SCRIPT, clickName, 128, 0);
+        lua_pushstring(L, clickName);
+        return 1;
+    } else {
+        lua_pushnil(L);
+        return 1;
+    }
 }
 
 // OFFSET: 0x55FCC0
