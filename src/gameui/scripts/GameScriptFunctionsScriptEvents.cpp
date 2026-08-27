@@ -5,6 +5,9 @@
 #include "util/Unimplemented.hpp"
 #include "client/ClientServices.hpp"
 #include <common/Time.hpp>
+#include <util/StringTo.hpp>
+#include <db/StaticDb.hpp>
+#include <util/Lang.hpp>
 
 // OFFSET: 0x60C2A0
 static int32_t Script_UnitExists(lua_State* L) {
@@ -880,7 +883,20 @@ static int32_t Script_IsXPUserDisabled(lua_State* L) {
 
 // OFFSET: 0x60A510
 static int32_t Script_FillLocalizedClassList(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (lua_type(L, 1) != 5)
+        luaL_error(L, "Usage: FillLocalizedClassList(classTable[, isFemale])");
+    auto isFemale = StringToBOOL(L, 2, 0);
+    lua_settop(L, 1);
+
+    for (int32_t i = 0; i < g_chrClassesDB.GetNumRecords(); i++) {
+        auto rec = g_chrClassesDB.GetRecordByIndex(i);
+        if (rec) {
+            lua_pushstring(L, rec->m_filename);
+            lua_pushstring(L, GetClassGenderName(rec, isFemale, nullptr));
+            lua_settable(L, -3);
+        }
+    }
+    return 1;
 }
 
 
