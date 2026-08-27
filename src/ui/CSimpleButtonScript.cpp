@@ -120,7 +120,16 @@ int32_t CSimpleButton_GetButtonState(lua_State* L) {
 
 // OFFSET: 0x977280
 int32_t CSimpleButton_SetButtonState(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto type = CSimpleButton::GetObjectType();
+    auto button = static_cast<CSimpleButton*>(FrameScript_GetObjectThis(L, type));
+
+    CSimpleButtonState state = BUTTONSTATE_DISABLED;
+    if (!lua_isstring(L, 2) || !StringToButtonState(lua_tolstring(L, 2, 0), &state)) {
+        return luaL_error(L, "Usage: %s:SetButtonState(\"state\", lock)", button->GetDisplayName());
+    }
+
+    button->SetButtonState(state, StringToBOOL(L, 3, 0));
+    return 0;
 }
 
 // OFFSET: 0x977340
@@ -137,7 +146,7 @@ int32_t CSimpleButton_SetNormalFontObject(lua_State* L) {
         lua_settop(L, -2);
     }
     if (!button || !font || !font->IsA(CSimpleFont::GetObjectType())) {
-        luaL_error(L, "Usage: %s:SetDisabledFontObject(\"fontname\")", button->GetDisplayName());
+        return luaL_error(L, "Usage: %s:SetDisabledFontObject(\"fontname\")", button->GetDisplayName());
     }
     button->m_normalFont = font;
     button->UpdateTextState(button->m_state);

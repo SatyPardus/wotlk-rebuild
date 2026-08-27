@@ -2,6 +2,7 @@
 #define UTIL_STRING_TO_HPP
 
 #include <cstdint>
+#include <ui/CSimpleButton.hpp>
 
 struct lua_State;
 
@@ -22,5 +23,7 @@ bool StringToOrientation(const char* string, uint32_t& orientation);
 bool StringToAnchorPoint(const char* string, int32_t& point);
 
 uint32_t StringToFontFlags(const char* string);
+
+bool StringToButtonState(const char* string, CSimpleButtonState* state);
 
 #endif

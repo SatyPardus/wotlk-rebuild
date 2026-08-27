@@ -216,3 +216,20 @@ uint32_t StringToFontFlags(const char* string) {
 
     return result;
 }
+
+bool StringToButtonState(const char* string, CSimpleButtonState* state) {
+    static std::pair<CSimpleButtonState, const char*> table[3] = {
+        { BUTTONSTATE_DISABLED, "DISABLED" },
+        { BUTTONSTATE_NORMAL, "NORMAL" },
+        { BUTTONSTATE_PUSHED, "PUSHED" }
+    };
+
+    for (size_t i = 0; i < 3; ++i) {
+        if (!SStrCmpI(string, table[i].second, STORM_MAX_STR)) {
+            *state = table[i].first;
+            return 1;
+        }
+    }
+
+    return 0;
+}
