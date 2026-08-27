@@ -12,7 +12,7 @@ int32_t CGTooltip::s_metatable;
 int32_t CGTooltip::s_objectType;
 CImVector CGTooltip::s_defaultColor{ 0, 210, 255, 255 };
 
-CImVector s_itemQualityColors[8] = {
+CImVector CGTooltip::s_itemQualityColors[8] = {
     0xFF9D9D9D,
     0xFFFFFFFF,
     0xFF1EFF00,
@@ -23,7 +23,7 @@ CImVector s_itemQualityColors[8] = {
     0xFFE6CC80
 };
 
-const char* s_itemQualityColorStrings[8] = {
+const char* CGTooltip::s_itemQualityColorStrings[8] = {
     "|cff9d9d9d",
     "|cffffffff",
     "|cff1eff00",
