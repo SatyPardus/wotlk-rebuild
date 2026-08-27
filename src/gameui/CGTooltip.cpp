@@ -66,7 +66,7 @@ CImVector* CGTooltip::GetItemQualityColor(uint32_t index) {
 }
 
 // OFFSET: 0x61A530
-const char* GetItemQualityColorString(uint32_t index) {
+const char* CGTooltip::GetItemQualityColorString(uint32_t index) {
     if (index >= 8)
         index = 1;
     return s_itemQualityColorStrings[index];
