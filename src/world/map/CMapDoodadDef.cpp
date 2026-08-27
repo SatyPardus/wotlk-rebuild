@@ -2,6 +2,10 @@
 #include "model/CM2Shared.hpp"
 #include <world/CWorldView.hpp>
 #include "world/CWorldMath.hpp"
+#include "world/map/CMap.hpp"
+#include "world/daynight/DayNight.hpp"
+#include "world/daynight/DNInfo.hpp"
+#include "world/map/CMapChunk.hpp"
 
 // OFFSET: 0x7BDB10
 void CMapDoodadDef::UpdateBounds() {
@@ -49,10 +53,10 @@ void CMapDoodadDef::UpdateBounds() {
     sphere.r *= this->scale;
     this->sphere = sphere;
     if (box.b.x <= box.t.x || box.b.y <= box.t.y || box.b.z <= box.t.z) {
-        CWorldMath::TransformAABox(this->mat, box, this->bboxStaticEntity);
+        CWorldMath::TransformAABox(this->mat, box, this->bbox);
     } else {
-        this->bboxStaticEntity.b = this->position;
-        this->bboxStaticEntity.t = this->position;
+        this->bbox.b = this->position;
+        this->bbox.t = this->position;
     }
     //CWorldMath::TransformAABox(&this->mat, &v18.min.x, &this->bboxDoodadDef);
     //v28.x = (v18.max.x + v18.min.x) * 0.5;
@@ -60,10 +64,10 @@ void CMapDoodadDef::UpdateBounds() {
     //v28.z = 0.5 * (v18.max.z + v18.min.z);
     //this->vec2 = *C44Matrix::Translate(&v27.max, &v28, &this->mat);
     float v16 = std::max(
-        this->bboxStaticEntity.t.x - this->bboxStaticEntity.b.x,
+        this->bbox.t.x - this->bbox.b.x,
         std::max(
-            this->bboxStaticEntity.t.y - this->bboxStaticEntity.b.y,
-            this->bboxStaticEntity.t.z - this->bboxStaticEntity.b.z
+            this->bbox.t.y - this->bbox.b.y,
+            this->bbox.t.z - this->bbox.b.z
         )
     );
     uint8_t fadeLevel;
@@ -74,4 +78,56 @@ void CMapDoodadDef::UpdateBounds() {
     this->fadeLevel = fadeLevel;
     //if (((unsigned __int16)CWorld::enables & (unsigned __int16)Enable_8000) == 0 && i < 3u)
     //    this->model->m_bitFlags &= ~0x40u;
+}
+
+// OFFSET: 0x7B4FA0
+void CMapDoodadDef::ExtendBounds(CMapBaseObj* parent) {
+    if (parent->type & 0x4) {
+        CMapChunk* chunk = static_cast<CMapChunk*>(parent);
+        if (this->bbox.t.z >= chunk->bbox.t.z)
+            chunk->bbox.t.z = this->bbox.t.z;
+    } else if (parent->type & 0x10) {
+        CMapObjDefGroup* group = static_cast<CMapObjDefGroup*>(parent);
+        group->bbox |= this->bbox;
+
+        CMapBaseObjLink* link = group->parentLinkList.Head();
+        static_cast<CMapObjDef*>(link->ref)->bbox |= this->bbox;
+    }
+}
+
+// OFFSET: 0x7B55E0
+void CMapDoodadDef::ExtendChunkBounds() {
+    for (CMapBaseObjLink* def = this->parentLinkList.Head(); def; def = this->parentLinkList.Next(def)) {
+        this->ExtendBounds(def->ref);
+    }
+}
+
+// OFFSET: 0x7C1150
+void CMapDoodadDef::SelectLights(CM2Lighting* lighting) {
+    CM2Light* mapLight = &CMap::s_mapLight->m_light;
+    if ((this->flags & 2) != 0) {
+        lighting->AddAmbient(this->m2AmbietColor);
+        lighting->AddDiffuse(this->m2DiffuseColor, CMapStaticEntity::s_interiorSunDir);
+    } else {
+        lighting->AddAmbient(mapLight->m_ambColor);
+        lighting->AddDiffuse(mapLight->m_dirColor * this->diffuseLightScale, mapLight->m_dir);
+    }
+
+    auto dayNight = DayNight::GetInfo();
+    if ((this->flags & 0x8000) != 0) {
+        lighting->SetFog(C3Vector(dayNight->m_fogInterior.color), dayNight->m_fogInterior.start, dayNight->m_fogInterior.end, dayNight->m_fogInterior.m_density);
+    } else {
+        lighting->SetFog(C3Vector(dayNight->m_fog.color), dayNight->m_fog.start, dayNight->m_fog.end, dayNight->m_fog.m_density);
+    }
+
+    if ((this->flags & 2) != 0)
+        lighting->m_flags |= 8;
+    else
+        lighting->m_flags &= ~8;
+}
+
+void CMapDoodadDef::SelectUnderwater(CM2Lighting* lighting) {
+}
+
+void CMapDoodadDef::QueryInteriorLighting(CM2Lighting* lighting) {
 }

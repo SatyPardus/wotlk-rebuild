@@ -45,6 +45,16 @@ namespace DayNight {
     static float s_glowBlend = 0.0f;
     static CImVector s_glowColor = { 0, 0, 0, 0 };
 
+    static int32_t s_fogOverrideActive = 0;
+    static float s_overrideFogEnd = 0.0f;
+    static float s_overrideFogStartMul = 0.0f;
+    static float s_overrideFogRate = 0.0f;
+    static CImVector s_overrideFogColor = { 0, 0, 0, 0 };
+
+    static float s_glowEndTime = 0.0f;
+    static float s_glowStartTime = 0.0f;
+    static float s_glowFalloff = 1.0f;
+
     static C2Vector s_curve0Table[4] = {
         { 0.25, 1.0 },
         { 0.291667, 0.0 },
@@ -77,7 +87,8 @@ namespace DayNight {
     void BlendAreaLight(DNLightBands* dst, float maxFade, const LightRec* light, int32_t clearSlot, int32_t stormSlot); 
     void BlendZoneLight(DNLightBands* dst, float maxFade, const LightRec* light, float distPct, int32_t clearSlot, int32_t stormSlot);
     void SetColors();
-    void Update();
+    void UpdateFog();
+    void Update(int32_t reset, const C3Vector* cameraPos);
     void RenderSky();
     void DrawSky(DNOverrideSky* sky, float weight);
     DNInfo* GetInfo();

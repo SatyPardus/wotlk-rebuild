@@ -7,27 +7,10 @@
 #include "world/map/Types.hpp"
 #include <tempest/Vector.hpp>
 #include <model/CM2Model.hpp>
+#include "world/map/CMapStaticEntity.hpp"
 
-class CMapDoodadDef : public CMapBaseObj, public TSHashObject<CMapDoodadDef, uint32_t> {
+class CMapDoodadDef : public CMapStaticEntity, public TSHashObject<CMapDoodadDef, uint32_t> {
     public:
-    uint8_t fadeLevel;
-    uint8_t unk_025;
-    uint8_t unk_026;
-    uint8_t unk_027;
-    //uint32_t unkFlags_28;
-    //int32_t unkCounter;
-    //float unk_030;
-    CM2Model* model;
-    CAaSphere sphere;
-    CAaBox bboxStaticEntity;
-    C3Vector vec2;
-    C3Vector position;
-    float scale;
-    int32_t unk_07C;
-    //int32_t unk_080;
-    CImVector m2AmbietColor;
-    CImVector m2DiffuseColor;
-    float unk_08C;
     uint32_t uniqueId;
     //void* unk_094;
     //void* unk_098;
@@ -49,7 +32,13 @@ class CMapDoodadDef : public CMapBaseObj, public TSHashObject<CMapDoodadDef, uin
     //int32_t unk_168;
     //int32_t unk_16C;
 
+    void SelectLights(CM2Lighting* lighting) override;
+    void SelectUnderwater(CM2Lighting* lighting) override;
+    void QueryInteriorLighting(CM2Lighting* lighting) override;
+
     void UpdateBounds();
+    void ExtendBounds(CMapBaseObj* parent);
+    void ExtendChunkBounds();
 };
 
 #endif

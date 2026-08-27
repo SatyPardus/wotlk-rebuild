@@ -46,6 +46,7 @@ class CMap {
     static bool bPreload;
     static bool bIsStreamingMode;
     static CMapLight* s_mapLight;
+    static CiRect gbPrevChunkRect;
 
     static CGxShader* vertexShader_Terrain[128];
     static CGxShader* pixelShader_Terrain0[3];

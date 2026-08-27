@@ -13,6 +13,8 @@
 #include <common/time/Time.hpp>
 #include "world/daynight/LightQueue.hpp"
 #include <util/Color.hpp>
+#include <gx/Device.hpp>
+#include <world/map/CMap.hpp>
 
 
 namespace DayNight {
@@ -24,6 +26,14 @@ static DNPlanets g_planets;
 
 uint32_t g_mapId;
 TSGrowableArray<LightRec*> g_areaLights;
+
+void sub_5FE800(float a1, float* a2, int32_t* a3) {
+    if (a1 <= 0.0)
+        *a3 = a1 - 1;
+    else
+        *a3 = a1;
+    *a2 = a1 - *a3;
+}
 
 // OFFSET: 0x6ACC50
 void InterpColor(CImVector* dst, int32_t t, const CImVector* src) {
@@ -953,16 +963,260 @@ void SetColors() {
     g_dnInfo.m_curve1 = InterpTable(s_curve1Table, 2, g_dnInfo.m_dayProgression);
 }
 
+// OFFSET: 0x7F16F0
+void UpdateFog() {
+    float fogEnd = g_dnInfo.m_farClip;
+    float fogRate;
+
+    if (s_fogOverrideActive) {
+        if (s_overrideFogEnd < fogEnd) {
+            fogEnd = s_overrideFogEnd;
+        }
+
+        g_dnInfo.m_fog.end = fogEnd;
+        g_dnInfo.m_fog.color = s_overrideFogColor;
+        g_dnInfo.m_fog.start = fogEnd * s_overrideFogStartMul;
+        fogRate = s_overrideFogRate;
+    } else {
+        if (g_dnInfo.m_bands.m_fogEnd < fogEnd) {
+            fogEnd = g_dnInfo.m_bands.m_fogEnd;
+        }
+
+        g_dnInfo.m_fog.end = fogEnd;
+        g_dnInfo.m_fog.color = g_dnInfo.m_bands.m_skyFog;
+        g_dnInfo.m_fog.start = fogEnd * g_dnInfo.m_bands.m_fogStartMul;
+        fogRate = g_dnInfo.m_bands.m_fogRate;
+    }
+
+    g_dnInfo.m_fog.m_density = fogRate;
+
+    float interiorDistance = 0.0f;
+    bool inInterior = false;
+    int32_t liquidType = 0;
+
+    // TODO: the WMO interior fog query and the underwater liquid lookup.
+    //
+    //   SMOFog fogRecords[2] = {};
+    //   uint32_t fogId;
+    //   bool hasFog;
+    //   TSFixedArray<uint32_t>* fogIds;
+    //   inInterior = FindViewerInteriorGroupForFog(fogRecords, &fogId, &hasFog,
+    //                                              &fogIds, &interiorDistance) == 1;
+    //   if (!inInterior) interiorDistance = 0.0f;
+    //   liquidType = GetCameraUnderwaterDepth(nullptr);
+    //
+    //   if (inInterior) {
+    //       LiquidTypeRec* liquid = g_liquidTypeDB.GetRecord(liquidType);
+    //       int32_t useUnderwaterRecord = 0;
+    //       if (liquidType) {
+    //           useUnderwaterRecord = 1;
+    //           if ((liquid->m_flags & 0x20) && !(fogRecords[0].flags & 0x100))
+    //               useUnderwaterRecord = 0;
+    //           if ((liquid->m_flags & 0x100) && !(fogRecords[0].flags & 0x10))
+    //               useUnderwaterRecord = 0;   // falls through to the mirror below
+    //       }
+    //       if (!liquidType || useUnderwaterRecord) {
+    //           ApplyFogSettings(&fogRecords[useUnderwaterRecord != 0]);
+    //           if (liquid && (liquid->m_flags & 0x40)) {
+    //               g_dnInfo.m_fog = g_dnInfo.m_fogGroup;
+    //           }
+    //       } else {
+    //           g_dnInfo.m_fogGroup = g_dnInfo.m_fog;
+    //       }
+    //       if (hasFog) {
+    //           g_dnInfo.m_interiorFogId = fogId;
+    //           if (fogIds != &g_dnInfo.m_interiorFogIds)
+    //               g_dnInfo.m_interiorFogIds.Set(fogIds->m_count, fogIds->m_data);
+    //           g_dnInfo.m_interiorFogFlags = fogIds[1].m_alloc;
+    //       }
+    //   }
+
+    float density = g_dnInfo.m_fog.m_density;
+
+    float blend = interiorDistance * 0.039999999f;
+
+    if (blend >= 0.0f) {
+        if (blend >= 1.0f) {
+            blend = 1.0f;
+        }
+    } else {
+        blend = 0.0f;
+    }
+
+    g_dnInfo.m_interiorFogBlend = blend;
+    g_dnInfo.m_interiorFogId = 0;
+    g_dnInfo.m_interiorFogIds.m_count = 0;
+
+    if (inInterior) {
+        g_dnInfo.m_fogInterior.end = g_dnInfo.m_fog.end + (g_dnInfo.m_fogGroup.end - g_dnInfo.m_fog.end) * blend;
+        g_dnInfo.m_fogInterior.start = g_dnInfo.m_fog.start + (g_dnInfo.m_fogGroup.start - g_dnInfo.m_fog.start) * blend;
+        g_dnInfo.m_fogInterior.m_density = density + (g_dnInfo.m_fogGroup.m_density - density) * blend;
+
+        CImVector blended = g_dnInfo.m_fog.color;
+        const int32_t t = (int32_t)(blend * 255.0f);
+
+        if (t) {
+            InterpColor(&blended, t, &g_dnInfo.m_fogGroup.color);
+        }
+
+        g_dnInfo.m_fog.end = g_dnInfo.m_fogInterior.end;
+        g_dnInfo.m_fogInterior.color = blended;
+        g_dnInfo.m_fog.start = g_dnInfo.m_fogInterior.start;
+        g_dnInfo.m_fog.m_density = g_dnInfo.m_fogInterior.m_density;
+        density = g_dnInfo.m_fogInterior.m_density;
+    } else {
+        g_dnInfo.m_fogInterior.color = g_dnInfo.m_fog.color;
+        g_dnInfo.m_fogInterior.start = g_dnInfo.m_fog.start;
+        g_dnInfo.m_fogInterior.end = g_dnInfo.m_fog.end;
+        g_dnInfo.m_fogInterior.m_density = density;
+    }
+
+    if (s_farClipFogMode == 1 && liquidType) {
+        g_dnInfo.m_fog.m_density = density * 2.0f;
+        g_dnInfo.m_fogInterior.m_density = density * 2.0f;
+    }
+
+    if (s_lightFlags & 2) {
+        // ApplyFogColorBlend2();
+        // ApplyFogColorBlend2();
+    }
+
+    if (s_lightFlags & 1) {
+        if (g_dnInfo.m_timeSec <= s_glowEndTime) {
+            float fade = 1.0f / exp2f((g_dnInfo.m_timeSec - s_glowStartTime) / s_glowFalloff * 7.2134752f);
+
+            if (fade >= 0.0f) {
+                if (fade >= 1.0f) {
+                    fade = 1.0f;
+                }
+            } else {
+                fade = 0.0f;
+            }
+
+            s_glowBlend = 1.0f - fade;
+
+            // ApplyFogColorBlend(&g_dnInfo.m_fog);
+            // ApplyFogColorBlend(&g_dnInfo.m_fogInterior);
+        } else {
+            s_lightFlags &= ~1u;
+        }
+    }
+}
+
+// OFFSET: 0x7EEA90
+void SetDirection() {
+    static C2Vector s_dirPolar[4] = { { 0.0f, 2.2165682f }, { 0.25f, 1.9198623f }, { 0.5f, 2.2165682f }, { 0.75f, 1.9198623f } };
+    static C2Vector s_dirAzimuth[4] = { { 0.0f, 3.926991f }, { 0.25f, 3.926991f }, { 0.5f, 3.926991f }, { 0.75f, 3.926991f } };
+
+    float polar = InterpTable(s_dirPolar, 4, g_dnInfo.m_dayProgression);
+    float azimuth = InterpTable(s_dirAzimuth, 4, g_dnInfo.m_dayProgression);
+
+    float polarTurns = polar * 0.31830987f;
+    float azimuthTurns = azimuth * 0.31830987f;
+    float fraction;
+    int32_t sign;
+
+    sub_5FE800(polarTurns - 0.5f, &fraction, &sign);
+    float sinPolar = 1.0f - fraction * ((6.0f - 4.0f * fraction) * fraction);
+    if (sign & 1)
+        sinPolar = -sinPolar;
+
+    sub_5FE800(polarTurns, &fraction, &sign);
+    float cosPolar = 1.0f - fraction * ((6.0f - 4.0f * fraction) * fraction);
+    if (sign & 1)
+        cosPolar = -cosPolar;
+
+    sub_5FE800(azimuthTurns - 0.5f, &fraction, &sign);
+    float sinAzimuth = 1.0f - fraction * ((6.0f - 4.0f * fraction) * fraction);
+    if (sign & 1)
+        sinAzimuth = -sinAzimuth;
+
+    sub_5FE800(azimuthTurns, &fraction, &sign);
+    float cosAzimuth = 1.0f - fraction * ((6.0f - 4.0f * fraction) * fraction);
+    if (sign & 1)
+        cosAzimuth = -cosAzimuth;
+
+    g_dnInfo.m_light1.m_dir.x = cosAzimuth * sinPolar;
+    g_dnInfo.m_light1.m_dir.y = sinPolar * sinAzimuth;
+    g_dnInfo.m_light1.m_dir.z = cosPolar;
+}
+
+// OFFSET: 0x7F3920
 void UpdateLighting() {
     // TODO
     SetColors();
+    SetDirection();
     SetPlanets();
 }
 
-void Update() {
-    // TODO
+// OFFSET: 0x7816F0
+void Update(int32_t reset, const C3Vector* cameraPos) {
+    float screenGlow = 0.0f;
+
+    DNInfo* info = DayNight::GetInfo();
+
+    int32_t farClipFogMode = g_theGxDevicePtr->Caps().m_shaderTargets[0] > 1;
+
+    if (g_mapId < 530) {
+        farClipFogMode = 0;
+    }
+
+    // SetFarClipFogMode(farClipFogMode);
+    // info->ClearZoneLights();
+
+    if (cameraPos) {
+        // FindNearestLightParams(cameraPos);
+    }
+
+    if (reset) {
+        if (cameraPos) {
+            info->m_cameraPos = *cameraPos;
+        }
+
+        // ResetFogAccumulators(1);
+        // ClearLightFlag(1);
+    } else {
+        screenGlow = 0.0f; // g_sunGlare.m_screenGlow * 0.34999999f;
+
+        if (screenGlow == 0.0f) {
+            // ClearLightFlag(1);
+        }
+    }
+
     UpdateLighting();
+    // g_clouds.Update();
     g_stars.Update();
+    UpdateFog();
+
+    // CWorld::SetShadowColor(&info->m_shadowColor);
+
+    const int32_t glowScale = (int32_t)((1.0f - screenGlow) * 255.0f);
+
+    info->m_light1.m_ambient.b = (uint8_t)((glowScale * info->m_light1.m_ambient.b + 255) >> 8);
+    info->m_light1.m_ambient.g = (uint8_t)((glowScale * info->m_light1.m_ambient.g + 255) >> 8);
+    info->m_light1.m_ambient.r = (uint8_t)((glowScale * info->m_light1.m_ambient.r + 255) >> 8);
+
+    info->m_light1.m_diffuse.b = (uint8_t)((glowScale * info->m_light1.m_diffuse.b + 255) >> 8);
+    info->m_light1.m_diffuse.g = (uint8_t)((glowScale * info->m_light1.m_diffuse.g + 255) >> 8);
+    info->m_light1.m_diffuse.r = (uint8_t)((glowScale * info->m_light1.m_diffuse.r + 255) >> 8);
+
+    CM2Light* light = &CMap::s_mapLight->m_light;
+
+    light->SetDirection(info->m_light1.m_dir);
+
+    light->m_ambColor.x = info->m_light1.m_ambient.r * 0.0039215689f;
+    light->m_ambColor.y = info->m_light1.m_ambient.g * 0.0039215689f;
+    light->m_ambColor.z = info->m_light1.m_ambient.b * 0.0039215689f;
+
+    light->m_dirColor.x = info->m_light1.m_diffuse.r * 0.0039215689f;
+    light->m_dirColor.y = info->m_light1.m_diffuse.g * 0.0039215689f;
+    light->m_dirColor.z = info->m_light1.m_diffuse.b * 0.0039215689f;
+
+    light->m_specColor.x = info->m_bands.m_sunColor.r * 0.0039215689f;
+    light->m_specColor.y = info->m_bands.m_sunColor.g * 0.0039215689f;
+    light->m_specColor.z = info->m_bands.m_sunColor.b * 0.0039215689f;
+
+    // SetFarClipFogMode(0);
 }
 
 void RenderSky() {
@@ -1046,14 +1300,6 @@ void DrawSky(DNOverrideSky* sky, float weight) {
 // OFFSET: 0x7ECEF0
 DNInfo* GetInfo() {
     return &g_dnInfo;
-}
-
-void sub_5FE800(float a1, float *a2, int32_t *a3) {
-    if (a1 <= 0.0)
-        *a3 = a1 - 1;
-    else
-        *a3 = a1;
-    *a2 = a1 - *a3;
 }
 
 // OFFSET: 0x7EECC0

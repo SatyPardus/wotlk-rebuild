@@ -234,10 +234,10 @@ void CMapChunk::CreateRefs(CMapArea* area, uint32_t* mcrfPtr, uint32_t doodadRef
         CMapBaseObjLink* link = CMap::AllocBaseObjLink(mapDoodadDef);
         link->ref = this;
         this->doodadDefLinkList.LinkToTail(link);
-        mapDoodadDef->unk_08C = 1.0f;
+        mapDoodadDef->diffuseLightScale = 1.0f;
         mapDoodadDef->flags |= MAPOBJ_FLAG_EXTERIOR;
         if ((mapDoodadDef->flags & MAPOBJ_FLAG_PREPARED) != 0) {
-            //sub_7B4FA0(v25, this);
+            mapDoodadDef->ExtendBounds(this);
         }
     }
 }

@@ -57,6 +57,7 @@ uint32_t CMap::cCount;
 bool CMap::bPreload;
 bool CMap::bIsStreamingMode;
 CMapLight* CMap::s_mapLight;
+CiRect CMap::gbPrevChunkRect;
 
 CGxShader* CMap::vertexShader_Terrain[128];
 CGxShader* CMap::pixelShader_Terrain0[3];
@@ -321,7 +322,7 @@ void CMap::Load(const char* mapName, int32_t zoneID) {
         CWorld::s_loadProgressCallback(1.0, CWorld::s_loadProgressParam);
     CMap::bPreload = false;
     CWorld::s_loadProgressCallback = 0;
-    // LODWORD(qword_CD7678) = 1;
+    CWorld::s_prepareAll = 1;
     // NOP();
 }
 
@@ -725,8 +726,8 @@ CMapDoodadDef* CMap::CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3V
     };
     mapDoodadDef->sphere.c = mapDoodadDef->position;
     mapDoodadDef->sphere.r = 0.0f;
-    mapDoodadDef->bboxStaticEntity.b = mapDoodadDef->position;
-    mapDoodadDef->bboxStaticEntity.t = mapDoodadDef->position;
+    mapDoodadDef->bbox.b = mapDoodadDef->position;
+    mapDoodadDef->bbox.t = mapDoodadDef->position;
     mapDoodadDef->scale = doodadDef->scale / 1024.0f;
 
     mapDoodadDef->flags = MAPOBJ_FLAG_UNPLACED;
@@ -748,8 +749,7 @@ CMapDoodadDef* CMap::CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3V
         mapDoodadDef->model->m_flag8000 = 1;
         mapDoodadDef->model->m_worldTransform = mapDoodadDef->mat;
         //CWorldScene::LoadModel(v5->model, COERCE_FLOAT(CMapStaticEntity::ModelEventCallback), *(float *)&v5, 0.0);
-        //mapDoodadDef->model->m_lightingCallback = MapStaticEntity::ModelLightingCallback;
-        mapDoodadDef->model->m_lightingCallback = CMapDoodadLightingCallback;
+        mapDoodadDef->model->m_lightingCallback = &CMapStaticEntity::ModelLightingCallback;
         mapDoodadDef->model->m_lightingArg = mapDoodadDef;
         mapDoodadDef->model->SetBoneSequence(0xFFFFFFFF, 0, 0xFFFFFFFF, 0, 1.0f, 1, 1);
     }
@@ -798,8 +798,8 @@ void CMap::LoadArea(CMapArea* area) {
 
 // OFFSET: 0x7B6B00
 void CMap::PrepareUpdate(bool a1) {
-    // if (HIDWORD(qword_CD7678))
-    //     CMap::PurgeMaps();
+    if (CWorld::s_areaOfInterestJumped)
+         CMap::PurgeMaps();
     // CMap::bspRecurseCount = 0;
     // CMap::mapGetFacetsCount = 0;
     // CMap::oldSelectLightParm = 0;
@@ -1299,7 +1299,7 @@ void CMap::PrepareMapDoodadDefs() {
                 mapDoodadDef->UpdateBounds();
                 //if ((mapDoodadDef->unk_C & 2) == 0 && CMap::QueryShadow(&mapDoodadDef->position))
                 //    mapDoodadDef->unk_08C = 0.5;
-                //sub_7B55E0(mapDoodadDef);
+                mapDoodadDef->ExtendChunkBounds();
                 mapDoodadDef->flags |= MAPOBJ_FLAG_PREPARED | MAPOBJ_FLAG_UNPLACED;
             }
             mapDoodadDef->doodadDefLink.Unlink();
@@ -1337,7 +1337,7 @@ CMapEntity* CMap::ObjectCreate(CM2Model* model, MAP_OBJECT_FUNC func, void* func
     entity->m_funcParam64 = param64;
     entity->m_funcParam32 = param32;
     entity->position = C3Vector(10000000.0f, 10000000.0f, 10000000.0f);
-    entity->unk_08C = 1.0f;
+    entity->diffuseLightScale = 1.0f;
     entity->vec2 = C3Vector(10000000.0f, 10000000.0f, 10000000.0f);
     entity->unk_00C4 = 1.0f;
     entity->type |= 0x200;

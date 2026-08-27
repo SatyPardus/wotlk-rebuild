@@ -1285,6 +1285,28 @@ void CGxDevice::RsSet(EGxRenderState which, int32_t value) {
     }
 }
 
+void CGxDevice::RsSet(EGxRenderState which, uint32_t value) {
+    if (!this->m_context) {
+        return;
+    }
+
+    if (this->m_appRenderStates[which].m_value != value) {
+        this->IRsDirty(which);
+        this->m_appRenderStates[which].m_value = value;
+    }
+}
+
+void CGxDevice::RsSet(EGxRenderState which, float value) {
+    if (!this->m_context) {
+        return;
+    }
+
+    if (this->m_appRenderStates[which].m_value != value) {
+        this->IRsDirty(which);
+        this->m_appRenderStates[which].m_value = value;
+    }
+}
+
 void CGxDevice::RsSet(EGxRenderState which, void* value) {
     if (!this->m_context) {
         return;

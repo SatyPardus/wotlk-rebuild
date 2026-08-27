@@ -7,6 +7,8 @@
 #include "storm/list/TSExplicitList.hpp"
 #include "world/map/CMapHandle.hpp"
 
+class CM2Lighting;
+
 class CMapBaseObj : public CMapHandle {
     public:
     uint16_t type;
@@ -14,6 +16,9 @@ class CMapBaseObj : public CMapHandle {
     uint32_t flags;
     TSLink<CMapBaseObj>* lameAssLink;
     STORM_EXPLICIT_LIST(CMapBaseObjLink, ownerLink) parentLinkList;
+
+    virtual void SelectLights(CM2Lighting* lighting);
+    virtual void SelectUnderwater(CM2Lighting* lighting);
 };
 
 #endif

@@ -28,6 +28,8 @@ CWorld::CALLBACK_FUNC CWorld::s_loadProgressCallback;
 void* CWorld::s_loadProgressParam;
 int32_t CWorld::terrainAlphaBitDepth;
 Weather* CWorld::s_weather;
+bool CWorld::s_prepareAll;
+bool CWorld::s_areaOfInterestJumped;
 
 void CWorld::Initialize() {
     CWorld::s_enables |=
@@ -65,7 +67,8 @@ void CWorld::Initialize() {
     //CWorld::shadowMipLevel = CWorldParam::cvar_shadowLevel->m_intValue;
     //CWorld::farFog = CWorldParam::cvar_farClip->m_numberValue;
     //dword_CD7664 = 4;
-    //CWorld::prepareAll = 0i64;
+    CWorld::s_prepareAll = 0;
+    CWorld::s_areaOfInterestJumped = 0;
     //CWorld::bShowSimpleDoodads = 0;
     //CWorld::bLoadSimpleDoodads = 0;
     //World::texVect[0].x = 0.0;
@@ -225,26 +228,19 @@ void CWorld::Update(C3Vector* camPos, C3Vector* camTarget, C3Vector* position) {
     //profIdx = v3 + 1;
     //if (v3 == 29)
     //    profIdx = 0;
-    //CMap::gbPrevChunkRect = CWorld::s_chunkRectLow;
+    CMap::gbPrevChunkRect = CWorld::s_chunkRectLow;
     CWorld::PrepareAreaOfInterest(position);
-    //maxX = CMap::gbPrevChunkRect.maxX;
-    //if (CMap::gbPrevChunkRect.maxX >= CWorld::s_chunkRectLow.maxX)
-    //    maxX = CWorld::s_chunkRectLow.maxX;
-    //maxY = CMap::gbPrevChunkRect.maxY;
-    //if (CMap::gbPrevChunkRect.maxY >= CWorld::s_chunkRectLow.maxY)
-    //    maxY = CWorld::s_chunkRectLow.maxY;
-    //minX = CMap::gbPrevChunkRect.minX;
-    //if (CMap::gbPrevChunkRect.minX <= CWorld::s_chunkRectLow.minX)
-    //    minX = CWorld::s_chunkRectLow.minX;
-    //minY = CMap::gbPrevChunkRect.minY;
-    //if (CMap::gbPrevChunkRect.minY <= CWorld::s_chunkRectLow.minY)
-    //    minY = CWorld::s_chunkRectLow.minY;
-    //if (minY < maxY && minX < maxX) {
-    //    HIDWORD(CWorld::prepareAll) = 0;
-    //} else {
-    //    HIDWORD(CWorld::prepareAll) = 1;
-    //    dword_D4314C = 1;
-    //}
+    int32_t maxX = std::min(CMap::gbPrevChunkRect.maxX, CWorld::s_chunkRectLow.maxX);
+    int32_t maxY = std::min(CMap::gbPrevChunkRect.maxY, CWorld::s_chunkRectLow.maxY);
+    int32_t minX = std::max(CMap::gbPrevChunkRect.minX, CWorld::s_chunkRectLow.minX);
+    int32_t minY = std::max(CMap::gbPrevChunkRect.minY, CWorld::s_chunkRectLow.minY);
+
+    if (minY < maxY && minX < maxX) {
+        CWorld::s_areaOfInterestJumped = 0;
+    } else {
+        CWorld::s_areaOfInterestJumped = 1;
+        //CShadowCache::s_needsRebuild = 1;
+    }
     //++CWorld::frameCnt;
     //if (s_FrameCntCallback)
     //    s_FrameCntCallback();
@@ -283,11 +279,12 @@ void CWorld::Update(C3Vector* camPos, C3Vector* camTarget, C3Vector* position) {
     //    LoadingScreenDisable();
     //}
     CWorldScene::LocateViewer3();
+    DayNight::Update((CWorld::s_prepareAll || CWorld::s_areaOfInterestJumped), camPos);
     //sub_7816F0(HIDWORD(CWorld::prepareAll) | CWorld::prepareAll, &camPos->x);
     //CWorld::farFog = DayNight::GetActiveDayNight()->fogInfo.end;
     //if (!CGxDevice::MasterEnable(g_theGxDevicePtr, 1))
     //    CWorld::farFog = 100000.0;
-    //LODWORD(CWorld::prepareAll) = 0;
+    CWorld::s_prepareAll = false;
     //if ((CWorld::enables & 0x2000000) != 0 && dword_CD8794)
     //    sub_79BF40(CWorld::particulate);
     //MapWeather::Update((int)dword_CD7544);
@@ -356,8 +353,8 @@ void CWorld::PrepareAreaOfInterest(C3Vector* position) {
     int32_t v10 = 1 - (int32_t)(streamDist * -0.030000001);
     float v25 = -(position->y - 17066.666) * 0.029999999;
     float v26 = -(position->x - 17066.666) * 0.029999999;
-    int32_t v11 = (int32_t)(v26 - 0.5);
-    int32_t v25i = (int32_t)(v25 - 0.5);
+    int32_t v11 = (int32_t)floorf(v26);
+    int32_t v25i = (int32_t)floorf(v25);
     //if (IsStreamingAndTrial())
     //    sub_420A50(v25i, v11);
     int32_t v14 = (v25i - v10) & ~1;

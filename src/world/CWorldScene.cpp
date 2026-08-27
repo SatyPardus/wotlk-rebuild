@@ -70,6 +70,7 @@ TSGrowableArray<CRect> CWorldScene::s_coveredRects;
 int32_t CWorldScene::s_curGroupIsInterior;
 
 int32_t CWorldScene::s_fogPermute;
+int32_t CWorldScene::s_savedFogColor;
 
 bool CWorldScene::s_entityCanLink;
 
@@ -219,10 +220,10 @@ void CWorldScene::Update(C3Vector* camPos, C3Vector* camTarget) {
     // dword_CD8FD0 = LODWORD(v36.y);
     // dword_CD8FD4 = LODWORD(stru_ADF5A8.M44);
     CWorldScene::boundingBox = CAaBox::Bounding(CWorldScene::s_frustumCorners, 8u);
-    CWorldScene::s_frustumChunkRect.minX = (int)((-(CWorldScene::boundingBox.t.y - 17066.666f) * 0.03f) - 0.5f);
-    CWorldScene::s_frustumChunkRect.minY = (int)((-(CWorldScene::boundingBox.t.x - 17066.666f) * 0.03f) - 0.5f);
-    CWorldScene::s_frustumChunkRect.maxX = (int)((-(CWorldScene::boundingBox.b.y - 17066.666f) * 0.03f) - 0.5f);
-    CWorldScene::s_frustumChunkRect.maxY = (int)((-(CWorldScene::boundingBox.b.x - 17066.666f) * 0.03f) - 0.5f);
+    CWorldScene::s_frustumChunkRect.minX = (int32_t)floorf(-(CWorldScene::boundingBox.t.y - 17066.666f) * 0.03f);
+    CWorldScene::s_frustumChunkRect.minY = (int32_t)floorf(-(CWorldScene::boundingBox.t.x - 17066.666f) * 0.03f);
+    CWorldScene::s_frustumChunkRect.maxX = (int32_t)floorf(-(CWorldScene::boundingBox.b.y - 17066.666f) * 0.03f);
+    CWorldScene::s_frustumChunkRect.maxY = (int32_t)floorf(-(CWorldScene::boundingBox.b.x - 17066.666f) * 0.03f);
     CWorldScene::frustumIndex = 0;
     CWorldScene::frustumStack[0].CalcPlanesFromCorners(CWorldScene::s_frustumCorners);
     CMapChunk::farCornerIndex = 0;
@@ -359,7 +360,7 @@ void CWorldScene::AddMapObjDefGroup(CMapObjDef* mapObjDef, CMapObjDefGroup* mapO
                + nearest.z * CWorldScene::camPlaneXY.n.z
                + nearest.x * CWorldScene::camPlaneXY.n.x
                + CWorldScene::camPlaneXY.d;
-        int index = (int)(planeDist * 0.03f - 0.5f);
+        int index = (int32_t)floorf(planeDist * 0.03f);
         if (planeDist <= 0.0f || index < 64) {
             CWorldScene::sortTable.table[planeDist <= 0.0f ? 0 : index].exteriorGroupList.LinkToTail(mapObjDefGroup);
         }
@@ -369,7 +370,7 @@ void CWorldScene::AddMapObjDefGroup(CMapObjDef* mapObjDef, CMapObjDefGroup* mapO
 // OFFSET: 0x792D80
 void CWorldScene::AddMapChunkToRenderList(CMapChunk* mapChunk, C3Vector* pos) {
     float planeDist = C3Vector::Dot(*pos, CWorldScene::camPlaneXY.n) + CWorldScene::camPlaneXY.d;
-    int index = (int)(planeDist * 0.03f - 0.5f);
+    int index = (int32_t)floorf(planeDist * 0.03f);
     if (planeDist <= 0.0f || index < 64) {
         CWorldScene::sortTable.table[planeDist <= 0.0f ? 0 : index].mapChunkList.LinkToTail(mapChunk);
     }
@@ -415,7 +416,7 @@ void CWorldScene::AddEntityToSortTable(CMapEntity* entity) {
     }
 
     auto planeDist = outCorner.y * CWorldScene::camPlaneXY.n.y + outCorner.z * CWorldScene::camPlaneXY.n.z + outCorner.x * CWorldScene::camPlaneXY.n.x + CWorldScene::camPlaneXY.d;
-    int index = (int)(planeDist * 0.03f - 0.5f);
+    int index = (int32_t)floorf(planeDist * 0.03f);
     if (planeDist <= 0.0f || index < 64) {
         CWorldScene::sortTable.table[planeDist <= 0.0f ? 0 : index].entityList.LinkToHead(entity);
     }
@@ -983,8 +984,9 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
     CWorldScene::RenderMapObjDefGroups();
     //CWorldScene::RenderHorizon();
 
-    DayNight::Update();
+    //####TODO TESTING
     DayNight::RenderSky();
+    //##########
 
     // CWorldScene::UpdateLighting();
     // sub_795F80();
@@ -1037,176 +1039,76 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
 // OFFSET: 0x798DA0
 void CWorldScene::RenderChunks() {
     GxRsPush();
-    // dword_D2509C = g_theGxDevicePtr->m_appRenderStates.m_data[GxRs_FogColor].m_value.m_data.i[GxRs_PolygonOffset];
-    // if (CMap::enableTerrainShaderVertex) {
-    //     v42.M11 = 1.0;
-    //     v42.M22 = 1.0;
-    //     v42.M33 = 1.0;
-    //     v42.M44 = 1.0;
-    //     v42.M12 = 0.0;
-    //     v42.M13 = 0.0;
-    //     v42.M14 = 0.0;
-    //     v42.M21 = 0.0;
-    //     v42.M23 = 0.0;
-    //     v42.M24 = 0.0;
-    //     v42.M31 = 0.0;
-    //     v42.M32 = 0.0;
-    //     v42.M34 = 0.0;
-    //     v42.M41 = 0.0;
-    //     v42.M42 = 0.0;
-    //     v42.M43 = 0.0;
-    //     v44.y = -CWorldScene::s_activeWorldView.x;
-    //     v44.z = -CWorldScene::s_activeWorldView.y;
-    //     v44.w = -CWorldScene::s_activeWorldView.z;
-    //     C44Matrix::Translate(&v42, (const C3Vector*)&v44.y);
-    //     v43.M11 = 1.0;
-    //     v43.M12 = 0.0;
-    //     v43.M13 = 0.0;
-    //     v43.M14 = 0.0;
-    //     v43.M21 = 0.0;
-    //     v43.M23 = 0.0;
-    //     v43.M24 = 0.0;
-    //     v43.M31 = 0.0;
-    //     v43.M32 = 0.0;
-    //     v43.M34 = 0.0;
-    //     v43.M41 = 0.0;
-    //     v43.M42 = 0.0;
-    //     v43.M43 = 0.0;
-    //     v43.M22 = 1.0;
-    //     v43.M33 = 1.0;
-    //     v43.M44 = 1.0;
-    //     C44Matrix::Copy(&v43, &g_theGxDevicePtr->m_xforms[10].m_mtx[g_theGxDevicePtr->m_xforms[10].m_level]);
-    //     sub_7CFBE0(&v42, &v43);
-    // } else {
-    //     ActiveDayNight = DayNight::GetActiveDayNight();
-    //     v1 = g_theGxDevicePtr;
-    //     v2 = g_theGxDevicePtr->m_context == 0;
-    //     v3 = ActiveDayNight;
-    //     start = ActiveDayNight->fogInfo.start;
-    //     v45 = ActiveDayNight->fogInfo.start;
-    //     if (!v2) {
-    //         m_data = g_theGxDevicePtr->m_appRenderStates.m_data;
-    //         v6 = start == m_data[8].m_value.m_data.f[0];
-    //         f = m_data[8].m_value.m_data.f;
-    //         if (!v6) {
-    //             CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_FogStart);
-    //             *f = v45;
-    //             v1 = g_theGxDevicePtr;
-    //         }
-    //     }
-    //     v2 = v1->m_context == 0;
-    //     end = v3->fogInfo.end;
-    //     v45 = v3->fogInfo.end;
-    //     if (!v2) {
-    //         v9 = v1->m_appRenderStates.m_data;
-    //         v10 = end == v9[9].m_value.m_data.f[0];
-    //         v11 = v9[9].m_value.m_data.f;
-    //         if (!v10) {
-    //             CGxDevice::IRsDirty(v1, GxRs_FogEnd);
-    //             *v11 = v45;
-    //             v1 = g_theGxDevicePtr;
-    //         }
-    //     }
-    //     if (v1->m_context) {
-    //         v12 = v1->m_appRenderStates.m_data;
-    //         v13 = v12[GxRs_MatDiffuse].m_value.m_data.i[GxRs_PolygonOffset];
-    //         v14 = v12 + 1;
-    //         if (v13 != 0xFF7F7F7F) {
-    //             CGxDevice::IRsDirty(v1, GxRs_MatDiffuse);
-    //             v14->m_value.m_data.i[0] = 0xFF7F7F7F;
-    //             v1 = g_theGxDevicePtr;
-    //         }
-    //     }
-    //     if (CMap::enableSpecularTerrain) {
-    //         if (v1->m_context) {
-    //             v15 = v1->m_appRenderStates.m_data;
-    //             v16 = v15[3].m_value.m_data.i[0];
-    //             v17 = v15 + 3;
-    //             if (v16 != -1) {
-    //                 CGxDevice::IRsDirty(v1, GxRs_MatSpecular);
-    //                 v17->m_value.m_data.i[0] = 0xFFFFFFFF;
-    //             }
-    //         }
-    //         sub_763C70(GxRs_MatSpecularExp, 20.0);
-    //         v1 = g_theGxDevicePtr;
-    //     }
-    for (int32_t i = 0; i < 5; i++) {
-        GxRsSet((EGxRenderState)(GxRs_TextureCoord0 + i), i);
-        GxRsSet((EGxRenderState)(GxRs_TexGen0 + i), 2);
-        GxRsSet((EGxRenderState)(GxRs_TextureShader0 + i), 1);
+
+    g_theGxDevicePtr->RsGet(GxRs_FogColor, CWorldScene::s_savedFogColor);
+
+    if (CMap::enableTerrainShaderVertex) {
+        C44Matrix worldTranslate;
+        C3Vector vec = { -CWorldScene::s_activeWorldView.x, -CWorldScene::s_activeWorldView.y, -CWorldScene::s_activeWorldView.z };
+        worldTranslate.Translate(vec);
+
+        C44Matrix view;
+        g_theGxDevicePtr->XformView(view);
+
+        // CMapRenderChunk::InitializeVertexShaderConstants(worldTranslate, view);
+    } else {
+        DayNight::DNInfo* activeDayNight = DayNight::GetInfo();
+
+        GxRsSet(GxRs_FogStart, activeDayNight->m_fog.start);
+        GxRsSet(GxRs_FogEnd, activeDayNight->m_fog.end);
+        GxRsSet(GxRs_MatDiffuse, 0xFF7F7F7F);
+
+        if (CMap::enableSpecularTerrain) {
+            GxRsSet(GxRs_MatSpecular, 0xFFFFFFFF);
+            GxRsSet(GxRs_MatSpecularExp, 20.0f);
+        }
+
+        for (int32_t i = 0; i < 5; i++) {
+            GxRsSet((EGxRenderState)(GxRs_TextureCoord0 + i), i);
+            GxRsSet((EGxRenderState)(GxRs_TexGen0 + i), 2);
+            GxRsSet((EGxRenderState)(GxRs_TextureShader0 + i), 1);
+        }
     }
-    // if (CMap::gTerrainPixelShadersValid) {
-    //     v23 = DayNight::GetActiveDayNight();
-    //     if (CGxDevice::Caps((char*)g_theGxDevicePtr)->int134) {
-    //         v24 = (char*)g_theGxDevicePtr;
-    //         color = v23->fogInfo.color;
-    //         if (!g_theGxDevicePtr->m_context)
-    //             goto LABEL_35;
-    //         v26 = g_theGxDevicePtr->m_appRenderStates.m_data + 10;
-    //         if (v26->m_value.m_data.i[0] == color)
-    //             goto LABEL_35;
-    //         CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_FogColor);
-    //         v26->m_value.m_data.i[0] = (int32_t)color;
-    //     } else {
-    //         sub_984C90(&v44, &v23->fogInfo);
-    //         ((void(__thiscall*)(CGxDevice*, int, int, C4Vector*, int))g_theGxDevicePtr->ShaderConstantsSet)(
-    //             g_theGxDevicePtr,
-    //             4,
-    //             2,
-    //             &v44,
-    //             1);
-    //     }
-    //     v24 = (char*)g_theGxDevicePtr;
-    // LABEL_35:
-    //     if (CGxDevice::Caps(v24)->int138) {
-    //         if (g_theGxDevicePtr->m_context) {
-    //             v27 = g_theGxDevicePtr->m_appRenderStates.m_data + 12;
-    //             if (v27->m_value.m_data.i[0] != 1) {
-    //                 CGxDevice::IRsDirty(g_theGxDevicePtr, GxRs_Fog);
-    //                 v27->m_value.m_data.i[0] = 1;
-    //             }
-    //         }
-    //     }
-    //     sub_874660();
-    //     goto LABEL_58;
-    // }
-    DayNight::DNInfo* activeDayNight = DayNight::GetInfo();
-    GxRsSet(GxRs_FogColor, activeDayNight->m_fog.color.value);
-    GxRsSet(GxRs_Fog, 1);
-    GxRsSet(GxRs_ColorOp0, 1);
-    GxRsSet(GxRs_AlphaOp0, 0);
-    GxRsSet(GxRs_ColorOp1, 0);
-    GxRsSet(GxRs_AlphaOp1, 0);
-    // LABEL_58:
+
+    if (CMap::gTerrainPixelShadersValid) {
+        DayNight::DNInfo* activeDayNight = DayNight::GetInfo();
+
+        if (g_theGxDevicePtr->Caps().int134) {
+            GxRsSet(GxRs_FogColor, activeDayNight->m_fog.color.value);
+        } else {
+            C4Vector fogColor = C4Vector(
+                activeDayNight->m_fog.color.r * 0.0039215689f,
+                activeDayNight->m_fog.color.g * 0.0039215689f,
+                activeDayNight->m_fog.color.b * 0.0039215689f,
+                activeDayNight->m_fog.color.a * 0.0039215689f);
+
+            g_theGxDevicePtr->ShaderConstantsSet(GxSh_Pixel, 2, &fogColor, 1);
+        }
+
+        if (g_theGxDevicePtr->Caps().int138) {
+            GxRsSet(GxRs_Fog, 1);
+        }
+
+        // CShadowCache::SetShadowMapTerrain();
+    } else {
+        DayNight::DNInfo* activeDayNight = DayNight::GetInfo();
+
+        GxRsSet(GxRs_FogColor, activeDayNight->m_fog.color.value);
+        GxRsSet(GxRs_Fog, 1);
+        GxRsSet(GxRs_ColorOp0, 1);
+        GxRsSet(GxRs_AlphaOp0, 0);
+        GxRsSet(GxRs_ColorOp1, 0);
+        GxRsSet(GxRs_AlphaOp1, 0);
+    }
+
     CWorldScene::RenderChunksSinglePass();
     CWorldScene::RenderChunksSolid();
-    // CWorldScene::RenderChunksZoneDebug();
-    // for (j = 0; j < 5; ++j) {
-    //     m_level = g_theGxDevicePtr->m_xforms[j].m_level;
-    //     v39 = &g_theGxDevicePtr->m_xforms[j];
-    //     if ((v39->m_flags[m_level] & 1) == 0) {
-    //         p_M11 = &v39->m_mtx[m_level];
-    //         p_M11->M44 = 1.0;
-    //         p_M11->M33 = 1.0;
-    //         p_M11->M22 = 1.0;
-    //         p_M11->M11 = 1.0;
-    //         p_M11->M43 = 0.0;
-    //         p_M11->M42 = 0.0;
-    //         p_M11->M41 = 0.0;
-    //         p_M11->M34 = 0.0;
-    //         p_M11->M32 = 0.0;
-    //         p_M11->M31 = 0.0;
-    //         p_M11->M24 = 0.0;
-    //         p_M11->M23 = 0.0;
-    //         p_M11->M21 = 0.0;
-    //         p_M11->M14 = 0.0;
-    //         p_M11->M13 = 0.0;
-    //         p_M11->M12 = 0.0;
-    //         v41 = v39->m_level;
-    //         v39->m_dirty = 1;
-    //         v39->m_flags[v41] = 1;
-    //     }
-    // }
+    //CWorldScene::RenderChunksZoneDebug();
+
+    for (int32_t i = 0; i < 5; i++) {
+        g_theGxDevicePtr->m_xforms[GxXform_Tex0 + i].Identity();
+    }
+
     GxRsPop();
 }
 

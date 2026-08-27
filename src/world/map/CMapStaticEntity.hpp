@@ -9,7 +9,10 @@
 
 class CMapStaticEntity : public CMapBaseObj {
     public:
-    int32_t unk_024;
+    uint8_t fadeLevel;
+    uint8_t unk_025;
+    uint8_t unk_026;
+    uint8_t unk_027;
     uint32_t unkFlags_28;
     int32_t unkCounter;
     float m_distanceToCamera;
@@ -23,7 +26,15 @@ class CMapStaticEntity : public CMapBaseObj {
     int32_t unk_080;
     CImVector m2AmbietColor;
     CImVector m2DiffuseColor;
-    float unk_08C;
+    float diffuseLightScale;
+
+    static C3Vector s_interiorSunDir;
+
+    void SelectLights(CM2Lighting* lighting) override;
+    void SelectUnderwater(CM2Lighting* lighting) override;
+    virtual void QueryInteriorLighting(CM2Lighting* lighting);
+
+    static void ModelLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg);
 };
 
 #endif

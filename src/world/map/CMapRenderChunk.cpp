@@ -63,31 +63,15 @@ void CMapRenderChunk::AddBatch(CMapChunk* a2, CMapChunk* a3, C3Vector* a4, uint8
     this->mapChunkPtrs[1] = a3;
     this->vec1 = *a4;
     this->unkFlags = a5;
-    //v15.min.x = a2->bbox.min.x;
-    //v15.min.y = a2->bbox.min.y;
-    //v15.min.z = a2->bbox.min.z;
-    //v15.max.x = a2->bbox.max.x;
-    //z = a2->bbox.max.z;
-    //v15.max.y = a2->bbox.max.y;
-    //v15.max.z = z;
-    //if (a3)
-    //    sub_715130(&v15.min.x, v14, &a3->bbox.min.x);
-    //x = v15.max.x;
-    //v8 = v15.min.x;
-    //y = v15.max.y;
-    //v10 = v15.min.y;
-    //this->radius = sqrt(
-    //                   (v15.max.x - v15.min.x) * (v15.max.x - v15.min.x) + (v15.max.y - v15.min.y) * (v15.max.y - v15.min.y) + (v15.max.z - v15.min.z) * (v15.max.z - v15.min.z)) *
-    //               0.5;
-    //v11 = v10 + y;
-    //v12 = x + v8;
-    //v13 = v15.max.z + v15.min.z;
-    //v15.max.x = v12 * 0.5;
-    //this->vec2.x = v15.max.x;
-    //v15.max.y = v11 * 0.5;
-    //this->vec2.y = v15.max.y;
-    //v15.max.z = v13 * 0.5;
-    //this->vec2.z = v15.max.z;
+
+    CAaBox v15 = a2->bbox;
+    if (a3)
+        v15 |= a3->bbox;
+
+    this->sphere.r = sqrt((v15.t.x - v15.b.x) * (v15.t.x - v15.b.x) + (v15.t.y - v15.b.y) * (v15.t.y - v15.b.y) + (v15.t.z - v15.b.z) * (v15.t.z - v15.b.z)) * 0.5f;
+    this->sphere.c.x = (v15.t.x + v15.b.x) * 0.5f;
+    this->sphere.c.y = (v15.b.y + v15.t.y) * 0.5f;
+    this->sphere.c.z = (v15.t.z + v15.b.z) * 0.5f;
 }
 
 // OFFSET: 0x7BA600
@@ -948,18 +932,18 @@ void CMapRenderChunk::UpdateShadowGxTexture(EGxTexCommand cmd, uint32_t w, uint3
 void CMapRenderChunk::RenderSetup(int32_t a2) {
     this->lastUpdateTime = 0.0;
     this->AllocLayerTextures();
-    //if (!a2 || !CMap::enableTerrainShaderVertex) {
-    C44Matrix worldMatrix = C44Matrix();
-    worldMatrix.d0 = this->vec1.x - CWorldScene::s_activeWorldView.x;
-    worldMatrix.d1 = this->vec1.y - CWorldScene::s_activeWorldView.y;
-    worldMatrix.d2 = this->vec1.z - CWorldScene::s_activeWorldView.z;
-    g_theGxDevicePtr->XformSet(GxXform_World, worldMatrix);
-    CM2Lighting lighting = CM2Lighting(this->sphere);
-    CWorldScene::s_m2Scene->SelectLights(&lighting);
-    CMapRenderChunk::SelectLights(&lighting);
-    lighting.SetupGxLights(&CWorldScene::s_activeWorldView);
-    lighting.SetupGxFog();
-    //}
+    if (!a2 || !CMap::enableTerrainShaderVertex) {
+        C44Matrix worldMatrix = C44Matrix();
+        worldMatrix.d0 = this->vec1.x - CWorldScene::s_activeWorldView.x;
+        worldMatrix.d1 = this->vec1.y - CWorldScene::s_activeWorldView.y;
+        worldMatrix.d2 = this->vec1.z - CWorldScene::s_activeWorldView.z;
+        g_theGxDevicePtr->XformSet(GxXform_World, worldMatrix);
+        CM2Lighting lighting = CM2Lighting(this->sphere);
+        CWorldScene::s_m2Scene->SelectLights(&lighting);
+        CMapRenderChunk::SelectLights(&lighting);
+        lighting.SetupGxLights(&CWorldScene::s_activeWorldView);
+        lighting.SetupGxFog();
+    }
 
     if (this->chunkBuf) {
         GxPrimVertexPtr(this->chunkBuf->vertexBuf, CMapRenderChunk::s_gxBufVertexFormat);
@@ -1008,53 +992,37 @@ void BuildTexCoordMatrices(
 
 // OFFSET: 0x7D3010
 void CMapRenderChunk::RenderSolid() {
-    g_theGxDevicePtr->XformSet(GxXform_Tex0, C44Matrix());
-    g_theGxDevicePtr->XformSet(GxXform_Tex1, C44Matrix());
-    g_theGxDevicePtr->RsSet(GxRs_BlendingMode, 0);
-    // if (v8->m_context) {
-    //     m_data = v8->m_appRenderStates.m_data;
-    //     p_m_data = &v8->m_appRenderStates.m_data;
-    //     v12 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
-    //     if (m_data[7].m_value.m_data.i[0] != v12) {
-    //         CGxDevice::IRsDirty(v8, GxRs_AlphaRef);
-    //         (*p_m_data)[7].m_value.m_data.i[0] = v12;
-    //     }
-    // }
+    GxXformSet(GxXform_Tex0, C44Matrix());
+    GxXformSet(GxXform_Tex1, C44Matrix());
+    GxRsSet(GxRs_BlendingMode, 0);
+    GxRsSetAlphaRef();
     CGxTex* defaultTexture = TextureGetGxTex(CWorldScene::s_defaultTexture, 0, nullptr);
-    g_theGxDevicePtr->RsSet(GxRs_Texture0, defaultTexture);
+    GxRsSet(GxRs_Texture0, defaultTexture);
     GxTexSetWrap(defaultTexture, GxTex_Wrap, GxTex_Wrap);
     CGxTex* blendTexture;
     if (CMap::gTerrainPixelShadersValid)
         blendTexture = TextureGetGxTex(CWorldScene::s_defaultBlendTexture, 1, nullptr);
     else
         blendTexture = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, nullptr);
-    g_theGxDevicePtr->RsSet(GxRs_Texture1, blendTexture);
-    g_theGxDevicePtr->Draw(&this->batch, 1);
-    g_theGxDevicePtr->RsSet(GxRs_Texture0, nullptr);
-    g_theGxDevicePtr->RsSet(GxRs_Texture1, nullptr);
+    GxRsSet(GxRs_Texture1, blendTexture);
+    GxDraw(&this->batch, 1);
+    GxRsSet(GxRs_Texture0, (CGxTex*)nullptr);
+    GxRsSet(GxRs_Texture1, (CGxTex*)nullptr);
 }
 
 // OFFSET: 0x7D3240
 void CMapRenderChunk::RenderSolidVertexPixelShader() {
-    g_theGxDevicePtr->RsSet(GxRs_BlendingMode, 0);
-    // if (v8->m_context) {
-    //     m_data = v8->m_appRenderStates.m_data;
-    //     p_m_data = &v8->m_appRenderStates.m_data;
-    //     v12 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
-    //     if (m_data[7].m_value.m_data.i[0] != v12) {
-    //         CGxDevice::IRsDirty(v8, GxRs_AlphaRef);
-    //         (*p_m_data)[7].m_value.m_data.i[0] = v12;
-    //     }
-    // }
+    GxRsSet(GxRs_BlendingMode, 0);
+    GxRsSetAlphaRef();
     CGxTex* defaultTexture = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, nullptr);
-    g_theGxDevicePtr->RsSet(GxRs_Texture0, defaultTexture);
+    GxRsSet(GxRs_Texture0, defaultTexture);
     GxTexSetWrap(defaultTexture, GxTex_Wrap, GxTex_Wrap);
     CGxTex* blendTexture = TextureGetGxTex(CWorldScene::s_defaultBlendTexture, 1, nullptr);
-    g_theGxDevicePtr->RsSet(GxRs_Texture1, blendTexture);
+    GxRsSet(GxRs_Texture1, blendTexture);
     this->SetVertexShader(2, 0);
-    g_theGxDevicePtr->Draw(&this->batch, 1);
-    g_theGxDevicePtr->RsSet(GxRs_Texture0, nullptr);
-    g_theGxDevicePtr->RsSet(GxRs_Texture1, nullptr);
+    GxDraw(&this->batch, 1);
+    GxRsSet(GxRs_Texture0, (CGxTex*)nullptr);
+    GxRsSet(GxRs_Texture1, (CGxTex*)nullptr);
 }
 
 // OFFSET: 0x7D0050
@@ -1170,16 +1138,7 @@ void CMapRenderChunk::RenderMultiPassAlpha(CMapRenderChunk* renderChunk) {
     g_theGxDevicePtr->XformSet(GxXform_Tex1, tex1Matrix);
 
     GxRsSet(GxRs_BlendingMode, 0);
-    //if (v6->m_context) {
-    //    m_data = v6->m_appRenderStates.m_data;
-    //    v9 = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
-    //    p_m_data = &v6->m_appRenderStates.m_data;
-    //    if (m_data[7].m_value.m_data.i[0] != v9) {
-    //        CGxDevice::IRsDirty(v6, GxRs_AlphaRef);
-    //        (*p_m_data)[7].m_value.m_data.i[0] = v9;
-    //        v6 = g_theGxDevicePtr;
-    //    }
-    //}
+    GxRsSetAlphaRef();
 
     bool v51 = (renderChunk->unk_0A & 4) != 0;
 
@@ -1195,8 +1154,7 @@ void CMapRenderChunk::RenderMultiPassAlpha(CMapRenderChunk* renderChunk) {
             GxRsSet(GxRs_TextureShader0, 0);
         }
 
-        // TODO enable when lighting is implemented
-        //if (chunkLayer->flags & 0x80)
+        if (chunkLayer->flags & 0x80)
             GxRsSet(GxRs_Lighting, 0);
         
         if (chunkLayer->flags & 0x40) {
@@ -1215,17 +1173,7 @@ void CMapRenderChunk::RenderMultiPassAlpha(CMapRenderChunk* renderChunk) {
 
         if (layer == 1) {
             GxRsSet(GxRs_BlendingMode, 2);
-            //if (v16->m_context) {
-            //    v24 = v16->m_appRenderStates.m_data;
-            //    v25 = CGxDevice::s_alphaRef[v24[6].m_value.m_data.i[0]];
-            //    v26 = &v16->m_appRenderStates.m_data;
-            //    if (v24[7].m_value.m_data.i[0] != v25) {
-            //        CGxDevice::IRsDirty(v16, GxRs_AlphaRef);
-            //        (*v26)[7].m_value.m_data.i[0] = v25;
-            //        v16 = g_theGxDevicePtr;
-            //    }
-            //    v11 = v50;
-            //}
+            GxRsSetAlphaRef();
         }
 
         if (chunkLayer->layerTexture) {

@@ -102,6 +102,7 @@ class CWorldScene {
     static int32_t s_curGroupIsInterior;
 
     static int32_t s_fogPermute;
+    static int32_t s_savedFogColor;
 
     static bool s_entityCanLink;
 

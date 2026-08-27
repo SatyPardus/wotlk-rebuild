@@ -317,6 +317,15 @@ void CGWorldFrame::OnWorldRender() {
 // OFFSET: 0x4F8410
 void CGWorldFrame::UpdateDayNightInfo(float delta) {
     auto dayNight = DayNight::GetInfo();
+    dayNight->m_farClip = this->m_camera->m_farZ;
+    dayNight->m_deltaSec = delta;
+    dayNight->m_timeSec = OsGetAsyncTimeMs() * 0.001;
+    dayNight->m_cameraPos = this->m_camera->m_position;
+    dayNight->m_cameraDir = this->m_camera->Forward();
+    auto v9 = 1.0f / sqrt(dayNight->m_cameraDir.z * dayNight->m_cameraDir.z + dayNight->m_cameraDir.y * dayNight->m_cameraDir.y + dayNight->m_cameraDir.x * dayNight->m_cameraDir.x);
+    dayNight->m_cameraDir.x = dayNight->m_cameraDir.x * v9;
+    dayNight->m_cameraDir.y = dayNight->m_cameraDir.y * v9;
+    dayNight->m_cameraDir.z = v9 * dayNight->m_cameraDir.z;
 
     static uint64_t lastTime;
 
@@ -326,7 +335,6 @@ void CGWorldFrame::UpdateDayNightInfo(float delta) {
         dayNight->m_dayProgression = 0.0f;
     lastTime = OsGetAsyncTimeMs();
 
-    dayNight->m_cameraPos = this->m_camera->m_position;
     dayNight->m_lightRefPos = this->m_camera->m_position;
 }
 

@@ -18,6 +18,16 @@ void GxRsSet(EGxRenderState which, int32_t value) {
     g_theGxDevicePtr->RsSet(which, value);
 }
 
+void GxRsSet(EGxRenderState which, uint32_t value) {
+    STORM_ASSERT(which < GxRenderStates_Last);
+    g_theGxDevicePtr->RsSet(which, value);
+}
+
+void GxRsSet(EGxRenderState which, float value) {
+    STORM_ASSERT(which < GxRenderStates_Last);
+    g_theGxDevicePtr->RsSet(which, value);
+}
+
 void GxRsSet(EGxRenderState which, CGxShader* value) {
     g_theGxDevicePtr->RsSet(which, value);
 }

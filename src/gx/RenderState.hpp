@@ -13,6 +13,10 @@ void GxRsPush(void);
 
 void GxRsSet(EGxRenderState, int32_t);
 
+void GxRsSet(EGxRenderState, uint32_t);
+
+void GxRsSet(EGxRenderState, float);
+
 void GxRsSet(EGxRenderState, CGxShader*);
 
 void GxRsSet(EGxRenderState, CGxTex*);

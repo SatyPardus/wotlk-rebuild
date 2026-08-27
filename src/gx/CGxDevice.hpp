@@ -219,6 +219,8 @@ class CGxDevice {
         void PrimVertexPtr(CGxBuf* buf, EGxVertexBufferFormat format);
         void RsGet(EGxRenderState which, int32_t& value);
         void RsSet(EGxRenderState which, int32_t value);
+        void RsSet(EGxRenderState which, uint32_t value);
+        void RsSet(EGxRenderState which, float value);
         void RsSet(EGxRenderState, void* value);
         void RsSetAlphaRef();
         void RsPop();

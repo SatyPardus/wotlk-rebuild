@@ -63,6 +63,8 @@ class CWorld {
         static void* s_loadProgressParam;
         static int32_t terrainAlphaBitDepth;
         static Weather* s_weather;
+        static bool s_prepareAll;
+        static bool s_areaOfInterestJumped;
 
         // Static functions
         static void Initialize();

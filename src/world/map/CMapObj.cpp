@@ -656,29 +656,15 @@ void CMapObj::RenderGroupCollidable(CMapObj* mapObj, CMapObjGroup* mapObjGroup, 
     g_theGxDevicePtr->RsSet(GxRs_PixelShader, nullptr);
     g_theGxDevicePtr->MasterEnableSet(GxMasterEnable_PolygonFill, 1);
     g_theGxDevicePtr->RsSet(GxRs_BlendingMode, 0);
-    //m_data = v7->m_appRenderStates.m_data;
-    //material = CGxDevice::s_alphaRef[m_data[6].m_value.m_data.i[0]];
-    //p_m_data = &v7->m_appRenderStates.m_data;
-    //if (m_data[7].m_value.m_data.i[0] != material) {
-    //    CGxDevice::IRsDirty(v7, GxRs_AlphaRef);
-    //    (*p_m_data)[7].m_value.m_data.i[0] = material;
-    //    v7 = g_theGxDevicePtr;
-    //}
-    g_theGxDevicePtr->RsSet(GxRs_MatDiffuse, 0x80CCCCCC);
-    g_theGxDevicePtr->RsSet(GxRs_DepthWrite, 1);
+    GxRsSetAlphaRef();
+    GxRsSet(GxRs_MatDiffuse, 0x80CCCCCC);
+    GxRsSet(GxRs_DepthWrite, 1);
     CMapObj::RenderGroupCollidableFaces(mapObjGroup);
-    g_theGxDevicePtr->MasterEnableSet(GxMasterEnable_PolygonFill, 0);
-    g_theGxDevicePtr->RsSet(GxRs_BlendingMode, 2);
-    //v18 = v16->m_appRenderStates.m_data;
-    //v19 = CGxDevice::s_alphaRef[v18[6].m_value.m_data.i[0]];
-    //v20 = &v16->m_appRenderStates.m_data;
-    //if (v18[7].m_value.m_data.i[0] != v19) {
-    //    CGxDevice::IRsDirty(v16, GxRs_AlphaRef);
-    //    (*v20)[7].m_value.m_data.i[0] = v19;
-    //    v16 = g_theGxDevicePtr;
-    //}
-    g_theGxDevicePtr->RsSet(GxRs_MatDiffuse, 0x80111111);
-    g_theGxDevicePtr->RsSet(GxRs_DepthWrite, 0);
+    GxMasterEnableSet(GxMasterEnable_PolygonFill, 0);
+    GxRsSet(GxRs_BlendingMode, 2);
+    GxRsSetAlphaRef();
+    GxRsSet(GxRs_MatDiffuse, 0x80111111);
+    GxRsSet(GxRs_DepthWrite, 0);
     CMapObj::RenderGroupCollidableFaces(mapObjGroup);
     g_theGxDevicePtr->MasterEnableSet(GxMasterEnable_PolygonFill, polyFillOriginal);
     g_theGxDevicePtr->RsPop();
@@ -760,7 +746,7 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
     mapObjGroup->SetVertexVB();
     g_theGxDevicePtr->RsPush();
     //dword_CFBEB0 = -1;
-    //dword_CFBEAC = -1;
+    CMapObj::s_lightingMode = -1;
     s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
     //dword_CFBEA8 = -1;
     CGxTex* gxTex = nullptr;
@@ -799,7 +785,7 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
         //    shader = 4;
         
         //    SetShaderFogFromDayNight(~material->flags & 2);
-        //    maybe_SetWorldLightingMode(v6, (material->flags & 1) == 0);
+        mapObjGroup->SetLighting((material->flags & 1) == 0 ? 1 : 0);
         //    if ((v6->flags & 0x48) != 0) {
         //        if (dword_CFBEA8) {
         //            dword_CFBEA8 = 0;
@@ -863,7 +849,7 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
     mapObjGroup->SetVertexVB();
     g_theGxDevicePtr->RsPush();
     // dword_CFBEB0 = -1;
-    // dword_CFBEAC = -1;
+    CMapObj::s_lightingMode = -1;
     s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
     // dword_CFBEA8 = -1;
     // v46 = 2 - (s_curGroupIsInterior != 0);
