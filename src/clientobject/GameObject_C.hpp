@@ -34,6 +34,7 @@ class CGGameObject_C : public CGObject_C, public CGGameObject {
     public:
     CGGameObject_C();
     CGGameObject_C(CClientObjCreate& objCreate, uint32_t time);
+    void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
 
     static void SetStorage(CGGameObject_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
 };

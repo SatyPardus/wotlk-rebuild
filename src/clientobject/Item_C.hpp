@@ -65,6 +65,7 @@ class CGItem_C : public CGObject_C, public CGItem {
     public:
     CGItem_C();
     CGItem_C(CClientObjCreate& objCreate, uint32_t time);
+    void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
 
     static void SetStorage(CGItem_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
 };

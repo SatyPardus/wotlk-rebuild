@@ -36,6 +36,7 @@ class CGCorpse_C : public CGObject_C, public CGCorpse {
     public:
     CGCorpse_C();
     CGCorpse_C(CClientObjCreate& objCreate, uint32_t time);
+    void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
 
     static void SetStorage(CGCorpse_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
 };

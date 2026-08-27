@@ -122,6 +122,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
 
     CGUnit_C();
     CGUnit_C(CClientObjCreate& objCreate, uint32_t time);
+    void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
 
     CreatureModelDataRec* GetModelData();
 

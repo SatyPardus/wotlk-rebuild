@@ -261,6 +261,7 @@ class CGPlayer_C : public CGUnit_C, public CGPlayer {
     public:
     CGPlayer_C();
     CGPlayer_C(CClientObjCreate& objCreate, uint32_t time);
+    void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
 
     static void SetStorage(CGPlayer_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
 };

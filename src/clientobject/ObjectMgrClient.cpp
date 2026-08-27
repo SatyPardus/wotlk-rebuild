@@ -492,8 +492,153 @@ void UpdateOutOfRangeObjects(CDataStore* msg) {
     // CVehiclePassenger_C::ExecutePendingRescueTransitions();
 }
 
-int32_t ObjectUpdateSecondPass(CDataStore* msg, uint32_t updateCount) {
-    return 0;
+// OFFSET: 0x4D5550
+bool CallMirrorHandlers(CDataStore* msg, bool a2, WGUID a3) {
+    // TODO
+    return SkipPartialObjectUpdate(msg);
+}
+
+// OFFSET: 0x4D41C0
+void SkipSetOfObjects(CDataStore* msg) {
+    uint32_t count;
+    msg->Get(count);
+
+    WGUID guid;
+    for (uint32_t i = 0; i < count; i++) {
+        *msg >> guid;
+    }
+}
+
+// OFFSET: 0x4D63B0
+bool PostInitObject(CDataStore* msg, uint32_t time, bool isUpdate3) {
+    WGUID guid;
+    *msg >> guid;
+
+    uint8_t _typeID;
+    msg->Get(_typeID);
+    auto typeID = static_cast<OBJECT_TYPE_ID>(_typeID);
+
+    if (typeID >= NUM_CLIENT_OBJECT_TYPES)
+        return false;
+
+    CGObject_C* obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, guid);
+    if (!obj)
+        return false;
+
+    CClientObjCreate objCreate;
+    //CClientMoveUpdate::CClientMoveUpdate(&v11.move);
+    //CGObject_C::PostInit(&v11.move.m_moveSpline);
+    objCreate.flags = 0;
+    objCreate.m_targetGuid = 0;
+    objCreate.m_packedRotation = 0;
+    if (!objCreate.Get(msg)) {
+        //CMoveSpline::sub_4D4F00(&v11.move.m_moveSpline);
+        return 0;
+    }
+
+    if ((obj->m_modelFlags & 0x20000) != 0 && (obj->m_obj->m_type & TYPE_UNIT) != 0) {
+        auto activePlayerGuid = ClntObjMgrGetActivePlayer();
+        //obj->sub_73C260(&objCreate, obj->m_obj->m_guid == activePlayerGuid);
+    }
+    if ((obj->m_modelFlags & 0x40000) != 0) {
+        auto v8 = CallMirrorHandlers(msg, 1, guid);
+        //CMoveSpline::sub_4D4F00(&v11.move.m_moveSpline);
+        return v8;
+    } else {
+        switch (typeID) {
+        case ID_OBJECT:
+            reinterpret_cast<CGObject_C*>(obj)->PostInit(time, &objCreate, isUpdate3);
+            break;
+        case ID_ITEM:
+        case ID_CONTAINER:
+            reinterpret_cast<CGItem_C*>(obj)->PostInit(time, &objCreate, isUpdate3);
+            break;
+        case ID_UNIT:
+            reinterpret_cast<CGUnit_C*>(obj)->PostInit(time, &objCreate, isUpdate3);
+            break;
+        case ID_PLAYER:
+            reinterpret_cast<CGPlayer_C*>(obj)->PostInit(time, &objCreate, isUpdate3);
+            break;
+        case ID_GAMEOBJECT:
+            reinterpret_cast<CGGameObject_C*>(obj)->PostInit(time, &objCreate, isUpdate3);
+            break;
+        case ID_DYNAMICOBJECT:
+            reinterpret_cast<CGDynamicObject_C*>(obj)->PostInit(time, &objCreate, isUpdate3);
+            break;
+        case ID_CORPSE:
+            reinterpret_cast<CGCorpse_C*>(obj)->PostInit(time, &objCreate, isUpdate3);
+            break;
+        default:
+            // CMoveSpline::sub_4D4F00(&v11.move.m_moveSpline);
+            return 0;
+        }
+        auto v10 = SkipPartialObjectUpdate(msg);
+        //CMoveSpline::sub_4D4F00(&v11.move.m_moveSpline);
+        return v10;
+    }
+}
+
+// OFFSET: 0x4D7100
+int32_t ObjectUpdateSecondPass(CDataStore* msg, uint32_t time, uint32_t updateCount) {
+    WGUID guid;
+    for (uint32_t i = 0; i < updateCount; i++) {
+        uint8_t updateType;
+        msg->Get(updateType);
+
+        switch (updateType) {
+        case UPDATE_PARTIAL:
+            if (!CallMirrorHandlers(msg, 0, 0))
+                return 0;
+            break;
+        case UPDATE_MOVEMENT:
+            // TODO
+            *msg >> guid;
+            CClientMoveUpdate::Skip(msg);
+            break;
+        case UPDATE_FULL:
+        case UPDATE_3:
+            if (!PostInitObject(msg, time, updateType == UPDATE_3)) {
+                return 0;
+            }
+            break;
+        case UPDATE_IN_RANGE:
+            SkipSetOfObjects(msg);
+            break;
+        default:
+            // NOP("Unknown client update packet type (%d)!");
+            return 0;
+        }
+    }
+
+    //v15 = *(NtCurrentTeb()->ThreadLocalStoragePointer + TlsIndex);
+    //while (1) {
+    //    pObjMgr = v15->pObjMgr;
+    //    m_next = pObjMgr->unk_B0.m_terminator.m_next;
+    //    if ((m_next & 1) != 0 || !m_next)
+    //        break;
+    //    m_linkoffset = pObjMgr->unk_A4.m_linkoffset;
+    //    v9 = *&m_next[m_linkoffset];
+    //    v10 = &m_next[m_linkoffset];
+    //    if (v9) {
+    //        v11 = v10->m_next;
+    //        if ((v11 & 1) == 0 && v11)
+    //            v12 = (&v10->m_prevlink + v11 - *(v9 + 4));
+    //        else
+    //            v12 = (v11 & 0xFFFFFFFE);
+    //        *v12 = v9;
+    //        v10->m_prevlink->m_next = v10->m_next;
+    //        v10->m_prevlink = 0;
+    //        v10->m_next = 0;
+    //    }
+    //    m_prevlink = pObjMgr->unk_A4.m_terminator.m_prevlink;
+    //    v10->m_prevlink = m_prevlink;
+    //    v10->m_next = m_prevlink->m_next;
+    //    m_prevlink->m_next = m_next;
+    //    pObjMgr->unk_A4.m_terminator.m_prevlink = v10;
+    //    (*(*m_next + 12))(m_next);
+    //}
+
+    return 1;
 }
 
 int32_t Packet_SMSG_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
@@ -516,7 +661,7 @@ int32_t Packet_SMSG_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, 
     int32_t result = 0;
     if (ObjectUpdateFirstPass(updateIndex, msg, time, updateCount)) {
         msg->Seek(startPos);
-        result = ObjectUpdateSecondPass(msg, updateCount);
+        result = ObjectUpdateSecondPass(msg, time, updateCount);
     }
     // v8 = (WowTlsBlock*)*((_DWORD*)NtCurrentTeb()->ThreadLocalStoragePointer + TlsIndex);
     // v9 = 0x54;
@@ -549,7 +694,7 @@ int32_t Packet_SMSG_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, 
     // return v17;
 
     OsOutputDebugString("Received Packet_SMSG_UPDATE_OBJECT with %d updates\n", updateCount);
-    return 1;
+    return result;
 }
 
 int32_t Packet_SMSG_DESTROY_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {

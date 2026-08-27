@@ -162,6 +162,19 @@ void CGObject_C::SetData(uint32_t offset, uint32_t value) {
     reinterpret_cast<uint32_t*>(this->m_obj)[offset] = value;
 }
 
+// OFFSET: 0x744A50
+void CGObject_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3) {
+    //ukn57 = this->ukn57;
+    this->m_modelFlags |= 0x40000u;
+    //v8 = ukn57() != 0 ? 0x3E8 : 0;
+    //alpha = (this->ukn58)(this);
+    //CGObject_C::DoFade(this, alpha, v8);
+    //(this->ukn20)();
+    //this->ukn_00A0 = 0;
+    if (this->m_worldObject)
+        this->UpdateWorldObject(0);
+}
+
 // OFFSET: 0x744DB0
 void CGObject_C::Reenable() {
     //v2 = this->__vftable;

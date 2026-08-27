@@ -53,6 +53,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     void ModelChanged();
     bool IsReadyToDraw();
     void SetData(uint32_t offset, uint32_t value);
+    void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
 
     // Virtual functions
     /* 02 */ virtual void Reenable();

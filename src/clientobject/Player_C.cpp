@@ -12,6 +12,39 @@ CGPlayer_C::CGPlayer_C(CClientObjCreate& objCreate, uint32_t time)
     
 }
 
+// OFFSET: 0x6E8280
+void CGPlayer_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3) {
+    //this->unk_1020[51] = LOBYTE(this->m_unit->UNIT_FIELD_BYTES_1);
+    this->CGUnit_C::PostInit(time, objCreate, isUpdate3);
+    //CGUnit_C::GetUnitName(this, 0, 1);
+    //CGPlayer_C::OnGuildChanged(this, 0);
+    //CGChat::UpdateGuildStatus();
+    //(this->ObjectBase.Animate)(this, 0.0);
+    //EquippedItemDisplayId = maybe_CGPlayer_C__GetEquippedItemDisplayId(this);
+    //CGUnit_C::sub_7206A0(this, EquippedItemDisplayId, 30);
+    //CGPartyInfo::EnableMember(this, 1);
+    //CGRaidInfo::EnableMember(this, 1);
+    //if (CGBattlefieldInfo::m_instanceType == 4 && this->m_player->PLAYER_BYTES_3[3] != CGBattlefieldInfo::m_arenaFaction) {
+    //    OBJECT_FIELD_GUID = this->ObjectBase.m_obj->OBJECT_FIELD_GUID;
+    //    CGBattlefieldInfo::AddArenaOpponent(&OBJECT_FIELD_GUID);
+    //    m_obj = this->ObjectBase.m_obj;
+    //    guid_high = m_obj->OBJECT_FIELD_GUID.guid_high;
+    //    OBJECT_FIELD_GUID.guid_low = m_obj->OBJECT_FIELD_GUID.guid_low;
+    //    OBJECT_FIELD_GUID.guid_high = guid_high;
+    //    if (sub_6CF670(&OBJECT_FIELD_GUID, &a4))
+    //        dword_BE9EE0[a4] = 1;
+    //}
+    //v8 = this->ObjectBase.m_obj;
+    //guid_low = v8->OBJECT_FIELD_GUID.guid_low;
+    //v10 = v8->OBJECT_FIELD_GUID.guid_high;
+    //if (__PAIR64__(v10, guid_low) == ClntObjMgrGetActivePlayer())
+    //    CGPlayer_C::PostInitActivePlayer(this);
+    //else
+    //    CGPlayer_C::UpdatePartyMemberState(this);
+    //CGUnit_C::UpdatePetReaction(this);
+    //CGUnit_C::OnMoveUpdate(this, a2, 1, 1);
+}
+
 const CreatureModelDataRec* Player_C_GetModelName(uint32_t race, uint32_t sex) {
     STORM_ASSERT(sex < UNITSEX_LAST);
 

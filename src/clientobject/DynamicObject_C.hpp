@@ -31,6 +31,7 @@ class CGDynamicObject_C : public CGObject_C, public CGDynamicObject {
     public:
     CGDynamicObject_C();
     CGDynamicObject_C(CClientObjCreate& objCreate, uint32_t time);
+    void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
 
     static void SetStorage(CGDynamicObject_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
 };
