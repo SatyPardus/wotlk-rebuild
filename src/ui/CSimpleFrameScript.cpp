@@ -727,7 +727,21 @@ int32_t CSimpleFrame_IsKeyboardEnabled(lua_State* L) {
 
 // OFFSET: 0x4A0FD0
 int32_t CSimpleFrame_EnableMouse(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleFrame::GetObjectType();
+    CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
+
+    if (!frame->ProtectedFunctionsAllowed()) {
+        // TODO
+        // - disallowed logic
+
+        return 0;
+    }
+
+    if (StringToBOOL(L, 2, 1)) {
+        frame->EnableEvent(SIMPLE_EVENT_MOUSE, -1);
+    } else {
+        frame->DisableEvent(SIMPLE_EVENT_MOUSE);
+    }
 }
 
 // OFFSET: 0x4A1060
