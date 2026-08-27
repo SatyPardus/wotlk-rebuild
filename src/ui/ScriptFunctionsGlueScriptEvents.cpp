@@ -75,7 +75,10 @@ int32_t Script_GetUsesToken(lua_State* L) {
 
 // OFFSET: 0x4DBF30
 int32_t Script_SetUsesToken(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (lua_type(L, 1) != 1)
+        luaL_error(L, "Usage: SetUsesToken( 0 | 1 )");
+    auto v1 = lua_toboolean(L, 1);
+    Client::g_accountUsesTokenVar->Set(v1, 1, 0, 0, 1);
 }
 
 // OFFSET: 0x4DD5F0

@@ -179,6 +179,13 @@ bool CVar::Set(const char* value, bool setValue, bool setReset, bool setDefault,
     return true;
 }
 
+// OFFSET: 0x7668C0
+bool CVar::Set(int32_t value, bool setValue, bool setReset, bool setDefault, bool a6) {
+    char data[0x20];
+    SStrPrintf(data, 0x20, "%d", value);
+    return this->Set(data, setValue, setReset, setDefault, a6);
+}
+
 void CVar::SetReadOnly(bool readonly) {
     if (readonly) {
         this->m_flags |= 0x4;

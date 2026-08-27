@@ -49,6 +49,7 @@ class CVar : public TSHashObject<CVar, HASHKEY_STRI> {
         const char* GetString(void);
         void InternalSet(const char*, bool, bool, bool, bool);
         bool Set(const char*, bool, bool, bool, bool);
+        bool Set(int32_t, bool, bool, bool, bool);
         void SetReadOnly(bool readonly);
         bool Reset();
         bool Default();
