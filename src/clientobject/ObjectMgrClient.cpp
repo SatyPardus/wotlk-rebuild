@@ -552,6 +552,29 @@ int32_t Packet_SMSG_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, 
     return 1;
 }
 
+int32_t Packet_SMSG_DESTROY_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
+    WGUID guid;
+    *msg >> guid;
+
+    uint8_t v9;
+    msg->Get(v9);
+
+    auto obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, guid);
+    if (obj) {
+        //if (v9 && (ObjectPtr->ObjectBase.m_obj->OBJECT_FIELD_TYPE & TYPEMASK_UNIT) != 0 && ObjectPtr->m_unit->UNIT_FIELD_HEALTH > 0)
+        //    CGUnit_C::OnDeath(ObjectPtr);
+        //(p_ObjectBase->ukn4)(p_ObjectBase, 1);
+        //if (CGObject_C__IsObjectLocked(p_ObjectBase)) {
+        //    CGObject_C::SetDisablePending(p_ObjectBase, 1);
+        //    return 1;
+        //}
+        //CGObject_C::SetDisablePending(p_ObjectBase, 0);
+        //p_ObjectBase->Disable(p_ObjectBase);
+        //ObjDelete(p_ObjectBase);
+    }
+    return 1;
+}
+
 int32_t Packet_SMSG_COMPRESSED_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
     uint32_t origSize;
     msg->Get(origSize);
@@ -611,7 +634,7 @@ void ClntObjMgrInitialize() {
     NetClient* net = g_tlsBlock.pObjMgr->realmConnection;
     net->SetMessageHandler(SMSG_UPDATE_OBJECT, &Packet_SMSG_UPDATE_OBJECT, nullptr);
     net->SetMessageHandler(SMSG_COMPRESSED_UPDATE_OBJECT, &Packet_SMSG_COMPRESSED_UPDATE_OBJECT, nullptr);
-    //net->SetMessageHandler(SMSG_DESTROY_OBJECT, Packet_SMSG_DESTROY_OBJECT, nullptr);
+    net->SetMessageHandler(SMSG_DESTROY_OBJECT, Packet_SMSG_DESTROY_OBJECT, nullptr);
 }
 
 // OFFSET: 0x4D4AC0
