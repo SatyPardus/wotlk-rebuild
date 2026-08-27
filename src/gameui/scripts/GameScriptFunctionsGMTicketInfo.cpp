@@ -2,6 +2,7 @@
 #include "ui/FrameScript.hpp"
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
+#include "ui/GMTicketInfo.hpp"
 
 
 // OFFSET: 0x5AD070
@@ -76,7 +77,14 @@ static int32_t Script_GMReportLag(lua_State* L) {
 
 // OFFSET: 0x5AC320
 static int32_t Script_RegisterStaticConstants(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (lua_type(L, 1) != 5)
+        luaL_error(L, "Usage: RegisterStaticConstants(table)");
+    for (int32_t i = 0; i < 7; i++) {
+        lua_pushstring(L, GMTicketInfo::s_staticConstants[i].name);
+        lua_pushnumber(L, GMTicketInfo::s_staticConstants[i].value);
+        lua_settable(L, 1);
+    }
+    return 0;
 }
 
 void GMTicketInfoRegisterScriptFunctions() {
