@@ -2,6 +2,7 @@
 #include "world/LoadingScreen.hpp"
 #include <async/AsyncFileRead.hpp>
 #include <clientobject/ObjectMgrClient.hpp>
+#include <clientobject/Movement.hpp>
 
 uint32_t s_newZoneID = 0;
 C3Vector s_newPosition;
@@ -32,7 +33,7 @@ int32_t LoadNewWorld(const void* eventData) {
     //sub_4C8610(-1);
     //sub_804AF0();
     ClntObjMgrInitializeStd(s_newZoneID);
-    //MovementInit();
+    MovementInit();
     //sub_6FAFD0();
     //sub_52CC30();
     //sub_4B9930(0, 0);

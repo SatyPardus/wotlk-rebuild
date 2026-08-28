@@ -11,6 +11,7 @@
 #include <utility>
 #include <util/Input.hpp>
 #include <util/Lua.hpp>
+#include <storm/Unicode.hpp>
 
 
 static CStatus s_nullStatus;
@@ -18,6 +19,7 @@ static uint16_t s_initRound = 0;
 static uint32_t s_loadPendingMask = 0;
 
 CGUIBindings* CGUIBindings::s_bindings = nullptr;
+char CGUIBindings::s_keyNameBuf[8];
 
 
 static bool ValidateKeyString(const char* key) {
@@ -117,6 +119,16 @@ static bool ValidateKeyString(const char* key) {
     return true;
 }
 
+// OFFSET: 0x55E130
+void KEYBINDING::CopyBindingRecord(KEYBINDING* src) {
+    this->m_flags = src->m_flags; // +0x18
+
+    for (int mode = 0; mode < BINDING_MODE_NUM; ++mode) {
+        this->m_data[mode].m_index = src->m_data[mode].m_index;
+        this->m_data[mode].m_command.Copy(src->m_data[mode].m_command);
+    }
+}
+
 void MODIFIEDCLICK::SetBinding(BINDING_SET set, const char* binding) {
 }
 
@@ -145,6 +157,16 @@ void MODIFIEDCLICK::GetBinding(BINDING_SET set, char* binding, int32_t maxLength
         *flags = this->m_data[set].m_flags;
 }
 
+// OFFSET: 0x55E5E0
+KEYBINDING* OVERRIDEKEYBINDING::GetActiveBinding() {
+    OVERRIDEKEYBINDINGENTRY* entry = this->m_priority.Head();
+
+    if (!entry) {
+        entry = this->m_normal.Head();
+    }
+
+    return entry ? &entry->m_binding : nullptr;
+}
 
 void CGUIBindings::Initialize() {
     CGUIBindings::s_bindings = NEW(CGUIBindings);
@@ -168,8 +190,12 @@ void CGUIBindings::LoadBindings() {
     }
     s_loadPendingMask = 6;
     // TODO: LoadAccountData
+
+    //#### TESTING FOR NOW
+    CGUIBindings::s_bindings->CopyBindings(BINDING_DEFAULT, BINDING_SCRIPT);
 }
 
+// OFFSET: 0x5641C0
 void CGUIBindings::LoadBindings(BINDING_SET set, const char* buffer) {
     auto bindings = CGUIBindings::s_bindings;
 
@@ -178,7 +204,7 @@ void CGUIBindings::LoadBindings(BINDING_SET set, const char* buffer) {
     }
 
     if (set != BINDING_DEFAULT) {
-        // TODO: bindings->CopyBindings(BINDING_DEFAULT, set);
+        bindings->CopyBindings(BINDING_DEFAULT, set);
     }
 
     BINDING_MODE mode = BINDING_MODE_0;
@@ -269,6 +295,46 @@ bool CGUIBindings::AddMetaPrefix(uint32_t modifiers, char* binding, int32_t* max
     return *maxLength >= 0;
 }
 
+// OFFSET: 0x55D860
+void CGUIBindings::AddModifiers(uint32_t* modifiers, char** str) {
+    while (**str) {
+        if (!SStrCmpI(*str, "LSHIFT", 6)) {
+            *modifiers |= 0x01;
+            *str += 6;
+        } else if (!SStrCmpI(*str, "RSHIFT", 6)) {
+            *modifiers |= 0x02;
+            *str += 6;
+        } else if (!SStrCmpI(*str, "SHIFT", 5)) {
+            *modifiers |= 0x03;
+            *str += 5;
+        } else if (!SStrCmpI(*str, "LCTRL", 5)) {
+            *modifiers |= 0x04;
+            *str += 5;
+        } else if (!SStrCmpI(*str, "RCTRL", 5)) {
+            *modifiers |= 0x08;
+            *str += 5;
+        } else if (!SStrCmpI(*str, "CTRL", 4)) {
+            *modifiers |= 0x0C;
+            *str += 4;
+        } else if (!SStrCmpI(*str, "LALT", 4)) {
+            *modifiers |= 0x10;
+            *str += 4;
+        } else if (!SStrCmpI(*str, "RALT", 4)) {
+            *modifiers |= 0x20;
+            *str += 4;
+        } else if (!SStrCmpI(*str, "ALT", 3)) {
+            *modifiers |= 0x30;
+            *str += 3;
+        } else {
+            return; // not a modifier -- leave *str on it
+        }
+
+        if (**str == '-') {
+            ++*str; // step over the separator, if there is one
+        }
+    }
+}
+
 // OFFSET: none (inlined)
 bool CGUIBindings::IsKeyDown(KEY key) {
     auto bindings = CGUIBindings::s_bindings;
@@ -284,6 +350,146 @@ bool CGUIBindings::IsKeyDown(KEY key) {
     }
 
      return false;
+}
+
+// OFFSET: 0x55E2C0
+bool CGUIBindings::KeyEventToString(const CKeyEvent& evt, char* name, int32_t maxLength) {
+    uint32_t state = evt.metaKeyState;
+    uint32_t key = evt.key;
+
+    if (evt.repeat > 1)
+        return 0;
+
+    if (key <= 5)
+        state &= ~(1 << key);
+    if (!CGUIBindings::AddMetaPrefix(state, name, &maxLength))
+        return 0;
+
+    auto keyName = CGUIBindings::GetKeyName(key);
+    if (!keyName || !*keyName)
+        return 0;
+    if (SStrLen(keyName) >= maxLength)
+        return 0;
+    SStrCopy(name, keyName);
+    return 1;
+}
+
+// OFFSET: 0x55DD10
+const char* CGUIBindings::GetKeyName(uint32_t key) {
+    if (key - 0x21 <= 0xDE) {
+        SUniSPutUTF8(key, s_keyNameBuf);
+        return s_keyNameBuf;
+    }
+
+    if (key <= 0x20) {
+        if (key == 0x20) {
+            return "SPACE";
+        }
+        switch (key) {
+        case 0xFFFFFFFF:
+            return "NONE";
+        case 0:
+            return "LSHIFT";
+        case 1:
+            return "RSHIFT";
+        case 2:
+            return "LCTRL";
+        case 3:
+            return "RCTRL";
+        case 4:
+            return "LALT";
+        case 5:
+            return "RALT";
+        default:
+            return "UNKNOWN";
+        }
+    }
+
+    if (key <= 0x200) {
+        if (key == 0x200) {
+            return "ESCAPE";
+        }
+        uint32_t pad = key - 0x100;
+        switch (pad) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+            SStrPrintf(s_keyNameBuf, 8, "NUMPAD%d", pad);
+            return s_keyNameBuf;
+        case 0x0A:
+            return "NUMPADPLUS";
+        case 0x0B:
+            return "NUMPADMINUS";
+        case 0x0C:
+            return "NUMPADMULTIPLY";
+        case 0x0D:
+            return "NUMPADDIVIDE";
+        case 0x0E:
+            return "NUMPADDECIMAL";
+        default:
+            return "UNKNOWN";
+        }
+    }
+
+    if (key > 0x30B) {
+        if (key == 0x30C) {
+            return "NUMPADEQUALS";
+        }
+        if (key > 0x312) {
+            return "UNKNOWN";
+        }
+        SStrPrintf(s_keyNameBuf, 8, "F%d", key - 0x2FF);
+        return s_keyNameBuf;
+    }
+
+    if (key >= 0x300) {
+        SStrPrintf(s_keyNameBuf, 8, "F%d", key - 0x2FF);
+        return s_keyNameBuf;
+    }
+
+    switch (key) {
+    case 0x201:
+        return "ENTER";
+    case 0x202:
+        return "BACKSPACE";
+    case 0x203:
+        return "TAB";
+    case 0x204:
+        return "LEFT";
+    case 0x205:
+        return "UP";
+    case 0x206:
+        return "RIGHT";
+    case 0x207:
+        return "DOWN";
+    case 0x208:
+        return "INSERT";
+    case 0x209:
+        return "DELETE";
+    case 0x20A:
+        return "HOME";
+    case 0x20B:
+        return "END";
+    case 0x20C:
+        return "PAGEUP";
+    case 0x20D:
+        return "PAGEDOWN";
+    case 0x20E:
+        return "CAPSLOCK";
+    case 0x20F:
+        return "NUMLOCK";
+    case 0x212:
+        return "PRINTSCREEN";
+    default:
+        return "UNKNOWN";
+    }
 }
 
 bool CGUIBindings::Load(const char* commandsFile, MD5_CTX* md5, CStatus* status) {
@@ -410,6 +616,39 @@ void CGUIBindings::LoadBinding(const char* commandsFile, XMLNode* node, CStatus*
         }
     }
 }
+
+// OFFSET: 0x562B80
+void CGUIBindings::CopyBindings(BINDING_SET src, BINDING_SET dst) {
+    //if (!CGGameUI::CheckPermissions(13)) {
+    //    return;
+    //}
+
+    while (src > BINDING_DEFAULT && !this->m_bindings[src].Head()) {
+        src = static_cast<BINDING_SET>(src - 1);
+    }
+
+    this->m_bindings[dst].Clear();
+
+    for (KEYBINDING* srcBinding = this->m_bindings[src].Head(); srcBinding; srcBinding = this->m_bindings[src].Next(srcBinding)) {
+        KEYBINDING* dstBinding = this->m_bindings[dst].Ptr(srcBinding->m_key.GetString());
+        if (!dstBinding) {
+            dstBinding = this->m_bindings[dst].New(srcBinding->m_key.GetString(), 0, 0);
+        }
+        dstBinding->CopyBindingRecord(srcBinding);
+    }
+
+    for (MODIFIEDCLICK* modifiedClick = this->m_modifiedClicks.Head(); modifiedClick; modifiedClick = this->m_modifiedClicks.Next(modifiedClick)) {
+        modifiedClick->m_data[dst].m_flags = modifiedClick->m_data[src].m_flags;
+        modifiedClick->m_data[dst].m_modifiers = modifiedClick->m_data[src].m_modifiers;
+        modifiedClick->m_data[dst].m_button = modifiedClick->m_data[src].m_button;
+    }
+
+    this->m_dirtySets |= (1u << dst);
+
+    if (dst == BINDING_SCRIPT) {
+        FrameScript_SignalEvent(375 /* UPDATE_BINDINGS */, nullptr);
+    }
+ }
 
 void CGUIBindings::LoadModifiedClick(const char* commandsFile, XMLNode* node, CStatus* status) {
     const char* action = node->GetAttributeByName("action");
@@ -590,4 +829,184 @@ const char* CGUIBindings::GetCommandKey(BINDING_MODE mode, const char* command, 
 
         binding = this->m_bindings[BINDING_SCRIPT].Next(binding);
     }
+}
+
+// OFFSET: 0x5622E0
+KEYBINDING* CGUIBindings::GetCommandKey(BINDING_MODE mode, const char* keystring, char* matched, int32_t matchedSize) {
+    static const uint8_t kVariantCount[4] = { 1, 2, 4, 8 };
+
+    static const uint8_t kVariantMask[4][8] = {
+        { 0 },
+        { 1, 0 },
+        { 3, 2, 1, 0 },
+        { 7, 6, 5, 3, 4, 2, 1, 0 },
+    };
+
+    char tokens[3][32];
+    uint32_t numModifiers = 0;
+
+    for (uint32_t off = 0; off < 3 * 32; off += 32) {
+        const char* dash = strchr(keystring, '-');
+        if (!dash) {
+            break;
+        }
+        if (dash == keystring) {
+            break;
+        }
+
+        SStrCopy(tokens[numModifiers], keystring, 32);
+        tokens[numModifiers][dash - keystring + 1] = '\0';
+
+        ++numModifiers;
+        keystring = dash + 1;
+    }
+
+    uint32_t variants = kVariantCount[numModifiers];
+    if (!variants) {
+        return nullptr;
+    }
+
+    for (uint32_t v = 0; v < variants; ++v) {
+        uint32_t mask = kVariantMask[numModifiers][v];
+
+        matched[0] = '\0';
+        for (uint32_t i = 0; i < numModifiers; ++i) {
+            if (mask & (1u << i)) {
+                SStrPack(matched, tokens[i], matchedSize);
+            }
+        }
+        SStrPack(matched, keystring, matchedSize);
+
+        KEYBINDING* binding = this->GetKeyBinding(mode, matched);
+        if (binding) {
+            return binding;
+        }
+    }
+
+    return nullptr;
+}
+
+// OFFSET: 0x562140
+KEYBINDING* CGUIBindings::GetKeyBinding(BINDING_MODE mode, char* keystring) {
+    if (!keystring || !*keystring) {
+        return nullptr;
+    }
+
+    KEYBINDING* binding = nullptr;
+
+    OVERRIDEKEYBINDING* over = this->m_overrideBindings.Ptr(keystring);
+    if (over) {
+        binding = over->GetActiveBinding();
+    }
+
+    if (!binding) {
+        binding = this->m_bindings[BINDING_SCRIPT].Ptr(keystring);
+    }
+
+    if (!binding && strchr(keystring, '-')) {
+        char buf[128];
+        uint32_t modifiers = 0;
+
+        CGUIBindings::AddModifiers(&modifiers, &keystring);
+
+        if (modifiers & 0x03) {
+            modifiers |= 0x03;
+        } // shift
+        if (modifiers & 0x0C) {
+            modifiers |= 0x0C;
+        } // ctrl
+        if (modifiers & 0x30) {
+            modifiers |= 0x30;
+        } // alt
+
+        char* p = buf;
+        int32_t len = sizeof(buf);
+        CGUIBindings::AddMetaPrefix(modifiers, p, &len);
+        SStrCopy(p, keystring, len);
+
+        over = this->m_overrideBindings.Ptr(buf);
+        if (over) {
+            binding = over->GetActiveBinding();
+        }
+        if (!binding) {
+            binding = this->m_bindings[BINDING_SCRIPT].Ptr(buf);
+        }
+    }
+
+    if (!binding) {
+        return nullptr;
+    }
+
+    const char* command = this->GetBindingCommand(binding, mode);
+    if (!command) {
+        return nullptr;
+    }
+
+    bool runnable =
+        !SStrCmpI(command, "SPELL ", 6) || !SStrCmpI(command, "ITEM ", 5) || !SStrCmpI(command, "MACRO ", 6) || !SStrCmpI(command, "CLICK ", 6) || this->m_commands.Ptr(command) != nullptr;
+
+    return runnable ? binding : nullptr;
+}
+
+// OFFSET: 0x563150
+bool CGUIBindings::ExecKey(uint32_t modifier, char* command, uint32_t a4, uint32_t a5, BINDING_MODE mode) {
+    char commandKey[128];
+    auto result = this->GetCommandKey(mode, command, commandKey, 128);
+    if (!result)
+        return false;
+
+    this->m_keyStateOverride = 1;
+    this->m_heldModifiers = modifier;
+
+    auto bindingCommand = this->GetBindingCommand(result, mode);
+
+    float pressure = 0.0f;
+    if (a4)
+        pressure = 1.0f;
+    this->ExecCommand(bindingCommand, a4, pressure, a5, 0, 0, -1.0f, 0.0f, nullptr);
+
+    return true;
+}
+
+// OFFSET: 0x55F860
+bool CGUIBindings::ExecCommand(const char* command, int isDown, float pressure, int eventHasPressure, int eventNeedsPressure, int eventHasAngle, float angle, float precision, const char* taint) {
+    if (!command || !*command) {
+        return false;
+    }
+
+    KEYCOMMAND* cmd = this->m_commands.Ptr(command);
+    if (!cmd) {
+        return false;
+    }
+
+    if (!isDown && !cmd->m_runOnUp) {
+        return false;
+    }
+
+    if (cmd->m_pressure) {
+        if (!eventHasPressure) {
+            return false;
+        }
+    } else {
+        if (eventNeedsPressure) {
+            return false;
+        }
+    }
+
+    if (cmd->m_angle != eventHasAngle) {
+        return false;
+    }
+
+    if (cmd->m_function != -1) {
+        lua_State* ctx = FrameScript_GetContext();
+
+        lua_pushstring(ctx, isDown ? "down" : "up");
+        lua_pushnumber(ctx, pressure);
+        lua_pushnumber(ctx, angle);
+        lua_pushnumber(ctx, precision);
+
+        FrameScript_Execute(cmd->m_function, nullptr, 4, taint, 0);
+    }
+
+    return true;
 }

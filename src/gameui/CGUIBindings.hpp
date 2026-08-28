@@ -6,6 +6,7 @@
 #include <common/String.hpp>
 #include <storm/List.hpp>
 #include "event/Types.hpp"
+#include "event/CEvent.hpp"
 
 class CStatus;
 class XMLNode;
@@ -36,6 +37,8 @@ class KEYBINDING : public TSHashObject<KEYBINDING, HASHKEY_STRI> {
     public:
     /* 0018 */ uint32_t m_flags;
     /* 001C */ KEYBINDING_DATA m_data[BINDING_MODE_NUM];
+
+    void CopyBindingRecord(KEYBINDING* src);
 };
 
 class KEYCOMMAND : public TSHashObject<KEYCOMMAND, HASHKEY_STRI> {
@@ -72,22 +75,29 @@ class OVERRIDEKEYBINDING : public TSHashObject<OVERRIDEKEYBINDING, HASHKEY_STRI>
     /* 0018 */ STORM_EXPLICIT_LIST(OVERRIDEKEYBINDINGENTRY, m_link) m_normal;
     /* 0024 */ STORM_EXPLICIT_LIST(OVERRIDEKEYBINDINGENTRY, m_link) m_priority;
     /* 0030 */ STORM_EXPLICIT_LIST(OVERRIDEKEYBINDINGENTRY, m_link) m_freeList;
+
+    KEYBINDING* GetActiveBinding();
 };
 
 class CGUIBindings {
     public:
     static CGUIBindings* s_bindings;
+    static char s_keyNameBuf[8];
 
     static void Initialize();
     static void LoadBindings();
     static void LoadBindings(BINDING_SET set, const char* buffer);
     static bool AddMetaPrefix(uint32_t modifiers, char* binding, int32_t* maxLength);
+    static void AddModifiers(uint32_t* modifiers, char** keystring);
     static bool IsKeyDown(KEY key);
+    static bool KeyEventToString(const CKeyEvent& evt, char* name, int32_t maxLength);
+    static const char* GetKeyName(uint32_t key);
 
     CGUIBindings() = default;
 
     bool Load(const char* commandsFile, MD5_CTX* md5, CStatus* status);
     void LoadBinding(const char* commandsFile, XMLNode* node, CStatus* status);
+    void CopyBindings(BINDING_SET src, BINDING_SET dst);
     void LoadModifiedClick(const char* commandsFile, XMLNode* node, CStatus* status);
     bool Bind(BINDING_SET set, BINDING_MODE mode, const char* keystring, const char* command);
     const char* GetBindingCommand(KEYBINDING* binding, BINDING_MODE mode) const;
@@ -95,6 +105,10 @@ class CGUIBindings {
     int32_t GetNumCommandKeys(BINDING_SET set, BINDING_MODE mode, const char* command);
     void AdjustCommandKeyIndices(BINDING_SET set, BINDING_MODE mode, const char* command, int32_t index);
     const char* GetCommandKey(BINDING_MODE mode, const char* command, uint32_t index);
+    KEYBINDING* GetCommandKey(BINDING_MODE mode, const char* command, char* a3, int32_t maxLength);
+    KEYBINDING* GetKeyBinding(BINDING_MODE mode, char* keystring);
+    bool ExecKey(uint32_t modifier, char* keyString, uint32_t a4, uint32_t a5, BINDING_MODE mode);
+    bool ExecCommand(const char* command, int isDown, float pressure, int eventHasPressure, int eventNeedsPressure, int eventHasAngle, float angle, float precision, const char* taint);
 
     /* 0000 */ int32_t m_numCommands = 0;
     /* 0004 */ int32_t m_numHiddenCommands = 0;

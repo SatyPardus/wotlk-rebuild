@@ -287,6 +287,12 @@ bool CGObject_C::Animate(float a2) {
     return true;
 }
 
+void CGObject_C::ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) {
+    // 0x1 = should bypass cull?
+    if ((flags & 1) == 0)
+        *culled = 1;
+}
+
 // OFFSET: 0x4D5EF0
 float CGObject_C::GetRenderFacing() {
     return this->GetRawFacing();

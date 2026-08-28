@@ -1,15 +1,70 @@
 #include "clientobject/Unit_C.hpp"
 
 #include "db/Db.hpp"
+#include "clientobject/Player_C.hpp"
+#include <util/Byte.hpp>
+#include "ObjectMgrClient.hpp"
+
+WGUID CGUnit_C::s_activeMover;
 
 CGUnit_C::CGUnit_C() {
 
 }
 
+// OFFSET: 0x73F660
 CGUnit_C::CGUnit_C(CClientObjCreate& objCreate, uint32_t time)
     : CGObject_C(objCreate, time) {
-    tempPosition = objCreate.m_moveUpdate.status.m_position;
-    tempFacing = objCreate.m_moveUpdate.status.m_facing;
+    this->m_passenger = &this->movementData;
+    //data0DC = this->data0DC;
+    //this->ObjectBase.__vftable = off_A34D90;
+    //v6 = 141;
+    //p_m_terminator = &this->data0DC[0].m_terminator;
+    //do {
+    //    data0DC->m_linkoffset = 0;
+    //    p_m_terminator->m_prevlink = p_m_terminator;
+    //    p_m_terminator->m_next = (p_m_terminator | 1);
+    //    ++data0DC;
+    //    p_m_terminator = (p_m_terminator + 12);
+    //    --v6;
+    //} while (v6 >= 0);
+    //m_obj = this->ObjectBase.m_obj;
+    //*&this->unk_0784 = 0.0;
+
+    this->movementData = CMovement_C(&m_obj->m_guid, objCreate.m_moveUpdate.status.m_position, objCreate.m_moveUpdate.status.m_facing, &m_obj->m_guid, this);
+
+    //this->m_creatureCacheEntry = nullptr;
+    this->m_displayInfo = nullptr;
+    this->m_displayInfoExtra = nullptr;
+    this->m_modelData = nullptr;
+    this->m_soundData = nullptr;
+    //this->ukn = 0;
+    this->m_bloodlevels = nullptr;
+    //this->data980 = 0;
+    //this->data984 = 0;
+    //this->data988 = 0;
+    //this->data98C = 0;
+    //LOBYTE(this->data994) = 0;
+    //this->data9C4 = 0;
+    //this->data9C8 = 0;
+    //this->data9CC = 0;
+    //this->data9D0 = 0;
+    this->m_displayId = 0;
+
+    //this->dataA34[67] = 0;
+    //this->dataA34[68] = 0;
+    //this->dataA34[69] = 0;
+    this->m_characterComponent = nullptr;
+    //this->dataB50[2] = LOBYTE(m_unit->UNIT_FIELD_BYTES_2);
+    //this->dataB50[3] = LOBYTE(m_unit->UNIT_FIELD_BYTES_2);
+
+    this->unk_0A30 = 0x400000;
+    //CGUnit_C::sub_73C260(this, a3, 0);
+    //if (this->m_unit->UNIT_FIELD_HEALTH / this->m_unit->UNIT_FIELD_MAXHEALTH < 0.2f && this->m_unit->UNIT_FIELD_HEALTH > 0 && this->bloodlevels)
+    //    this->unk_0A30 |= 2u;
+
+    this->RefreshDataPointers();
+    //if ((objCreate.flags & 1) != 0)
+    //    bn_CGUnit_C_InitializeActivePlayerComponent(this);
 }
 
 // OFFSET: 0x73FCC0
@@ -145,7 +200,7 @@ void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdat
     //    guid_high = v30->OBJECT_FIELD_GUID.guid_high;
     //    bn_CGBattlefieldInfo_AddVehicle(&guid_low);
     //}
-    //this->data9E0[20] |= 0x80000u;
+    this->unk_0A30 |= 0x80000u;
     //if (bnl_CGUnit_C__s_deferredClientControlUpdateGUID == *&this->ObjectBase.m_obj->OBJECT_FIELD_GUID) {
     //    maybe_CGUnit_C__ExecuteClientControlUpdate(bnl_CGUnit_C__s_deferredClientControlUpdateGUID, SHIDWORD(bnl_CGUnit_C__s_deferredClientControlUpdateGUID), bnl_CGUnit_C__s_deferredClientControlUpdateState);
     //    bnl_CGUnit_C__s_deferredClientControlUpdateGUID = 0i64;
@@ -173,6 +228,183 @@ void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdat
     //}
 }
 
+// OFFSET: 0x730100
+bool CGUnit_C::InitializeComponent() {
+    if (!this->m_worldModel || !this->m_worldModel->IsLoaded(0, 0))
+        return false;
+
+    this->unk_0A30 &= ~0x400000u;
+    if (this->m_characterComponent) {
+        CCharacterComponent::FreeComponent(this->m_characterComponent);
+        this->m_characterComponent = nullptr;
+    }
+
+    if ((this->m_unit->UNIT_FIELD_FLAGS_2 & 0x10) != 0) {
+        //if ((this->unk_0A30 & 0x20000) == 0)
+        //    CGUnit_C::RequestMirrorImageData(this);
+        this->unk_0A30 |= 0x400000u;
+        return 0;
+    }
+
+    if (this->sub_71A430()) {
+        this->InitializeExtendedDisplay(reinterpret_cast<CGPlayer_C*>(this), 1);
+    } else if (this->m_displayInfoExtra) {
+        if (!this->InitializeExtendedDisplay(nullptr, 1))
+            return 0;
+    } else if ((this->m_obj->m_type & TYPEMASK_PLAYER) != 0 && (this->m_modelData->m_flags & 4) != 0) {
+        this->InitializeExtendedDisplay(reinterpret_cast<CGPlayer_C*>(this), 0);
+    }
+    //if ((this->ObjectBase.m_obj->OBJECT_FIELD_TYPE & TYPEMASK_PLAYER) == 0 || !maybe_CGPlayer_C__RefreshVisibleItems(this)) {
+    //    if ((!bn_CGPlayer_C_IsXRayVisionActive() || !CGUnit_C::sub_71C500(this)) && this->characterComponent && this->m_displayInfoExtra) {
+    //        for (i = 32; i < 0x4C; i += 4) {
+    //            v7 = *(&this->m_displayInfoExtra->m_ID + i);
+    //            if (v7)
+    //                CCharacterComponent::AddItem(this->characterComponent, v3, v7, 0);
+    //            ++v3;
+    //        }
+    //    }
+    //    maybe_CGUnit_C__AddHandItem(this, 0);
+    //    maybe_CGUnit_C__AddHandItem(this, 1);
+    //    maybe_CGUnit_C__AddHandItem(this, 2);
+    //}
+    //bn_CGUnit_C_ApplyComponentItemsFromEffects(this);
+    //m_obj = this->ObjectBase.m_obj;
+    //v9[0] = m_obj->OBJECT_FIELD_GUID.guid_low;
+    //v9[1] = m_obj->OBJECT_FIELD_GUID.guid_high;
+    //CGGameUI::UnitModelUpdate(v9, 3);
+    return 1;
+}
+
+// OFFSET: 0x71D010
+bool CGUnit_C::InitializeExtendedDisplay(CGPlayer_C* player, bool hasExtendedData) {
+    this->m_characterComponent = CCharacterComponent::AllocComponent();
+    ComponentData data = ComponentData();
+
+    uint8_t sexId = 0;
+    if (hasExtendedData) {
+        data.m_preferences.raceID = m_displayInfoExtra->m_displayRaceID;
+        sexId = m_displayInfoExtra->m_displaySexID;
+    } else {
+        data.m_preferences.raceID = LOBYTE(m_unit->UNIT_FIELD_BYTES_0);
+        sexId = BYTE2(m_unit->UNIT_FIELD_BYTES_0);
+    }
+
+    data.m_preferences.sexID = sexId;
+    data.m_preferences.classID = BYTE1(m_unit->UNIT_FIELD_BYTES_0);
+    if (player) {
+        data.m_preferences.skinID = player->m_player->PLAYER_BYTES[0];
+        data.m_preferences.faceID = player->m_player->PLAYER_BYTES[1];
+        data.m_preferences.hairStyleID = player->m_player->PLAYER_BYTES[2];
+        data.m_preferences.hairColorID = player->m_player->PLAYER_BYTES[3];
+        data.m_preferences.facialHairStyleID = player->m_player->PLAYER_BYTES_2[0];
+    } else {
+        data.m_preferences.skinID = this->m_displayInfoExtra->m_skinID;
+        data.m_preferences.faceID = this->m_displayInfoExtra->m_faceID;
+        data.m_preferences.hairStyleID = this->m_displayInfoExtra->m_hairStyleID;
+        data.m_preferences.hairColorID = this->m_displayInfoExtra->m_hairColorID;
+        data.m_preferences.facialHairStyleID = this->m_displayInfoExtra->m_facialHairID;
+        if (/*!bn_CGPlayer_C_IsXRayVisionActive() ||*/ !this ->sub_71C500()) {
+            if (!this->m_displayInfoExtra)
+                return 0;
+            auto bakeName = this->m_displayInfoExtra->m_bakeName;
+            if (!bakeName || !*bakeName)
+                return 0;
+            data.m_flags |= 1u;
+            SStrPrintf(data.m_npcSkinTexture, 0x104u, "%s%s", "Textures\\BakedNpcTextures\\", bakeName);
+        }
+    }
+    data.m_model = this->m_worldModel;
+    data.m_flags ^= (LOBYTE(data.m_flags) ^ (2 * (m_obj->m_guid == ClntObjMgrGetActivePlayer()))) & 2;
+    ++data.m_model->m_refCount;
+    if (player)
+        CCharacterComponent::ValidateComponentData(&data, CONTEXT_1);
+    else
+        CCharacterComponent::ValidateComponentData(&data, CONTEXT_2);
+    this->m_characterComponent->Init(&data, 0);
+    return 1;
+}
+
+// OFFSET: 0x72D940
+void CGUnit_C::RefreshDataPointers() {
+    uint32_t displayId = this->m_displayId;
+    if (!this->m_displayId || this->m_unit->UNIT_FIELD_NATIVEDISPLAYID != this->m_unit->UNIT_FIELD_DISPLAYID)
+        displayId = this->m_unit->UNIT_FIELD_DISPLAYID;
+    this->m_displayInfo = g_creatureDisplayInfoDB.GetRecord(displayId);
+    if (!this->m_displayInfo) {
+        //UnitName = CGUnit_C::GetUnitName(this, 0, 1);
+        //SysMsgPrintf_0(2, 2, "NOUNITDISPLAYID|%d|%s", m_displayId, UnitName);
+        this->m_displayInfo = g_creatureDisplayInfoDB.GetRecordByIndex(0);
+        //if (!this->m_displayInfo)
+        //    NOP("Error, NO creature display records found");
+    }
+    this->m_displayInfoExtra = g_creatureDisplayInfoExtraDB.GetRecord(this->m_displayInfo->m_extendedDisplayInfoID);
+    this->m_modelData = g_creatureModelDataDB.GetRecord(this->m_displayInfo->m_modelID);
+    this->m_soundData = g_creatureSoundDataDB.GetRecord(this->m_displayInfo->m_soundID);
+    if (!this->m_soundData) {
+        this->m_soundData = g_creatureSoundDataDB.GetRecord(this->m_modelData->m_soundID);
+    }
+
+    this->m_bloodlevels = g_unitBloodLevelsDB.GetRecord(this->m_displayInfo->m_bloodID);
+    if (!this->m_bloodlevels) {
+        this->m_bloodlevels = g_unitBloodLevelsDB.GetRecord(this->m_modelData->m_bloodID);
+        if (!this->m_bloodlevels)
+            this->m_bloodlevels = g_unitBloodLevelsDB.GetRecordByIndex(0);
+    }
+
+    if (this->m_obj->m_type == HIER_TYPE_UNIT) {
+        //v21[0] = m_obj->OBJECT_FIELD_GUID.guid_low;
+        //v21[1] = m_obj->OBJECT_FIELD_GUID.guid_high;
+        //this->m_creatureCacheEntry = DbCreatureCache_GetInfoBlockById(WDB_CACHE_CREATURE, m_obj->OBJECT_FIELD_ENTRY, v21, bn_CreatureQueryCallback, 0, 0);
+    }
+
+    if (this->m_unit->UNIT_FIELD_NATIVEDISPLAYID == this->m_unit->UNIT_FIELD_DISPLAYID)
+        this->unk_0A30 |= 0x100u;
+    else
+        this->unk_0A30 &= ~0x100u;
+    //if ((this->m_modelData->m_flags & 8) != 0)
+    //    this->dataA34[1] |= 0x20000u;
+    //else
+    //    this->dataA34[1] &= ~0x20000u;
+    if ((this->m_modelData->m_flags & 0x40) != 0)
+        this->unk_0A30 |= 0x2000000u;
+    else
+        this->unk_0A30 &= ~0x2000000u;
+}
+
+// OFFSET: 0x71A430
+bool CGUnit_C::sub_71A430() {
+    if ((this->m_obj->m_type & TYPEMASK_PLAYER) != 0) {
+        if (this->m_modelData) {
+            if ((this->m_modelData->m_flags & 4) != 0) {
+                if (this->m_displayInfoExtra) {
+                    if ((this->m_displayInfoExtra->m_flags & 1) != 0)
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// OFFSET: 0x71C500
+bool CGUnit_C::sub_71C500() {
+    if (this->m_obj->m_guid != ClntObjMgrGetActivePlayer()) {
+        if ((this->m_obj->m_type & TYPE_PLAYER) != 0) {
+            if (this->m_modelData) {
+                if ((this->m_modelData->m_flags & 4) != 0) {
+                    if (this->m_displayInfoExtra) {
+                        if ((this->m_displayInfoExtra->m_flags & 1) != 0)
+                            return 1;
+                    }
+                }
+            }
+        }
+        if (!this->m_displayInfoExtra && (this->m_obj->m_type & TYPE_PLAYER) != 0 && (this->m_modelData->m_flags & 4) != 0)
+            return 1;
+    }
+    return 0;
+}
+
 // OFFSET: 0x717A20
 CreatureModelDataRec* CGUnit_C::GetModelData() {
     uint32_t displayId = 0; //this->m_displayId;
@@ -196,14 +428,12 @@ CreatureModelDataRec* CGUnit_C::GetModelData() {
 
 // OFFSET: 0x6E6EF0
 void CGUnit_C::GetPosition(C3Vector& pos) {
-    // TODO
-    pos = tempPosition;
+    this->m_passenger->GetPosition(&pos, &this->m_passenger->m_position);
 }
 
 // OFFSET: 0x6E6F40
 float CGUnit_C::GetFacing() {
-    // TODO
-    return tempFacing;
+    return this->m_passenger->GetFacing(this->m_passenger->m_facing);
 }
 
 // OFFSET: 0x717B20
@@ -216,6 +446,69 @@ bool CGUnit_C::GetModelFileName(const char** fileName) {
 
     *fileName = creatureModelData->m_modelName;
     return creatureModelData->m_modelName;
+}
+
+// OFFSET: 0x730F30
+void CGUnit_C::ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) {
+    this->CGObject_C::ShouldRender(flags, culled, out);
+
+    if ((this->unk_0A30 & 0x400000) != 0 && !this->InitializeComponent()) {
+        *out = 1;
+        // goto LABEL_24;
+    }
+
+    if (*culled || *out) {
+        if (this->m_characterComponent)
+            this->m_characterComponent->Prep();
+    } else {
+        if (this->m_characterComponent && !this->m_characterComponent->RenderPrep(0)) {
+            *out = 1;
+            // goto LABEL_24;
+        }
+    //    m_worldModel = this->ObjectBase.m_worldModel;
+    //    if (m_worldModel && (m_worldModel->f_flags & 0x4000) != 0) {
+    //        m_attachList = m_worldModel->m_attachList;
+    //        if (!m_attachList) {
+//LABEL_17:
+    //            *out = 1;
+    //            goto LABEL_24;
+    //        }
+    //        while (1) {
+    //            f_flags = m_attachList->f_flags;
+    //            v9 = m_attachList->m_attachParent ? f_flags >> 7 : f_flags >> 3;
+    //            if ((v9 & 1) != 0)
+    //                break;
+    //            m_attachList = m_attachList->m_attachNext;
+    //            if (!m_attachList)
+    //                goto LABEL_17;
+    //        }
+    //    }
+    //    v10 = this->objectclass1[24];
+    //    if (v10 && *(v10 + 20) && (*(v10 + 16) & 0x400) != 0)
+    //        *out = 1;
+    //}
+//LABEL_24:
+    //if (this->data98C) {
+    //    v12 = !*culled && !*out;
+    //    v13 = this->ObjectBase.m_worldModel;
+    //    m_attachParent = v13->m_attachParent;
+    //    v15 = v13->f_flags;
+    //    v16 = v12;
+    //    if (m_attachParent) {
+    //        v17 = v16 << 7;
+    //        v18 = v15 & 0xFFFFFF7F;
+    //    } else {
+    //        v17 = 8 * v16;
+    //        v18 = v15 & 0xFFFFFFF7;
+    //    }
+    //    v19 = v18 | v17;
+    //    v13->f_flags = v19;
+    //    if (m_attachParent)
+    //        v13->f_flags = v19 & 0xFFFDFFFF | (v16 << 17);
+    //    else
+    //        v13->f_flags = v19 & 0xFFFEFFFF | (v16 << 16);
+    //    *out = 0;
+    }
 }
 
 const char* CGUnit_C::GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut) {

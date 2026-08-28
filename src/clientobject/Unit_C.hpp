@@ -4,9 +4,12 @@
 #include <cstdint>
 #include "clientobject/CGObject_C.hpp"
 #include "db/Db.hpp"
+#include <componentcore/CCharacterComponent.hpp>
+#include "clientobject/Movement_C.hpp"
 
 class ChrRacesRec;
 class ChrClassesRec;
+class CGPlayer_C;
 
 struct CGUnitData {
     WGUID UNIT_FIELD_CHARM;
@@ -117,12 +120,35 @@ class CGUnit {
 
 class CGUnit_C : public CGObject_C, public CGUnit {
     public:
-    C3Vector tempPosition;
-    float tempFacing;
+    // Static variables
+    static WGUID s_activeMover;
+
+    // Member variables
+    /* 00D8 */ CMovementShared* m_passenger;
+
+    /* 0788 */ CMovement_C movementData;
+
+    /* 0968 */ CreatureDisplayInfoRec* m_displayInfo;
+    /* 096C */ CreatureDisplayInfoExtraRec* m_displayInfoExtra;
+    /* 0970 */ CreatureModelDataRec* m_modelData;
+    /* 0974 */ CreatureSoundDataRec* m_soundData;
+    /* 0978 */
+    /* 097C */ UnitBloodLevelsRec* m_bloodlevels;
+
+    /* 09D4 */ uint32_t m_displayId;
+
+    /* 0A30 */ uint32_t unk_0A30;
+
+    /* 0B4C */ CCharacterComponent* m_characterComponent;
 
     CGUnit_C();
     CGUnit_C(CClientObjCreate& objCreate, uint32_t time);
     void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
+    bool InitializeComponent();
+    bool InitializeExtendedDisplay(CGPlayer_C* player, bool hasExtendedData);
+    void RefreshDataPointers();
+    bool sub_71A430();
+    bool sub_71C500();
 
     CreatureModelDataRec* GetModelData();
 
@@ -130,6 +156,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 11 */ void GetPosition(C3Vector& pos) override;
     /* 13 */ float GetFacing() override;
     /* 24 */ bool GetModelFileName(const char** fileName) override;
+    /* 36 */ void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) override;
 
     // Static functions
     static const char* GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut = nullptr);

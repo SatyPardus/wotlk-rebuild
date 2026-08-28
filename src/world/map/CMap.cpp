@@ -1388,8 +1388,7 @@ CMapEntity* CMap::ObjectCreate(CM2Model* model, MAP_OBJECT_FUNC func, void* func
     if (entity->model) {
     //    if (!SStrCmpI(off_ADEE74, model->m_shared->m_fileNameWithoutPath, 0x7FFFFFFFu))
     //        v6->unk_07C |= 0x4000u;
-        //entity->model->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
-        entity->model->m_lightingCallback = CMapDoodadLightingCallback;
+        entity->model->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
         entity->model->m_lightingArg = entity;
         ++entity->model->m_refCount;
     }

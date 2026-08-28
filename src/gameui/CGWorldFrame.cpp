@@ -24,6 +24,7 @@
 #include <clientobject/ObjectMgrClient.hpp>
 #include <world/daynight/DayNight.hpp>
 #include <world/daynight/DNInfo.hpp>
+#include "gameui/CGUIBindings.hpp"
 
 
 CGWorldFrame* CGWorldFrame::s_currentWorldFrame = nullptr;
@@ -50,7 +51,7 @@ void CGWorldFrame::UpdateObject(CGObject_C* obj, int a3) {
     bool a2a = true;
     uint32_t v18 = 0;
     uint32_t v17 = 0;
-    //obj->ShouldRender(a3, &v18, &v17);
+    obj->ShouldRender(a3, &v18, &v17);
     if (v18 || v17)
         a2a = false;
     //obj->PreAnimate(this);
@@ -102,21 +103,60 @@ void CGWorldFrame::OnFrameRender(CRenderBatch* batch, uint32_t layer) {
     }
 }
 
+// OFFSET: 0x4F6AE0
 int32_t CGWorldFrame::OnLayerKeyDown(const CKeyEvent& evt) {
     if (CSimpleFrame::OnLayerKeyDown(evt)) {
         return 1;
     }
 
+    if (evt.key >= 787)
+        return 0;
 
-    return 1;
-}
-
-int32_t CGWorldFrame::OnLayerKeyDownRepeat(const CKeyEvent& evt) {
-    if (CSimpleFrame::OnLayerKeyDownRepeat(evt)) {
+    if (evt.key <= 5) {
+        //KeyName = CSimpleFrame__GetKeyName(metaKeyState);
+        //FrameScript::SignalEvent(EVENT_MODIFIER_STATE_CHANGED, "%s%d", KeyName, 1);
         return 1;
     }
 
-    return 1;
+    auto keyDown = &this->m_keyDown[evt.key];
+    if (!CGUIBindings::KeyEventToString(evt, keyDown->m_keyString, 32))
+        return 0;
+    keyDown->m_modifiers = evt.metaKeyState;
+    return CGUIBindings::s_bindings->ExecKey(evt.metaKeyState, keyDown->m_keyString, 1, 1, BINDING_MODE_4);
+}
+
+// OFFSET: 0x4F6B70
+int32_t CGWorldFrame::OnLayerKeyUp(const CKeyEvent& evt) {
+    if (CSimpleFrame::OnLayerKeyUp(evt)) {
+        return 1;
+    }
+
+    if (evt.key >= 787)
+        return 0;
+
+    if (evt.key <= 5) {
+        // KeyName = CSimpleFrame__GetKeyName(metaKeyState);
+        // FrameScript::SignalEvent(EVENT_MODIFIER_STATE_CHANGED, "%s%d", KeyName, 0);
+        return 1;
+    }
+
+    auto keyDown = this->m_keyDown[evt.key];
+    int32_t result = 0;
+    if (keyDown.m_keyString[0]) {
+        keyDown.m_modifiers |= evt.metaKeyState;
+        result = CGUIBindings::s_bindings->ExecKey(keyDown.m_modifiers, keyDown.m_keyString, 0, 1, BINDING_MODE_4);
+        keyDown.m_keyString[0] = 0;
+        return result;
+    }
+
+    keyDown.m_modifiers = 0;
+    if (CGUIBindings::KeyEventToString(evt, keyDown.m_keyString, 32) && keyDown.m_keyString[0]) {
+        keyDown.m_modifiers |= evt.metaKeyState;
+        result = CGUIBindings::s_bindings->ExecKey(keyDown.m_modifiers, keyDown.m_keyString, 0, 1, BINDING_MODE_4);
+        keyDown.m_keyString[0] = 0;
+    }
+
+    return result;
 }
 
 CSimpleFrame* CGWorldFrame::Create(CSimpleFrame* parent) {

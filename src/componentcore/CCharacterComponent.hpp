@@ -103,6 +103,7 @@ class CCharacterComponent {
     bool Init(ComponentData* data, const char* a3);
     bool SkinNPC(const char* a2);
     void ReplaceExtraSkinTexture(const char* a2);
+    void Prep();
     bool RenderPrep(int32_t a2);
     void RenderPrepSections();
     void PrepSections();

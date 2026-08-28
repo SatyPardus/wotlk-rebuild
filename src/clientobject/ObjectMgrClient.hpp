@@ -8,6 +8,8 @@
 #include "storm/Hash.hpp"
 #include <cstdint>
 
+struct CMovementGlobals;
+
 class ObjectMgr {
     public:
     // Member variables
@@ -27,7 +29,7 @@ class ObjectMgr {
     // DWORD unk_C8;
     int32_t mapId;
     ClientConnection* realmConnection;
-    // DWORD unk_D4;
+    CMovementGlobals* m_movementGlobals;
 };
 
 struct WowTlsBlock {
@@ -49,6 +51,8 @@ WGUID ClntObjMgrGetActivePlayer();
 CGPlayer_C* ClntObjMgrGetActivePlayerObj();
 int32_t ClntObjMgrGetMapID();
 CGObject_C* ClntObjMgrAllocObject(OBJECT_TYPE_ID typeId, WGUID guid);
+void ClntObjMgrSetMovementGlobals(CMovementGlobals* globals);
+CMovementGlobals* ClntObjMgrGetMovementGlobals();
 
 template <typename T>
 T GetObjectPtr(TSHashTable<CGObject_C, WGUID>* table, WGUID guid);

@@ -85,9 +85,9 @@ struct CGPlayerData : CGLocalPlayerData {
     uint32_t PLAYER_FLAGS;
     uint32_t PLAYER_GUILDID;
     uint32_t PLAYER_GUILDRANK;
-    uint32_t PLAYER_BYTES;
-    uint32_t PLAYER_BYTES_2;
-    uint32_t PLAYER_BYTES_3;
+    uint8_t PLAYER_BYTES[4];
+    uint8_t PLAYER_BYTES_2[4];
+    uint8_t PLAYER_BYTES_3[4];
     uint32_t PLAYER_DUEL_TEAM;
     uint32_t PLAYER_GUILD_TIMESTAMP;
     uint32_t PLAYER_QUEST_LOG_1_1;

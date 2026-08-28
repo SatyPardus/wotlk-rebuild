@@ -858,6 +858,19 @@ CGObject_C* ClntObjMgrAllocObject(OBJECT_TYPE_ID typeId, WGUID guid) {
     return nullptr;
 }
 
+// OFFSET: 0x4D3840
+void ClntObjMgrSetMovementGlobals(CMovementGlobals* globals) {
+    if (g_tlsBlock.pObjMgr)
+        g_tlsBlock.pObjMgr->m_movementGlobals = globals;
+}
+
+// OFFSET: 0x4D3810
+CMovementGlobals* ClntObjMgrGetMovementGlobals() {
+    if (g_tlsBlock.pObjMgr)
+        return g_tlsBlock.pObjMgr->m_movementGlobals;
+    return nullptr;
+}
+
 // OFFSET: 0x4D4BB0
 template <typename T>
 T GetObjectPtr(TSHashTable<CGObject_C, WGUID>* table, WGUID guid) {

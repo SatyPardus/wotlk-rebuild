@@ -7,6 +7,11 @@
 
 class CGCamera;
 
+struct KEYDOWNSTATE {
+    /* 0x00 */ char m_keyString[0x20];
+    /* 0x20 */ uint32_t m_modifiers;
+};
+
 class CGWorldFrame : public CSimpleFrame {
     public:
     CGWorldFrame(CSimpleFrame* parent);
@@ -14,9 +19,9 @@ class CGWorldFrame : public CSimpleFrame {
     void UpdateObject(CGObject_C* obj, int a3);
     void UpdateDayNightInfo(float delta);
 
-    virtual void OnFrameRender(CRenderBatch* batch, uint32_t layer);
-    virtual int32_t OnLayerKeyDown(const CKeyEvent& evt);
-    virtual int32_t OnLayerKeyDownRepeat(const CKeyEvent& evt);
+    void OnFrameRender(CRenderBatch* batch, uint32_t layer) override;
+    int32_t OnLayerKeyDown(const CKeyEvent& evt) override;
+    int32_t OnLayerKeyUp(const CKeyEvent& evt) override;
 
     static CSimpleFrame* Create(CSimpleFrame* parent);
     static void RenderWorld(void* param);
@@ -25,7 +30,9 @@ class CGWorldFrame : public CSimpleFrame {
     static CGCamera* GetActiveCamera();
     static bool ObjectEnumProc(void* param, uint32_t status, uint64_t param64, uint32_t param32);
 
-    CGCamera* m_camera = nullptr;
+    /* 0B18 */ KEYDOWNSTATE m_keyDown[787];
+    /* 79C4 */
+    /* 7E20 */ CGCamera* m_camera = nullptr;
 
     public:
     static CGWorldFrame* s_currentWorldFrame;

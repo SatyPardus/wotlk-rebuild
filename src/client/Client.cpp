@@ -41,6 +41,7 @@
 #include <console/DebugScreen.hpp>
 #include <world/CWorldParam.hpp>
 #include <tempest/Random.hpp>
+#include <clientobject/Movement.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -838,7 +839,7 @@ void ClientInitializeGame(int32_t zoneId, C3Vector* position) {
     //FriendList::Initialize();
     //SmartScreenRectClearAllGrids();
     //Trade_C::Initialize();
-    //MovementInit();
+    MovementInit();
     //EventRegister(EVENT_ON_IDLE, (DWORD)ClientIdle);
     //ClientInitializeGameTime();
     //v10 = StaticSingleton<CommandManager>::m_instance;

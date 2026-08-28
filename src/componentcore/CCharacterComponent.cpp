@@ -222,7 +222,7 @@ void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t textureLevel,
     //    dword_B6B86C = bn_TextureAllocMippedImg(0, dword_B6B5FC, dword_B6B5FC);
     //if (CCharacterComponent::s_bComponentThread && CCharacterComponent::s_bComponentCompression)
     //    dword_B6B868 = bn_TextureAllocMippedImg(2, dword_B6B5FC, dword_B6B5FC);
-    EventRegisterEx(EVENT_ID_POLL, CCharacterComponent::Update, 0, 0.0);
+    EventRegisterEx(EVENT_ID_POLL, &CCharacterComponent::Update, 0, 0.0);
 }
 
 int32_t CCharacterComponent::Update(const void*, void*) {
@@ -1628,6 +1628,21 @@ void CCharacterComponent::ReplaceExtraSkinTexture(const char* a2) {
     if (texture) {
         this->m_data.m_model->ReplaceTexture(8, texture);
         HandleClose(texture);
+    }
+}
+
+// OFFSET: 0x4EFED0
+void CCharacterComponent::Prep() {
+    if ((this->m_data.m_flags & 1) != 0) {
+        if ((this->m_flags & 4) == 0)
+            return;
+        this->GeosRenderPrep();
+    }
+    if (this->m_dirtySections || (this->m_flags & 1) != 0) {
+        if (!this->m_link.IsLinked())
+            s_queue.LinkToTail(this);
+    } else if ((this->m_flags & 4) != 0) {
+        this->GeosRenderPrep();
     }
 }
 
