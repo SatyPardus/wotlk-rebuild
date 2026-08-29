@@ -538,7 +538,7 @@ bool PostInitObject(CDataStore* msg, uint32_t time, bool isUpdate3) {
 
     if ((obj->m_modelFlags & 0x20000) != 0 && (obj->m_obj->m_type & TYPE_UNIT) != 0) {
         auto activePlayerGuid = ClntObjMgrGetActivePlayer();
-        //obj->sub_73C260(&objCreate, obj->m_obj->m_guid == activePlayerGuid);
+        reinterpret_cast<CGUnit_C*>(obj)->SetClientInitData(objCreate, obj->m_obj->m_guid == activePlayerGuid);
     }
     if ((obj->m_modelFlags & 0x40000) != 0) {
         auto v8 = CallMirrorHandlers(msg, 1, guid);
@@ -895,4 +895,5 @@ T ClntObjMgrObjectPtr(WGUID guid, TypeMask mask) {
 }
 
 template CGObject_C* ClntObjMgrObjectPtr<CGObject_C*>(WGUID, TypeMask);
+template CGUnit_C* ClntObjMgrObjectPtr<CGUnit_C*>(WGUID, TypeMask);
 template CGPlayer_C* ClntObjMgrObjectPtr<CGPlayer_C*>(WGUID, TypeMask);

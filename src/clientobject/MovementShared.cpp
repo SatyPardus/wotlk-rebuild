@@ -1,13 +1,12 @@
 #include "clientobject/MovementShared.hpp"
 #include <common/time/Time.hpp>
 #include <util/Byte.hpp>
+#include "clientobject/Types.hpp"
 
 CMovementShared::CMovementShared(WGUID* transportGuid, C3Vector& position, float facing, WGUID* guid)
     : CPassenger(transportGuid, position, guid) {
     this->m_groundNormal.x = 0.0;
     this->m_groundNormal.y = 0.0;
-    this->unk_0030 = 0;
-    this->unk_0034 = 0;
     this->m_groundNormal.z = 1.0;
     this->m_flags = 0;
     LOWORD(this->m_flags2) = 0;
@@ -16,15 +15,15 @@ CMovementShared::CMovementShared(WGUID* transportGuid, C3Vector& position, float
     this->m_anchorPos.y = position.y;
     this->m_anchorFacing = facing;
     this->m_anchorPos.z = position.z;
-    this->unk_005C = 0.0;
-    this->unk_0064 = 0.0;
-    this->unk_0068 = 0.0;
-    this->unk_006C = 0.0;
-    this->unk_0070 = 0.0;
-    this->unk_0074 = 0.0;
+    this->m_anchorPitch = 0.0;
+    this->m_moveDir.x = 0.0;
+    this->m_moveDir.y = 0.0;
+    this->m_moveDir.z = 0.0;
+    this->m_moveDir2D.x = 0.0;
+    this->m_moveDir2D.y = 0.0;
     this->m_fallTimeMs = 0;
-    this->unk_007C = 0.0;
-    this->unk_0078 = 1.0;
+    this->m_pitchSin = 0.0;
+    this->m_pitchCos = 1.0;
     LOBYTE(this->unk_002C) |= 1u;
     this->m_fallStartZ = position.z;
     this->m_spline = 0;
@@ -40,6 +39,513 @@ CMovementShared::CMovementShared(WGUID* transportGuid, C3Vector& position, float
     this->m_pitchRate = 0.0;
     this->m_fallVelocity = 0.0;
     this->m_facing = facing;
-    this->unk_00C0 = OsGetAsyncTimeMs();
-    this->unk_00B4 = 1.0;
+    this->m_statusTimeMs = OsGetAsyncTimeMs();
+    this->m_hoverHeight = 1.0;
+}
+
+// OFFSET: 0x4F5260
+bool CMovementShared::IsOnSpline() {
+    return this->m_spline && (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0;
+}
+
+// OFFSET: 0x4F5260
+bool CMovementShared::IsOnFlyingSpline() {
+    if (!this->m_spline)
+        return false;
+
+    return (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_FLYING) != 0;
+}
+
+// OFFSET: 0x6E9A70
+bool CMovementShared::IsOnFallingSpline() {
+    if (!this->m_spline)
+        return false;
+
+    const uint32_t flags = this->m_spline->flags;
+    return (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_FALLING) != 0;
+}
+
+// OFFSET: 0x987E30
+void CMovementShared::CalcDirection() {
+    this->m_moveDir2D = C2Vector(cos(this->m_anchorFacing), sin(this->m_anchorFacing));
+    if ((this->m_flags & 0x2200000) != 0 && fabs(this->m_anchorPitch) >= 0.00000095367432) {
+        this->m_pitchCos = cos(this->m_anchorPitch);
+        this->m_pitchSin = sin(this->m_anchorPitch);
+        this->m_moveDir.x = this->m_pitchCos * this->m_moveDir2D.x;
+        this->m_moveDir.y = this->m_pitchCos * this->m_moveDir2D.y;
+        this->m_moveDir.z = this->m_pitchSin;
+    } else {
+        this->m_moveDir.x = this->m_moveDir2D.x;
+        this->m_moveDir.y = this->m_moveDir2D.y;
+        this->m_pitchSin = 0.0;
+        this->m_moveDir.z = 0.0;
+        this->m_pitchCos = 1.0;
+    }
+}
+
+// OFFSET: 0x987EF0
+void CMovementShared::CalcDirection(bool a2) {
+    if ((this->m_flags & 0x1000) != 0 && !a2)
+        return;
+
+    this->CalcDirection();
+
+    if ((this->m_flags & 3) != 0) {
+        if ((this->m_flags & 0xC) != 0) {
+            if ((this->m_flags & 2) != 0) {
+                this->m_moveDir2D = -this->m_moveDir2D;
+                m_moveDir = -this->m_moveDir;
+            }
+            float prevX = this->m_moveDir2D.x;
+            this->m_moveDir2D.x = this->m_moveDir2D.y;
+            this->m_moveDir2D.y = prevX;
+            if ((this->m_flags & 4) != 0)
+                this->m_moveDir2D.x = -this->m_moveDir2D.x;
+            else
+                this->m_moveDir2D.y = -this->m_moveDir2D.y;
+            this->m_moveDir.x = this->m_moveDir2D.x + this->m_moveDir.x;
+            this->m_moveDir.y = this->m_moveDir2D.y + this->m_moveDir.y;
+            this->m_moveDir.z = m_moveDir.z;
+            this->m_moveDir2D.x = m_moveDir2D.x + this->m_moveDir2D.x;
+            this->m_moveDir2D.y = this->m_moveDir2D.y + m_moveDir2D.y;
+            this->m_moveDir.x = this->m_moveDir.x * 0.70710677f;
+            this->m_moveDir.y = this->m_moveDir.y * 0.70710677f;
+            this->m_moveDir.z = this->m_moveDir.z * 0.70710677f;
+            this->m_moveDir2D.x = this->m_moveDir2D.x * 0.70710677f;
+            this->m_moveDir2D.y = 0.70710677f * this->m_moveDir2D.y;
+            return;
+        }
+    } else if ((m_flags & 0xC) != 0) {
+        float prevX = this->m_moveDir2D.x;
+        this->m_moveDir2D.x = this->m_moveDir2D.y;
+        this->m_moveDir2D.y = prevX;
+        if ((this->m_flags & 4) != 0)
+            this->m_moveDir2D.x = -this->m_moveDir2D.x;
+        else
+            this->m_moveDir2D.y = -this->m_moveDir2D.y;
+        this->m_moveDir.x = this->m_moveDir2D.x;
+        this->m_moveDir.y = this->m_moveDir2D.y;
+        this->m_moveDir.z = 0.0;
+        return;
+    }
+    if ((m_flags & 2) != 0) {
+        this->m_moveDir = -this->m_moveDir;
+        this->m_moveDir2D = -this->m_moveDir2D;
+    }
+}
+
+// OFFSET: 0x9881D0
+void CMovementShared::UpdateAnchors(bool a2) {
+    this->m_anchorFacing = this->m_facing;
+    this->m_anchorPos = this->m_position;
+    this->m_anchorPitch = this->m_pitch;
+    this->m_anchorElapsedMs = 0;
+    this->CalcDirection(a2);
+}
+
+// OFFSET: 0x987570
+float CMovementShared::GetBaseSpeed(bool a2) {
+    if ((this->m_flags & 0xC0000F) == 0)
+        return 0.0;
+    if (!this->IsOnSpline()) {
+        if ((this->m_flags & 0x2000000) != 0) {
+            if ((this->m_flags & 2) != 0 && this->m_flightSpeed >= this->m_flightBackSpeed)
+                return this->m_flightBackSpeed;
+            else
+                return this->m_flightSpeed;
+        } else if ((this->m_flags & 0x200000) != 0) {
+            if ((this->m_flags & 2) != 0 && this->m_swimSpeed >= this->m_swimBackSpeed)
+                return this->m_swimBackSpeed;
+            else
+                return this->m_swimSpeed;
+        } else {
+            if ((this->m_flags & 0x100) != 0 || a2) {
+                if (this->m_runSpeed > this->m_walkSpeed)
+                    return this->m_walkSpeed;
+            } else if ((this->m_flags & 2) != 0 && this->m_runSpeed >= this->m_runBackSpeed) {
+                return this->m_runBackSpeed;
+            }
+            return this->m_runSpeed;
+        }
+    } else {
+        if (!m_spline->m_duration)
+            return 0.0f;
+        //return *&this->m_spline->spline.unk_0000[1] / m_spline->m_duration * 1000.0;
+        return 0.0f;
+    }
+}
+
+// OFFSET: 0x988A20
+bool CMovementShared::StartMove(bool a2, bool a3) {
+    this->m_flags &= 0xFFFCBFFF;
+    bool v5 = 0;
+    if ((a3 || (this->m_flags & 0x1000) == 0) || (this->m_flags & 0xF) == 0) {
+        if ((this->m_flags & 0xF) == 0) {
+            v5 = 1;
+        }
+
+        if (a2)
+            this->m_flags = this->m_flags & 0xFFFFFFFC | 1;
+        else
+            this->m_flags = this->m_flags & 0xFFFFFFFC | 2;
+        this->m_anchorFacing = this->m_facing;
+        this->m_anchorPitch = this->m_pitch;
+        this->m_anchorPos = this->m_position;
+        this->m_anchorElapsedMs = 0;
+        this->CalcDirection(v5);
+        
+        if ((this->m_flags & 0x1000) == 0 || v5)
+            this->m_currentSpeed = this->GetBaseSpeed(v5);
+        return 1;
+    }
+    if (a2) {
+        if ((this->m_flags & 1) == 0) {
+            this->m_flags = this->m_flags | 0x10000;
+            return 0;
+        }
+    } else if ((m_flags & 2) == 0) {
+        this->m_flags = this->m_flags | 0x20000;
+    }
+    return 0;
+}
+
+// OFFSET: 0x98C8D0
+bool CMovementShared::StopMove() {
+    if ((this->m_flags & 3) != 0) {
+        if ((this->m_flags & 0x4000000) != 0) {
+            this->m_flags = this->m_flags & 0xFBFFFFFF;
+            //if (!CMovementShared::IsFallingSwimmingFlying_6636D0(this))
+            //    CMovementShared::sub_988370(this, 0.0);
+        }
+        if ((this->m_flags & 0x1000) != 0) {
+            this->m_flags = this->m_flags & 0xFFFCBFFF | 0x4000;
+            return 0;
+        } else {
+            this->ForceStopMove(1);
+            return 1;
+        }
+    } else {
+        if ((m_flags & 0x30000) != 0)
+            this->m_flags = m_flags & 0xFFFCFFFF;
+        return 0;
+    }
+}
+
+// OFFSET: 0x98BD10
+void CMovementShared::ForceStopMove(bool a2) {
+    this->m_flags &= 0xFFFFBFFC;
+
+    const bool falling = (this->m_flags & MOVEMENTFLAG_FALLING) != 0;
+
+    if (!falling)
+        this->m_currentSpeed = this->GetBaseSpeed(0);
+
+    this->m_anchorFacing = this->m_facing;
+    this->m_anchorPitch = this->m_pitch;
+    this->m_anchorPos.x = this->m_position.x;
+    this->m_anchorPos.y = this->m_position.y;
+    this->m_anchorPos.z = this->m_position.z;
+    this->m_anchorElapsedMs = 0;
+
+    if (!falling) {
+        CMovementShared::CalcDirection(this);
+
+        const uint32_t flags = this->m_flags;
+        const bool fwdBack = (flags & 3) != 0;
+        const bool strafing = (flags & 0xC) != 0;
+
+        if (fwdBack && strafing) {
+            C2Vector savedDir2D = this->m_moveDir2D;
+            C3Vector savedDir = this->m_moveDir;
+
+            if ((flags & MOVEMENTFLAG_BACKWARD) != 0) {
+                savedDir2D.x = -savedDir2D.x;
+                savedDir2D.y = -savedDir2D.y;
+                savedDir.x = -savedDir.x;
+                savedDir.y = -savedDir.y;
+                savedDir.z = -savedDir.z;
+            }
+
+            const float swap = this->m_moveDir2D.x;
+            this->m_moveDir2D.x = this->m_moveDir2D.y;
+            this->m_moveDir2D.y = swap;
+
+            if ((this->m_flags & MOVEMENTFLAG_STRAFE_LEFT) != 0)
+                this->m_moveDir2D.x = -this->m_moveDir2D.x;
+            else
+                this->m_moveDir2D.y = -this->m_moveDir2D.y;
+
+            this->m_moveDir.x = this->m_moveDir2D.x + savedDir.x;
+            this->m_moveDir.y = this->m_moveDir2D.y + savedDir.y;
+            this->m_moveDir.z = savedDir.z;
+
+            this->m_moveDir2D.x += savedDir2D.x;
+            this->m_moveDir2D.y += savedDir2D.y;
+
+            this->m_moveDir.x *= 0.70710677f;
+            this->m_moveDir.y *= 0.70710677f;
+            this->m_moveDir.z *= 0.70710677f;
+            this->m_moveDir2D.x *= 0.70710677f;
+            this->m_moveDir2D.y *= 0.70710677f;
+        } else if (strafing) {
+            const float swap = this->m_moveDir2D.x;
+            this->m_moveDir2D.x = this->m_moveDir2D.y;
+            this->m_moveDir2D.y = swap;
+
+            if ((this->m_flags & MOVEMENTFLAG_STRAFE_LEFT) != 0)
+                this->m_moveDir2D.x = -this->m_moveDir2D.x;
+            else
+                this->m_moveDir2D.y = -this->m_moveDir2D.y;
+
+            this->m_moveDir.x = this->m_moveDir2D.x;
+            this->m_moveDir.y = this->m_moveDir2D.y;
+            this->m_moveDir.z = 0.0f;
+        } else if ((flags & MOVEMENTFLAG_BACKWARD) != 0) {
+            this->m_moveDir.x = -this->m_moveDir.x;
+            this->m_moveDir.y = -this->m_moveDir.y;
+            this->m_moveDir.z = -this->m_moveDir.z;
+            this->m_moveDir2D.x = -this->m_moveDir2D.x;
+            this->m_moveDir2D.y = -this->m_moveDir2D.y;
+        }
+    }
+
+    CMoveSpline* spline = this->m_spline;
+    if (spline && (spline->flags & SPLINE_FLAG_NO_SPLINE) == 0) {
+        spline->flags |= SPLINE_FLAG_NO_SPLINE;
+
+        if (a2) {
+            CMoveSpline* s = this->m_spline;
+            //if (s && (s->flags & 0x2000) != 0 && !CMovementShared::IsFallingSwimmingFlying_6636D0(this)) {
+            //    CMovementShared::sub_988370(this, 0.0f);
+            //}
+        }
+    }
+}
+
+// OFFSET: 0x987D00
+int32_t CMovementShared::PlotUnitMovement(int32_t time, C3Vector* out) {
+    return this->PlotUnitMovement(time, out, &this->m_anchorFacing, &this->m_anchorPitch);
+}
+
+// OFFSET: 0x987B50
+int32_t CMovementShared::PlotUnitMovement(int32_t time, C3Vector* out, float* outFacing, float* outPitch) {
+    if (!time)
+        return this->m_flags & 0xC0100F;
+
+    float delta = time * 0.001f;
+    uint32_t shape = 0;
+
+    if ((this->m_flags & MOVEMASK_TURN) != 0) {
+        if (outFacing)
+            *outFacing = this->PlotFacing(delta);
+
+        if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
+            shape = 2;
+    }
+
+    if ((this->m_flags & MOVEMASK_PITCH) != 0) {
+        if (outPitch)
+            *outPitch = this->PlotPitch(delta);
+
+        if ((this->m_flags & MOVEMASK_VERTICAL) != 0)
+            shape |= 0x10;
+        else
+            shape |= 8;
+    } else if ((this->m_flags & MOVEMASK_VERTICAL) != 0) {
+        shape |= 0x10;
+    }
+
+    if ((this->m_flags & MOVEMASK_FWDBACK) != 0)
+        shape |= 1;
+    if ((this->m_flags & MOVEMASK_STRAFE) != 0)
+        shape |= 4;
+
+    switch (shape) {
+    case 1:
+    case 4:
+    case 5:
+    case 12:
+        this->PlotStraight(delta, out);
+        break;
+    case 3:
+    case 6:
+    case 7:
+    case 14:
+    case 19:
+    case 22:
+    case 23:
+        this->PlotHorzCircularPosition(delta, out);
+        break;
+    case 9:
+    case 13:
+        this->PlotVertCircularPosition(delta, out);
+        break;
+    case 11:
+    case 15:
+        this->PlotSpiralPosition(delta, out);
+        break;
+    case 16:
+    case 18: {
+        float v = delta * this->m_currentSpeed;
+        if ((this->m_flags & MOVEMENTFLAG_ASCENDING) == 0)
+            v = -v;
+        out->x = 0.0f;
+        out->y = 0.0f;
+        out->z = v;
+        break;
+    }
+    case 17:
+    case 20:
+    case 21:
+        this->PlotAscendDescend(delta, out);
+        break;
+    }
+
+    return this->m_flags & 0xC0100F;
+}
+
+// OFFSET: 0x987820
+void CMovementShared::PlotSpiralPosition(float dt, C3Vector* out) {
+    float turn = 0.0f;
+    if ((this->m_flags & MOVEMENTFLAG_LEFT) != 0)
+        turn = this->m_turnRate;
+    else if ((this->m_flags & MOVEMENTFLAG_RIGHT) != 0)
+        turn = -this->m_turnRate;
+
+    if ((this->m_flags & 0xC0100F) != 0 && (this->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_TURNING) == 0)
+        turn *= 0.75f;
+
+    float pitch = 0.0f;
+    if ((this->m_flags & MOVEMENTFLAG_PITCH_UP) != 0)
+        pitch = this->m_pitchRate;
+    else if ((this->m_flags & MOVEMENTFLAG_PITCH_DOWN) != 0)
+        pitch = -this->m_pitchRate;
+
+    if ((this->m_flags & 0xC0100F) != 0 && (this->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_PITCHING) == 0)
+        pitch *= 0.75f;
+
+    const float turnRadius = this->m_currentSpeed * 0.70710677f / turn;
+    const float pitchRadius = this->m_currentSpeed * 0.70710677f / pitch;
+
+    const float turnAngle = turn * dt;
+    const float pitchAngle = dt * pitch;
+
+    const float along = sinf(turnAngle) * turnRadius;
+    const float across = turnRadius - cosf(turnAngle) * turnRadius;
+
+    out->x = this->m_moveDir2D.x * along - this->m_moveDir2D.y * across;
+    out->y = along * this->m_moveDir2D.y + across * this->m_moveDir2D.x;
+    out->z = (pitchRadius - cosf(pitchAngle) * pitchRadius) * this->m_pitchCos + pitchRadius * sinf(pitchAngle) * this->m_pitchSin;
+}
+
+// OFFSET: 0x987950
+void CMovementShared::PlotVertCircularPosition(float dt, C3Vector* out) {
+    float pitch = 0.0f;
+    if ((this->m_flags & MOVEMENTFLAG_PITCH_UP) != 0)
+        pitch = this->m_pitchRate;
+    else if ((this->m_flags & MOVEMENTFLAG_PITCH_DOWN) != 0)
+        pitch = -this->m_pitchRate;
+
+    if ((this->m_flags & 0xC0100F) != 0 && (this->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_PITCHING) == 0)
+        pitch *= 0.75f;
+
+    const float radius = this->m_currentSpeed / pitch;
+    const float angle = pitch * dt;
+
+    const float along = sinf(angle) * radius;
+    const float across = radius - cosf(angle) * radius;
+
+    const float horiz = along * this->m_pitchCos - across * this->m_pitchSin;
+
+    out->x = horiz * this->m_moveDir2D.x;
+    out->y = horiz * this->m_moveDir2D.y;
+    out->z = across * this->m_pitchCos + along * this->m_pitchSin;
+}
+
+// OFFSET: 0x987A00
+void CMovementShared::PlotHorzCircularPosition(float dt, C3Vector* out) {
+    float turn = 0.0f;
+    if ((this->m_flags & MOVEMENTFLAG_LEFT) != 0)
+        turn = this->m_turnRate;
+    else if ((this->m_flags & MOVEMENTFLAG_RIGHT) != 0)
+        turn = -this->m_turnRate;
+
+    if ((this->m_flags & 0xC0100F) != 0 && (this->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_TURNING) == 0)
+        turn *= 0.75f;
+
+    const float radius = this->m_currentSpeed / turn;
+    const float angle = turn * dt;
+
+    const float along = sinf(angle) * radius;
+    const float across = radius - cosf(angle) * radius;
+
+    const float x = this->m_moveDir2D.x * along - this->m_moveDir2D.y * across;
+    const float y = along * this->m_moveDir2D.y + across * this->m_moveDir2D.x;
+
+    const uint32_t f = this->m_flags;
+    if ((this->m_flags & MOVEMENTFLAG_ASCENDING) != 0) {
+        out->x = x * 0.70710677f;
+        out->y = y * 0.70710677f;
+        out->z = 0.70710677f * (this->m_currentSpeed * dt);
+    } else if ((this->m_flags & MOVEMENTFLAG_DESCENDING) != 0) {
+        out->x = x * 0.70710677f;
+        out->y = y * 0.70710677f;
+        out->z = this->m_currentSpeed * dt * -0.70710677f;
+    } else if ((this->m_flags & MOVEMASK_FWDBACK) == 0)
+    {
+        out->x = x;
+        out->y = y;
+        out->z = 0.0f;
+    } else
+    {
+        out->x = x * this->m_pitchCos;
+        out->y = y * this->m_pitchCos;
+        out->z = this->m_pitchSin * this->m_currentSpeed * dt;
+    }
+}
+
+// OFFSET: 0x987700
+void CMovementShared::PlotAscendDescend(float dt, C3Vector* out) {
+    const float k = 0.70710677f;
+    const float vert = (this->m_flags & MOVEMENTFLAG_ASCENDING) != 0 ? k : -k;
+
+    out->x = this->m_moveDir2D.x * k * dt * this->m_currentSpeed;
+    out->y = this->m_moveDir2D.y * k * dt * this->m_currentSpeed;
+    out->z = this->m_currentSpeed * (vert * dt);
+}
+
+// OFFSET. 0x9876B0
+void CMovementShared::PlotStraight(float dt, C3Vector* out) {
+    out->x = this->m_moveDir.x * dt * this->m_currentSpeed;
+    out->y = this->m_moveDir.y * dt * this->m_currentSpeed;
+    out->z = this->m_moveDir.z * dt * this->m_currentSpeed;
+}
+
+// OFFSET: 0x9877D0
+float CMovementShared::PlotPitch(float dt) {
+    float rate = 0.0f;
+    if ((this->m_flags & MOVEMENTFLAG_PITCH_UP) != 0)
+        rate = this->m_pitchRate;
+    else if ((this->m_flags & MOVEMENTFLAG_PITCH_DOWN) != 0)
+        rate = -this->m_pitchRate;
+
+    if ((this->m_flags & 0xC0100F) != 0 && (this->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_PITCHING) == 0)
+        rate *= 0.75f;
+
+    return fmodf(rate * dt + this->m_anchorPitch, 6.2831855f);
+}
+
+// OFFSET: 0x987770
+float CMovementShared::PlotFacing(float dt) {
+    float rate = 0.0f;
+    if ((this->m_flags & MOVEMENTFLAG_LEFT) != 0)
+        rate = this->m_turnRate;
+    else if ((this->m_flags & MOVEMENTFLAG_RIGHT) != 0)
+        rate = -this->m_turnRate;
+
+    if ((this->m_flags & 0xC0100F) != 0 && (this->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_TURNING) == 0)
+        rate *= 0.75f;
+
+    const float result = fmodf(rate * dt + this->m_anchorFacing, 6.2831855f);
+    return result < 0.0f ? result + 6.2831855f : result;
 }

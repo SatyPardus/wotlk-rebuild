@@ -42,6 +42,7 @@
 #include <world/CWorldParam.hpp>
 #include <tempest/Random.hpp>
 #include <clientobject/Movement.hpp>
+#include <gameui/CGInputControl.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -746,7 +747,7 @@ void WowClientInit() {
     // ShadowInit();
     // GxuLightInitialize();
     // GxuLightBucketSizeSet(16.665001);
-    // InputControlInitialize();
+    CGInputControl::Initialize();
 
     CGlueMgr::Initialize();
 

@@ -4,6 +4,7 @@
 #include "clientobject/Player_C.hpp"
 #include <util/Byte.hpp>
 #include "ObjectMgrClient.hpp"
+#include <common/time/Time.hpp>
 
 WGUID CGUnit_C::s_activeMover;
 
@@ -30,7 +31,7 @@ CGUnit_C::CGUnit_C(CClientObjCreate& objCreate, uint32_t time)
     //m_obj = this->ObjectBase.m_obj;
     //*&this->unk_0784 = 0.0;
 
-    this->movementData = CMovement_C(&m_obj->m_guid, objCreate.m_moveUpdate.status.m_position, objCreate.m_moveUpdate.status.m_facing, &m_obj->m_guid, this);
+    new (&this->movementData) CMovement_C(&m_obj->m_guid, objCreate.m_moveUpdate.status.m_position, objCreate.m_moveUpdate.status.m_facing, &m_obj->m_guid, this);
 
     //this->m_creatureCacheEntry = nullptr;
     this->m_displayInfo = nullptr;
@@ -58,7 +59,7 @@ CGUnit_C::CGUnit_C(CClientObjCreate& objCreate, uint32_t time)
     //this->dataB50[3] = LOBYTE(m_unit->UNIT_FIELD_BYTES_2);
 
     this->unk_0A30 = 0x400000;
-    //CGUnit_C::sub_73C260(this, a3, 0);
+    this->SetClientInitData(objCreate, 0);
     //if (this->m_unit->UNIT_FIELD_HEALTH / this->m_unit->UNIT_FIELD_MAXHEALTH < 0.2f && this->m_unit->UNIT_FIELD_HEALTH > 0 && this->bloodlevels)
     //    this->unk_0A30 |= 2u;
 
@@ -226,6 +227,29 @@ void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdat
     //    if (__PAIR64__(v39, v38) == ClntObjMgrGetActivePlayer())
     //        bn_CGUnit_C_SignalPlayerGainsVehicleDataEvent(this);
     //}
+}
+
+// OFFSET: 0x73C260
+void CGUnit_C::SetClientInitData(CClientObjCreate& objCreate, bool a3) {
+    //Combat::SetClientInitData(&this->data9E0[16], a2);
+    //if (SLOBYTE(a2->flags) < 0)
+    //    CGUnit_C::CreateVehicleData(this, a2, a2->m_vehicleId);
+    if (!a3) {
+        this->movementData.SetUpdateInfo(OsGetAsyncTimeMs(), &objCreate.m_moveUpdate, objCreate.flags & 1);
+        //if ((this->movementData.m_flags & 0x2000) != 0)
+        //    CGUnit_C::OnCollideFalling(this);
+        //if ((a2->flags & 1) != 0) {
+        //    v6 = this->ObjectBase.__vftable;
+        //    this->data9E0[20] |= 0x80u;
+        //    v7 = bnl_World__s_weather;
+        //    v8 = (v6->GetPosition)(this, v9);
+        //    v7->unk_000C[92] = *v8;
+        //    v7->unk_000C[93] = v8[1];
+        //    v7->unk_000C[94] = v8[2];
+        //}
+        //if ((a2->flags & 0x400) != 0)
+        //    this->data9E0[20] |= 0x40000000u;
+    }
 }
 
 // OFFSET: 0x730100
@@ -403,6 +427,102 @@ bool CGUnit_C::sub_71C500() {
             return 1;
     }
     return 0;
+}
+
+// OFFSET: 0x73AB20
+void CGUnit_C::OnMoveUpdate(int32_t time, bool a3, bool a4) {
+    //v5 = this->objectclass1[23];
+    //if (v5 && *(v5 + 12))
+    //    CVehicle_C::UpdateWorldMatrix(v5);
+    this->UpdateWorldObject(0);
+    //m_worldObject = this->ObjectBase.m_worldObject;
+    //if (!m_worldObject || !World::QueryGroundType(m_worldObject, &this->dataA34[3]))
+    //    this->dataA34[3] = -1;
+    //CGUnit_C::UpdateFlightStatus(this, a2);
+    //CGUnit_C::UpdateSwimmingStatus(&this->ObjectBase, a2, a3);
+}
+
+// OFFSET: 0x72E5D0
+void CGUnit_C::OnMoveStartLocal(int32_t eventTime, bool forward) {
+    this->OnMovementInitiated();
+    this->movementData.OnMoveStartLocal(eventTime, forward);
+}
+
+// OFFSET: 0x71AE10
+void CGUnit_C::OnMoveStopLocal(int32_t eventTime) {
+    this->movementData.OnMoveStopLocal(eventTime);
+}
+
+// OFFSET: 0x72E680
+void CGUnit_C::OnStrafeStartLocal(int32_t eventTime, bool left) {
+    this->OnMovementInitiated();
+    this->movementData.OnStrafeStartLocal(eventTime, left);
+}
+
+// OFFSET: 0x71AE20
+void CGUnit_C::OnStrafeStopLocal(int32_t eventTime) {
+    this->movementData.OnStrafeStopLocal(eventTime);
+}
+
+// OFFSET: 0x72E730
+void CGUnit_C::OnAscendDescendStartLocal(int32_t eventTime, bool up) {
+    this->OnMovementInitiated();
+    this->movementData.OnAscendDescendStartLocal(eventTime, up);
+}
+
+// OFFSET: 0x71AE30
+void CGUnit_C::OnAscendDescendStopLocal(int32_t eventTime) {
+    this->movementData.OnAscendDescendStopLocal(eventTime);
+}
+
+// OFFSET: 0x72E900
+void CGUnit_C::OnPitchStartLocal(int32_t eventTime, bool up) {
+    this->OnMovementInitiated();
+    this->movementData.OnPitchStartLocal(eventTime, up);
+}
+
+// OFFSET: 0x72E9B0
+void CGUnit_C::OnPitchStopLocal(int32_t eventTime) {
+    this->OnMovementInitiated();
+    this->movementData.OnPitchStopLocal(eventTime);
+}
+
+// OFFSET: 0x72E7E0
+void CGUnit_C::OnTurnStartLocal(int32_t eventTime, bool left) {
+    //WowClientDB::GetRow(v9);
+    //if (ClientDb::GetLocalizedRow(&g_spellDB, this->m_unit->UNIT_CHANNEL_SPELL, v9) && (v11 & 0x10) != 0 && (v10 & 0x4000) != 0 && CGUnit_C::IsAutoTracking(this))
+    //    Spell_C_CancelChannelSpell(this->m_unit->UNIT_CHANNEL_SPELL);
+
+    this->OnMovementInitiated();
+    this->movementData.OnTurnStartLocal(eventTime, left);
+}
+
+// OFFSET: 0x71AE40
+void CGUnit_C::OnTurnStopLocal(int32_t eventTime) {
+    this->movementData.OnTurnStopLocal(eventTime);
+}
+
+// OFFSET: none (inlined)
+void CGUnit_C::OnMovementInitiated() {
+    //m_obj = this->ObjectBase.m_obj;
+    //if (m_obj->OBJECT_FIELD_GUID.guid_low == CGUnit_C::m_activeMover) {
+    //    guid_high = m_obj->OBJECT_FIELD_GUID.guid_high;
+    //    if (guid_high == HIDWORD(CGUnit_C::m_activeMover) && dword_CA11F4 != 13 && (dword_CA1200 & 1) == 0)
+    //        CGUnit_C::ClearTrackingTarget(this, guid_high, 0, 1);
+    //}
+    //if (*&this->ObjectBase.m_obj->OBJECT_FIELD_GUID == CGUnit_C::m_activeMover) {
+    //    ActivePlayer = ClntObjMgrGetActivePlayer();
+    //    v7 = ClntObjMgrObjectPtr(ActivePlayer, TYPEMASK_PLAYER);
+    //    if (v7) {
+    //        if (CGUnit_C::IsLooting(v7))
+    //            CGGameUI::CloseLoot(1, 1, 0);
+    //    }
+    //}
+}
+
+// OFFSET: 0x74B9A0
+bool CGUnit_C::NoStrafe() {
+    return this->movementData.m_flags2 & MOVEMENTFLAG2_NO_STRAFE;
 }
 
 // OFFSET: 0x717A20

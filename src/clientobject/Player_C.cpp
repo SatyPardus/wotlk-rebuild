@@ -2,6 +2,7 @@
 #include "clientobject/Types.hpp"
 #include "db/Db.hpp"
 #include <storm/Error.hpp>
+#include "clientobject/ObjectMgrClient.hpp"
 
 CGPlayer_C::CGPlayer_C() {
 
@@ -43,6 +44,12 @@ void CGPlayer_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpd
     //    CGPlayer_C::UpdatePartyMemberState(this);
     //CGUnit_C::UpdatePetReaction(this);
     //CGUnit_C::OnMoveUpdate(this, a2, 1, 1);
+
+    //#### TESTIN
+    if (this->m_obj->m_guid == ClntObjMgrGetActivePlayer()) {
+        CGUnit_C::s_activeMover = this->m_obj->m_guid;
+    }
+    //#####
 }
 
 const CreatureModelDataRec* Player_C_GetModelName(uint32_t race, uint32_t sex) {

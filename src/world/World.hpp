@@ -14,6 +14,9 @@ extern const char* s_newMapname;
 int32_t LoadNewWorld(const void* eventData);
 
 namespace World {
+
+    bool IsValidPosition(float x, float y, float z, float a4);
+
     namespace TriData {
         struct Batch {
             C44Matrix* matrix;

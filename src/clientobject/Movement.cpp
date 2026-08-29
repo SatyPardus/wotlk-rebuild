@@ -29,7 +29,7 @@ void MovementInitialize(const char* logFile) {
     auto time = OsGetAsyncTimeMs();
     globals->flags |= 1;
     globals->idleTime = time;
-    globals->lastIdleTime = time;
+    globals->m_lastUpdateTime = time;
     s_cvSplineOpt = CVar::Register("SplineOpt", "toggles use of spline coll optimization", 1, "1", 0, 0, 0, 0, 0);
 }
 
@@ -37,16 +37,16 @@ void MovementInitialize(const char* logFile) {
 int32_t MovementIdleMoveUnits(const void*, void*) {
     auto time = OsGetAsyncTimeMs();
     auto globals = MovementGetGlobals();
-    auto delta = time - globals->lastIdleTime;
+    auto delta = time - globals->m_lastUpdateTime;
     if (delta > 0) {
         //MovementMoveTransports(time, delta);
         if (!globals->m_movementUnits.IsEmpty())
-            CMovement_C::MoveUnits(time, globals->lastIdleTime);
+            CMovement_C::MoveUnits(time, globals->m_lastUpdateTime);
         //v4 = ClntObjMgrObjectPtr(CGUnit_C::m_activeMover, TYPEMASK_UNIT);
         //if (v4)
         //    CGUnit_C::UpdateFloodsafeMoveEvents(v4, AsyncTimeMs);
         globals->idleTime = time;
-        globals->lastIdleTime = time;
+        globals->m_lastUpdateTime = time;
     }
     return 1;
 }
@@ -59,4 +59,13 @@ void MovementSetGlobals(CMovementGlobals* globals) {
 // OFFSET: 0x74B330
 CMovementGlobals* MovementGetGlobals() {
     return ClntObjMgrGetMovementGlobals();
+}
+
+bool MovementGetLastUpdateTime(uint32_t* time) {
+    auto globals = MovementGetGlobals();
+    if (!globals || (globals->flags & 1) == 0)
+        return false;
+
+    *time = globals->m_lastUpdateTime;
+    return true;
 }

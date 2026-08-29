@@ -15,10 +15,10 @@ struct CMovementGlobals {
     //DWORD ukn68;
     //DWORD ukn69;
     //DWORD ukn70;
-    STORM_EXPLICIT_LIST(CMovement_C, m_link) m_movementUnits;
+    STORM_EXPLICIT_LIST(CMovement_C, m_globalUnitLink) m_movementUnits;
     //TSList_CMovementData_C units;
     uint32_t flags;
-    uint32_t lastIdleTime;
+    uint32_t m_lastUpdateTime;
     uint32_t idleTime;
     //DWORD ukn77;
     //DWORD ukn78;
@@ -35,5 +35,7 @@ int32_t MovementIdleMoveUnits(const void*, void*);
 void MovementSetGlobals(CMovementGlobals* globals);
 
 CMovementGlobals* MovementGetGlobals();
+
+bool MovementGetLastUpdateTime(uint32_t* time);
 
 #endif // CLIENTOBJECT_PASSENGER_HPP

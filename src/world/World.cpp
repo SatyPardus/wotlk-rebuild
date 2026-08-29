@@ -64,6 +64,19 @@ int32_t LoadNewWorld(const void* eventData) {
 }
 
 namespace World {
+
+    bool IsValidPosition(float x, float y, float z, float a4) {
+    if (_finite(x) && _finite(y) && _finite(z)) {
+        float v4 = -(y - 17066.666f);
+        float v5 = -(x - 17066.666f);
+        if (a4 > v4)
+            return 0;
+        if (34133.332f - a4 > v4 && a4 <= v5 && v5 < 34133.332f - a4)
+            return 1;
+    }
+    return 0;
+    }
+
     namespace TriData {
         uint16_t faceIndexPool[0x4000];
         uint16_t indexPool[0xC000];

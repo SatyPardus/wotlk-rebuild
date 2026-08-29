@@ -124,31 +124,46 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     static WGUID s_activeMover;
 
     // Member variables
-    /* 00D8 */ CMovementShared* m_passenger;
+    /* 00D8 */ CMovementShared* m_passenger = nullptr;
 
     /* 0788 */ CMovement_C movementData;
 
-    /* 0968 */ CreatureDisplayInfoRec* m_displayInfo;
-    /* 096C */ CreatureDisplayInfoExtraRec* m_displayInfoExtra;
-    /* 0970 */ CreatureModelDataRec* m_modelData;
-    /* 0974 */ CreatureSoundDataRec* m_soundData;
+    /* 0968 */ CreatureDisplayInfoRec* m_displayInfo = nullptr;
+    /* 096C */ CreatureDisplayInfoExtraRec* m_displayInfoExtra = nullptr;
+    /* 0970 */ CreatureModelDataRec* m_modelData = nullptr;
+    /* 0974 */ CreatureSoundDataRec* m_soundData = nullptr;
     /* 0978 */
-    /* 097C */ UnitBloodLevelsRec* m_bloodlevels;
+    /* 097C */ UnitBloodLevelsRec* m_bloodlevels = nullptr;
 
-    /* 09D4 */ uint32_t m_displayId;
+    /* 09D4 */ uint32_t m_displayId = 0;
 
-    /* 0A30 */ uint32_t unk_0A30;
+    /* 0A30 */ uint32_t unk_0A30 = 0;
 
-    /* 0B4C */ CCharacterComponent* m_characterComponent;
+    /* 0B4C */ CCharacterComponent* m_characterComponent = nullptr;
 
     CGUnit_C();
     CGUnit_C(CClientObjCreate& objCreate, uint32_t time);
     void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
+    void SetClientInitData(CClientObjCreate& objCreate, bool a3);
     bool InitializeComponent();
     bool InitializeExtendedDisplay(CGPlayer_C* player, bool hasExtendedData);
     void RefreshDataPointers();
     bool sub_71A430();
     bool sub_71C500();
+
+    void OnMoveUpdate(int32_t time, bool a3, bool a4);
+    void OnMoveStartLocal(int32_t eventTime, bool forward);
+    void OnMoveStopLocal(int32_t eventTime);
+    void OnStrafeStartLocal(int32_t eventTime, bool left);
+    void OnStrafeStopLocal(int32_t eventTime);
+    void OnAscendDescendStartLocal(int32_t eventTime, bool up);
+    void OnAscendDescendStopLocal(int32_t eventTime);
+    void OnPitchStartLocal(int32_t eventTime, bool up);
+    void OnPitchStopLocal(int32_t eventTime);
+    void OnTurnStartLocal(int32_t eventTime, bool left);
+    void OnTurnStopLocal(int32_t eventTime);
+    void OnMovementInitiated();
+    bool NoStrafe();
 
     CreatureModelDataRec* GetModelData();
 
