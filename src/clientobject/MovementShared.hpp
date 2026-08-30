@@ -53,6 +53,8 @@ class CMovementShared : public CPassenger {
     bool StartStrafe(bool a2);
     bool StopStrafe();
     void ForceStopStrafe();
+    bool StartAscensionDescension(bool a2);
+    bool StopAscensionDescension();
 
     int32_t PlotUnitMovement(int32_t time, C3Vector* out);
     int32_t PlotUnitMovement(int32_t time, C3Vector* out, float* outFacing, float* outPitch);

@@ -288,6 +288,21 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             this->StopStrafe();
             // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_STRAFE, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
+        case 6:
+            if (this->StartAscensionDescension(1)) {
+                // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            }
+            break;
+        case 7:
+            if (this->StartAscensionDescension(0)) {
+                // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_DESCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            }
+            break;
+        case 8:
+            if (this->StopAscensionDescension()) {
+                // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            }
+            break;
         }
 
         //if (moveEvent->m_needAck && !updated && (&unk_C0100F & this->m_flags) != 0 && (&unk_C0100F & v45) == 0)

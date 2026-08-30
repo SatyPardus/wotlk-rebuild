@@ -350,6 +350,36 @@ void CMovementShared::ForceStopStrafe() {
     this->CalcDirection(false);
 }
 
+// OFFSET: 0x9898E0
+bool CMovementShared::StartAscensionDescension(bool a2) {
+    m_flags = this->m_flags;
+    if ((this->m_flags & 0x2200000) == 0 || (this->m_flags2 & 1) != 0)
+        return 0;
+    if (a2)
+        this->m_flags = this->m_flags | 0x400000;
+    else
+        this->m_flags = this->m_flags | 0x800000;
+    this->UpdateAnchors(0);
+    if ((this->m_flags & 0x1000) == 0)
+        this->m_currentSpeed = this->GetBaseSpeed(0);
+    return 1;
+}
+
+// OFFSET: 0x989940
+bool CMovementShared::StopAscensionDescension() {
+    if ((this->m_flags & 0x2200000) == 0)
+        return 0;
+    this->m_flags = this->m_flags & 0xFF3FFFFF;
+    if ((this->m_flags & 0x1000) == 0)
+        this->m_currentSpeed = this->GetBaseSpeed(0);
+    this->m_anchorFacing = this->m_facing;
+    this->m_anchorPos = this->m_position;
+    this->m_anchorPitch = this->m_pitch;
+    this->m_anchorElapsedMs = 0;
+
+    this->CalcDirection(false);
+}
+
 // OFFSET: 0x987D00
 int32_t CMovementShared::PlotUnitMovement(int32_t time, C3Vector* out) {
     return this->PlotUnitMovement(time, out, &this->m_anchorFacing, &this->m_anchorPitch);
