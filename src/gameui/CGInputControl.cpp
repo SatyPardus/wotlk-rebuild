@@ -15,6 +15,11 @@ void CGInputControl::Initialize() {
     //s_cvEnableWowMouse = CVar::Register("enableWowMouse", "Enable Steelseries World of Warcraft Mouse", 1, "0", bn_WowMouseCVarCallback, 5, 0, 0, 0);
 }
 
+// OFFSET: 0x5F95D0
+CGInputControl* CGInputControl::GetActive() {
+    return s_inputControl;
+}
+
 CGInputControl::CGInputControl() {
     this->m_flags = 0;
     //this->unk_0014 = 0;
@@ -261,6 +266,15 @@ bool CGInputControl::CanControl(CGUnit_C* unit) {
 
     //return !CGUnit_C::AnimSuppressesMovement(a1) && (!CGUnit_C::IsActivePlayer(&a1->ObjectBase) || (a1->unk_1020[1] & 1) == 0) && !CGUnit_C::IsAlteredFormTransitionPreventingMovement(a1);
     return true;
+}
+
+// OFFSET: 0x5F9650
+void CGInputControl::OnTurnToAngleStop() {
+    //if (this->unk_0044) {
+    //    this->unk_0044 = 0;
+    //    ActiveCamera = CGWorldFrame::GetActiveCamera();
+    //    CGCamera::DecIgnoreFacing(ActiveCamera);
+    //}
 }
 
 // OFFSET: 0x5FAE70

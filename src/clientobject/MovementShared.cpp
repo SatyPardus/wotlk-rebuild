@@ -84,51 +84,53 @@ void CMovementShared::CalcDirection() {
 }
 
 // OFFSET: 0x987EF0
-void CMovementShared::CalcDirection(bool a2) {
-    if ((this->m_flags & 0x1000) != 0 && !a2)
+void CMovementShared::CalcDirection(bool ignoreFalling) {
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0 && !ignoreFalling)
         return;
 
     this->CalcDirection();
 
-    if ((this->m_flags & 3) != 0) {
-        if ((this->m_flags & 0xC) != 0) {
-            if ((this->m_flags & 2) != 0) {
-                this->m_moveDir2D = -this->m_moveDir2D;
-                m_moveDir = -this->m_moveDir;
-            }
-            float prevX = this->m_moveDir2D.x;
-            this->m_moveDir2D.x = this->m_moveDir2D.y;
-            this->m_moveDir2D.y = prevX;
-            if ((this->m_flags & 4) != 0)
-                this->m_moveDir2D.x = -this->m_moveDir2D.x;
-            else
-                this->m_moveDir2D.y = -this->m_moveDir2D.y;
-            this->m_moveDir.x = this->m_moveDir2D.x + this->m_moveDir.x;
-            this->m_moveDir.y = this->m_moveDir2D.y + this->m_moveDir.y;
-            this->m_moveDir.z = m_moveDir.z;
-            this->m_moveDir2D.x = m_moveDir2D.x + this->m_moveDir2D.x;
-            this->m_moveDir2D.y = this->m_moveDir2D.y + m_moveDir2D.y;
-            this->m_moveDir.x = this->m_moveDir.x * 0.70710677f;
-            this->m_moveDir.y = this->m_moveDir.y * 0.70710677f;
-            this->m_moveDir.z = this->m_moveDir.z * 0.70710677f;
-            this->m_moveDir2D.x = this->m_moveDir2D.x * 0.70710677f;
-            this->m_moveDir2D.y = 0.70710677f * this->m_moveDir2D.y;
-            return;
+    if ((this->m_flags & MOVEMASK_FWDBACK) != 0 && (this->m_flags & MOVEMASK_STRAFE) != 0) {
+        C2Vector fwd2D = this->m_moveDir2D;
+        C3Vector fwd3D = this->m_moveDir;
+
+        if ((this->m_flags & MOVEMENTFLAG_BACKWARD) != 0) {
+            fwd2D = -fwd2D;
+            fwd3D = -fwd3D;
         }
-    } else if ((m_flags & 0xC) != 0) {
-        float prevX = this->m_moveDir2D.x;
+
+        const float swap = this->m_moveDir2D.x;
         this->m_moveDir2D.x = this->m_moveDir2D.y;
-        this->m_moveDir2D.y = prevX;
-        if ((this->m_flags & 4) != 0)
+        this->m_moveDir2D.y = swap;
+
+        if ((this->m_flags & MOVEMENTFLAG_STRAFE_LEFT) != 0)
             this->m_moveDir2D.x = -this->m_moveDir2D.x;
         else
             this->m_moveDir2D.y = -this->m_moveDir2D.y;
+
+        this->m_moveDir.x = this->m_moveDir2D.x + fwd3D.x;
+        this->m_moveDir.y = this->m_moveDir2D.y + fwd3D.y;
+        this->m_moveDir.z = fwd3D.z;
+
+        this->m_moveDir2D += fwd2D;
+
+        this->m_moveDir *= 0.70710677f;
+        this->m_moveDir2D *= 0.70710677f;
+    } else if ((this->m_flags & MOVEMASK_STRAFE) != 0) {
+        const float swap = this->m_moveDir2D.x;
+        this->m_moveDir2D.x = this->m_moveDir2D.y;
+        this->m_moveDir2D.y = swap;
+
+        if ((this->m_flags & MOVEMENTFLAG_STRAFE_LEFT) != 0)
+            this->m_moveDir2D.x = -this->m_moveDir2D.x;
+        else
+            this->m_moveDir2D.y = -this->m_moveDir2D.y;
+
         this->m_moveDir.x = this->m_moveDir2D.x;
         this->m_moveDir.y = this->m_moveDir2D.y;
-        this->m_moveDir.z = 0.0;
+        this->m_moveDir.z = 0.0f;
         return;
-    }
-    if ((m_flags & 2) != 0) {
+    } else if ((this->m_flags & MOVEMENTFLAG_BACKWARD) != 0) {
         this->m_moveDir = -this->m_moveDir;
         this->m_moveDir2D = -this->m_moveDir2D;
     }
@@ -178,35 +180,45 @@ float CMovementShared::GetBaseSpeed(bool a2) {
 // OFFSET: 0x988A20
 bool CMovementShared::StartMove(bool a2, bool a3) {
     this->m_flags &= 0xFFFCBFFF;
-    bool v5 = 0;
-    if ((a3 || (this->m_flags & 0x1000) == 0) || (this->m_flags & 0xF) == 0) {
-        if ((this->m_flags & 0xF) == 0) {
-            v5 = 1;
-        }
 
+    bool v5 = false;
+    bool proceed;
+    if (a3 || (this->m_flags & MOVEMENTFLAG_FALLING) == 0) {
+        proceed = true;
+    } else if ((this->m_flags & 0xF) == 0) {
+        v5 = true;
+        proceed = true;
+    } else {
+        proceed = false;
+    }
+
+    if (proceed) {
         if (a2)
-            this->m_flags = this->m_flags & 0xFFFFFFFC | 1;
+            this->m_flags = (this->m_flags & 0xFFFFFFFC) | MOVEMENTFLAG_FORWARD;
         else
-            this->m_flags = this->m_flags & 0xFFFFFFFC | 2;
+            this->m_flags = (this->m_flags & 0xFFFFFFFC) | MOVEMENTFLAG_BACKWARD;
+
         this->m_anchorFacing = this->m_facing;
         this->m_anchorPitch = this->m_pitch;
         this->m_anchorPos = this->m_position;
         this->m_anchorElapsedMs = 0;
+
         this->CalcDirection(v5);
-        
-        if ((this->m_flags & 0x1000) == 0 || v5)
+
+        if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0 || v5)
             this->m_currentSpeed = this->GetBaseSpeed(v5);
-        return 1;
+        return true;
     }
+
     if (a2) {
-        if ((this->m_flags & 1) == 0) {
+        if ((this->m_flags & MOVEMENTFLAG_FORWARD) == 0) {
             this->m_flags = this->m_flags | 0x10000;
-            return 0;
+            return false;
         }
-    } else if ((m_flags & 2) == 0) {
+    } else if ((this->m_flags & MOVEMENTFLAG_BACKWARD) == 0) {
         this->m_flags = this->m_flags | 0x20000;
     }
-    return 0;
+    return false;
 }
 
 // OFFSET: 0x98C8D0
@@ -237,7 +249,7 @@ void CMovementShared::ForceStopMove(bool a2) {
 
     const bool falling = (this->m_flags & MOVEMENTFLAG_FALLING) != 0;
 
-    if (!falling)
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
         this->m_currentSpeed = this->GetBaseSpeed(0);
 
     this->m_anchorFacing = this->m_facing;
@@ -247,67 +259,7 @@ void CMovementShared::ForceStopMove(bool a2) {
     this->m_anchorPos.z = this->m_position.z;
     this->m_anchorElapsedMs = 0;
 
-    if (!falling) {
-        CMovementShared::CalcDirection(this);
-
-        const uint32_t flags = this->m_flags;
-        const bool fwdBack = (flags & 3) != 0;
-        const bool strafing = (flags & 0xC) != 0;
-
-        if (fwdBack && strafing) {
-            C2Vector savedDir2D = this->m_moveDir2D;
-            C3Vector savedDir = this->m_moveDir;
-
-            if ((flags & MOVEMENTFLAG_BACKWARD) != 0) {
-                savedDir2D.x = -savedDir2D.x;
-                savedDir2D.y = -savedDir2D.y;
-                savedDir.x = -savedDir.x;
-                savedDir.y = -savedDir.y;
-                savedDir.z = -savedDir.z;
-            }
-
-            const float swap = this->m_moveDir2D.x;
-            this->m_moveDir2D.x = this->m_moveDir2D.y;
-            this->m_moveDir2D.y = swap;
-
-            if ((this->m_flags & MOVEMENTFLAG_STRAFE_LEFT) != 0)
-                this->m_moveDir2D.x = -this->m_moveDir2D.x;
-            else
-                this->m_moveDir2D.y = -this->m_moveDir2D.y;
-
-            this->m_moveDir.x = this->m_moveDir2D.x + savedDir.x;
-            this->m_moveDir.y = this->m_moveDir2D.y + savedDir.y;
-            this->m_moveDir.z = savedDir.z;
-
-            this->m_moveDir2D.x += savedDir2D.x;
-            this->m_moveDir2D.y += savedDir2D.y;
-
-            this->m_moveDir.x *= 0.70710677f;
-            this->m_moveDir.y *= 0.70710677f;
-            this->m_moveDir.z *= 0.70710677f;
-            this->m_moveDir2D.x *= 0.70710677f;
-            this->m_moveDir2D.y *= 0.70710677f;
-        } else if (strafing) {
-            const float swap = this->m_moveDir2D.x;
-            this->m_moveDir2D.x = this->m_moveDir2D.y;
-            this->m_moveDir2D.y = swap;
-
-            if ((this->m_flags & MOVEMENTFLAG_STRAFE_LEFT) != 0)
-                this->m_moveDir2D.x = -this->m_moveDir2D.x;
-            else
-                this->m_moveDir2D.y = -this->m_moveDir2D.y;
-
-            this->m_moveDir.x = this->m_moveDir2D.x;
-            this->m_moveDir.y = this->m_moveDir2D.y;
-            this->m_moveDir.z = 0.0f;
-        } else if ((flags & MOVEMENTFLAG_BACKWARD) != 0) {
-            this->m_moveDir.x = -this->m_moveDir.x;
-            this->m_moveDir.y = -this->m_moveDir.y;
-            this->m_moveDir.z = -this->m_moveDir.z;
-            this->m_moveDir2D.x = -this->m_moveDir2D.x;
-            this->m_moveDir2D.y = -this->m_moveDir2D.y;
-        }
-    }
+    this->CalcDirection(false);
 
     CMoveSpline* spline = this->m_spline;
     if (spline && (spline->flags & SPLINE_FLAG_NO_SPLINE) == 0) {
@@ -320,6 +272,82 @@ void CMovementShared::ForceStopMove(bool a2) {
             //}
         }
     }
+}
+
+// OFFSET: 0x988B00
+bool CMovementShared::StartStrafe(bool a2) {
+    this->m_flags &= 0xFFF37FFF;
+    if ((this->m_flags2 & 1) != 0)
+        return 0;
+
+    bool v5 = false;
+    bool proceed;
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0) {
+        proceed = true; // v5 stays false
+    } else if ((this->m_flags & 0xF) == 0) {
+        v5 = true;
+        proceed = true;
+    } else {
+        proceed = false;
+    }
+
+    if (proceed) {
+        if (a2)
+            this->m_flags = (this->m_flags & 0xFFFFFFF3) | MOVEMENTFLAG_STRAFE_LEFT;
+        else
+            this->m_flags = (this->m_flags & 0xFFFFFFF3) | MOVEMENTFLAG_STRAFE_RIGHT;
+
+        this->UpdateAnchors(v5);
+
+        if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0 || v5)
+            this->m_currentSpeed = this->GetBaseSpeed(v5);
+        return true;
+    }
+
+    if (a2) {
+        if ((this->m_flags & MOVEMENTFLAG_STRAFE_LEFT) == 0) {
+            this->m_flags = this->m_flags | 0x40000;
+            return false;
+        }
+    } else if ((this->m_flags & MOVEMENTFLAG_STRAFE_RIGHT) == 0) {
+        this->m_flags = this->m_flags | 0x80000;
+    }
+    return false;
+}
+
+// OFFSET: 0x98BF80
+bool CMovementShared::StopStrafe() {
+    if ((this->m_flags & MOVEMASK_STRAFE) != 0) {
+        if ((this->m_flags & MOVEMENTFLAG_SPLINE_ELEVATION) != 0) {
+            this->m_flags = this->m_flags & 0xFBFFFFFF;
+            //if (!CMovementShared::IsFallingSwimmingFlying_6636D0(this))
+            //    CMovementShared::sub_988370(this, 0.0);
+        }
+        if ((this->m_flags & 0x1000) != 0) {
+            this->m_flags = this->m_flags & 0xFFF37FFF | 0x8000;
+            return 0;
+        } else {
+            this->ForceStopStrafe();
+            return 1;
+        }
+    } else {
+        if ((this->m_flags & 0xC0000) != 0)
+            this->m_flags = this->m_flags & 0xFFF3FFFF;
+        return 0;
+    }
+}
+
+// OFFSET: 0x988BA0
+void CMovementShared::ForceStopStrafe() {
+    this->m_flags &= 0xFFFF7FF3;
+    if ((this->m_flags & 0x1000) == 0)
+        this->m_currentSpeed = this->GetBaseSpeed(0);
+    this->m_anchorFacing = this->m_facing;
+    this->m_anchorPitch = this->m_pitch;
+    this->m_anchorPos = this->m_position;
+    this->m_anchorElapsedMs = 0;
+
+    this->CalcDirection(false);
 }
 
 // OFFSET: 0x987D00

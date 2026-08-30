@@ -44,6 +44,7 @@ class CGInputControl {
 
     // Static functions
     static void Initialize();
+    static CGInputControl* GetActive();
 
     // Member variables
     /* 0000 */ uint32_t m_time = 0;
@@ -60,6 +61,7 @@ class CGInputControl {
     bool CanTurn(CGUnit_C* unit);
     bool CanControl(CGUnit_C* unit);
 
+    void OnTurnToAngleStop();
     void MovePlayer(int32_t eventTime, CGUnit_C* unit);
     void StrafePlayer(int32_t eventTime, CGUnit_C* unit);
     void AscendDescendPlayer(int32_t eventTime, CGUnit_C* unit);

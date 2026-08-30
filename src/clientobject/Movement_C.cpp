@@ -5,6 +5,7 @@
 #include <tempest/math/CMath.hpp>
 #include "world/World.hpp"
 #include "clientobject/CClientMoveUpdate.hpp"
+#include "gameui/CGInputControl.hpp"
 
 STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link) CMovement_C::s_playerMoveEventFreeList;
 
@@ -275,6 +276,18 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             this->StopMove();
             // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
+        case 3:
+            this->StartStrafe(1);
+            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_STRAFE_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            break;
+        case 4:
+            this->StartStrafe(0);
+            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_STRAFE_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            break;
+        case 5:
+            this->StopStrafe();
+            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_STRAFE, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            break;
         }
 
         //if (moveEvent->m_needAck && !updated && (&unk_C0100F & this->m_flags) != 0 && (&unk_C0100F & v45) == 0)
@@ -465,12 +478,22 @@ void CMovement_C::OnPitchStopLocal(int32_t eventTime) {
 
 // OFFSET: 0x6F0F70
 void CMovement_C::OnTurnStartLocal(int32_t eventTime, bool left) {
-    // TODO
+    //if ((CMovement_C::ComputeLegalRawFacingRange)(&v5, &v6)) {
+    //    if (a3)
+    //        CMovement_C::OnTurnToAngleLocal(this, a2, v6);
+    //    else
+    //        CMovement_C::OnTurnToAngleLocal(this, a2, v5);
+    //} else {
+    this->AddPlayerMoveEvent(eventTime, 12 - (left != 0), 1, 0, 0.0, 0.0, 0);
+    this->UnlinkMoveEventById(&this->m_moveQueue, 50);
+    CGInputControl::GetActive()->OnTurnToAngleStop();
+    //}
 }
 
 // OFFSET: 0x6ECEA0
 void CMovement_C::OnTurnStopLocal(int32_t eventTime) {
-    // TODO
+    this->AddPlayerMoveEvent(eventTime, 13, 1, 0, 0.0, 0.0, 0);
+    this->UnlinkMoveEventById(&this->m_moveQueue, 50);
 }
 
 void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags) {
@@ -485,6 +508,21 @@ void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool n
         auto globals = MovementGetGlobals();
         if (globals)
             globals->m_movementUnits.LinkToHead(this);
+    }
+}
+
+// OFFSET: 0x6EB590
+void CMovement_C::UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, uint32_t eventId) {
+    for (CPlayerMoveEvent* event = list->Head(); event;) {
+        auto next = list->Next(event);
+
+        if (event->m_eventId == eventId) {
+            event->m_link.Unlink();
+            s_playerMoveEventFreeList.LinkToTail(event);
+            return;
+        }
+
+        event = next;
     }
 }
 

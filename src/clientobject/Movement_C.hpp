@@ -75,6 +75,7 @@ class CMovement_C : public CMovementShared {
     void OnTurnStartLocal(int32_t eventTime, bool left);
     void OnTurnStopLocal(int32_t eventTime);
     void AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags);
+    void UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, uint32_t eventId);
     int32_t RequestMove(int32_t a2, int32_t a3, C3Vector* a4);
     bool Interpolate(int32_t now, int32_t time, C3Vector* pos, float* facing, float* pitch);
 
