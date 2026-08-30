@@ -19,14 +19,14 @@ class CGWorldFrame : public CSimpleFrame {
     void UpdateObject(CGObject_C* obj, int a3);
     void UpdateDayNightInfo(float delta);
 
+    void OnWorldUpdate();
+    void OnWorldRender();
     void OnFrameRender(CRenderBatch* batch, uint32_t layer) override;
     int32_t OnLayerKeyDown(const CKeyEvent& evt) override;
     int32_t OnLayerKeyUp(const CKeyEvent& evt) override;
 
     static CSimpleFrame* Create(CSimpleFrame* parent);
     static void RenderWorld(void* param);
-    static void OnWorldUpdate();
-    static void OnWorldRender();
     static CGCamera* GetActiveCamera();
     static bool ObjectEnumProc(void* param, uint32_t status, uint64_t param64, uint32_t param32);
 

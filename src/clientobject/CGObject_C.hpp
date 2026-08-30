@@ -9,6 +9,9 @@
 #include "storm/Hash.hpp"
 #include "world/map/CMapEntity.hpp"
 
+class CGUnit_C;
+class CGPlayer_C;
+
 struct CGObjectData {
     WGUID m_guid;
     OBJECT_TYPE m_type;
@@ -54,6 +57,9 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     bool IsReadyToDraw();
     void SetData(uint32_t offset, uint32_t value);
     void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
+
+    CGUnit_C* AsUnit();
+    CGPlayer_C* AsPlayer();
 
     // Virtual functions
     /* 02 */ virtual void Reenable();

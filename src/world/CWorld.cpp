@@ -22,7 +22,7 @@ CAaBox CWorld::s_objectAreaOfInterest;
 CiRect CWorld::s_chunkRectHigh;
 CiRect CWorld::s_chunkRectLow;
 float CWorld::s_farClip;
-float CWorld::s_nearClip;
+float CWorld::s_nearClip = 0.1f;
 float CWorld::prevFarClip;
 CWorld::CALLBACK_FUNC CWorld::s_loadProgressCallback;
 void* CWorld::s_loadProgressParam;
@@ -203,10 +203,6 @@ void CWorld::LoadMap(const char* mapName, C3Vector* position, int32_t zoneID) {
     CWorld::prevFarClip = CWorld::s_farClip;
     //if (IsStreamingAndTrial())
     //    sub_420AA0(mapid);
-
-    //###DEBUG
-    CGWorldFrame::s_currentWorldFrame->m_camera->m_position = *position;
-    //###
 
     CWorld::PrepareAreaOfInterest(position);
     //CMap::gbPrevChunkRect = CWorld::gbChunkRect;

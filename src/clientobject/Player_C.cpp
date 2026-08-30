@@ -45,11 +45,22 @@ void CGPlayer_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpd
     //CGUnit_C::UpdatePetReaction(this);
     //CGUnit_C::OnMoveUpdate(this, a2, 1, 1);
 
-    //#### TESTIN
+    //#### TESTING
     if (this->m_obj->m_guid == ClntObjMgrGetActivePlayer()) {
         CGUnit_C::s_activeMover = this->m_obj->m_guid;
     }
     //#####
+}
+
+// OFFSET: 0x6DE980
+bool CGPlayer_C::IsCommentatorUberOrInArena() {
+    //if (CGGameUI::m_iCurrentMapID < g_MapDB.minIndex || CGGameUI::m_iCurrentMapID > g_MapDB.maxIndex)
+    //    v1 = 0;
+    //else
+    //    v1 = g_MapDB.Rows[CGGameUI::m_iCurrentMapID - g_MapDB.minIndex];
+    //v2 = *(this[1026] + 8);
+    //return (v2 & 0x80000) != 0 && ((v2 & 0x400000) != 0 || v1 && *(v1 + 8) == 4);
+    return false;
 }
 
 const CreatureModelDataRec* Player_C_GetModelName(uint32_t race, uint32_t sex) {

@@ -150,6 +150,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     void RefreshDataPointers();
     bool sub_71A430();
     bool sub_71C500();
+    float GetMaxCameraHeight();
+    bool GetCanFly();
 
     void OnMoveUpdate(int32_t time, bool a3, bool a4);
     void OnMoveStartLocal(int32_t eventTime, bool forward);

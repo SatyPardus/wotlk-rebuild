@@ -175,6 +175,16 @@ void CGObject_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpd
         this->UpdateWorldObject(0);
 }
 
+CGUnit_C* CGObject_C::AsUnit() {
+    STORM_ASSERT(this->m_obj->m_type & TYPEMASK_UNIT);
+    return reinterpret_cast<CGUnit_C*>(this);
+}
+
+CGPlayer_C* CGObject_C::AsPlayer() {
+    STORM_ASSERT(this->m_obj->m_type & TYPEMASK_PLAYER);
+    return reinterpret_cast<CGPlayer_C*>(this);
+}
+
 // OFFSET: 0x744DB0
 void CGObject_C::Reenable() {
     //v2 = this->__vftable;

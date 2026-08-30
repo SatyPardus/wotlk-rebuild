@@ -429,6 +429,20 @@ bool CGUnit_C::sub_71C500() {
     return 0;
 }
 
+// OFFSET: 0x718080
+float CGUnit_C::GetMaxCameraHeight() {
+    //ukn3 = this->movementData.ukn3;
+    //if ((this->m_obj->m_type & TYPEMASK_PLAYER) != 0 || ukn3 <= 2.0277777)
+    //    return ukn3 - 0.16666667;
+    //else
+        return 2.0277777 - 0.16666667;
+}
+
+// OFFSET: 0x71B810
+bool CGUnit_C::GetCanFly() {
+    return this->movementData.m_flags & MOVEMENTFLAG_CAN_FLY;
+}
+
 // OFFSET: 0x73AB20
 void CGUnit_C::OnMoveUpdate(int32_t time, bool a3, bool a4) {
     //v5 = this->objectclass1[23];

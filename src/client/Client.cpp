@@ -43,6 +43,8 @@
 #include <tempest/Random.hpp>
 #include <clientobject/Movement.hpp>
 #include <gameui/CGInputControl.hpp>
+#include <gameui/CGWorldFrame.hpp>
+#include "gameui/camera/CGCamera.hpp"
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -820,10 +822,8 @@ void ClientInitializeGame(int32_t zoneId, C3Vector* position) {
     //SI2::InitZoneIntros();
     //LootInitialize();
     CGGameUI::InitializeGame();
-    //ActiveCamera = (float*)CGWorldFrame::GetActiveCamera();
-    //ActiveCamera[2] = a2;
-    //ActiveCamera[3] = a3;
-    //ActiveCamera[4] = a4;
+    auto activeCamera = CGWorldFrame::GetActiveCamera();
+    activeCamera->m_position = *position;
     //WorldTextInitialize();
     //PlayerNameInitialize();
     //NOP();

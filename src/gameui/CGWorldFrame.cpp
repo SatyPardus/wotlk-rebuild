@@ -167,17 +167,19 @@ CSimpleFrame* CGWorldFrame::Create(CSimpleFrame* parent) {
 }
 
 void CGWorldFrame::RenderWorld(void* param) {
+    CGWorldFrame* worldFrame = reinterpret_cast<CGWorldFrame*>(param);
+
     C44Matrix saved_proj;
     GxXformProjection(saved_proj);
 
     C44Matrix saved_view;
     GxXformView(saved_view);
 
-    CGWorldFrame::OnWorldUpdate();
+    worldFrame->OnWorldUpdate();
 
     // TODO: PlayerNameUpdateWorldText();
 
-    CGWorldFrame::OnWorldRender();
+    worldFrame->OnWorldRender();
 
     // TODO: PlayerNameRenderWorldText();
 
@@ -288,19 +290,59 @@ static void UpdateDebugCamera(CGCamera* cam) {
 
 // OFFSET: 0x4FA5F0
 void CGWorldFrame::OnWorldUpdate() {
-    // TODO
-    CGCamera* cam = CGWorldFrame::GetActiveCamera();
+    auto activePlayer = ClntObjMgrGetActivePlayerObj();
+    if (CGUnit_C::s_activeMover) {
+        auto moverUnit = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
+        if (moverUnit) {
+            C3Vector moverPosition;
+            moverUnit->GetPosition(moverPosition);
+            //CBarrier::SetViewerPos(moverPosition);
+        }
+    }
 
-    UpdateDebugCamera(cam);
+    auto cameraTargetObj = ClntObjMgrObjectPtr<CGObject_C*>(this->m_camera->m_targetGUID, TYPEMASK_OBJECT);
+    if (activePlayer && activePlayer->IsCommentatorUberOrInArena()) {
+        if (this->m_camera->m_targetGUID)
+            this->m_camera->SetTarget(nullptr, 0);
 
-    C3Vector camPos = cam->m_position;
-    C3Vector camForward = cam->Forward();
+        //CGCommentator::OnUpdate(&CGCommentator::s_Commentator, *&this->unk_0B14);
+    } else if (!ClntObjMgrObjectPtr<CGObject_C*>(this->m_camera->m_targetGUID, TYPEMASK_OBJECT) /*&& !ClntObjMgrObjectPtr<CGObject_C*>(this->m_camera->unk_0090, TYPEMASK_OBJECT)*/) {
+        if (activePlayer) {
+            //if ((activePlayer->unk_1020[1] & 1) != 0)
+            //    maybe_CGPlayer_C__ToggleFarSight(v10, 0);
+            this->m_camera->SetTarget(activePlayer, 0);
+            //maybe_CGUnit_C__OnVehicleCameraPossiblyNeeded(v11);
+        }
+    }
+
+    if (cameraTargetObj && cameraTargetObj->m_worldObject) {
+        //v13 = (cameraTargetObj->ObjectBase.GetTransportGUID)(cameraTargetObj, v39);
+        //World::SetCameraTarget(m_worldObject, v13);
+    }
+
+    //bn_CVehiclePassenger_C_UpdateAll(FrameTime::s_curTimeMs);
+    this->m_camera->UpdateCallback();
+    C3Vector camPos = this->m_camera->m_position;
+    C3Vector camForward = this->m_camera->Forward();
     C3Vector camTarget = camPos + camForward;
-    CRect rect;
-    CGWorldFrame::s_currentWorldFrame->GetRect(&rect);
-    CGWorldFrame::GetActiveCamera()->SetupWorldProjection(rect);
 
+    CRect rect;
+    this->GetRect(&rect); // VALIDATE - Binary does not check any flag
+    this->m_camera->SetupWorldProjection(rect);
     CGWorldFrame::s_currentWorldFrame->UpdateDayNightInfo(0.0f);
+
+    // TODO
+    //CGCamera* cam = CGWorldFrame::GetActiveCamera();
+    //
+    //UpdateDebugCamera(cam);
+    //
+    //C3Vector camPos = cam->m_position;
+    //C3Vector camForward = cam->Forward();
+    //C3Vector camTarget = camPos + camForward;
+    //CRect rect;
+    //CGWorldFrame::s_currentWorldFrame->GetRect(&rect);
+    //CGWorldFrame::GetActiveCamera()->SetupWorldProjection(rect);
+
 
     C3Vector position = camPos;
 
@@ -345,7 +387,7 @@ void CGWorldFrame::OnWorldRender() {
 
     float elapsed = static_cast<float>(OsGetAsyncTimeMs() - s_time) / 1000.0f;
     s_time = OsGetAsyncTimeMs();
-    CWorld::Render(CGWorldFrame::GetActiveCamera()->m_position, elapsed);
+    CWorld::Render(this->m_camera->m_position, elapsed);
 
     if (CWorldScene::s_m2Scene) {
         CWorldScene::s_m2Scene->Draw(M2PASS_0);
@@ -367,6 +409,7 @@ void CGWorldFrame::UpdateDayNightInfo(float delta) {
     dayNight->m_cameraDir.y = dayNight->m_cameraDir.y * v9;
     dayNight->m_cameraDir.z = v9 * dayNight->m_cameraDir.z;
 
+    // TODO
     static uint64_t lastTime;
 
     float elapsed = static_cast<float>(OsGetAsyncTimeMs() - lastTime) / 1000.0f;
