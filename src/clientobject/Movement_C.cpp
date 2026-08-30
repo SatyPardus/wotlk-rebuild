@@ -303,6 +303,33 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
                 // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             }
             break;
+        case 9u:
+            //if (!CMovementShared::TryStartFalling(this))
+            //    break;
+            //CGUnit_C::OnCollideFalling(this->unit);
+            //if (!v4->m_needAck)
+            //    goto LABEL_146;
+            //CGUnit_C::SendMovementUpdate(this->unit, a2, MSG_MOVE_HEARTBEAT, 0.0, 0, 0, 0, 255);
+            //updated = 1;
+            break;
+        case 10u:
+            //if (CMovementShared::Jump(this, 1))
+            //    updated = CGUnit_C::MoveEventHappened(this->unit, a2, MSG_MOVE_JUMP, v4->m_needAck, 0.0, 0, 0, 0, 255);
+            break;
+        case 11:
+            this->StartTurn(1);
+            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_TURN_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            break;
+        case 12:
+            this->StartTurn(0);
+            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_TURN_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            break;
+        case 13:
+        case 50:
+            this->StopTurn();
+            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_TURN, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            CGInputControl::GetActive()->OnTurnToAngleStop();
+            break;
         }
 
         //if (moveEvent->m_needAck && !updated && (&unk_C0100F & this->m_flags) != 0 && (&unk_C0100F & v45) == 0)
@@ -551,7 +578,6 @@ int32_t CMovement_C::RequestMove(int32_t a2, int32_t a3, C3Vector* a4) {
         //v16 -=  this->m_position;
 
         //####TESTING
-        this->m_anchorElapsedMs += a3;
         this->m_position = v16;
         this->GetPosition(&v16, &this->m_position);
         return a3;

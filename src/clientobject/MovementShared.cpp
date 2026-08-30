@@ -378,11 +378,42 @@ bool CMovementShared::StopAscensionDescension() {
     this->m_anchorElapsedMs = 0;
 
     this->CalcDirection(false);
+    return 1;
+}
+
+// Offset: 0x988DF0
+bool CMovementShared::StartTurn(bool a2) {
+    if (a2)
+        this->m_flags = this->m_flags & 0xFFFFFFCF | MOVEMENTFLAG_LEFT;
+    else
+        this->m_flags = this->m_flags & 0xFFFFFFCF | MOVEMENTFLAG_RIGHT;
+    this->m_anchorFacing = this->m_facing;
+    this->m_flags2 &= ~MOVEMENTFLAG2_INTERPOLATED_TURNING;
+    this->m_anchorPitch = this->m_pitch;
+    this->m_anchorPos = this->m_position;
+    this->m_anchorElapsedMs = 0;
+
+    this->CalcDirection(false);
+    return 1;
+}
+
+// OFFSET: 0x989010
+bool CMovementShared::StopTurn() {
+    if ((this->m_flags & 0x30) == 0)
+        return 0;
+    this->m_anchorFacing = this->m_facing;
+    this->m_anchorPitch = this->m_pitch;
+    this->m_flags = this->m_flags & 0xFFFFFFCF;
+    this->m_anchorPos = this->m_position;
+    this->m_anchorElapsedMs = 0;
+
+    this->CalcDirection(false);
+    return 1;
 }
 
 // OFFSET: 0x987D00
 int32_t CMovementShared::PlotUnitMovement(int32_t time, C3Vector* out) {
-    return this->PlotUnitMovement(time, out, &this->m_anchorFacing, &this->m_anchorPitch);
+    return this->PlotUnitMovement(time, out, &this->m_facing, &this->m_pitch);
 }
 
 // OFFSET: 0x987B50
