@@ -1911,8 +1911,8 @@ bool CMap::GetFacets(CAaBox* a1, CAaBox* a2, World::FacetData* a3, uint32_t a4, 
 
     a3->facets.SetCount(0);
 
-    //if (!CMap::GetMapObjFacets(a1, a2, a3, a4, a5))
-    //    return false;
+    if (!CMap::GetMapObjFacets(a1, a2, a3, a4, a5))
+        return false;
     if (CMap::bDungeon)
         return true;
 
@@ -1951,6 +1951,118 @@ bool CMap::GetFacets(CAaBox* a1, CAaBox* a2, World::FacetData* a3, uint32_t a4, 
     }
 
     return result;
+}
+
+// OFFSET: 0x7A55E0
+bool CMap::GetMapObjFacets(CAaBox* a1, CAaBox* box, World::FacetData* facets, uint32_t flags, uint32_t* statusOut) {
+    CAaBox xformed;
+    xformed.b = { 0.0f, 0.0f, 0.0f };
+    xformed.t = { 0.0f, 0.0f, 0.0f };
+
+    CAaBox localBox;
+    localBox.b = box->b;
+    localBox.t = box->t;
+
+    C3Vector center;
+    center.x = (box->t.x + box->b.x) * 0.5f;
+    center.y = (box->t.y + box->b.y) * 0.5f;
+    center.z = (box->t.z + box->b.z) * 0.5f;
+
+    localBox.b.x -= center.x;
+    localBox.b.y -= center.y;
+    localBox.b.z -= center.z;
+    localBox.t.x -= center.x;
+    localBox.t.y -= center.y;
+    localBox.t.z -= center.z;
+
+    // for (auto proxy = s_destructibleProxyList.Head(); proxy; proxy = s_destructibleProxyList.Next(proxy)) {
+    //     float dx = box->t.x - box->b.x;
+    //     float dy = box->t.y - box->b.y;
+    //     float dz = box->t.z - box->b.z;
+    //     float radius = sqrtf(dx * dx + dy * dy + dz * dz) + proxy->radius;
+    //
+    //     float ex = proxy->position.x - center.x;
+    //     float ey = proxy->position.y - center.y;
+    //     float ez = proxy->position.z - center.z;
+    //
+    //     if (ex * ex + ey * ey + ez * ez < radius * radius)
+    //         return false;
+    // }
+
+    for (auto mapObjDef = CMap::mapObjDefHashtable.Head(); mapObjDef; mapObjDef = CMap::mapObjDefHashtable.Next(mapObjDef)) {
+        if ((mapObjDef->flags & 0x100) != 0)
+            continue;
+
+        CMapObj* mapObj = mapObjDef->owner;
+        if (!mapObj)
+            continue;
+
+        if (box->t.x < mapObjDef->bbox.b.x || box->t.y < mapObjDef->bbox.b.y || box->t.z < mapObjDef->bbox.b.z || box->b.x > mapObjDef->bbox.t.x || box->b.y > mapObjDef->bbox.t.y || box->b.z > mapObjDef->bbox.t.z)
+            continue;
+
+        if (!mapObj->isGroupLoaded || !mapObjDef->mapObjDefGroupLinkList.Head()) {
+            if ((flags & 0x80000000) == 0)
+                return false;
+
+            if (mapObjDef->bbox.Intersects(a1))
+                return false;
+
+            World::AddAaBoxFacets(&mapObjDef->bbox, facets);
+            continue;
+        }
+
+        C3Vector xcenter = mapObjDef->invMat.TransformPoint(center);
+        C33Matrix m(mapObjDef->invMat);
+        CWorldMath::TransformAABox(m, localBox, xformed);
+
+        xformed.b.x += xcenter.x;
+        xformed.b.y += xcenter.y;
+        xformed.b.z += xcenter.z;
+        xformed.t.x += xcenter.x;
+        xformed.t.y += xcenter.y;
+        xformed.t.z += xcenter.z;
+
+        if (mapObj->TestBounds(xformed)) {
+            if ((flags & 0xF0) != 0) {
+                World::TriData::statusFlags = 0;
+                World::TriData::nBatches = 0;
+                World::TriData::faceIndexCursor = 0;
+                World::TriData::indexCursor = 0;
+                // dword_CB7538 = 0;
+
+                mapObj->GetTris(xformed, flags, 0, mapObjDef);
+                World::TriDataToFacetData(nullptr, facets, mapObjDef->unk_148, mapObjDef->unk_14C);
+
+                if (statusOut)
+                    *statusOut |= World::TriData::statusFlags;
+            }
+
+            // if ((flags & 0x30000) != 0)
+            //     mapObj->GetLiquidFacets(xformed, flags, facets, mapObjDef);
+        }
+
+        for (auto link = mapObjDef->mapObjDefGroupLinkList.Head(); link; link = mapObjDef->mapObjDefGroupLinkList.Next(link)) {
+            CMapObjDefGroup* group = reinterpret_cast<CMapObjDefGroup*>(link->owner);
+
+            if (box->t.x < group->bbox.b.x || box->t.y < group->bbox.b.y || box->t.z < group->bbox.b.z || box->b.x > group->bbox.t.x || box->b.y > group->bbox.t.y || box->b.z > group->bbox.t.z)
+                continue;
+
+            if (!mapObj->IsGroupLoaded(group->groupNum)) {
+                if ((flags & 0x80000000) == 0)
+                    return false;
+
+                World::AddAaBoxFacets(&group->bbox, facets);
+                continue;
+            }
+
+            // if ((flags & 0xF0000F) != 0 && !CMap::QueryMapObjFacets(&group->unk_78, box, facets, flags))
+            //     return false;
+            // if ((flags & 0xF00000) != 0)
+            //     CMap::QueryDestructibleFacets(&group->unk_84, box, facets, flags);
+        }
+    }
+
+    return true;
 }
 
 // OFFSET: 0x7A4270

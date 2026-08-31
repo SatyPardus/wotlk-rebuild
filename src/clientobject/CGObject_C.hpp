@@ -75,6 +75,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     /* 35 */ virtual bool Animate(float a2);
     /* 36 */ virtual void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out);
     /* 37 */ virtual float GetRenderFacing();
+    /* 49 */ virtual void GetMatrix(C44Matrix& pos);
     /* 53 */ virtual CM2Model* GetObjectModel();
 
     // Static functions

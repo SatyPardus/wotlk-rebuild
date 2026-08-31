@@ -308,6 +308,26 @@ float CGObject_C::GetRenderFacing() {
     return this->GetRawFacing();
 }
 
+// OFFSET: 0x4D5FA0
+void CGObject_C::GetMatrix(C44Matrix& mat) {
+    mat.a0 = 1.0;
+    mat.a1 = 0.0;
+    mat.a2 = 0.0;
+    mat.a3 = 0.0;
+    mat.b0 = 0.0;
+    mat.b2 = 0.0;
+    mat.b3 = 0.0;
+    mat.c0 = 0.0;
+    mat.c1 = 0.0;
+    mat.c3 = 0.0;
+    mat.d0 = 0.0;
+    mat.d1 = 0.0;
+    mat.d2 = 0.0;
+    mat.b1 = 1.0;
+    mat.c2 = 1.0;
+    mat.d3 = 1.0;
+}
+
 // OFFSET: 0x4D5FE0
 CM2Model* CGObject_C::GetObjectModel() {
     return this->m_worldModel;

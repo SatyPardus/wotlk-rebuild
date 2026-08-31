@@ -87,13 +87,17 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     CMapObjGroup* GetGroup(int32_t index, bool a3);
     uint32_t GetGroupFlags(int32_t index);
     SMOGroupInfo* GetGroupInfo(int32_t index);
+    bool IsGroupLoaded(int32_t index);
+    uint32_t CreateWmoIgnoreFlags(uint32_t a1);
     char* GetGroupName(int32_t index);
     void RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_LIST(CFrustum, sceneLink)* frustumList);
     void CreateMaterial(uint8_t texture);
     void CreateMaterials();
     bool TestBounds(C3Vector& start, C3Vector& end);
+    bool TestBounds(CAaBox& box);
     bool TestGroupBounds(C3Vector& start, C3Vector& end, uint32_t groupNum);
     bool GroupBoundingBoxIntersectsSphere(C3Vector& pos, uint32_t groupNum, float radius);
+    bool GetTris(CAaBox& box, uint32_t a3, uint32_t a4, CMapObjDef* mapObjDef);
     bool VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, int useSphereTest);
     float CalcPortalFarthestDistance(SMOPortal* portal);
 

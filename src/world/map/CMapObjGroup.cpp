@@ -393,15 +393,44 @@ bool CMapObjGroup::GetTris(C3Segment& seg, float* dist, uint32_t a4, uint16_t fa
     v15.f = &v14;
     v15.GetFaceIndices(0, seg, this->CAaBspNodePtr1.aaBox);
     this->GetTrisFromQuery(a6, &v14, mapObjDef, 0);
-    //if ((a4 & 0x30000) != 0 && (this->flags & 0x1000) != 0)
-    //    CMapObjGroup::VectorIntersectLiquid((int)this, *(float*)&seg, dist, a4, a6, a7);
+    // if ((a4 & 0x30000) != 0 && (this->flags & 0x1000) != 0)
+    //     CMapObjGroup::VectorIntersectLiquid((int)this, *(float*)&seg, dist, a4, a6, a7);
+    auto v11 = World::TriData::nBatches != v16;
+    v14.ClearTestFaces();
+    return v11;
+}
+
+// OFFSET: 0x7CB7B0
+bool CMapObjGroup::GetTris(CAaBox& box, uint32_t a4, uint16_t faceIgnoreFlags, uint32_t a6, CMapObjDef* mapObjDef) {
+    auto v16 = World::TriData::nBatches;
+
+    int32_t statusFlags = 0;
+
+    BspQuery_Volume<CAaBox> v14;
+    v14.overflowFlags = &statusFlags;
+    v14.faces = this->polyList;
+    v14.vertexList = this->vertexList;
+    v14.indices = this->indices;
+    v14.volume = &box;
+    v14.faceIgnoreFlags = faceIgnoreFlags | BSPQUERY_FACE_TESTED;
+
+    CAaBsp_Query_AaBox<BspQuery_Volume<CAaBox>> v15 = {};
+    v15.aaBsp = &this->CAaBspNodePtr1;
+    v15.f = &v14;
+    v15.GetFaceIndices(0, box, this->CAaBspNodePtr1.aaBox);
+
+    this->GetTrisFromQuery(a6, &v14, mapObjDef, statusFlags);
+
+    // if ((a4 & 0x30000) != 0)
+    //     this->GetLiquidTris(&box, a4, a6, mapObjDef);
+
     auto v11 = World::TriData::nBatches != v16;
     v14.ClearTestFaces();
     return v11;
 }
 
 // OFFSET: 0x7C7AE0
-void CMapObjGroup::GetTrisFromQuery(uint32_t a2, BspQuery_Segment* a3, CMapObjDef* mapObjDef, uint32_t statusFlags) {
+void CMapObjGroup::GetTrisFromQuery(uint32_t a2, BspQuery* a3, CMapObjDef* mapObjDef, uint32_t statusFlags) {
     if (CWorld::s_enables & 0x200000) {
         for (uint32_t i = 0; i < BspQuery::testFaceSub; i++) {
             uint32_t face = BspQuery::testFaces[i];

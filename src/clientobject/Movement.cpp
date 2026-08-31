@@ -61,6 +61,7 @@ CMovementGlobals* MovementGetGlobals() {
     return ClntObjMgrGetMovementGlobals();
 }
 
+// OFFSET: 0x6E8F90
 bool MovementGetLastUpdateTime(uint32_t* time) {
     auto globals = MovementGetGlobals();
     if (!globals || (globals->flags & 1) == 0)
@@ -68,4 +69,24 @@ bool MovementGetLastUpdateTime(uint32_t* time) {
 
     *time = globals->m_lastUpdateTime;
     return true;
+}
+
+// OFFSET: 0x74B4C0
+bool MovementGetTransportMtxX(WGUID guid, C44Matrix* mat) {
+    if (MovementGetTransportMtxSafe(guid, mat))
+        return 1;
+    //NOP("Failed to dereference transport! Provided GUID 0x%016I64X from %s(%d)");
+    return 0;
+}
+
+// OFFSET: 0x74B430
+bool MovementGetTransportMtxSafe(WGUID guid, C44Matrix* mat) {
+    auto transport = ClntObjMgrObjectPtr<CGObject_C*>(guid, TYPEMASK_OBJECT);
+    if (transport) {
+        transport->GetMatrix(*mat);
+        return true;
+    } else {
+        *mat = C44Matrix();
+        return false;
+    }
 }

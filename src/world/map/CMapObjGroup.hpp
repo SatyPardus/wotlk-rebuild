@@ -110,7 +110,8 @@ class CMapObjGroup : public CMapBaseObj {
     void FillVertexVB(CGxBuf* buf, EGxVertexBufferFormat format);
     void FixColorVertexAlpha();
     bool GetTris(C3Segment& seg, float* dist, uint32_t a4, uint16_t faceIgnoreFlags, uint32_t a6, CMapObjDef* mapObjDef);
-    void GetTrisFromQuery(uint32_t a2, BspQuery_Segment* a3, CMapObjDef* mapObjDef, uint32_t a5);
+    bool GetTris(CAaBox& box, uint32_t a4, uint16_t faceIgnoreFlags, uint32_t a6, CMapObjDef* mapObjDef);
+    void GetTrisFromQuery(uint32_t a2, BspQuery* a3, CMapObjDef* mapObjDef, uint32_t a5);
     void SetLighting(uint32_t mode);
 
     static void AsyncPostloadCallback(void* arg);

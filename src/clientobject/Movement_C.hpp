@@ -10,6 +10,13 @@
 class CGUnit_C;
 class CClientMoveUpdate;
 
+struct ClipPolygon {
+    C3Vector v[15];
+    int32_t flags[15];
+    int32_t count;
+};
+
+
 class CMovement_C : public CMovementShared {
     public:
     // Static variables
@@ -86,9 +93,47 @@ class CMovement_C : public CMovementShared {
 
     int32_t GetMoveStartTime(int32_t elapsed);
     float GetStepUpHeight();
+    float GetRemainingStepUpHeight();
     void BuildCollisionBox(C3Vector* position, CAaBox* box);
     int32_t GetFacetQueryFlags();
     int32_t GetMoveFacets(float distance, int32_t deltaMs, float dirX, float dirY, float dirZ);
+    int32_t TraceSurface(int32_t time, int32_t remaining, float distance, C2Vector* dir);
+    int32_t Fall(int32_t time, int32_t remaining, float distance, C2Vector* dir);
+    void UpdateFallingFar();
+    int32_t Swim(int32_t time, int32_t remaining, float distance, float dirX, float dirY, float dirZ);
+    int32_t HoverMove(int32_t time, int32_t remaining, float distance, float dirX, float dirY, float dirZ);
+    int32_t ValidateTestVsFacetQuery(float offsetX, float offsetY, float offsetZ);
+    bool IsSurfaceTooSteep(uint32_t facetId);
+    bool GetBoxPushNormal(C4Plane* planes, uint32_t count, C3Vector* out);
+    bool ExtrudeTriangle(C3Vector* verts, uint8_t* indices, C3Vector* normal, C4Plane* out, C3Vector* extrude);
+    bool IsFacetOverhead(int32_t facet);
+    bool WalkableFacetEnclosesPoint(int32_t facet, C3Vector* point);
+    bool UseWalkableRedirection(int32_t facet, int32_t* detached);
+    C3Vector CalcRunWalkWalkableObstaclePush(C3Vector* dir, float* stepDistance, C3Vector n, int32_t boxPush, C3Vector* pushNormal);
+    C3Vector CalcRunWalkBlockingObstaclePush(C3Vector* dir, float stepDistance, float remainingDistance, C3Vector* n);
+    int32_t ComputeDistanceToMoveImpl(C3Vector* verts, C3Vector* normal, C3Vector* extrude, C4Plane* out, uint8_t* indices);
+    void BuildCollisionVolumePlanes(C3Vector* position, float height, float radius, C4Plane* planes);
+    void BuildCollisionVolume(C3Vector* position, float height, C4Plane* planes, C3Vector* verts, uint8_t* indices);
+    ClipPolygon* InitPolygonBuffer(ClipPolygon* dst, ClipPolygon* src);
+    void ClipPolygonToPlane(ClipPolygon* poly, int32_t planeIndex, C4Plane* plane);
+    int32_t ClipGenericPolygon(ClipPolygon* poly, C4Plane* planes, int32_t planeIndex, float* outDistance, C3Vector* direction);
+    int32_t ClipMovementPyramid(World::FacetData* facets, C3Vector* direction, C4Plane* clipPlanes, uint32_t clipPlaneCount, C4Plane* volumePlanes, int32_t volumePlaneIndex, float* bestDistance, uint32_t* outFacetIndex);
+    uint32_t DistanceToMovePyramid(World::FacetData* facets, C3Vector* dir, float distance, C3Vector* scaledDir, C4Plane* volumePlanes, C3Vector* verts, uint8_t* faceIndices, uint32_t* outFacetIndex, C4Plane* planes, uint32_t* outPlaneCount, float* best);
+    int32_t DistanceToMove(World::FacetData* facets, C3Vector* dir, float distance, uint32_t* outFacetIndex, C4Plane* planes, uint32_t* outPlaneCount, float* outMoved, C3Vector* origin);
+    int32_t TryFallingDown(float elapsedFall, C3Vector* step, float* distance, C2Vector* outSlide, WGUID* outTransport, int32_t* outLanded, int32_t* outCeiling);
+    bool IsSlopeFallable(int32_t facet, C3Vector* step);
+    bool CheckFallingConditions(uint32_t count, C4Plane* planes);
+    int32_t FallDown(int32_t time, int32_t deltaMs, float dx, float dy, float dz, int32_t apply);
+    bool CheckFallImpactThreshold(float elapsedFall, float remaining, C3Vector* step, int32_t force);
+    float GetTimeJustFallen(float remaining, float elapsedFall, C3Vector* step, float* distance, int32_t force, float length2D);
+    bool IsFacetSteepBothWays(int32_t facet);
+    bool ComputeSteepSurfacePushNormalImpl(C4Plane* plane);
+    bool PlaneIntersectsVolume(C4Plane* plane);
+    void SolveThreePlaneIntersection(C4Plane* first, C4Plane* second, C4Plane* third, C3Vector* out);
+    void ComputeSteepSurfacePushNormalHelper(int32_t facet, C3Vector* edge, C3Vector* origin, C3Vector* out);
+    C3Vector GetSteepSurfacePushNormal(int32_t facet, C4Plane* planes, int32_t planeCount);
+    C3Vector PushOffObstacleEdge(C3Vector* point, C3Vector* dir, int32_t facet);
+    C2Vector CalcFallObstaclePush(C3Vector* dir, float moved, float requested, int32_t facet, C4Plane* planes, int32_t planeCount);
 };
 
 #endif // CLIENTOBJECT_MOVEMENT_C_HPP

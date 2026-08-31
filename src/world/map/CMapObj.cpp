@@ -266,6 +266,35 @@ SMOGroupInfo* CMapObj::GetGroupInfo(int32_t index) {
     return nullptr;
 }
 
+// OFFSET: 0x7AE4C0
+bool CMapObj::IsGroupLoaded(int32_t index) {
+    if (this->isGroupLoaded)
+        return this->mapObjGroupArray[index]->unkLoadedFlag & 1;
+    return 0;
+}
+
+// OFFSET: 0x7AE140
+uint32_t CMapObj::CreateWmoIgnoreFlags(uint32_t a1) {
+    uint32_t result = 0xEE;
+    if ((a1 & 0x80u) != 0)
+        return 0x2CA;
+    if ((a1 & 0x10) != 0)
+        result = 0xC6;
+    if ((a1 & 0x20) != 0)
+        result &= 0xDBu;
+    if ((a1 & 0x40) == 0)
+        result &= ~2u;
+    if ((a1 & 0x4000) == 0)
+        result &= ~0x40u;
+    if ((a1 & 0x1000000) != 0) {
+        if ((a1 & 0x40000000) != 0)
+            return 0xFFFFFCDB;
+        else
+            return result | 0x100;
+    }
+    return result;
+}
+
 // OFFSET: 0x7AEAE0
 char* CMapObj::GetGroupName(int32_t index) {
     if (!this->isGroupLoaded)
@@ -522,6 +551,11 @@ bool CMapObj::TestBounds(C3Vector& start, C3Vector& end) {
     return this->isGroupLoaded && CWorldMath::VectorIntersectAABox2(this->bbox, start, end);
 }
 
+// OFFSET: 0x7AE7E0
+bool CMapObj::TestBounds(CAaBox& box) {
+    return this->isGroupLoaded && this->bbox.Intersects(&box);
+}
+
 // OFFSET: 0x7AE880
 bool CMapObj::TestGroupBounds(C3Vector& start, C3Vector& end, uint32_t groupNum) {
     return this->isGroupLoaded && (this->mapObjGroupArray[groupNum]->unkLoadedFlag & 1) != 0 && CWorldMath::VectorIntersectAABox2(this->groupInfo[groupNum].boundingBox, start, end) != 0;
@@ -540,6 +574,28 @@ bool CMapObj::GroupBoundingBoxIntersectsSphere(C3Vector& pos, uint32_t groupNum,
     return pos.x + radius >= bounds->b.x && pos.x - radius <= bounds->t.x
         && pos.y + radius >= bounds->b.y && pos.y - radius <= bounds->t.y
         && pos.z + radius >= bounds->b.z && pos.z - radius <= bounds->t.z;
+}
+
+// OFFSET: 0x7AEF00
+bool CMapObj::GetTris(CAaBox& box, uint32_t a3, uint32_t a4, CMapObjDef* mapObjDef) {
+    bool result = false;
+    uint16_t wmoIgnoreFlags = this->CreateWmoIgnoreFlags(a3);
+
+    for (uint32_t i = 0; i < (uint32_t)this->groupInfoCount; i++) {
+        SMOGroupInfo& info = this->groupInfo[i];
+
+        if (box.t.x >= info.boundingBox.b.x && box.t.y >= info.boundingBox.b.y && box.t.z >= info.boundingBox.b.z && box.b.x <= info.boundingBox.t.x && box.b.y <= info.boundingBox.t.y && box.b.z <= info.boundingBox.t.z) {
+            if (this->isGroupLoaded) {
+                CMapObjGroup* group = this->mapObjGroupArray[i];
+
+                if ((group->unkLoadedFlag & 1) != 0 && (group->flags & 0x80) == 0) {
+                    result |= group->GetTris(box, a3, wmoIgnoreFlags, a4, mapObjDef);
+                }
+            }
+        }
+    }
+
+    return result;
 }
 
 // OFFSET: 0x7AF280

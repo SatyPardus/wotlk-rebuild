@@ -28,7 +28,7 @@ class BspQuery {
         BspQuery::testFaceSub = 0;
     }
 
-    int* overflowFlags;
+    int32_t* overflowFlags;
 
     SMOPoly* faces;       // +0x04
     C3Vector* vertexList; // +0x08
@@ -36,8 +36,8 @@ class BspQuery {
 
     static uint16_t testFaces[BSPQUERY_MAX_FACES]; // 0xD25BF8
     static uint16_t hitFaces[BSPQUERY_MAX_FACES];  // 0xD29BF8
-    static int testFaceSub;                        // 0xD2DBF8
-    static int hitFaceSub;                         // 0xD2DBFC
+    static int32_t testFaceSub;                    // 0xD2DBF8
+    static int32_t hitFaceSub;                     // 0xD2DBFC
 };
 
 template <class T>
@@ -68,7 +68,7 @@ class BspQuery_Segment : public BspQuery {
     float oosegMag;         // +0x48
     float maxT;             // +0x4C 
     SMOMaterial* materials; // +0x50 
-    int m_unk54; // +0x54
+    int32_t m_unk54;        // +0x54
 
     uint16_t faceIgnoreFlags; // +0x58
 };
@@ -91,8 +91,8 @@ class BspQuery_SegmentLink : public BspQuery {
     float tMax;               // +0x48
     float bestT0;             // +0x4C
     float bestT1;             // +0x50
-    int bestFace0;            // +0x54
-    int bestFace1;            // +0x58
+    int32_t bestFace0;        // +0x54
+    int32_t bestFace1;        // +0x58
     uint32_t faceIgnoreFlags; // +0x5C
 };
 

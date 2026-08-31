@@ -19,7 +19,7 @@ class CMovementShared : public CPassenger {
     /* 0070 */ C2Vector m_moveDir2D;
     /* 0078 */ float m_pitchCos = 1.0f;
     /* 007C */ float m_pitchSin = 0;
-    /* 0080 */ uint32_t m_fallTimeMs = 0;
+    /* 0080 */ int32_t m_fallTimeMs = 0;
     /* 0084 */ float m_fallStartZ = 0;
     /* 0088 */ float m_stepUpStartZ = 0;
     /* 008C */ float m_currentSpeed = 0;
@@ -49,6 +49,7 @@ class CMovementShared : public CPassenger {
     void CalcDirection(bool a2);
     float CalcFallStartElevation(float elapsed, int32_t slowFall, float velocity);
     void CalcCurrentSpeed(bool ignoreFalling);
+    float CalcTimeFallen(float distance, int32_t upward);
     float RelDistanceFallen(int32_t elapsedMs, float z);
     float RelDistanceFallen(int32_t elapsedMs);
     void UpdateAnchors(bool a2);

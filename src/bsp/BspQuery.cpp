@@ -66,8 +66,8 @@ void BuildTriQuery(BspQuery_Segment* q, SMOPoly* polyList, C3Vector* vertexList,
     q->ray.dir.z *= q->oosegMag;
 }
 
-template <class T>
-void BspQuery_Volume<T>::operator()(uint16_t faceIndex) {
+template <>
+void BspQuery_Volume<CAaBox>::operator()(uint16_t faceIndex) {
     if (this->faces[faceIndex].flags & this->faceIgnoreFlags)
         return;
 

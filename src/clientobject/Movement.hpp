@@ -38,4 +38,8 @@ CMovementGlobals* MovementGetGlobals();
 
 bool MovementGetLastUpdateTime(uint32_t* time);
 
+bool MovementGetTransportMtxX(WGUID guid, C44Matrix* mat);
+
+bool MovementGetTransportMtxSafe(WGUID guid, C44Matrix* mat);
+
 #endif // CLIENTOBJECT_PASSENGER_HPP

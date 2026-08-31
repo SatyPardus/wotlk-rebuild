@@ -195,6 +195,45 @@ void CMovementShared::CalcCurrentSpeed(bool ignoreFalling) {
         this->m_currentSpeed = this->GetBaseSpeed(ignoreFalling);
 }
 
+// OFFSET: 0x988280
+float CMovementShared::CalcTimeFallen(float distance, int32_t upward) {
+    float terminal = 60.148003f;
+    if ((this->m_flags & MOVEMENTFLAG_FALLING_SLOW) != 0)
+        terminal = 7.0f;
+
+    float velocity = this->m_fallVelocity;
+    if (velocity > terminal)
+        velocity = terminal;
+
+    if (fabsf(velocity) < 0.00000023841858f)
+        return this->TimeToFallDistance(distance, (this->m_flags & MOVEMENTFLAG_FALLING_SLOW) != 0);
+
+    float discriminant = velocity * velocity + 38.582211f * distance;
+
+    float root = 0.0f;
+    if (discriminant > 0.0f)
+        root = sqrtf(discriminant);
+
+    float rising = (-velocity - root) * 0.051837362f;
+    float falling = (root - velocity) * 0.051837362f;
+    float toTerminal = 0.051837362f * (terminal - velocity);
+
+    float result;
+    if (falling <= toTerminal) {
+        result = falling;
+    } else {
+        result = (distance - (velocity + toTerminal * 9.6455526f) * toTerminal) / terminal + toTerminal;
+    }
+
+    if (upward) {
+        if (rising >= 0.0f)
+            return rising;
+        return 0.0f;
+    }
+
+    return result;
+}
+
 // OFFSET: 0x987050
 float CMovementShared::RelDistanceFallen(int32_t elapsedMs, float z) {
     uint32_t flags = this->m_flags;

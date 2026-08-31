@@ -76,6 +76,31 @@ bool CWorldMath::VectorIntersectAABox2(CAaBox& box, C3Vector& start, C3Vector& e
     return 1;
 }
 
+// OFFSET: 0x7F9320
+void CWorldMath::TransformAABoxInner(const float* row1, const float* row0, CAaBox& dst, CAaBox& src, const float* row2) {
+    const float* rows[3] = { row0, row1, row2 };
+
+    for (int32_t axis = 0; axis < 3; axis++) {
+        for (int32_t component = 0; component < 3; component++) {
+            float e = rows[component][axis];
+
+            float a = e * src.b[component];
+            float b = e * src.t[component];
+
+            dst.b[axis] += std::min(a, b);
+            dst.t[axis] += std::max(a, b);
+        }
+    }
+}
+
+// OFFSET: 0x7F93D0
+void CWorldMath::TransformAABox(C33Matrix& m, CAaBox& src, CAaBox& dst) {
+    dst.b = { 0.0f, 0.0f, 0.0f };
+    dst.t = { 0.0f, 0.0f, 0.0f };
+
+    CWorldMath::TransformAABoxInner(&m.b0, &m.a0, dst, src, &m.c0);
+}
+
 // OFFSET: 0x7A61D0
 int32_t CWorldMath::ComputeAaBoxOutcode(CAaBox* box, C3Vector* point) {
     int32_t outcode = 0;

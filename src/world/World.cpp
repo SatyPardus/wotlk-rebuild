@@ -156,6 +156,78 @@ namespace World {
             facets->facetIds[i] = 0;
     }
 
+    // OFFSET: 0x782740
+    uint32_t TriDataToFacetData(void* unused, FacetData* facets, uint32_t idLow, uint32_t idHigh) {
+        uint32_t before = facets->facets.Count();
+
+        for (uint32_t b = 0; b < TriData::nBatches; b++) {
+            TriData::Batch* batch = &TriData::batches[b];
+
+            C44Matrix* matrix = batch->matrix;
+            C3Vector* verts = batch->vertexList;
+            uint16_t* indices = batch->indices;
+
+            for (uint32_t face = 0; face < batch->faceCount; face++) {
+                CFacet* facet = facets->facets.New();
+
+                C3Vector p0 = verts[indices[0]];
+                C3Vector p1 = verts[indices[1]];
+                C3Vector p2 = verts[indices[2]];
+
+                float ax = p2.x - p0.x;
+                float ay = p2.y - p0.y;
+                float az = p2.z - p0.z;
+
+                float bx = p1.x - p0.x;
+                float by = p1.y - p0.y;
+                float bz = p1.z - p0.z;
+
+                float cx = by * az - bz * ay;
+                float cy = bz * ax - az * bx;
+                float cz = bx * ay - ax * by;
+
+                facet->plane.n.x = matrix->c0 * cz + matrix->b0 * cy + matrix->a0 * cx;
+                facet->plane.n.y = matrix->c1 * cz + matrix->b1 * cy + matrix->a1 * cx;
+                facet->plane.n.z = cx * matrix->a2 + (cy * matrix->b2 + cz * matrix->c2);
+
+                facet->v[0] = matrix->TransformPoint(p0);
+                facet->v[1] = matrix->TransformPoint(p1);
+                facet->v[2] = matrix->TransformPoint(p2);
+
+                float lengthSq = facet->plane.n.z * facet->plane.n.z + facet->plane.n.y * facet->plane.n.y + facet->plane.n.x * facet->plane.n.x;
+
+                if (0.0f == lengthSq) {
+                    // SysMsgPrintf_0(2, 2, "Found degenerate triangle -- data needs to be fixed\n");
+                    facet->plane.n.x = 0.0f;
+                    facet->plane.n.y = 0.0f;
+                    facet->plane.n.z = 1.0f;
+                } else {
+                    float inverse = 1.0f / sqrtf(lengthSq);
+                    facet->plane.n.x = inverse * facet->plane.n.x;
+                    facet->plane.n.y = inverse * facet->plane.n.y;
+                    facet->plane.n.z = inverse * facet->plane.n.z;
+                }
+
+                facet->plane.d = -(facet->v[0].z * facet->plane.n.z + facet->v[0].y * facet->plane.n.y + facet->v[0].x * facet->plane.n.x);
+
+                indices += 3;
+            }
+        }
+
+        uint32_t count = facets->facets.Count();
+        if (count == before)
+            return 0;
+
+        facets->facetIds.SetCount(count);
+
+        uint32_t i = before;
+        for (; i < count; i++) {
+            facets->facetIds[i] = ((uint64_t)idHigh << 32) | idLow;
+        }
+
+        return i;
+    }
+
 } // namespace World
 
 World::TriData::Batch* World::TriData::AllocBatch(uint32_t indexCount, uint32_t faceCount) {
