@@ -1,6 +1,7 @@
 #include "clientobject/Movement_C.hpp"
 #include "clientobject/Movement.hpp"
 #include "clientobject/Unit_C.hpp"
+#include "clientobject/Player_C.hpp"
 #include "clientobject/Passenger.hpp"
 #include <tempest/math/CMath.hpp>
 #include "world/World.hpp"
@@ -8,6 +9,9 @@
 #include "gameui/CGInputControl.hpp"
 
 STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link) CMovement_C::s_playerMoveEventFreeList;
+World::FacetData CMovement_C::s_moveFacets;
+World::FacetData CMovement_C::s_liquidFacets;
+CAaBox CMovement_C::s_queryBox;
 
 // OFFSET: 0x6EBC70
 CPlayerMoveEvent* CMovement_C::AllocPlayerMoveEvent(int32_t eventTime, uint32_t eventId) {
@@ -49,9 +53,9 @@ void CMovement_C::MoveUnits(uint32_t time, uint32_t prevTime) {
 
 CMovement_C::CMovement_C(WGUID* transportGuid, C3Vector& position, float facing, WGUID* guid, CGUnit_C* unit)
     : CMovementShared(&WGUID(), position, facing, guid) {
-    //this->ukn2 = 0.33333334;
-    //this->ukn3 = 2.0277777;
-    //this->ukn4 = 1.0;
+    this->m_collisionRadius = 0.33333334f;
+    this->m_collisionHeight = 2.0277777f;
+    this->m_stepUpHeight = 1.0f;
     //this->ukn5 = 0.0;
     //this->ukn6 = 0.0;
     //this->ukn7 = 0.0;
@@ -257,7 +261,7 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
                 //this->sub_98B730();
             }
             if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0 && (moveEvent->m_moveFlags & MOVEMENTFLAG_FALLING) == 0) {
-                //this->StopFalling();
+                this->StopFalling();
                 stoppedFalling = true;
             }
         }
@@ -402,13 +406,13 @@ void CMovement_C::ApplyMovement(uint32_t a2, uint32_t a3) {
             break;
     }
 
-    //if (CMovement::IsValidPosition(this)) {
+    if (this->IsValidPosition()) {
     //    v11 = this->m_spline;
     //    if (v11 && (v11->flags & 0x400) == 0)
     //        CMovement_C::SnapToSpline(this, &dst, 0);
-    //    if (CMovement::sub_4F5260(this))
-    //        CMovementShared::UpdateAnchors(this, 0);
-    //}
+        if (this->IsOnFlyingSpline())
+            this->UpdateAnchors(0);
+    }
 }
 
 // OFFSET: 0x6EAF50
@@ -568,6 +572,35 @@ void CMovement_C::UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_li
     }
 }
 
+// OFFSET: 0x6EB3B0
+int32_t CMovement_C::HandlePendingActions() {
+    uint32_t previousFlags = this->m_flags;
+    if ((this->m_flags & MOVEMENTFLAG_PENDING_STOP) != 0) {
+        this->ForceStopMove(1);
+        if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && !this->HasMoveEventBetween(0, 1)) {
+            CGInputControl::GetActive()->UpdateMoveStopped();
+        }
+    }
+    if ((this->m_flags & MOVEMENTFLAG_PENDING_STRAFE_STOP) != 0)
+        this->ForceStopStrafe();
+    if ((this->m_flags & (MOVEMENTFLAG_PENDING_BACKWARD | MOVEMENTFLAG_PENDING_FORWARD)) != 0)
+        this->StartMove(this->m_flags & MOVEMENTFLAG_PENDING_FORWARD, 0);
+    if ((this->m_flags & (MOVEMENTFLAG_PENDING_STRAFE_RIGHT | MOVEMENTFLAG_PENDING_STRAFE_LEFT)) != 0)
+        this->StartStrafe(this->m_flags & MOVEMENTFLAG_PENDING_STRAFE_LEFT);
+    this->m_flags &= 0xFFE03FFF;
+    return (previousFlags ^ this->m_flags) & 0xF;
+}
+
+// OFFSET: 0x6EAC00
+bool CMovement_C::HasMoveEventBetween(uint32_t minEventId, uint32_t maxEventId) {
+    for (CPlayerMoveEvent* event = this->m_moveQueue.Head(); event; event = this->m_moveQueue.Next(event)) {
+        if (event->m_eventId >= minEventId && event->m_eventId <= maxEventId)
+            return true;
+    }
+
+    return false;
+}
+
 // OFFSET: 0x6E9E20
 int32_t CMovement_C::RequestMove(int32_t a2, int32_t a3, C3Vector* a4) {
     C3Vector v16;
@@ -575,23 +608,122 @@ int32_t CMovement_C::RequestMove(int32_t a2, int32_t a3, C3Vector* a4) {
     v16.y = this->m_anchorPos.y + a4->y;
     v16.z = this->m_anchorPos.z + a4->z;
     if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover || !this->m_spline || (this->m_unit->m_modelFlags & 0x800000) != 0) {
-        //v16 -=  this->m_position;
-
-        //####TESTING
-        this->m_position = v16;
-        this->GetPosition(&v16, &this->m_position);
-        return a3;
-        //#############
-        //return this->CollideRequestMove(a2, a3, v16.x, v16.y, v16.z);
+        v16 -=  this->m_position;
+        return this->CollideRequestMove(a2, a3, &v16);
     } else {
-        //if ((this->m_spline->flags & 0x200) == 0)
-        //    this->StopFalling();
+        if ((this->m_spline->flags & 0x200) == 0)
+            this->StopFalling();
         this->m_anchorElapsedMs += a3;
         this->m_position = v16;
         this->GetPosition(&v16, &this->m_position);
         
         return a3;
     }
+}
+
+// OFFSET: 0x762E00
+int32_t CMovement_C::CollideRequestMove(int32_t a2, int32_t a3, C3Vector* a4) {
+    if (!a3)
+        return 0;
+
+    C3Vector newPosition = this->m_position + *a4;
+    if (!World::IsValidPosition(newPosition.x, newPosition.y, newPosition.z, this->m_collisionRadius + 71.375595f))
+        return a3;
+
+    float deltaZ = this->CanCollideWhileFlying() ? a4->z : 0.0f;
+    float length = sqrtf(a4->y * a4->y + a4->x * a4->x + deltaZ * deltaZ);
+    float speed = length / (a3 * 0.001f);
+
+    float dirX = 0.0f;
+    float dirY = 0.0f;
+    float dirZ = 0.0f;
+
+    if (fabsf(length) >= 0.00000095367432f) {
+        dirX = a4->x * (1.0f / length);
+        dirY = a4->y * (1.0f / length);
+        dirZ = (1.0f / length) * deltaZ;
+    }
+
+    uint32_t consumed = 0;
+    bool splineSkip = false;
+
+    while (true) {
+        uint32_t flags = this->m_flags;
+        if ((flags & (MOVEMASK_MOVING_FALL | MOVEMENTFLAG_HOVER)) == 0 || (flags & MOVEMENTFLAG_ROOT) != 0)
+            break;
+
+        int32_t remaining = a3 - consumed;
+        int32_t time = a2 + consumed;
+        float distance = remaining * 0.001f * speed;
+
+        if (!this->GetMoveFacets(distance, remaining, dirX, dirY, dirZ)) {
+            if (this->IsOnSpline()) {
+                //this->MoveSplineMoverWithoutCollision(&newPosition, a2, a3);
+                splineSkip = true;
+            } else {
+                //this->SkipTime(remaining);
+                this->m_anchorElapsedMs -= remaining;
+            }
+
+            consumed = a3;
+            break;
+        }
+
+        int32_t wasFalling = this->IsFalling();
+        WGUID savedTransport = this->m_transportGuid;
+        float savedSpeed = this->m_currentSpeed;
+
+        int32_t step;
+        //if (this->CanCollideWhileFlying()) {
+        //    step = this->Swim(time, remaining, distance, dirX, dirY, dirZ);
+        //} else if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0) {
+        //    C2Vector dir2D(dirX, dirY);
+        //    step = this->Fall(time, remaining, distance, &dir2D);
+        //} else if ((this->m_flags & MOVEMENTFLAG_HOVER) != 0) {
+        //    step = this->HoverMove(time, remaining, distance, dirX, dirY, dirZ);
+        //} else {
+        //    C2Vector dir2D(dirX, dirY);
+        //    step = this->TraceSurface(time, remaining, distance, &dir2D);
+        //}
+
+        // ####TESTING
+        this->m_position += *a4;
+        step = remaining;
+        // #############
+
+        consumed += step;
+
+        bool transportChanged = savedTransport != this->m_transportGuid;
+        //this->CallMoveEventHandlers(a2 + consumed, a3 - consumed, this->m_flags, this->m_flags2, wasFalling, transportChanged);
+
+        if (transportChanged || ((this->m_flags & MOVEMENTFLAG_FALLING) == 0 && (this->m_flags & MOVEMENTFLAG_FALLING) != 0)) {
+            uint32_t unspent = remaining - step;
+            if (this->m_anchorElapsedMs >= unspent)
+                this->m_anchorElapsedMs -= unspent;
+            else
+                this->m_anchorElapsedMs = 0;
+            break;
+        }
+
+        if (!this->IsOnSpline() && this->m_currentSpeed != savedSpeed) {
+            this->CalcCurrentSpeed(0);
+            break;
+        }
+
+        if (!this->m_anchorElapsedMs && (this->m_flags & MOVEMASK_TRANSLATE) != 0)
+            this->m_anchorElapsedMs = a3 - consumed;
+        if (consumed >= a3)
+            break;
+    }
+
+    //if (!splineSkip) {
+    //    if (!this->m_spline || (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) != 0 || (this->m_spline->flags & SPLINE_FLAG_FLYING) == 0)
+    //        this->GroundNormal();
+    //}
+
+    this->GetPosition(&newPosition, &this->m_position);
+
+    return consumed;
 }
 
 bool CMovement_C::Interpolate(int32_t now, int32_t time, C3Vector* pos, float* facing, float* pitch) {
@@ -666,4 +798,214 @@ int32_t CMovement_C::GetMoveStartTime(int32_t elapsed) {
     result -= (t * t) / 1000;
 
     return result < 0 ? 0 : result;
+}
+
+// OFFSET: 0x6E8FC0
+float CMovement_C::GetStepUpHeight() {
+    if (this->m_unit->IsClientControlled())
+        return this->m_stepUpHeight;
+
+    return 2.0f;
+}
+
+// OFFSET: 0x75CD00
+void CMovement_C::BuildCollisionBox(C3Vector* position, CAaBox* box) {
+    box->b = *position;
+    box->t = *position;
+
+    box->b.x = box->b.x - this->m_collisionRadius;
+    box->b.y = box->b.y - this->m_collisionRadius;
+    box->t.x = box->t.x + this->m_collisionRadius;
+    box->t.y = box->t.y + this->m_collisionRadius;
+    box->t.z = this->m_collisionHeight + box->t.z;
+}
+
+// OFFSET: 0x75E3D0
+int32_t CMovement_C::GetFacetQueryFlags() {
+    int32_t flags = 0x100111;
+    if (!this->m_unit->IsClientControlled())
+        flags = 0x102111;
+    if (this->m_unit->IsLocalClientControlled())
+        flags |= 0x80000000;
+
+    if ((this->m_flags & MOVEMENTFLAG_WATERWALKING) != 0 && (this->m_flags & MOVEMENTFLAG_SWIMMING) == 0 && (this->m_pitch > -0.6457718f || (this->m_flags2 & MOVEMENTFLAG2_UNK10) != 0))
+        flags |= 0x10000u;
+
+    if ((this->m_flags & MOVEMENTFLAG_FLYING) != 0) {
+        flags |= 0x200u;
+        if ((this->m_flags2 & MOVEMENTFLAG2_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY) == 0)
+            flags |= 0x20000u;
+    }
+
+    if ((this->m_unit->m_obj->m_type & TYPEMASK_PLAYER) != 0 && (this->m_unit->AsPlayer()->m_player->PLAYER_FLAGS & 0x10) != 0)
+        return flags | 0x8000;
+
+    return flags;
+}
+
+// OFFSET: 0x75FF90
+int32_t CMovement_C::GetMoveFacets(float distance, int32_t deltaMs, float dirX, float dirY, float dirZ) {
+    C44Matrix transportMat;
+    C3Vector position = this->m_position;
+
+    float x = dirX;
+    float y = dirY;
+    float z = dirZ;
+
+    if (this->m_transportGuid) {
+        //MovementGetTransportMtxX(this->m_transportGuid, &transportMat);
+        //
+        //position = transportMat.TransformPoint(position);
+        //
+        //float rx = transportMat.c0 * z + transportMat.b0 * y + transportMat.a0 * x;
+        //float ry = z * transportMat.c1 + y * transportMat.b1 + transportMat.a1 * x;
+        //float rz = z * transportMat.c2 + y * transportMat.b2 + x * transportMat.a2;
+        //
+        //x = rx;
+        //y = ry;
+        //z = rz;
+    }
+
+    World::IsValidPosition(position.x, position.y, position.z, 0.0f);
+
+    CAaBox collisionBox;
+    collisionBox.b = { 0.0f, 0.0f, 0.0f };
+    collisionBox.t = { 0.0f, 0.0f, 0.0f };
+    this->BuildCollisionBox(&position, &collisionBox);
+
+    CMovement_C::s_queryBox = collisionBox;
+
+    C3Vector step;
+    step.x = x * distance;
+    step.y = y * distance;
+    step.z = z * distance;
+
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0)
+        step.z = step.z - this->RelDistanceFallen(deltaMs + this->m_fallTimeMs);
+
+    uint32_t moveFlags = this->m_flags;
+    CAaBox swept;
+
+    if ((moveFlags & MOVEMENTFLAG_FALLING) != 0) {
+        swept.b.x = step.x + CMovement_C::s_queryBox.b.x;
+        swept.b.y = CMovement_C::s_queryBox.b.y + step.y;
+        swept.b.z = CMovement_C::s_queryBox.b.z + step.z;
+        swept.t.x = step.x + CMovement_C::s_queryBox.t.x;
+        swept.t.y = step.y + CMovement_C::s_queryBox.t.y;
+        swept.t.z = step.z + CMovement_C::s_queryBox.t.z;
+        CMovement_C::s_queryBox |= swept;
+
+        float spread = step.z * -1.1866661f;
+        if (spread > 0.0f) {
+            CMovement_C::s_queryBox.b.x = CMovement_C::s_queryBox.b.x - spread;
+            CMovement_C::s_queryBox.t.x = CMovement_C::s_queryBox.t.x + spread;
+            CMovement_C::s_queryBox.b.y = CMovement_C::s_queryBox.b.y - spread;
+            CMovement_C::s_queryBox.t.y = spread + CMovement_C::s_queryBox.t.y;
+        }
+    } else if ((moveFlags & MOVEMASK_SWIM_FLY) != 0) {
+        float half = distance * 0.5f;
+        float cx = x * half + position.x;
+        float cy = y * half + position.y;
+        float cz = z * half + position.z;
+        float radius = this->m_collisionRadius * 1.4142135f;
+
+        float top = radius;
+        if (radius <= this->m_collisionHeight)
+            top = this->m_collisionHeight;
+
+        swept.b.x = (cx - half) - radius;
+        swept.t.x = (cx + half) + radius;
+        swept.b.y = (cy - half) - radius;
+        swept.t.y = (cy + half) + radius;
+        swept.b.z = cz - half;
+        swept.t.z = (cz + half) + top;
+        CMovement_C::s_queryBox |= swept;
+    } else {
+        float reach = this->m_collisionRadius + 0.0013888889f;
+        if (reach < this->GetStepUpHeight() * 1.1917536f)
+            reach = this->GetStepUpHeight() * 1.1917536f;
+
+        float extent = reach + distance;
+        float ex = x * extent;
+        float ey = y * extent;
+        float ez = extent * z;
+
+        swept.b.x = ex + CMovement_C::s_queryBox.b.x;
+        swept.b.y = CMovement_C::s_queryBox.b.y + ey;
+        swept.b.z = CMovement_C::s_queryBox.b.z + ez;
+        swept.t.x = ex + CMovement_C::s_queryBox.t.x;
+        swept.t.y = ey + CMovement_C::s_queryBox.t.y;
+        swept.t.z = ez + CMovement_C::s_queryBox.t.z;
+        CMovement_C::s_queryBox |= swept;
+
+        float half = distance * 0.5f;
+        float cx = x * half + position.x;
+        float cy = y * half + position.y;
+        float cz = z * half + position.z;
+        float radius = half + this->m_collisionRadius * 1.4142135f;
+
+        swept.b.x = cx - radius;
+        swept.t.x = cx + radius;
+        swept.b.y = cy - radius;
+        swept.t.y = radius + cy;
+        swept.b.z = cz;
+        swept.t.z = cz;
+        CMovement_C::s_queryBox |= swept;
+
+        float rise = distance;
+        if (distance < this->GetStepUpHeight() + this->GetStepUpHeight())
+            rise = this->GetStepUpHeight() + this->GetStepUpHeight();
+
+        CMovement_C::s_queryBox.t.z = rise + CMovement_C::s_queryBox.t.z;
+        CMovement_C::s_queryBox.b.z = CMovement_C::s_queryBox.b.z - (this->GetStepUpHeight() + distance * 1.1917536f);
+    }
+
+    CMovement_C::s_queryBox.b.x = CMovement_C::s_queryBox.b.x - 0.0013888889f;
+    CMovement_C::s_queryBox.b.y = CMovement_C::s_queryBox.b.y - 0.0013888889f;
+    CMovement_C::s_queryBox.b.z = CMovement_C::s_queryBox.b.z - 0.0013888889f;
+    CMovement_C::s_queryBox.t.x = CMovement_C::s_queryBox.t.x + 0.0013888889f;
+    CMovement_C::s_queryBox.t.y = CMovement_C::s_queryBox.t.y + 0.0013888889f;
+    CMovement_C::s_queryBox.t.z = CMovement_C::s_queryBox.t.z + 0.0013888889f;
+
+    int32_t queryFlags = this->GetFacetQueryFlags();
+    if (!World::GetFacets(&collisionBox, &CMovement_C::s_queryBox, &CMovement_C::s_moveFacets, queryFlags, nullptr))
+        return 0;
+
+    if ((this->m_flags & MOVEMENTFLAG_SWIMMING) != 0) {
+        World::GetFacets(&collisionBox, &CMovement_C::s_queryBox, &CMovement_C::s_liquidFacets, 0x20000, nullptr);
+
+        for (uint32_t i = 0; i < CMovement_C::s_liquidFacets.facets.Count(); i++) {
+            CFacet* facet = &CMovement_C::s_liquidFacets.facets[i];
+            facet->plane.n.x = -facet->plane.n.x;
+            facet->plane.n.y = -facet->plane.n.y;
+            facet->plane.n.z = -facet->plane.n.z;
+            facet->plane.d = -facet->plane.d;
+        }
+    } else {
+        CMovement_C::s_liquidFacets.facets.SetCount(0);
+        CMovement_C::s_liquidFacets.facetIds.SetCount(0);
+    }
+
+    if (this->m_transportGuid) {
+        C44Matrix inverse = transportMat.AffineInverse();
+
+        for (uint32_t i = 0; i < CMovement_C::s_moveFacets.facets.Count(); i++) {
+            CFacet* facet = &CMovement_C::s_moveFacets.facets[i];
+
+            facet->v[0] = inverse.TransformPoint(facet->v[0]);
+            facet->v[1] = inverse.TransformPoint(facet->v[1]);
+            facet->v[2] = inverse.TransformPoint(facet->v[2]);
+
+            float nx = inverse.b0 * facet->plane.n.y + inverse.c0 * facet->plane.n.z + inverse.a0 * facet->plane.n.x;
+            float ny = inverse.b1 * facet->plane.n.y + inverse.c1 * facet->plane.n.z + inverse.a1 * facet->plane.n.x;
+            float nz = inverse.b2 * facet->plane.n.y + inverse.c2 * facet->plane.n.z + inverse.a2 * facet->plane.n.x;
+
+            facet->plane.n.x = nx;
+            facet->plane.n.y = ny;
+            facet->plane.n.z = nz;
+            facet->plane.d = -(ny * facet->v[0].y + nz * facet->v[0].z + nx * facet->v[0].x);
+        }
+    }
+
+    return 1;
 }

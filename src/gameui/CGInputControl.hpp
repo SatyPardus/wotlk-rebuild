@@ -60,6 +60,7 @@ class CGInputControl {
     bool CanMove(CGUnit_C* unit);
     bool CanTurn(CGUnit_C* unit);
     bool CanControl(CGUnit_C* unit);
+    void UpdateMoveStopped();
 
     void OnTurnToAngleStop();
     void MovePlayer(int32_t eventTime, CGUnit_C* unit);

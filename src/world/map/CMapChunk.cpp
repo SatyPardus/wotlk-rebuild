@@ -2,6 +2,7 @@
 #include "world/map/CMap.hpp"
 #include <os/Debug.hpp>
 #include <tempest/Intersect.hpp>
+#include <world/CWorldMath.hpp>
 
 C3Vector CMapChunk::vertexList[145];
 int32_t CMapChunk::cornerVertexIndex[4] = { 0, 8, 0x88, 0x90 };
@@ -532,6 +533,80 @@ bool CMapChunk::Intersect(int32_t subX, int32_t subY, CRay ray, float* distance)
     }
 
     return hit;
+}
+
+// OFFSET: 0x7D8840
+void CMapChunk::Intersect(CiRect* rect, CAaBox* box, World::FacetData* facets) {
+    uint8_t outcode[20];
+
+    for (int32_t y = rect->minY; y <= rect->maxY; y++) {
+        for (int32_t x = rect->minX; x <= rect->maxX; x++) {
+            if ((this->header->holes & CMap::s_holeMask[4 * (y >> 1) + (x >> 1)]) != 0)
+                continue;
+
+            int32_t base = 17 * y + x;
+
+            for (int32_t i = 0; i < 5; i++) {
+                int32_t index = CMap::s_subVertexIndex[i];
+                CMapChunk::vertexList[base + index].z = this->height[base + index];
+                outcode[index] = CWorldMath::ComputeAaBoxOutcode(box, &CMapChunk::vertexList[base + index]);
+            }
+
+            for (int32_t t = 0; t < 4; t++) {
+                int32_t i0 = CMap::s_subTriIndex[t][0];
+                int32_t i1 = CMap::s_subTriIndex[t][1];
+                int32_t i2 = CMap::s_subTriIndex[t][2];
+
+                if ((outcode[i0] & outcode[i1] & outcode[i2]) != 0) {
+                    if ((CWorld::s_enables & 0x200000) == 0)
+                        continue;
+
+                    CFacet culled(0.0f);
+                    culled.v[0] = { this->topLeftCoords.x + CMapChunk::vertexList[base + i0].x, this->topLeftCoords.y + CMapChunk::vertexList[base + i0].y, this->topLeftCoords.z + CMapChunk::vertexList[base + i0].z };
+                    culled.v[1] = { this->topLeftCoords.x + CMapChunk::vertexList[base + i1].x, this->topLeftCoords.y + CMapChunk::vertexList[base + i1].y, this->topLeftCoords.z + CMapChunk::vertexList[base + i1].z };
+                    culled.v[2] = { this->topLeftCoords.x + CMapChunk::vertexList[base + i2].x, this->topLeftCoords.y + CMapChunk::vertexList[base + i2].y, this->topLeftCoords.z + CMapChunk::vertexList[base + i2].z };
+                    culled.plane.From3Pos(culled.v[0], culled.v[1], culled.v[2]);
+                    CImVector color = { 0x00, 0x00, 0xFF, 0x80 };
+                    CMap::TestQueryAdd(culled, color, nullptr);
+                    continue;
+                }
+
+                CFacet* facet = facets->facets.New();
+                if (!facet)
+                    continue;
+
+                facet->v[0] = { this->topLeftCoords.x + CMapChunk::vertexList[base + i0].x, this->topLeftCoords.y + CMapChunk::vertexList[base + i0].y, this->topLeftCoords.z + CMapChunk::vertexList[base + i0].z };
+                facet->v[1] = { this->topLeftCoords.x + CMapChunk::vertexList[base + i1].x, this->topLeftCoords.y + CMapChunk::vertexList[base + i1].y, this->topLeftCoords.z + CMapChunk::vertexList[base + i1].z };
+                facet->v[2] = { this->topLeftCoords.x + CMapChunk::vertexList[base + i2].x, this->topLeftCoords.y + CMapChunk::vertexList[base + i2].y, this->topLeftCoords.z + CMapChunk::vertexList[base + i2].z };
+
+                if (CMap::dword_CF08F8) {
+                    float bx = facet->v[2].x - facet->v[0].x;
+                    float by = facet->v[2].y - facet->v[0].y;
+                    float bz = facet->v[2].z - facet->v[0].z;
+                    float ax = facet->v[1].x - facet->v[0].x;
+                    float ay = facet->v[1].y - facet->v[0].y;
+                    float az = facet->v[1].z - facet->v[0].z;
+
+                    facet->plane.n.x = ay * bz - az * by;
+                    facet->plane.n.y = az * bx - bz * ax;
+                    facet->plane.n.z = by * ax - bx * ay;
+
+                    float scale = 1.0f / sqrtf(facet->plane.n.x * facet->plane.n.x + facet->plane.n.y * facet->plane.n.y + facet->plane.n.z * facet->plane.n.z);
+                    facet->plane.n.x = facet->plane.n.x * scale;
+                    facet->plane.n.y = facet->plane.n.y * scale;
+                    facet->plane.n.z = facet->plane.n.z * scale;
+                    facet->plane.d = -(facet->plane.n.y * facet->v[0].y + facet->plane.n.z * facet->v[0].z + facet->plane.n.x * facet->v[0].x);
+                } else {
+                    facet->plane.From3Pos(facet->v[0], facet->v[1], facet->v[2]);
+                }
+
+                if ((CWorld::s_enables & 0x200000) != 0) {
+                    CImVector color = { 0x00, 0xFF, 0x00, 0x80 };
+                    CMap::TestQueryAdd(*facet, color, nullptr);
+                }
+            }
+        }
+    }
 }
 
 // OFFSET: 0x7D66D0

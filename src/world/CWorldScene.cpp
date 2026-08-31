@@ -1819,14 +1819,7 @@ void CWorldScene::RenderCollisionDebug() {
     mat.Translate(vec);
     g_theGxDevicePtr->XformPush(GxXform_World, mat);
     GxRsSet(GxRs_BlendingMode, 2);
-    //v4 = v2->m_appRenderStates.m_data;
-    //p_m_data = &v2->m_appRenderStates.m_data;
-    //v6 = CGxDevice::s_alphaRef[v4[6].m_value.m_data.i[0]];
-    //if (v4[7].m_value.m_data.i[0] != v6) {
-    //    CGxDevice::IRsDirty(v2, GxRs_AlphaRef);
-    //    (*p_m_data)[7].m_value.m_data.i[0] = v6;
-    //    v2 = g_theGxDevicePtr;
-    //}
+    GxRsSetAlphaRef();
     GxRsSet(GxRs_Lighting, 0);
     GxRsSet(GxRs_DepthWrite, 0);
     GxRsSet(GxRs_DepthTest, 0);

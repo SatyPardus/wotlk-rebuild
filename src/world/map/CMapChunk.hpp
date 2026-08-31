@@ -9,6 +9,7 @@
 #include "world/map/Types.hpp"
 #include <gx/buffer/Types.hpp>
 #include <tempest/ray/CRay.hpp>
+#include <world/World.hpp>
 
 class CMapChunk : public CMapBaseObj {
     public:
@@ -78,6 +79,7 @@ class CMapChunk : public CMapBaseObj {
     void CreateVertices(char* buf, int32_t bufOffset);
     void CreateVerticesLocal(CGxVertexPN* buf);
     bool Intersect(int32_t subX, int32_t subY, CRay ray, float* t);
+    void Intersect(CiRect* rect, CAaBox* box, World::FacetData* facets);
 
     CMapChunk();
     static void Initialize();

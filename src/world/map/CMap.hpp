@@ -16,6 +16,7 @@
 #include "world/map/CMapEntity.hpp"
 #include <tempest/facet/CFacet.hpp>
 #include "world/map/CMapLight.hpp"
+#include <world/World.hpp>
 
 class CMap {
     public:
@@ -47,6 +48,9 @@ class CMap {
     static bool bIsStreamingMode;
     static CMapLight* s_mapLight;
     static CiRect gbPrevChunkRect;
+    static bool dword_CF08F8;
+    static uint32_t mapGetFacetsCount;
+    static uint32_t s_queryTag;
 
     static CGxShader* vertexShader_Terrain[128];
     static CGxShader* pixelShader_Terrain0[3];
@@ -81,6 +85,9 @@ class CMap {
 
     static TSGrowableArray<CGxVertexPC> debugVertexArray;
     static TSGrowableArray<uint16_t> debugIndexArray;
+
+    static int32_t s_subVertexIndex[5];
+    static int32_t s_subTriIndex[4][3];
 
 
     static void Initialize();
@@ -135,7 +142,12 @@ class CMap {
     static void VectorIntersectDX(C3Vector& a1, C3Vector& a2, CiRect& rect);
 
     static bool LocateViewerMapObjs(C3Vector& start, C3Vector& end, float dist, CMapObjDef** outDefs, uint32_t* outGroups);
-    static void TestQueryAdd(CFacet& facet, CImVector& color, C44Matrix& mat);
+    static void TestQueryAdd(CFacet& facet, CImVector& color, C44Matrix* mat);
+    static bool GetFacets(CAaBox* a1, CAaBox* a2, World::FacetData* a3, uint32_t a4, uint32_t* a5);
+    static CFacet* BuildImpassableFacets(World::FacetData* facets, C3Vector* up, C3Vector* edge, C3Vector* normal, C3Vector* origin);
+    static void CreateImpassableFacets(CMapChunk* chunk, CAaBox* box, World::FacetData* facets, uint32_t flags);
+    static bool GetChunkFacets(int32_t chunkX, int32_t chunkY, CiRect* subRect, CAaBox* a4, CAaBox* box, World::FacetData* facets, uint32_t flags);
+    static bool CreateFlightBoundsFacets(int32_t areaX, int32_t areaY, CAaBox* box, World::FacetData* facets);
 };
 
 #endif

@@ -3,6 +3,7 @@
 #include <async/AsyncFileRead.hpp>
 #include <clientobject/ObjectMgrClient.hpp>
 #include <clientobject/Movement.hpp>
+#include "world/map/CMap.hpp"
 
 uint32_t s_newZoneID = 0;
 C3Vector s_newPosition;
@@ -65,6 +66,7 @@ int32_t LoadNewWorld(const void* eventData) {
 
 namespace World {
 
+    // OFFSET: 0x406DE0
     bool IsValidPosition(float x, float y, float z, float a4) {
     if (_finite(x) && _finite(y) && _finite(z)) {
         float v4 = -(y - 17066.666f);
@@ -86,6 +88,74 @@ namespace World {
         uint32_t nBatches;
         Batch batches[32];
     } // namespace TriData
+
+    // OFFSET: 0x783910
+    bool GetFacets(CAaBox* a1, CAaBox* a2, FacetData* a3, uint32_t a4, uint32_t* a5) {
+        a3->facets.SetCount(0);
+        a3->facetIds.SetCount(0);
+        if (a5)
+            *a5 = 0;
+        if ((a4 & 0x4000) == 0)
+            return CMap::GetFacets(a1, a2, a3, a4, a5) != 0;
+
+        static FacetData facetData = FacetData();
+
+        facetData.facets.SetCount(0);
+        facetData.facetIds.SetCount(0);
+        if (!CMap::GetFacets(a1, a2, &facetData, a4, a5))
+            return 0;
+
+        for (int32_t i = 0; i < facetData.facets.Count(); i++) {
+            if (facetData.facets[i].plane.n.z >= 0.64278764f) {
+                a3->facets.Add(1, &facetData.facets[i]);
+                a3->facetIds.Add(1, &facetData.facetIds[i]);
+            }
+        }
+        return 1;
+    }
+
+    // OFFSET: 0x7A3E40
+    void AddAaBoxFacets(CAaBox* box, FacetData* facets) {
+        static const int32_t s_boxTriIndex[36] = { 0, 2, 3, 0, 1, 2, 1, 6, 2, 1, 5, 6, 4, 6, 5, 4, 7, 6, 0, 7, 4, 0, 3, 7, 0, 5, 1, 0, 4, 5, 2, 7, 3, 2, 6, 7 };
+
+        if (box->t.x <= box->b.x || box->t.y <= box->b.y || box->t.z <= box->b.z)
+            return;
+
+        uint32_t firstFacet = facets->facets.Count();
+
+        C3Vector corner[8];
+        corner[0] = { box->b.x, box->t.y, box->b.z };
+        corner[1] = { box->t.x, box->t.y, box->b.z };
+        corner[2] = { box->t.x, box->b.y, box->b.z };
+        corner[3] = { box->b.x, box->b.y, box->b.z };
+        corner[4] = { box->b.x, box->t.y, box->t.z };
+        corner[5] = { box->t.x, box->t.y, box->t.z };
+        corner[6] = { box->t.x, box->b.y, box->t.z };
+        corner[7] = { box->b.x, box->b.y, box->t.z };
+
+        C4Plane plane[6];
+        plane[0].From3Pos(corner[0], corner[2], corner[3]);
+        plane[1].From3Pos(corner[1], corner[6], corner[2]);
+        plane[2].From3Pos(corner[4], corner[6], corner[5]);
+        plane[3].From3Pos(corner[0], corner[7], corner[4]);
+        plane[4].From3Pos(corner[0], corner[5], corner[1]);
+        plane[5].From3Pos(corner[2], corner[7], corner[3]);
+
+        CFacet facet(0.0f);
+        for (int32_t i = 0; i < 36; i += 3) {
+            facet.plane = plane[i / 6];
+            facet.v[0] = corner[s_boxTriIndex[i]];
+            facet.v[1] = corner[s_boxTriIndex[i + 1]];
+            facet.v[2] = corner[s_boxTriIndex[i + 2]];
+            facets->facets.Add(1, &facet);
+        }
+
+        uint32_t count = facets->facets.Count();
+        facets->facetIds.SetCount(count);
+        for (uint32_t i = firstFacet; i < count; i++)
+            facets->facetIds[i] = 0;
+    }
+
 } // namespace World
 
 World::TriData::Batch* World::TriData::AllocBatch(uint32_t indexCount, uint32_t faceCount) {

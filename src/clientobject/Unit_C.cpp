@@ -443,6 +443,31 @@ bool CGUnit_C::GetCanFly() {
     return this->movementData.m_flags & MOVEMENTFLAG_CAN_FLY;
 }
 
+// OFFSET: 0x716710
+bool CGUnit_C::IsClientControlled() {
+    if ((this->m_unit->UNIT_FIELD_FLAGS & 2) == 0 && (this->m_unit->UNIT_FIELD_FLAGS & 0xC00004) != 0)
+        return 0;
+
+    if ((this->m_unit->UNIT_FIELD_FLAGS & 0x1000000) != 0) {
+        WGUID v7 = this->m_unit->UNIT_FIELD_CHARMEDBY;
+        if (v7 == 0)
+            v7 = this->m_unit->UNIT_FIELD_CREATEDBY;
+        auto v6 = ClntObjMgrObjectPtr<CGUnit_C*>(v7, TYPEMASK_UNIT);
+        if (!v6 || (v6->m_obj->m_type & TYPEMASK_PLAYER) == 0)
+            return 0;
+        return (v6->m_unit->UNIT_FIELD_FLAGS & 1) == 0;
+    } else {
+        if ((this->m_obj->m_type & TYPEMASK_PLAYER) == 0 || this->m_unit->UNIT_FIELD_CHARMEDBY)
+            return 0;
+        return (this->m_unit->UNIT_FIELD_FLAGS & 1) == 0;
+    }
+}
+
+// OFFSET: 0x714AC0
+bool CGUnit_C::IsLocalClientControlled() {
+    return (this->unk_0A30 >> 10) & 1;
+}
+
 // OFFSET: 0x73AB20
 void CGUnit_C::OnMoveUpdate(int32_t time, bool a3, bool a4) {
     //v5 = this->objectclass1[23];

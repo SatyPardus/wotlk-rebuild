@@ -268,6 +268,11 @@ bool CGInputControl::CanControl(CGUnit_C* unit) {
     return true;
 }
 
+// OFFSET: 0x5F95F0
+void CGInputControl::UpdateMoveStopped() {
+    this->m_flags &= 0xFFFEEFFF;
+}
+
 // OFFSET: 0x5F9650
 void CGInputControl::OnTurnToAngleStop() {
     //if (this->unk_0044) {

@@ -3,6 +3,8 @@
 
 #include <cstdint>
 #include "world/CWorld.hpp"
+#include <tempest/facet/CFacet.hpp>
+#include <storm/Array.hpp>
 
 class CMapObjDef;
 
@@ -14,8 +16,6 @@ extern const char* s_newMapname;
 int32_t LoadNewWorld(const void* eventData);
 
 namespace World {
-
-    bool IsValidPosition(float x, float y, float z, float a4);
 
     namespace TriData {
         struct Batch {
@@ -42,6 +42,18 @@ namespace World {
 
         Batch* AllocBatch(uint32_t indexCount, uint32_t faceCount);
     }
+
+    class FacetData {
+        public:
+        TSGrowableArray<CFacet> facets;
+        TSGrowableArray<uint64_t> facetIds;
+    };
+
+    bool IsValidPosition(float x, float y, float z, float a4);
+
+    bool GetFacets(CAaBox* a1, CAaBox* a2, FacetData* a3, uint32_t a4, uint32_t* a5);
+    void AddAaBoxFacets(CAaBox* box, FacetData* facets);
+
 }
 
 #endif

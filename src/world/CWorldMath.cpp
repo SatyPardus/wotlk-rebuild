@@ -75,3 +75,23 @@ bool CWorldMath::VectorIntersectAABox2(CAaBox& box, C3Vector& start, C3Vector& e
 
     return 1;
 }
+
+// OFFSET: 0x7A61D0
+int32_t CWorldMath::ComputeAaBoxOutcode(CAaBox* box, C3Vector* point) {
+    int32_t outcode = 0;
+
+    if (point->x - box->b.x + 0.019444443f < 0.0f)
+        outcode |= 0x01;
+    if (point->y - box->b.y + 0.019444443f < 0.0f)
+        outcode |= 0x02;
+    if (point->z - box->b.z + 0.019444443f < 0.0f)
+        outcode |= 0x04;
+    if (box->t.x - point->x + 0.019444443f < 0.0f)
+        outcode |= 0x08;
+    if (box->t.y - point->y + 0.019444443f < 0.0f)
+        outcode |= 0x10;
+    if (box->t.z - point->z + 0.019444443f < 0.0f)
+        outcode |= 0x20;
+
+    return outcode;
+}

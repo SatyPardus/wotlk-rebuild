@@ -415,7 +415,7 @@ void CMapObjGroup::GetTrisFromQuery(uint32_t a2, BspQuery_Segment* a3, CMapObjDe
             CFacet facet(v0, v1, v2);
             C44Matrix mat;
             CImVector color = { 0x00, 0x00, 0xFF, 0x7F };
-            CMap::TestQueryAdd(facet, color, mat);
+            CMap::TestQueryAdd(facet, color, &mat);
         }
     
         for (uint32_t i = 0; i < BspQuery::hitFaceSub; i++) {
@@ -430,7 +430,7 @@ void CMapObjGroup::GetTrisFromQuery(uint32_t a2, BspQuery_Segment* a3, CMapObjDe
             CFacet facet(v0, v1, v2);
             C44Matrix mat;
             CImVector color = { 0x00, 0xFF, 0x00, 0x7F };
-            CMap::TestQueryAdd(facet, color, mat);
+            CMap::TestQueryAdd(facet, color, &mat);
         }
     }
 

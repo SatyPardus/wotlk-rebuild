@@ -5,6 +5,7 @@
 #include "clientobject/CPlayerMoveEvent.hpp"
 #include <storm/List.hpp>
 #include <cstdint>
+#include "world/World.hpp"
 
 class CGUnit_C;
 class CClientMoveUpdate;
@@ -13,6 +14,9 @@ class CMovement_C : public CMovementShared {
     public:
     // Static variables
     static STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link) s_playerMoveEventFreeList;
+    static World::FacetData CMovement_C::s_moveFacets;
+    static World::FacetData CMovement_C::s_liquidFacets;
+    static CAaBox CMovement_C::s_queryBox;
 
     // Static methods
     static CPlayerMoveEvent* AllocPlayerMoveEvent(int32_t eventTime, uint32_t eventId);
@@ -20,14 +24,12 @@ class CMovement_C : public CMovementShared {
 
     // Member variables
     /* 0000 */ //DWORD ukn1;
-    /* 0000 */ //float ukn2;
-    /* 0000 */ //float ukn3;
-    /* 0000 */ //float ukn4;
-    /* 0000 */ //float ukn5;
-    /* 0000 */ //float ukn6;
-    /* 0000 */ //float ukn7;
-    /* 0000 */ //DWORD ukn8;
-    /* 0000 */ //DWORD ukn9;
+    /* 00C8 */ float m_collisionRadius = 0.33333334f;
+    /* 00CC */ float m_collisionHeight = 2.0277777f;
+    /* 00D0 */ float m_stepUpHeight = 1.0f;
+    /* 00D4 */ C3Vector m_interpolationPos;
+    /* 00E0 */ float m_interpolationFacing;
+    /* 00E4 */ float m_interpolationPitch;
     /* 0000 */ //DWORD ukn10;
     /* 0000 */ //DWORD ukn11;
     /* 0000 */ //DWORD ukn12;
@@ -46,9 +48,9 @@ class CMovement_C : public CMovementShared {
     /* 0000 */ //DWORD ukn25;
     /* 0000 */ //DWORD ukn26;
     /* 0000 */ //DWORD ukn27;
-    /* 0000 */ float m_interpolation = 0.0f;
-    /* 0000 */ int32_t ukn29 = 0;
-    /* 0000 */ STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link) m_moveQueue;
+    /* 0130 */ float m_interpolation = 0.0f;
+    /* 0134 */ int32_t ukn29 = 0;
+    /* 0138 */ STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link) m_moveQueue;
     /* 0144 */ CGUnit_C* m_unit = nullptr;
 
     // Member methods
@@ -76,10 +78,17 @@ class CMovement_C : public CMovementShared {
     void OnTurnStopLocal(int32_t eventTime);
     void AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags);
     void UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, uint32_t eventId);
+    bool HasMoveEventBetween(uint32_t minEventId, uint32_t maxEventId);
+    int32_t HandlePendingActions();
     int32_t RequestMove(int32_t a2, int32_t a3, C3Vector* a4);
+    int32_t CollideRequestMove(int32_t a2, int32_t a3, C3Vector* a4);
     bool Interpolate(int32_t now, int32_t time, C3Vector* pos, float* facing, float* pitch);
 
     int32_t GetMoveStartTime(int32_t elapsed);
+    float GetStepUpHeight();
+    void BuildCollisionBox(C3Vector* position, CAaBox* box);
+    int32_t GetFacetQueryFlags();
+    int32_t GetMoveFacets(float distance, int32_t deltaMs, float dirX, float dirY, float dirZ);
 };
 
 #endif // CLIENTOBJECT_MOVEMENT_C_HPP

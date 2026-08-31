@@ -58,6 +58,9 @@ bool CMap::bPreload;
 bool CMap::bIsStreamingMode;
 CMapLight* CMap::s_mapLight;
 CiRect CMap::gbPrevChunkRect;
+bool CMap::dword_CF08F8 = 0;
+uint32_t CMap::mapGetFacetsCount = 0;
+uint32_t CMap::s_queryTag = 0;
 
 CGxShader* CMap::vertexShader_Terrain[128];
 CGxShader* CMap::pixelShader_Terrain0[3];
@@ -93,6 +96,9 @@ uint32_t* CMap::chunkLiquidHeap;
 TSGrowableArray<CGxVertexPC> CMap::debugVertexArray;
 TSGrowableArray<uint16_t> CMap::debugIndexArray;
 
+int32_t CMap::s_subVertexIndex[5] = { 0, 9, 17, 1, 18 };
+int32_t CMap::s_subTriIndex[4][3] = { { 17, 9, 0 }, { 9, 1, 0 }, { 9, 17, 18 }, { 9, 18, 1 } };
+
 // OFFSET: 0x79E7C0
 void CMap::Initialize() {
     //NOP();
@@ -118,6 +124,7 @@ void CMap::Initialize() {
     CMap::scCollideList.SetCount(2048);
     CMap::scCollideCnt = 0;
     CMap::cCount = 0;
+    CMap::s_queryTag = 0;
     CMap::uniqueId = -2;
     //s_mapId = -1;
     CMap::bDungeon = 0;
@@ -287,7 +294,7 @@ void CMap::MapMemInitialize() {
 
     int32_t vendor;
     if (OsGetProcessorFeaturesEx(vendor) & 4) {
-        // TODO: dword_CF08F8 = 1;
+        CMap::dword_CF08F8 = 1;
     }
 }
 
@@ -801,7 +808,7 @@ void CMap::PrepareUpdate(bool a1) {
     if (CWorld::s_areaOfInterestJumped)
          CMap::PurgeMaps();
     // CMap::bspRecurseCount = 0;
-    // CMap::mapGetFacetsCount = 0;
+    CMap::mapGetFacetsCount = 0;
     // CMap::oldSelectLightParm = 0;
     // sub_7CF840(flt_CD76A0);
     CMapObj::PrepareUpdate();
@@ -1876,11 +1883,17 @@ bool CMap::LocateViewerMapObjs(C3Vector& start, C3Vector& end, float dist, CMapO
     return true;
 }
 
-void CMap::TestQueryAdd(CFacet& facet, CImVector& color, C44Matrix& mat) {
+// OFFSET: 0x7A4C10
+void CMap::TestQueryAdd(CFacet& facet, CImVector& color, C44Matrix* mat) {
+    C44Matrix identityMatrix;
+
+    if (!mat)
+        mat = &identityMatrix;
+
     uint16_t count = debugVertexArray.Count();
     for (int32_t i = 0; i < 3; i++) {
         CGxVertexPC vertex;
-        vertex.p = mat.TransformPoint(facet.v[i]);
+        vertex.p = mat->TransformPoint(facet.v[i]);
         vertex.c = color;
         debugVertexArray.Add(1, &vertex);
     }
@@ -1889,4 +1902,275 @@ void CMap::TestQueryAdd(CFacet& facet, CImVector& color, C44Matrix& mat) {
     debugIndexArray.Add(1, &count);
     count++;
     debugIndexArray.Add(1, &count);
+}
+
+// OFFSET: 0x7A5F20
+bool CMap::GetFacets(CAaBox* a1, CAaBox* a2, World::FacetData* a3, uint32_t a4, uint32_t* a5) {
+    CMap::mapGetFacetsCount++;
+    CMap::s_queryTag++;
+
+    a3->facets.SetCount(0);
+
+    //if (!CMap::GetMapObjFacets(a1, a2, a3, a4, a5))
+    //    return false;
+    if (CMap::bDungeon)
+        return true;
+
+    float minY = 17066.666f - a2->t.x;
+    float minX = 17066.666f - a2->t.y;
+    float maxY = 17066.666f - a2->b.x;
+    float maxX = 17066.666f - a2->b.y;
+
+    if (minX < 0.0f)
+        return false;
+    if (minY < 0.0f || maxX >= 34133.332f || maxY >= 34133.332f)
+        return false;
+
+    CiRect subRect;
+    subRect.minY = (int32_t)floorf(minY * 0.23999999f);
+    subRect.minX = (int32_t)floorf(minX * 0.23999999f);
+    subRect.maxY = (int32_t)floorf(maxY * 0.23999999f);
+    subRect.maxX = (int32_t)floorf(maxX * 0.23999999f);
+
+    bool result = true;
+
+    for (int32_t chunkY = subRect.minY >> 3; chunkY <= subRect.maxY >> 3; chunkY++) {
+        for (int32_t chunkX = subRect.minX >> 3; chunkX <= subRect.maxX >> 3; chunkX++) {
+            if (!CMap::GetChunkFacets(chunkX, chunkY, &subRect, a1, a2, a3, a4))
+                result = false;
+        }
+    }
+
+    if ((a4 & 0x200) != 0) {
+        for (int32_t areaY = subRect.minY >> 7; areaY <= subRect.maxY >> 7; areaY++) {
+            for (int32_t areaX = subRect.minX >> 7; areaX <= subRect.maxX >> 7; areaX++) {
+                if (!CMap::CreateFlightBoundsFacets(areaX, areaY, a2, a3))
+                    result = false;
+            }
+        }
+    }
+
+    return result;
+}
+
+// OFFSET: 0x7A4270
+CFacet* CMap::BuildImpassableFacets(World::FacetData* facets, C3Vector* up, C3Vector* edge, C3Vector* normal, C3Vector* origin) {
+    float d = -(normal->z * origin->z + normal->x * origin->x + normal->y * origin->y);
+
+    CFacet* facet = facets->facets.New();
+    facet->plane.n = *normal;
+    facet->plane.d = d;
+    facet->v[0] = *origin;
+    facet->v[1] = { origin->x + edge->x, origin->y + edge->y, origin->z + edge->z };
+    facet->v[2] = { origin->x + edge->x + up->x, origin->y + edge->y + up->y, origin->z + edge->z + up->z };
+
+    facet = facets->facets.New();
+    facet->plane.n = *normal;
+    facet->plane.d = d;
+    facet->v[0] = *origin;
+    facet->v[1] = { origin->x + edge->x + up->x, origin->y + edge->y + up->y, origin->z + edge->z + up->z };
+    facet->v[2] = { origin->x + up->x, origin->y + up->y, origin->z + up->z };
+
+    return facet;
+}
+
+// OFFSET: 0x7A43D0
+void CMap::CreateImpassableFacets(CMapChunk* chunk, CAaBox* box, World::FacetData* facets, uint32_t flags) {
+    C3Vector up = { 0.0f, 0.0f, 32000.0f };
+    C3Vector origin = { 0.0f, 0.0f, 0.0f };
+    C3Vector normal = { 0.0f, 0.0f, 0.0f };
+    C3Vector edge = { 0.0f, 0.0f, 0.0f };
+
+    if (chunk->bbox.b.y > box->b.y) {
+        origin = { chunk->bbox.b.x, chunk->bbox.b.y, chunk->bbox.b.z };
+        normal = { 0.0f, -1.0f, 0.0f };
+        edge = { chunk->bbox.t.x - chunk->bbox.b.x, 0.0f, 0.0f };
+        CMap::BuildImpassableFacets(facets, &up, &edge, &normal, &origin);
+    }
+
+    if (chunk->bbox.t.y < box->t.y) {
+        origin = { chunk->bbox.t.x, chunk->bbox.t.y, chunk->bbox.b.z };
+        normal = { 0.0f, 1.0f, 0.0f };
+        edge = { chunk->bbox.b.x - chunk->bbox.t.x, 0.0f, 0.0f };
+        CMap::BuildImpassableFacets(facets, &up, &edge, &normal, &origin);
+    }
+
+    if (chunk->bbox.b.x > box->b.x) {
+        origin = { chunk->bbox.b.x, chunk->bbox.t.y, chunk->bbox.b.z };
+        normal = { -1.0f, 0.0f, 0.0f };
+        edge = { 0.0f, chunk->bbox.b.y - chunk->bbox.t.y, 0.0f };
+        CMap::BuildImpassableFacets(facets, &up, &edge, &normal, &origin);
+    }
+
+    if (chunk->bbox.t.x < box->t.x) {
+        origin = { chunk->bbox.t.x, chunk->bbox.b.y, chunk->bbox.b.z };
+        normal = { 1.0f, 0.0f, 0.0f };
+        edge = { 0.0f, chunk->bbox.t.y - chunk->bbox.b.y, 0.0f };
+        CMap::BuildImpassableFacets(facets, &up, &edge, &normal, &origin);
+    }
+}
+
+// OFFSET: 0x7A5A60
+bool CMap::GetChunkFacets(int32_t chunkX, int32_t chunkY, CiRect* subRect, CAaBox* a4, CAaBox* box, World::FacetData* facets, uint32_t flags) {
+    uint32_t firstFacet = facets->facets.Count();
+    int32_t areaIndex = ((chunkX >> 4) & 0x3F) + 64 * ((chunkY >> 4) & 0x3F);
+    CMapArea* area = CMap::areaTable[areaIndex];
+
+    if (!area || area->asyncObject) {
+        if ((CMap::areaInfo[areaIndex].flags & 1) == 0)
+            return true;
+        if ((flags & 0x80000000) == 0)
+            return false;
+
+        CAaBox bounds;
+        bounds.b.x = (chunkY + 1) * -33.333332f + 17066.666f;
+        bounds.b.y = (chunkX + 1) * -33.333332f + 17066.666f;
+        bounds.b.z = box->b.z - 1000.0f;
+        bounds.t.x = chunkY * -33.333332f + 17066.666f;
+        bounds.t.y = chunkX * -33.333332f + 17066.666f;
+        bounds.t.z = box->t.z + 1000.0f;
+
+        if (bounds.Intersects(a4))
+            return false;
+
+        World::AddAaBoxFacets(&bounds, facets);
+        return true;
+    }
+
+    CMapChunk* chunk = area->mapChunks[16 * (chunkY & 0xF) + (chunkX & 0xF)];
+    if (!chunk)
+        return false;
+
+    if ((chunk->flags & 0x40) != 0)
+        CMap::CreateImpassableFacets(chunk, box, facets, flags);
+
+    CiRect rect;
+    rect.minY = subRect->minY - 8 * chunkY;
+    rect.minX = subRect->minX - 8 * chunkX;
+    rect.maxY = subRect->maxY - 8 * chunkY;
+    rect.maxX = subRect->maxX - 8 * chunkX;
+    if (rect.minY < 0)
+        rect.minY = 0;
+    if (rect.minX < 0)
+        rect.minX = 0;
+    if (rect.maxY >= 8)
+        rect.maxY = 7;
+    if (rect.maxX >= 8)
+        rect.maxX = 7;
+
+    CAaBox localBox;
+    localBox.b.x = box->b.x - chunk->topLeftCoords.x;
+    localBox.b.y = box->b.y - chunk->topLeftCoords.y;
+    localBox.b.z = box->b.z - chunk->topLeftCoords.z;
+    localBox.t.x = box->t.x - chunk->topLeftCoords.x;
+    localBox.t.y = box->t.y - chunk->topLeftCoords.y;
+    localBox.t.z = box->t.z - chunk->topLeftCoords.z;
+
+    if ((flags & 0x100) != 0)
+        chunk->Intersect(&rect, &localBox, facets);
+
+    if ((flags & 0x30000) != 0) {
+        bool walkableOnly = (flags & 0x10000) != 0 && (flags & 0x20000) == 0;
+
+        //for (CChunkLiquid* liquid = chunk->liquidChunkLinkList.Head(); liquid; liquid = chunk->liquidChunkLinkList.Next(liquid)) {
+        //    if (walkableOnly) {
+        //        LiquidTypeRec* rec = g_liquidTypeDB.GetRecord(liquid->liquidType);
+        //        if (!rec || (rec->m_flags & 4) == 0)
+        //            continue;
+        //    }
+        //
+        //    CMap::GetChunkLiquidFacets(chunk, &localBox, &rect, liquid, facets);
+        //}
+    }
+
+    uint32_t count = facets->facets.Count();
+    facets->facetIds.SetCount(count);
+    for (uint32_t i = firstFacet; i < count; i++)
+        facets->facetIds[i] = 0;
+
+    //if ((flags & 0xF0000F) != 0 && !CMap::QueryMapObjFacets(&chunk->doodadDefLinkList, box, facets, flags))
+    //    return false;
+    //if ((flags & 0xF00000) != 0)
+    //    CMap::QueryDestructibleFacets(&chunk->TSExplicitList__m_linkoffset_DC, box, facets, flags);
+
+    return true;
+}
+
+// OFFSET: 0x7A4590
+bool CMap::CreateFlightBoundsFacets(int32_t areaX, int32_t areaY, CAaBox* box, World::FacetData* facets) {
+    static const int32_t s_flightTriIndex[24] = { 3, 0, 4, 0, 1, 4, 1, 2, 4, 2, 5, 4, 5, 8, 4, 8, 7, 4, 7, 6, 4, 6, 3, 4 };
+    static const float s_flightVertexOffset[9][2] = { { 0.0f, 0.0f }, { 0.0f, -266.66666f }, { 0.0f, -533.33331f }, { -266.66666f, 0.0f }, { -266.66666f, -266.66666f }, { -266.66666f, -533.33331f }, { -533.33331f, 0.0f }, { -533.33331f, -266.66666f }, { -533.33331f, -533.33331f } };
+
+    CMapArea* area = CMap::areaTable[64 * areaY + areaX];
+    if (!area || area->asyncObject)
+        return false;
+
+    int16_t* flyingBbox = area->flyingBbox;
+    if (!flyingBbox)
+        return true;
+
+    uint32_t firstFacet = facets->facets.Count();
+
+    int16_t ceiling = (int16_t)(int32_t)(box->t.z + 1.0f);
+
+    int32_t belowCeiling[9];
+    for (int32_t i = 0; i < 9; i++)
+        belowCeiling[i] = ceiling < flyingBbox[i];
+
+    for (int32_t t = 0; t < 24; t += 3) {
+        int32_t i0 = s_flightTriIndex[t];
+        int32_t i1 = s_flightTriIndex[t + 1];
+        int32_t i2 = s_flightTriIndex[t + 2];
+
+        if (belowCeiling[i0] && belowCeiling[i1] && belowCeiling[i2])
+            continue;
+
+        C3Vector v0 = { s_flightVertexOffset[i0][0] + area->topLeft2.x, s_flightVertexOffset[i0][1] + area->topLeft2.y, (float)flyingBbox[i0] };
+        C3Vector v1 = { s_flightVertexOffset[i1][0] + area->topLeft2.x, s_flightVertexOffset[i1][1] + area->topLeft2.y, (float)flyingBbox[i1] };
+        C3Vector v2 = { s_flightVertexOffset[i2][0] + area->topLeft2.x, s_flightVertexOffset[i2][1] + area->topLeft2.y, (float)flyingBbox[i2] };
+
+        CFacet* facet = facets->facets.New();
+        if (!facet)
+            continue;
+
+        facet->plane.From3Pos(v0, v1, v2);
+        facet->v[0] = v0;
+        facet->v[1] = v1;
+        facet->v[2] = v2;
+    }
+
+    int16_t ground = (int16_t)(int32_t)(box->b.z - 1.0f);
+
+    int32_t aboveGround[9];
+    for (int32_t i = 0; i < 9; i++)
+        aboveGround[i] = ground > flyingBbox[9 + i];
+
+    for (int32_t t = 0; t < 24; t += 3) {
+        int32_t i0 = s_flightTriIndex[t];
+        int32_t i1 = s_flightTriIndex[t + 1];
+        int32_t i2 = s_flightTriIndex[t + 2];
+
+        if (aboveGround[i0] && aboveGround[i1] && aboveGround[i2])
+            continue;
+
+        C3Vector v0 = { s_flightVertexOffset[i0][0] + area->topLeft2.x, s_flightVertexOffset[i0][1] + area->topLeft2.y, (float)flyingBbox[9 + i0] };
+        C3Vector v1 = { s_flightVertexOffset[i1][0] + area->topLeft2.x, s_flightVertexOffset[i1][1] + area->topLeft2.y, (float)flyingBbox[9 + i1] };
+        C3Vector v2 = { s_flightVertexOffset[i2][0] + area->topLeft2.x, s_flightVertexOffset[i2][1] + area->topLeft2.y, (float)flyingBbox[9 + i2] };
+
+        CFacet* facet = facets->facets.New();
+        if (!facet)
+            continue;
+
+        facet->plane.From3Pos(v0, v2, v1);
+        facet->v[0] = v0;
+        facet->v[1] = v2;
+        facet->v[2] = v1;
+    }
+
+    uint32_t count = facets->facets.Count();
+    facets->facetIds.SetCount(count);
+    for (uint32_t i = firstFacet; i < count; i++)
+        facets->facetIds[i] = 0;
+
+    return true;
 }

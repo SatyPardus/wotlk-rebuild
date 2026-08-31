@@ -152,6 +152,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool sub_71C500();
     float GetMaxCameraHeight();
     bool GetCanFly();
+    bool IsClientControlled();
+    bool IsLocalClientControlled();
 
     void OnMoveUpdate(int32_t time, bool a3, bool a4);
     void OnMoveStartLocal(int32_t eventTime, bool forward);

@@ -43,7 +43,7 @@ CMovementShared::CMovementShared(WGUID* transportGuid, C3Vector& position, float
     this->m_hoverHeight = 1.0;
 }
 
-// OFFSET: 0x4F5260
+// OFFSET: 0x4F5240
 bool CMovementShared::IsOnSpline() {
     return this->m_spline && (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0;
 }
@@ -63,6 +63,43 @@ bool CMovementShared::IsOnFallingSpline() {
 
     const uint32_t flags = this->m_spline->flags;
     return (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_FALLING) != 0;
+}
+
+// OFFSET: 0x75EDA0
+bool CMovementShared::IsSplineFlyer_FlyingSwimming() {
+    bool fallingSpline = false;
+
+    if (this->m_spline) {
+        uint32_t flags = this->m_spline->flags;
+
+        if ((flags & SPLINE_FLAG_NO_SPLINE) == 0 && (flags & SPLINE_FLAG_FALLING) != 0)
+            fallingSpline = true;
+        else if ((flags & SPLINE_FLAG_NO_SPLINE) == 0 && (flags & SPLINE_FLAG_FLYING) != 0)
+            return true;
+    }
+
+    if (!fallingSpline) {
+        if ((this->m_flags2 & MOVEMENTFLAG2_UNK3) != 0)
+            return true;
+        if ((this->m_flags & MOVEMENTFLAG_DISABLE_GRAVITY) != 0)
+            return true;
+    }
+
+    return (this->m_flags & MOVEMASK_SWIM_FLY) != 0;
+}
+
+// OFFSET: 0x75EE00
+bool CMovementShared::CanCollideWhileFlying() {
+    if (this->IsSplineFlyer_FlyingSwimming())
+        return true;
+
+    if ((this->m_flags2 & MOVEMENTFLAG2_UNK8) != 0) {
+        CMoveSpline* spline = this->m_spline;
+        if (spline && (spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (spline->flags & SPLINE_FLAG_PARABOLIC) != 0)
+            return true;
+    }
+
+    return this->IsOnFallingSpline();
 }
 
 // OFFSET: 0x987E30
@@ -136,6 +173,50 @@ void CMovementShared::CalcDirection(bool ignoreFalling) {
     }
 }
 
+// OFFSET: 0x986F00
+float CMovementShared::CalcFallStartElevation(float elapsed, int32_t slowFall, float velocity) {
+    float terminal = slowFall ? 7.0f : 60.148003f;
+
+    float v = velocity;
+    if (velocity > terminal)
+        v = terminal;
+
+    if (19.291105f * elapsed + v > terminal) {
+        float rampTime = (terminal - v) * 0.051837362f;
+        return terminal * (elapsed - rampTime) + (v + 9.6455526f * rampTime) * rampTime;
+    }
+
+    return elapsed * (v + elapsed * 9.6455526f);
+}
+
+// OFFSET: 0x9880C0
+void CMovementShared::CalcCurrentSpeed(bool ignoreFalling) {
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0 || ignoreFalling)
+        this->m_currentSpeed = this->GetBaseSpeed(ignoreFalling);
+}
+
+// OFFSET: 0x987050
+float CMovementShared::RelDistanceFallen(int32_t elapsedMs, float z) {
+    uint32_t flags = this->m_flags;
+    float velocity = this->m_fallVelocity;
+
+    float ms = (float)elapsedMs;
+    if (elapsedMs < 0)
+        ms = ms + 4294967300.0f;
+
+    float fallen = CMovementShared::CalcFallStartElevation(ms * 0.001f, flags & MOVEMENTFLAG_FALLING_SLOW, velocity);
+
+    if ((flags & MOVEMENTFLAG_FALLING) != 0)
+        return fallen + z - this->m_fallStartZ;
+
+    return fallen;
+}
+
+// OFFSET: 0x9870D0
+float CMovementShared::RelDistanceFallen(int32_t elapsedMs) {
+    return this->RelDistanceFallen(elapsedMs, this->m_position.z);
+}
+
 // OFFSET: 0x9881D0
 void CMovementShared::UpdateAnchors(bool a2) {
     this->m_anchorFacing = this->m_facing;
@@ -175,6 +256,27 @@ float CMovementShared::GetBaseSpeed(bool a2) {
         //return *&this->m_spline->spline.unk_0000[1] / m_spline->m_duration * 1000.0;
         return 0.0f;
     }
+}
+
+// OFFSET: 0x986E80
+float CMovementShared::TimeToJumpPeak() {
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0)
+        return this->m_fallVelocity / -19.291103f;
+    else
+        return 0.0;
+}
+
+// OFFSET: 0x988220
+float CMovementShared::TimeToFallDistance(float distance, bool slowFall) {
+    float terminal = slowFall ? 7.0f : 60.148003f;
+    float rampDistance = 0.051837362f * terminal * terminal * 0.5f;
+
+    if (distance >= rampDistance)
+        return (distance - rampDistance) / terminal + 0.051837362f * terminal;
+    if (distance <= 0.0f)
+        return 0.0f;
+
+    return sqrtf(distance * 0.10367472f);
 }
 
 // OFFSET: 0x988A20
@@ -409,6 +511,50 @@ bool CMovementShared::StopTurn() {
 
     this->CalcDirection(false);
     return 1;
+}
+
+// OFFSET: 0x988370
+bool CMovementShared::StartFalling(float velocity) {
+    if ((this->m_flags & MOVEMASK_ROOTED) != 0)
+        return false;
+
+    if (this->m_spline && (this->m_spline->flags & (SPLINE_FLAG_FALLING | SPLINE_FLAG_NO_SPLINE)) != 0)
+        return false;
+
+    this->UpdateAnchors(0);
+
+    uint32_t flags = this->m_flags & 0xF91FEFFF | MOVEMENTFLAG_FALLING;
+    this->m_flags = flags;
+    if ((this->m_flags2 & MOVEMENTFLAG2_ALWAYS_ALLOW_PITCHING) == 0)
+        this->m_flags = flags & 0xFFFFFF3F;
+
+    this->m_fallTimeMs = 0;
+    this->m_fallStartZ = this->m_position.z;
+    this->m_fallVelocity = velocity;
+
+    return true;
+}
+
+// OFFSET: 0x988490
+void CMovementShared::StopFalling() {
+    bool wasFalling = (this->m_flags & MOVEMENTFLAG_FALLING);
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0)
+        this->m_flags = this->m_flags & 0xFFFFCFFF;
+    if ((this->m_flags & MOVEMENTFLAG_PENDING_ROOT) != 0) {
+        this->m_flags = this->m_flags & 0xFF203700 | MOVEMENTFLAG_ROOT;
+    } else if (!wasFalling) {
+        return;
+    }
+
+    this->m_anchorFacing = this->m_facing;
+    this->m_anchorPitch = this->m_pitch;
+    this->m_anchorPos = this->m_position;
+    this->m_anchorElapsedMs = 0;
+
+    this->CalcDirection(false);
+
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
+        this->m_currentSpeed = this->GetBaseSpeed(0);
 }
 
 // OFFSET: 0x987D00
