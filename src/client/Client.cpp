@@ -65,8 +65,8 @@ char Client::g_currentLocaleName[5] = {};
 
 
 static uint8_t s_expansionLevel;
-static bool g_hasIsoLocale[12];
-static const char* s_localeArray[12] = {
+bool g_hasIsoLocale[12];
+const char* s_localeArray[12] = {
     "deDE", "enGB", "enUS", "esES", "frFR", "koKR",
     "zhCN", "zhTW", "enCN", "enTW", "esMX", "ruRU"
 };

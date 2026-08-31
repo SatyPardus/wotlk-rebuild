@@ -14,6 +14,7 @@ class CGGameUI {
         static void Reload();
         static int32_t HandleDisplaySizeChanged(const CSizeEvent& event);
         static bool CanPerformAction(int32_t action);
+        static void ClearCursor(bool a1, bool a2);
 
     public:
         static CSimpleTop* m_simpleTop;
@@ -24,6 +25,9 @@ class CGGameUI {
         static int32_t m_screenHeight;
         static float m_aspect;
         static char* m_luaTainted;
+        static int32_t m_cursorMoney;
+        static int32_t m_cursorItemType;
+        static char* m_subZoneText;
 };
 
 #endif // GAME_UI_CGGAMEUI_HPP

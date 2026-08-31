@@ -241,7 +241,17 @@ static int32_t Script_BNConnected(lua_State* L) {
 
 // OFFSET: 0x537010
 static int32_t Script_BNFeaturesEnabledAndConnected(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    // ##############
+    bool v2 = false;
+    // ############
+    //NetClientPtr = GetNetClientPtr();
+    //if (NetClientPtr && NetClientPtr->GetLoginServerType(NetClientPtr) == 1 && !(NetClientPtr->IsTrialAccount)(NetClientPtr) && BattlenetAPI__IsRIDEnabled())
+    //    v2 = maybe_BattlenetUI__IsConnected(NetClientPtr);
+    //else
+    //    v2 = 0;
+    lua_pushboolean(L, v2);
+    return 1;
 }
 
 // OFFSET: 0x530F20
@@ -251,7 +261,14 @@ static int32_t Script_IsBNLogin(lua_State* L) {
 
 // OFFSET: 0x537070
 static int32_t Script_BNFeaturesEnabled(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    // ##############
+    bool v2 = false;
+    //############
+    //NetClientPtr = GetNetClientPtr();
+    //v2 = NetClientPtr && NetClientPtr->GetLoginServerType(NetClientPtr) == 1 && !(NetClientPtr->IsTrialAccount)(NetClientPtr) && BattlenetAPI__IsRIDEnabled();
+    lua_pushboolean(L, v2);
+    return 1;
 }
 
 // OFFSET: 0x53A660

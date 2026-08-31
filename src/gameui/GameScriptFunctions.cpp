@@ -17,6 +17,7 @@
 #include "util/Unimplemented.hpp"
 #include "util/StringTo.hpp"
 #include "gameui/CGUIBindings.hpp"
+#include <client/Client.hpp>
 
 // External from "ui/ScriptFunctions.hpp"
 void RegisterSimpleFrameScriptMethods();
@@ -671,7 +672,11 @@ static int32_t Script_GetRealZoneText(lua_State* L) {
 
 // OFFSET: 0x5155D0
 static int32_t Script_GetSubZoneText(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    char* v1 = CGGameUI::m_subZoneText;
+    if (!CGGameUI::m_subZoneText)
+        v1 = "";
+    lua_pushstring(L, v1);
+    return 1;
 }
 
 // OFFSET: 0x515600
@@ -796,14 +801,15 @@ static int32_t Script_ForceQuit(lua_State* L) {
 
 // OFFSET: 0x515A50
 static int32_t Script_GetCursorMoney(lua_State* L) {
-    // TODO
-    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, CGGameUI::m_cursorMoney);
     return 1;
 }
 
 // OFFSET: 0x522950
 static int32_t Script_DropCursorMoney(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (CGGameUI::m_cursorMoney && CGGameUI::m_hasControl && CGGameUI::m_cursorItemType == 2)
+        CGGameUI::ClearCursor(1, 1);
+    return 0;
 }
 
 // OFFSET: 0x522980
@@ -1602,7 +1608,14 @@ static int32_t Script_EquipItemByName(lua_State* L) {
 
 // OFFSET: 0x511C80
 static int32_t Script_GetExistingLocales(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto v1 = 0;
+    for (int32_t i = 0; i < 12; ++i) {
+        if (g_hasIsoLocale[i]) {
+            lua_pushstring(L, s_localeArray[i]);
+            ++v1;
+        }
+    }
+    return v1;
 }
 
 // OFFSET: 0x511CC0

@@ -271,41 +271,41 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         switch (moveEvent->m_eventId) {
         case 0:
             this->StartMove(1, 0);
-            //updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_FORWARD, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            //updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_FORWARD, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
         case 1:
             this->StartMove(0, 0);
-            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_BACKWARD, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_BACKWARD, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
         case 2:
             this->StopMove();
-            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
         case 3:
             this->StartStrafe(1);
-            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_STRAFE_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_STRAFE_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
         case 4:
             this->StartStrafe(0);
-            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_STRAFE_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_STRAFE_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
         case 5:
             this->StopStrafe();
-            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_STRAFE, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_STRAFE, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
         case 6:
             if (this->StartAscensionDescension(1)) {
-                // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+                // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             }
             break;
         case 7:
             if (this->StartAscensionDescension(0)) {
-                // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_DESCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+                // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_DESCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             }
             break;
         case 8:
             if (this->StopAscensionDescension()) {
-                // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+                // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             }
             break;
         case 9u:
@@ -319,21 +319,21 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             break;
         case 10u:
             if (this->Jump(1)) {
-                //updated = CGUnit_C::MoveEventHappened(this->unit, a2, MSG_MOVE_JUMP, v4->m_needAck, 0.0, 0, 0, 0, 255);
+                //updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_JUMP, v4->m_needAck, 0.0, 0, 0, 0, 255);
             }
             break;
         case 11:
             this->StartTurn(1);
-            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_TURN_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_TURN_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
         case 12:
             this->StartTurn(0);
-            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_START_TURN_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_TURN_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             break;
         case 13:
         case 50:
             this->StopTurn();
-            // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_TURN, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_TURN, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             CGInputControl::GetActive()->OnTurnToAngleStop();
             break;
         //case 14u:

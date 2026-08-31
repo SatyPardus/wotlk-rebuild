@@ -22,6 +22,7 @@
 #include "util/CStatus.hpp"
 #include "util/SysMessage.hpp"
 #include "util/SFile.hpp"
+#include <util/Unimplemented.hpp>
 
 
 CSimpleTop* CGGameUI::m_simpleTop = nullptr;
@@ -32,6 +33,9 @@ int32_t CGGameUI::m_screenWidth = 0;
 int32_t CGGameUI::m_screenHeight = 0;
 float CGGameUI::m_aspect = 0.0;
 char* CGGameUI::m_luaTainted = nullptr;
+int32_t CGGameUI::m_cursorMoney = 0;
+int32_t CGGameUI::m_cursorItemType = 0;
+char* CGGameUI::m_subZoneText = nullptr;
 
 
 void CGGameUI::InitializeGame() {
@@ -212,4 +216,9 @@ int32_t CGGameUI::HandleDisplaySizeChanged(const CSizeEvent& event) {
 bool CGGameUI::CanPerformAction(int32_t action) {
     // TODO
     return true;
+}
+
+// OFFSET: 0x519280
+void CGGameUI::ClearCursor(bool a1, bool a2) {
+    WHOA_UNIMPLEMENTED();
 }

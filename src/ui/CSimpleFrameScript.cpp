@@ -12,7 +12,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <limits>
-
+#include "ui/CSimpleFontString.hpp"
+#include "ui/CSimpleFont.hpp"
 
 // OFFSET: 0x49E5B0
 int32_t CSimpleFrame_GetTitleRegion(lua_State* L) {
@@ -65,6 +66,7 @@ int32_t CSimpleFrame_CreateTexture(lua_State* L) {
 
     if (frameNode) {
         CStatus status;
+        texture->LoadXML(frameNode, &status);
         texture->PostLoadXML(frameNode, &status);
         FrameXML_ReleaseHashNode(lua_tolstring(L, 4, nullptr));
     }
@@ -81,7 +83,61 @@ int32_t CSimpleFrame_CreateTexture(lua_State* L) {
 
 // OFFSET: 0x4A2240
 int32_t CSimpleFrame_CreateFontString(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleFrame::GetObjectType();
+    CSimpleFrame* frame = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
+
+    const char* name = lua_isstring(L, 2) ? lua_tolstring(L, 2, nullptr) : nullptr;
+
+    int32_t drawLayer = 2;
+    if (lua_isstring(L, 3)) {
+        StringToDrawLayer(lua_tolstring(L, 3, nullptr), drawLayer);
+    }
+
+    XMLNode* frameNode = nullptr;
+    CSimpleFont* font;
+
+    if (lua_type(L, 4) == LUA_TSTRING) {
+        const char* tainted;
+        bool locked;
+
+        const char* inheritName = lua_tolstring(L, 4, nullptr);
+        const char* frameName = frame->GetDisplayName();
+
+        font = CSimpleFont::GetFont(inheritName, 0);
+        if (!font) {
+            frameNode = FrameXML_AcquireHashNode(inheritName, tainted, locked);
+            if (!frameNode) {
+                luaL_error(L, "%s:CreateFontString(): Couldn't find inherited node \"%s\"", frameName, inheritName);
+            }
+
+            if (locked) {
+                luaL_error(L, "%s:CreateFontString(): Recursively inherited node \"%s\"", frameName, inheritName);
+            }
+        }
+    }
+
+    auto fontString = NEW(CSimpleFontString, frame, drawLayer, 1);
+    if (name && *name) {
+        fontString->SetName(name);
+    }
+
+    if (font) {
+        fontString->SetFontObject(font);
+    } else if (frameNode) {
+        CStatus status;
+        fontString->LoadXML(frameNode, &status);
+        fontString->PostLoadXML(frameNode, &status);
+        FrameXML_ReleaseHashNode(lua_tolstring(L, 4, nullptr));
+    }
+
+    // TODO
+
+    if (!fontString->lua_registered) {
+        fontString->RegisterScriptObject(nullptr);
+    }
+
+    lua_rawgeti(L, LUA_REGISTRYINDEX, fontString->lua_objectRef);
+    return 1;
 }
 
 // OFFSET: 0x49E700

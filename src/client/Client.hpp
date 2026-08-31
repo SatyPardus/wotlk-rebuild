@@ -25,6 +25,9 @@ namespace Client {
     extern char g_currentLocaleName[5];
 }
 
+extern bool g_hasIsoLocale[12];
+extern const char* s_localeArray[12];
+
 void ClientPostClose(int32_t a1);
 
 const char* UpdateInstallLocation();

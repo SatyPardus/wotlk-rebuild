@@ -2,6 +2,7 @@
 #include "ui/Types.hpp"
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
+#include <ui/FrameScript.hpp>
 
 // OFFSET: 0x9858B0
 int32_t Script_PlaySound(lua_State* L) {
@@ -48,7 +49,18 @@ int32_t Script_Sound_GameSystem_GetNumOutputDrivers(lua_State* L) {
 
 // OFFSET: 0x985CA0
 int32_t Script_Sound_GameSystem_GetOutputDriverNameByIndex(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isnumber(L, 1))
+        luaL_error(L, "Usage: Sound_GetOutputDriverNameByIndex(OutputDriverIndex)");
+    auto v1 = lua_tointeger(L, 1);
+    char v3[2048];
+    memset(v3, 0, sizeof(v3));
+    //SE2::GetOutputDriverName_Cached(v1, v3, 2048, 0);
+    // TODO
+    //##############
+    SStrCopy(v3, FrameScript_GetText("SYSTEM_DEFAULT", -1, GENDER_NOT_APPLICABLE), 2048);
+    //######
+    lua_pushstring(L, v3);
+    return 1;
 }
 
 // OFFSET: 0x985D30
@@ -58,7 +70,13 @@ int32_t Script_Sound_GameSystem_RestartSoundSystem(lua_State* L) {
 
 // OFFSET: 0x985A20
 int32_t Script_Sound_ChatSystem_GetNumInputDrivers(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    // ##############
+    int32_t v3 = 0;
+    // ######
+    //v3 = bn_SE2_GetNumInputDrivers_Cached(1, v1);
+    lua_pushnumber(L, v3);
+    return 1;
 }
 
 // OFFSET: 0x985A50
@@ -68,7 +86,13 @@ int32_t Script_Sound_ChatSystem_GetInputDriverNameByIndex(lua_State* L) {
 
 // OFFSET: 0x985AE0
 int32_t Script_Sound_ChatSystem_GetNumOutputDrivers(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    // TODO
+    // ##############
+    int32_t v3 = 0;
+    // ######
+    // v3 = bn_SE2_GetNumOutputDrivers_Cached(1, v1);
+    lua_pushnumber(L, v3);
+    return 1;
 }
 
 // OFFSET: 0x985B10
