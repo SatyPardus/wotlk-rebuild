@@ -1331,7 +1331,7 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
     switch (which) {
     case GxRs_PolygonOffset: {
         if (this->Caps().m_depthBias) {
-            this->m_d3dDevice->SetRenderState(D3DRS_DEPTHBIAS, -static_cast<float>(state->m_value));
+            this->m_d3dDevice->SetRenderState(D3DRS_DEPTHBIAS, -state->m_value.m_data.i[0]);
         }
 
         break;
@@ -1359,7 +1359,7 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
         auto normalizeNormals = static_cast<float>(state->m_value);
 
         if (CGxDeviceD3d::s_normalizeNormals != normalizeNormals) {
-            this->m_d3dDevice->SetRenderState(D3DRS_NORMALIZENORMALS, normalizeNormals);
+            this->m_d3dDevice->SetRenderState(D3DRS_NORMALIZENORMALS, state->m_value.m_data.i[0]);
             CGxDeviceD3d::s_normalizeNormals = normalizeNormals;
         }
 
@@ -1625,13 +1625,13 @@ void CGxDeviceD3d::IRsSendToHw(EGxRenderState which) {
     }
 
     case GxRs_PointScaleMin: {
-        m_d3dDevice->SetRenderState(D3DRS_POINTSIZE_MIN, static_cast<float>(state->m_value));
+        m_d3dDevice->SetRenderState(D3DRS_POINTSIZE_MIN, static_cast<uint32_t>(state->m_value));
 
         break;
     }
 
     case GxRs_PointScaleMax: {
-        m_d3dDevice->SetRenderState(D3DRS_POINTSIZE_MAX, static_cast<float>(state->m_value));
+        m_d3dDevice->SetRenderState(D3DRS_POINTSIZE_MAX, static_cast<uint32_t>(state->m_value));
 
         break;
     }
