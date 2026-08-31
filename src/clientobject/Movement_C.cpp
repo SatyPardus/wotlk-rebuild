@@ -682,24 +682,38 @@ bool CMovement_C::GetCurrentHoverHeight(float* height, bool* a3, uint32_t* a4) {
 void CMovement_C::OnSplineStop(uint32_t time) {
     this->m_spline->flags |= SPLINE_FLAG_NO_SPLINE;
     //if ((this->m_spline->flags & 0x800) != 0)
-    //    CGUnit_C::OnCollideFallLand(this->unit, 0, 1);
-    //if ((this->m_spline->flags & 0xA00) != 0)
-    //    CMovementShared::StopFalling(this);
-    //CMovement::ToggleMovementFlag2_0x80(this, 0);
-    //unit = this->unit;
-    //if (*&unit->ObjectBase.m_obj->OBJECT_FIELD_GUID == CGUnit_C::m_activeMover) {
-    //    m_spline = this->m_spline;
-    //    m_id = m_spline->m_id;
-    //    if (m_spline && (m_spline->flags & 0x800) != 0)
-    //        CGUnit_C::OnCollideFallLand(unit, 0, 1);
-    //    CMovement::sub_98B730(this);
-    //    if (CMovementShared::TryStartFalling(this) && !this->m_globalUnitsLink.m_next) {
-    //        Globals = MovementGetGlobals();
-    //        if (Globals)
-    //            TSList::LinkToHead(&Globals->units, this);
-    //    }
-    //    CGUnit_C::SendSplineDone(&this->unit->ObjectBase.__vftable, a2, m_id);
-    //}
+    //    this->m_unit->OnCollideFallLand(0, 1);
+    if ((this->m_spline->flags & 0xA00) != 0)
+        this->StopFalling();
+    this->ToggleMovementFlag2_0x80(0);
+    if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover) {
+    //    if (this->m_spline && (this->m_spline->flags & 0x800) != 0)
+    //        this->m_unit->OnCollideFallLand(0, 1);
+        this->RemoveSpline();
+        if (this->TryStartFalling() && !this->m_globalUnitLink.IsLinked()) {
+            auto globals = MovementGetGlobals();
+            if (globals)
+                globals->m_movementUnits.LinkToHead(this);
+        }
+    //    this->m_unit->SendSplineDone(time, this->m_spline->m_id);
+    }
+}
+
+// OFFSET: 0x6EB680
+bool CMovement_C::OnSpline(C3Vector* points, uint32_t pointCount, int32_t duration, uint32_t flags, uint32_t id) {
+    if ((flags & 0x1800000) != 0)
+        return 0;
+    this->RemoveFromMoversList(0);
+    if ((this->m_flags & 0x100800) != 0 && (flags & 0xA00) == 0)
+        return 0;
+    this->AddSpline(&points[pointCount - 1]);
+    auto globals = MovementGetGlobals();
+    this->CMovementShared::OnSpline(globals->m_lastUpdateTime, points, pointCount, duration, flags, id);
+    if (!this->m_globalUnitLink.IsLinked()) {
+        globals->m_movementUnits.LinkToHead(this);
+    }
+    this->m_spline->spline.Pos(1.0f, &this->m_spline->m_finalDestination, 1);
+    return 1;
 }
 
 // OFFSET: 0x5FEDE0

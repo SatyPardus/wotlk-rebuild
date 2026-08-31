@@ -2,6 +2,7 @@
 #include <common/time/Time.hpp>
 #include <util/Byte.hpp>
 #include "clientobject/Types.hpp"
+#include "clientobject/Movement.hpp"
 
 CMovementShared::CMovementShared(WGUID* transportGuid, C3Vector& position, float facing, WGUID* guid)
     : CPassenger(transportGuid, position, guid) {
@@ -88,9 +89,31 @@ bool CMovementShared::IsSplineFlyer_FlyingSwimming() {
     return (this->m_flags & MOVEMASK_SWIM_FLY) != 0;
 }
 
+// OFFSET: 0x6EABA0
+bool CMovementShared::IsFallingSwimmingFlying() {
+    bool fallingSpline = false;
+
+    if (this->m_spline) {
+        uint32_t flags = this->m_spline->flags;
+
+        if ((flags & SPLINE_FLAG_NO_SPLINE) == 0 && (flags & SPLINE_FLAG_FALLING) != 0)
+            fallingSpline = true;
+        else if ((flags & SPLINE_FLAG_NO_SPLINE) == 0 && (flags & SPLINE_FLAG_FLYING) != 0)
+            return true;
+    }
+
+    if (!fallingSpline) {
+        if ((this->m_flags2 & MOVEMENTFLAG2_UNK3) != 0)
+            return true;
+        if ((this->m_flags & MOVEMENTFLAG_DISABLE_GRAVITY) != 0)
+            return true;
+    }
+
+    return (this->m_flags & MOVEMASK_AIRBORNE) != 0;
+}
+
 // OFFSET: 0x6E9AD0
 bool CMovementShared::IsGravityDisabled() {
-    m_spline = this->m_spline;
     if (this->m_spline) {
         if ((this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_FALLING) != 0)
             return 0;
@@ -246,6 +269,22 @@ float CMovementShared::CalcTimeFallen(float distance, int32_t upward) {
     return result;
 }
 
+// OFFSET: 0x986FB0
+float CMovementShared::GetDistanceFallen() {
+    if (this->m_spline && (this->m_spline->flags & 0xA00) != 0) {
+        float elapsed = (this->m_spline->m_duration - this->m_spline->m_effectStartTime) * 0.001f;
+        float velocity = -(this->m_spline->m_verticalAcceleration * elapsed * 0.5f);
+        return this->CalcFallStartElevation(elapsed, 0, velocity);
+    }
+
+    float result = this->m_fallStartZ - this->m_position.z;
+    if (this->m_fallVelocity < -0.00000023841858f)
+        result += this->m_fallVelocity * this->m_fallVelocity * 0.025918681f;
+    if (result < 0.0)
+        return 0.0;
+    return result;
+}
+
 // OFFSET: 0x987050
 float CMovementShared::RelDistanceFallen(int32_t elapsedMs, float z) {
     uint32_t flags = this->m_flags;
@@ -379,7 +418,7 @@ bool CMovementShared::StopMove() {
     if ((this->m_flags & 3) != 0) {
         if ((this->m_flags & 0x4000000) != 0) {
             this->m_flags = this->m_flags & 0xFBFFFFFF;
-            //if (!CMovementShared::IsFallingSwimmingFlying_6636D0(this))
+            //if (!CMovementShared::IsFallingSwimmingFlying(this))
             //    CMovementShared::sub_988370(this, 0.0);
         }
         if ((this->m_flags & 0x1000) != 0) {
@@ -400,19 +439,10 @@ bool CMovementShared::StopMove() {
 void CMovementShared::ForceStopMove(bool a2) {
     this->m_flags &= 0xFFFFBFFC;
 
-    const bool falling = (this->m_flags & MOVEMENTFLAG_FALLING) != 0;
-
     if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
         this->m_currentSpeed = this->GetBaseSpeed(0);
 
-    this->m_anchorFacing = this->m_facing;
-    this->m_anchorPitch = this->m_pitch;
-    this->m_anchorPos.x = this->m_position.x;
-    this->m_anchorPos.y = this->m_position.y;
-    this->m_anchorPos.z = this->m_position.z;
-    this->m_anchorElapsedMs = 0;
-
-    this->CalcDirection(false);
+    this->UpdateAnchors(false);
 
     CMoveSpline* spline = this->m_spline;
     if (spline && (spline->flags & SPLINE_FLAG_NO_SPLINE) == 0) {
@@ -420,7 +450,7 @@ void CMovementShared::ForceStopMove(bool a2) {
 
         if (a2) {
             CMoveSpline* s = this->m_spline;
-            //if (s && (s->flags & 0x2000) != 0 && !CMovementShared::IsFallingSwimmingFlying_6636D0(this)) {
+            //if (s && (s->flags & 0x2000) != 0 && !CMovementShared::IsFallingSwimmingFlying(this)) {
             //    CMovementShared::sub_988370(this, 0.0f);
             //}
         }
@@ -473,7 +503,7 @@ bool CMovementShared::StopStrafe() {
     if ((this->m_flags & MOVEMASK_STRAFE) != 0) {
         if ((this->m_flags & MOVEMENTFLAG_SPLINE_ELEVATION) != 0) {
             this->m_flags = this->m_flags & 0xFBFFFFFF;
-            //if (!CMovementShared::IsFallingSwimmingFlying_6636D0(this))
+            //if (!CMovementShared::IsFallingSwimmingFlying(this))
             //    CMovementShared::sub_988370(this, 0.0);
         }
         if ((this->m_flags & 0x1000) != 0) {
@@ -495,12 +525,8 @@ void CMovementShared::ForceStopStrafe() {
     this->m_flags &= 0xFFFF7FF3;
     if ((this->m_flags & 0x1000) == 0)
         this->m_currentSpeed = this->GetBaseSpeed(0);
-    this->m_anchorFacing = this->m_facing;
-    this->m_anchorPitch = this->m_pitch;
-    this->m_anchorPos = this->m_position;
-    this->m_anchorElapsedMs = 0;
 
-    this->CalcDirection(false);
+    this->UpdateAnchors(false);
 }
 
 // OFFSET: 0x9898E0
@@ -525,12 +551,8 @@ bool CMovementShared::StopAscensionDescension() {
     this->m_flags = this->m_flags & 0xFF3FFFFF;
     if ((this->m_flags & 0x1000) == 0)
         this->m_currentSpeed = this->GetBaseSpeed(0);
-    this->m_anchorFacing = this->m_facing;
-    this->m_anchorPos = this->m_position;
-    this->m_anchorPitch = this->m_pitch;
-    this->m_anchorElapsedMs = 0;
 
-    this->CalcDirection(false);
+    this->UpdateAnchors(false);
     return 1;
 }
 
@@ -540,13 +562,9 @@ bool CMovementShared::StartTurn(bool a2) {
         this->m_flags = this->m_flags & 0xFFFFFFCF | MOVEMENTFLAG_LEFT;
     else
         this->m_flags = this->m_flags & 0xFFFFFFCF | MOVEMENTFLAG_RIGHT;
-    this->m_anchorFacing = this->m_facing;
     this->m_flags2 &= ~MOVEMENTFLAG2_INTERPOLATED_TURNING;
-    this->m_anchorPitch = this->m_pitch;
-    this->m_anchorPos = this->m_position;
-    this->m_anchorElapsedMs = 0;
 
-    this->CalcDirection(false);
+    this->UpdateAnchors(false);
     return 1;
 }
 
@@ -554,13 +572,9 @@ bool CMovementShared::StartTurn(bool a2) {
 bool CMovementShared::StopTurn() {
     if ((this->m_flags & 0x30) == 0)
         return 0;
-    this->m_anchorFacing = this->m_facing;
-    this->m_anchorPitch = this->m_pitch;
     this->m_flags = this->m_flags & 0xFFFFFFCF;
-    this->m_anchorPos = this->m_position;
-    this->m_anchorElapsedMs = 0;
 
-    this->CalcDirection(false);
+    this->UpdateAnchors(false);
     return 1;
 }
 
@@ -586,6 +600,13 @@ bool CMovementShared::StartFalling(float velocity) {
     return true;
 }
 
+// OFFSET: 0x98B710
+bool CMovementShared::TryStartFalling() {
+    if (this->IsFallingSwimmingFlying())
+        return 0;
+    return this->StartFalling(0.0);
+}
+
 // OFFSET: 0x988490
 void CMovementShared::StopFalling() {
     bool wasFalling = (this->m_flags & MOVEMENTFLAG_FALLING);
@@ -597,15 +618,39 @@ void CMovementShared::StopFalling() {
         return;
     }
 
-    this->m_anchorFacing = this->m_facing;
-    this->m_anchorPitch = this->m_pitch;
-    this->m_anchorPos = this->m_position;
-    this->m_anchorElapsedMs = 0;
-
-    this->CalcDirection(false);
+    this->UpdateAnchors(false);
 
     if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
         this->m_currentSpeed = this->GetBaseSpeed(0);
+}
+
+void CMovementShared::StopFallingAlwaysAnchor() {
+    bool wasFalling = (this->m_flags & MOVEMENTFLAG_FALLING);
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0)
+        this->m_flags = this->m_flags & 0xFFFFCFFF;
+    if ((this->m_flags & MOVEMENTFLAG_PENDING_ROOT) != 0) {
+        this->m_flags = this->m_flags & 0xFF203700 | MOVEMENTFLAG_ROOT;
+    } else if (!wasFalling) {
+        return;
+    }
+
+    this->UpdateAnchors(false);
+
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
+        this->m_currentSpeed = this->GetBaseSpeed(0);
+}
+
+// OFFSET: 0x98C240
+void CMovementShared::StopFlying() {
+    this->m_flags &= 0xFD3FFF3F;
+    this->m_anchorPitch = 0.0;
+    this->m_pitch = 0.0;
+    if (!this->IsFallingSwimmingFlying())
+        this->StartFalling(0.0);
+    if ((this->m_flags & 0x1000) == 0)
+        this->m_currentSpeed = this->GetBaseSpeed(0);
+
+    this->UpdateAnchors(false);
 }
 
 // OFFSET: 0x9883F0
@@ -632,6 +677,72 @@ bool CMovementShared::Jump(bool a2) {
         velocity = -9.0967484f;
     this->StartFalling(velocity);
     return 1;
+}
+
+// OFFSET: 0x98B5B0
+void CMovementShared::ToggleMovementFlag2_0x40(bool active) {
+    if (active)
+        this->m_flags2 |= MOVEMENTFLAG2_UNK7;
+    else
+        this->m_flags2 &= ~MOVEMENTFLAG2_UNK7;
+}
+
+// OFFSET: 0x98B570
+void CMovementShared::ToggleMovementFlag2_0x80(bool active) {
+    if (active)
+        this->m_flags2 |= MOVEMENTFLAG2_UNK8;
+    else
+        this->m_flags2 &= ~MOVEMENTFLAG2_UNK8;
+}
+
+// OFFSET: 0x98B590
+void CMovementShared::ToggleMovementFlag2_0x100(bool active) {
+    if (active)
+        this->m_flags2 |= MOVEMENTFLAG2_UNK9;
+    else
+        this->m_flags2 &= ~MOVEMENTFLAG2_UNK9;
+}
+
+// OFFSET: 0x9870F0
+void CMovementShared::AddSpline(C3Vector* dest) {
+    if (!this->m_spline)
+        this->m_spline = MovementNewSpline();
+    this->m_spline->flags = 0;
+    this->m_spline->m_finalDestination = *dest;
+}
+
+// OFFSET: 0x98B730
+void CMovementShared::RemoveSpline() {
+    this->m_flags2 &= ~0x80u;
+    if (this->m_spline) {
+        MovementDelSpline(this->m_spline);
+        this->m_spline = nullptr;
+        if ((this->m_flags & 0x1000) == 0)
+            this->m_currentSpeed = this->GetBaseSpeed(0);
+    }
+}
+
+// OFFSET: 0x98C770
+void CMovementShared::OnSpline(int32_t timePassed, C3Vector* points, uint32_t pointCount, int32_t duration, uint32_t flags, uint32_t id) {
+    this->m_spline->flags = flags;
+    this->m_spline->m_timePassed = timePassed;
+    this->m_spline->start = 0;
+    this->m_spline->m_duration = duration;
+    this->m_spline->spline.m_splineMode = (m_spline->flags & Mask_CatmullRom) != 0;
+    this->m_spline->spline.SetPoints(points, pointCount);
+    this->m_spline->m_id = id;
+    this->m_spline->m_durationModNext = 1.0;
+    this->m_spline->m_durationMod = 1.0;
+    this->StartMove((this->m_spline->flags & 0x8000000) == 0, 1);
+    if ((this->m_flags & 0x800) != 0 && (this->m_spline->flags & 0xA00) != 0)
+        this->m_flags = m_flags & 0xFFEFF7FF | 0x100000;
+    if ((this->m_spline->flags & 0x200) != 0) {
+        if ((this->m_flags & 0x2000000) != 0)
+            this->StopFlying();
+        this->StartFalling(0.0);
+    }
+    this->m_spline->m_effectStartTime = 0;
+    this->m_spline->m_verticalAcceleration = 0.0;
 }
 
 // OFFSET: 0x987D00

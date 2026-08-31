@@ -42,4 +42,8 @@ bool MovementGetTransportMtxX(WGUID guid, C44Matrix* mat);
 
 bool MovementGetTransportMtxSafe(WGUID guid, C44Matrix* mat);
 
+CMoveSpline* MovementNewSpline();
+
+void MovementDelSpline(CMoveSpline* spline);
+
 #endif // CLIENTOBJECT_PASSENGER_HPP

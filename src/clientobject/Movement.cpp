@@ -90,3 +90,13 @@ bool MovementGetTransportMtxSafe(WGUID guid, C44Matrix* mat) {
         return false;
     }
 }
+
+// OFFSET: 0x74B7B0
+CMoveSpline* MovementNewSpline() {
+    return new (STORM_ALLOC(sizeof(CMoveSpline))) CMoveSpline();
+}
+
+// OFFSET: 0x74B7E0
+void MovementDelSpline(CMoveSpline* spline) {
+    delete spline;
+}

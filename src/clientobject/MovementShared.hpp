@@ -44,6 +44,7 @@ class CMovementShared : public CPassenger {
     bool IsOnFlyingSpline();
     bool IsOnFallingSpline();
     bool IsSplineFlyer_FlyingSwimming();
+    bool IsFallingSwimmingFlying();
     bool IsGravityDisabled();
     bool CanCollideWhileFlying();
     void CalcDirection();
@@ -51,6 +52,7 @@ class CMovementShared : public CPassenger {
     float CalcFallStartElevation(float elapsed, int32_t slowFall, float velocity);
     void CalcCurrentSpeed(bool ignoreFalling);
     float CalcTimeFallen(float distance, int32_t upward);
+    float GetDistanceFallen();
     float RelDistanceFallen(int32_t elapsedMs, float z);
     float RelDistanceFallen(int32_t elapsedMs);
     void UpdateAnchors(bool a2);
@@ -68,8 +70,17 @@ class CMovementShared : public CPassenger {
     bool StartTurn(bool a2);
     bool StopTurn();
     bool StartFalling(float velocity);
+    bool TryStartFalling();
     void StopFalling();
+    void StopFallingAlwaysAnchor();
+    void StopFlying();
     bool Jump(bool a2);
+    void ToggleMovementFlag2_0x40(bool active);
+    void ToggleMovementFlag2_0x80(bool active);
+    void ToggleMovementFlag2_0x100(bool active);
+    void AddSpline(C3Vector* dest);
+    void RemoveSpline();
+    void OnSpline(int32_t timePassed, C3Vector* points, uint32_t pointCount, int32_t duration, uint32_t flags, uint32_t id);
 
     int32_t PlotUnitMovement(int32_t time, C3Vector* out);
     int32_t PlotUnitMovement(int32_t time, C3Vector* out, float* outFacing, float* outPitch);

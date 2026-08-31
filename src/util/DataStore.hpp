@@ -6,4 +6,6 @@
 
 CDataStore& operator>>(CDataStore& msg, C3Vector& vector);
 
+C3Vector* ReadPackedVector3(CDataStore* msg, C3Vector* base, C3Vector* out);
+
 #endif

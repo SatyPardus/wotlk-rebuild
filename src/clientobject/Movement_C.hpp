@@ -81,6 +81,7 @@ class CMovement_C : public CMovementShared {
     void RemoveFromMoversList(bool a2);
     bool GetCurrentHoverHeight(float* height, bool* a3, uint32_t* a4);
     void OnSplineStop(uint32_t time);
+    bool OnSpline(C3Vector* points, uint32_t pointCount, int32_t duration, uint32_t flags, uint32_t id);
     bool IsFalling();
     bool IsValidPosition();
 

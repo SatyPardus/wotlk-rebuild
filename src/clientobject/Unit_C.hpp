@@ -122,6 +122,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     public:
     // Static variables
     static WGUID s_activeMover;
+    static CVar* s_cvShowFootPrintParticles;
+    static CVar* s_cvPathingDistTolerance;
 
     // Member variables
     /* 00D8 */ CMovementShared* m_passenger = nullptr;
@@ -154,6 +156,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool GetCanFly();
     bool IsClientControlled();
     bool IsLocalClientControlled();
+    void ToggleMovementFlag2_0x40(uint8_t flag);
 
     void OnMoveUpdate(int32_t time, bool a3, bool a4);
     void OnMoveStartLocal(int32_t eventTime, bool forward);
@@ -167,6 +170,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     void OnTurnStartLocal(int32_t eventTime, bool left);
     void OnTurnStopLocal(int32_t eventTime);
     void OnMovementInitiated();
+    void OnMonsterMove(CDataStore* msg, NETMESSAGE msgId, WGUID transportGuid, uint8_t transportFlags, bool a6);
+    C3Vector* ComputeTransportRelativeMovement(WGUID guid, C3Vector* position, C3Vector* points, uint32_t* count);
     bool NoStrafe();
 
     CreatureModelDataRec* GetModelData();
@@ -181,6 +186,11 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     static const char* GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut = nullptr);
     static const char* GetDisplayClassNameFromRecord(ChrClassesRec* record, uint8_t sexIn, uint8_t* sexOut = nullptr);
     static void SetStorage(CGUnit_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
+    static void ClientInitialize();
+    static void Initialize();
+
+    // Packet handlers
+    static int32_t HandleMonsterMovePacket(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg);
 };
 
 #endif // CLIENTOBJECT_UNIT_C_HPP

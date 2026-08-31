@@ -817,7 +817,7 @@ void ClientInitializeGame(int32_t zoneId, C3Vector* position) {
     //AccountDataInitialize(0);
     ClntObjMgrInitializeShared();
     ClntObjMgrInitializeStd(zoneId);
-    //CGUnit_C::ClientInitialize();
+    CGUnit_C::ClientInitialize();
     //SI2::InitZoneSoundsHandler();
     //SI2::InitZoneIntros();
     //LootInitialize();
@@ -829,7 +829,7 @@ void ClientInitializeGame(int32_t zoneId, C3Vector* position) {
     //NOP();
     //CGObject_C::Initialize();
     //SpellTableInitialize();
-    //CGUnit_C::Initialize();
+    CGUnit_C::Initialize();
     //CGGameObject_C::Initialize();
     //ClientInitializeGame_0();
     //CGPlayer_C::Initialize();
