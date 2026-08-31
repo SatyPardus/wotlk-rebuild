@@ -88,6 +88,18 @@ bool CMovementShared::IsSplineFlyer_FlyingSwimming() {
     return (this->m_flags & MOVEMASK_SWIM_FLY) != 0;
 }
 
+// OFFSET: 0x6E9AD0
+bool CMovementShared::IsGravityDisabled() {
+    m_spline = this->m_spline;
+    if (this->m_spline) {
+        if ((this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_FALLING) != 0)
+            return 0;
+        if ((this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_FLYING) != 0)
+            return 1;
+    }
+    return (this->m_flags2 & MOVEMENTFLAG2_UNK3) != 0 || (this->m_flags & MOVEMENTFLAG_DISABLE_GRAVITY) != 0;
+}
+
 // OFFSET: 0x75EE00
 bool CMovementShared::CanCollideWhileFlying() {
     if (this->IsSplineFlyer_FlyingSwimming())
@@ -594,6 +606,32 @@ void CMovementShared::StopFalling() {
 
     if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
         this->m_currentSpeed = this->GetBaseSpeed(0);
+}
+
+// OFFSET: 0x9883F0
+bool CMovementShared::Jump(bool a2) {
+    if (a2) {
+        if ((this->m_flags & MOVEMENTFLAG_HOVER) != 0 && (this->m_flags & MOVEMENTFLAG_SWIMMING) == 0)
+            return 0;
+    }
+    if (this->m_spline) {
+        if ((this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_FLYING) != 0)
+            return 0;
+    }
+    if ((this->m_flags & (MOVEMENTFLAG_FLYING | MOVEMENTFLAG_FALLING | MOVEMENTFLAG_ROOT)) != 0)
+        return 0;
+    if ((this->m_flags2 & MOVEMENTFLAG2_UNK3) == 0) {
+        if (this->IsGravityDisabled())
+            return 0;
+    }
+    if ((this->m_flags2 & 2) != 0)
+        return 0;
+
+    float velocity = -7.9555473f;
+    if ((this->m_flags & MOVEMENTFLAG_SWIMMING) != 0)
+        velocity = -9.0967484f;
+    this->StartFalling(velocity);
+    return 1;
 }
 
 // OFFSET: 0x987D00

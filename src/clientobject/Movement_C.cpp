@@ -309,7 +309,7 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             }
             break;
         case 9u:
-            //if (!CMovementShared::TryStartFalling(this))
+            //if (!this->TryStartFalling())
             //    break;
             //CGUnit_C::OnCollideFalling(this->unit);
             //if (!v4->m_needAck)
@@ -318,8 +318,9 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             //updated = 1;
             break;
         case 10u:
-            //if (CMovementShared::Jump(this, 1))
-            //    updated = CGUnit_C::MoveEventHappened(this->unit, a2, MSG_MOVE_JUMP, v4->m_needAck, 0.0, 0, 0, 0, 255);
+            if (this->Jump(1)) {
+                //updated = CGUnit_C::MoveEventHappened(this->unit, a2, MSG_MOVE_JUMP, v4->m_needAck, 0.0, 0, 0, 0, 255);
+            }
             break;
         case 11:
             this->StartTurn(1);
@@ -335,6 +336,234 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             // updated = this->m_unit->MoveEventHappened(time, MSG_MOVE_STOP_TURN, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
             CGInputControl::GetActive()->OnTurnToAngleStop();
             break;
+        //case 14u:
+        //    CMovementShared::StartPitch(this, 1);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_START_PITCH_UP, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    break;
+        //case 15u:
+        //    CMovementShared::StartPitch(this, 0);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_START_PITCH_DOWN, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    break;
+        //case 16u:
+        //case 51u:
+        //    CMovementShared::StopPitch(this);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_STOP_PITCH, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    v23 = CGInputControl::GetActive();
+        //    CGInputControl::OnPitchToAngleStop(v23);
+        //    break;
+        //case 17u:
+        //    CMovementShared::SetRunMode(this, 1);
+        //    CGUnit_C::UpdateObjectEffectMovementStates(this->unit);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_SET_RUN_MODE, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 18u:
+        //    CMovementShared::SetRunMode(this, 0);
+        //    CGUnit_C::UpdateObjectEffectMovementStates(this->unit);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_SET_WALK_MODE, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    break;
+        //case 19u:
+        //    CMovementShared::SetRawFacing(this, v4->m_facing);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_SET_FACING, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    break;
+        //case 20u:
+        //    updated = CMovement_C::UpdatePitch(this, a2, v4);
+        //    break;
+        //case 21u:
+        //    CMovementShared::StartSwim(this);
+        //    CMovement_C::HandlePendingActions(this);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_START_SWIM, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    break;
+        //case 22u:
+        //    CMovementShared::StopSwim(this);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_STOP_SWIM, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 23u:
+        //    CMovementShared::ChangeRunSpeed(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_RUN_SPEED_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 24u:
+        //    CMovementShared::ChangeRunBackSpeed(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_RUN_BACK_SPEED_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 25u:
+        //    CMovementShared::ChangeWalkSpeed(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_WALK_SPEED_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 26u:
+        //    CMovementShared::ChangeSwimSpeed(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_SWIM_SPEED_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 27u:
+        //    CMovementShared::ChangeSwimBackSpeed(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_SWIM_BACK_SPEED_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 28u:
+        //    CMovementShared::ChangeFlightSpeed(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_FLIGHT_SPEED_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 29u:
+        //    CMovementShared::ChangeFlightBackSpeed(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_FLIGHT_BACK_SPEED_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 30u:
+        //    CMovementShared::ChangeTurnRate(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_TURN_RATE_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 31u:
+        //    CMovementShared::ChangePitchRate(this, v4->m_value);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_PITCH_RATE_CHANGE_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 32u:
+        //    if (CMovementShared::EnableGravity(this, 1))
+        //        CMovement_C::GravityStateChanged(this);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_GRAVITY_ENABLE_ACK, v4->m_needAck, 0.0, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 33u:
+        //    if (CMovementShared::EnableGravity(this, 0))
+        //        CMovement_C::GravityStateChanged(this);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_GRAVITY_DISABLE_ACK, v4->m_needAck, 0.0, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 34u:
+        //    CMovement::sub_6E9FF0(this, &v4->m_value, *&v4->unk_0044, *&v4->unk_0048);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_KNOCK_BACK_ACK, v4->m_needAck, 0.0, v4->m_ackCounter, 0, 0, 255);
+        //    break;
+        //case 35u:
+        //    CMovementShared::FeatherFall(this, 1);
+        //    v24 = 1.0;
+        //    goto LABEL_97;
+        //case 36u:
+        //    CMovementShared::FeatherFall(this, 0);
+        //    v24 = 0.0;
+//LABEL_97:
+        //    v33 = v24;
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_FEATHER_FALL_ACK, v4->m_needAck, v33, v4->m_ackCounter, 0, 0, 255);
+        //    CMovementShared::PostFeatherFall(this);
+        //    CGUnit_C::OnCollideFalling(this->unit);
+        //    break;
+        //case 37u:
+        //    CMovementShared::Hover(this, 1);
+        //    v25 = 1.0;
+        //    goto LABEL_100;
+        //case 38u:
+        //    if (!v4->m_needAck || CGUnit_C::IsActiveMover(&this->unit->ObjectBase.__vftable)) {
+        //        CMovement_C::UpdateHoverState(this, 0, 1);
+        //        v25 = 0.0;
+        //    } else {
+        //        CMovement_C::UpdateHoverState(this, 0, 0);
+        //        v25 = 0.0;
+        //    }
+//LABEL_100:
+        //    v34 = v25;
+        //    v26 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_HOVER_ACK, v4->m_needAck, v34, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_101;
+        //case 39u:
+        //    CMovementShared::WalkOnWater(this, 1);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_WATER_WALK_ACK, v4->m_needAck, 1.0, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 40u:
+        //    CMovementShared::WalkOnWater(this, 0);
+        //    if (!v4->m_needAck || CGUnit_C::IsActiveMover(&this->unit->ObjectBase.__vftable))
+        //        CMovementShared::TryStartFalling(this);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_WATER_WALK_ACK, v4->m_needAck, 0.0, v4->m_ackCounter, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 41u:
+        //    if (v4->m_needAck && CMovementShared::IsOnSpline(this))
+        //        CMovement::sub_6E9F10(this, 0);
+        //    v28 = CMovement::IsFalling(this);
+        //    v37 = this->m_flags;
+        //    v40 = v28;
+        //    m_flags2_low = LOWORD(this->m_flags2);
+        //    CMovement::sub_98C4F0(this);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_MOVE_ROOT_ACK, v4->m_needAck, 0.0, v4->m_ackCounter, 0, 0, 255);
+        //    CMovement_C::CallMoveEventHandlers(this, a2, 0, v37, m_flags2_low, v40, 0);
+        //    break;
+        //case 42u:
+        //    v38 = CMovement::IsFalling(this);
+        //    v44 = this->m_flags;
+        //    v41 = LOWORD(this->m_flags2);
+        //    v29 = !v4->m_needAck || CGUnit_C::IsActiveMover(&this->unit->ObjectBase.__vftable);
+        //    CMovementShared::UnRoot(this, v29);
+        //    CGUnit_C::UnRootEffects(&this->unit->ObjectBase.__vftable);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_MOVE_UNROOT_ACK, v4->m_needAck, 0.0, v4->m_ackCounter, 0, 0, 255);
+        //    CMovement_C::CallMoveEventHandlers(this, a2, 0, v44, v41, v38, 0);
+        //    break;
+        //case 44u:
+        //    LOWORD(this->m_flags2) ^= (LOWORD(this->m_flags2) ^ v4->m_moveExtraFlags) & 0x2040;
+        //    if (v4->unk_0050)
+        //        CMovement_C::HeartBeat(this, v4);
+        //    CMovement_C::Teleport(this, *&v4->m_transportGuid, &v4->m_position.x, v4->m_facing, 1, v4->m_needAck, v4->m_seat);
+        //    v26 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_TELEPORT_ACK, v4->m_needAck, 0.0, v4->m_ackCounter, 0, 0, 255);
+//LABEL_101:
+        //    updated = v26;
+        //    break;
+        //case 45u:
+        //    v39 = this->m_flags;
+        //    v42 = LOWORD(this->m_flags2);
+        //    if (CMovement::sub_6EBC50(this)) {
+        //        updated = CMovement_C::FallStateChangedLocal(a2, 838, v39, v42, v4->m_needAck, 0.0);
+        //        CGUnit_C::UpdateObjectEffectMovementStates(this->unit);
+        //    }
+        //    break;
+        //case 46u:
+        //    CMovement::DisableFlying(this);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_SET_FLY, v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    goto LABEL_49;
+        //case 47u:
+        //    this->m_flags |= 0x1000000u;
+        //    v27 = 1.0;
+        //    goto LABEL_107;
+        //case 48u:
+        //    if ((this->m_flags & 0x2000000) != 0)
+        //        CMovement::DisableFlying(this);
+        //    this->m_flags &= ~0x1000000u;
+        //    v27 = 0.0;
+//LABEL_107:
+        //    v35 = v27;
+        //    CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_SET_CAN_FLY_ACK, v4->m_needAck, v35, v4->m_ackCounter, 0, 0, 255);
+        //    break;
+        //case 49u:
+        //    v30 = this->m_flags;
+        //    if ((v30 & 0x200) != 0) {
+        //        this->m_flags = v30 & 0xFFFFFDFF;
+        //        if (CMovementShared::TryStartFalling(this))
+        //            CGUnit_C::OnCollideFalling(this->unit);
+        //        updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_MOVE_UNROOT_ACK, 0, 0.0, 0, 0, 0, 255);
+        //        CMovement::sub_6E9B70(this, a2);
+        //    }
+        //    SendTimeSyncResp(v4->m_eventTime, v4->m_ackCounter);
+        //    break;
+        //case 52u:
+        //    CMovement_C::Halt(this);
+        //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_DISMISS_CONTROLLED_VEHICLE, v4->m_needAck, 0.0, 0, 0, 0, 255);
+//LABEL_49:
+        //    updated = v19;
+        //    break;
+        //case 53u:
+        //    v20 = maybe_CMovement_C__QueueConstrainedTurnEvent(this, a2, v4->m_facing);
+        //    CMovementShared::StartTurn(this, v20);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, (189 - (v20 != 0)), v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    break;
+        //case 54u:
+        //    v22 = maybe_CMovement_C__QueueTurnEvent(this, a2, v4->m_pitch);
+        //    CMovementShared::StartPitch(this, v22);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, (192 - (v22 != 0)), v4->m_needAck, 0.0, 0, 0, 0, 255);
+        //    break;
+        //case 55u:
+        //    CMovement_C::Halt(this);
+        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_CHANGE_SEATS_ON_CONTROLLED_VEHICLE, v4->m_needAck, 0.0, 0, v4->m_transportGuid.guid_low, v4->m_transportGuid.guid_high, v4->m_seat);
+        //    break;
+        //case 56u:
+        //    LOWORD(this->m_flags2) |= MOVEMENTFLAG2_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY;
+        //    CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_SET_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY_ACK, v4->m_needAck, 1.0, v4->m_ackCounter, 0, 0, 255);
+        //    break;
+        //case 57u:
+        //    LOWORD(this->m_flags2) &= ~0x4000u;
+        //    CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_SET_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY_ACK, v4->m_needAck, 0.0, v4->m_ackCounter, 0, 0, 255);
+        //    break;
+        //case 58u:
+        //    CMovement::sub_6E9600(this, v4->m_value);
+        //    CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_SET_COLLISION_HGT_ACK, v4->m_needAck, v4->m_value, v4->m_ackCounter, 0, 0, 255);
+        //    break;
         }
 
         //if (moveEvent->m_needAck && !updated && (&unk_C0100F & this->m_flags) != 0 && (&unk_C0100F & v45) == 0)
@@ -1186,8 +1415,8 @@ int32_t CMovement_C::TraceSurface(int32_t time, int32_t deltaMs, float distance,
             int32_t boxPush = GetBoxPushNormal(planes, planeCount, &pushNormal);
             uint32_t wasElevated = this->m_flags & MOVEMENTFLAG_SPLINE_ELEVATION;
 
-            //if (!this->AttemptStepUp(&dir2D, n))
-            //    return deltaMs;
+            if (!this->AttemptStepUp(&dir2D, n))
+                return deltaMs;
 
             if ((this->m_flags & MOVEMENTFLAG_SPLINE_ELEVATION) == 0) {
                 if (wasElevated) {
@@ -2867,4 +3096,197 @@ C2Vector CMovement_C::CalcFallObstaclePush(C3Vector* dir, float moved, float req
     push.y = flat.y * (slide + 0.001f);
 
     return push;
+}
+
+// OFFSET: 0x75B480
+void CMovement_C::SaveMoveState(MoveState* out) {
+    out->anchorPos = this->m_anchorPos;
+    out->anchorFacing = this->m_anchorFacing;
+    out->anchorPitch = this->m_anchorPitch;
+    out->anchorElapsedMs = this->m_anchorElapsedMs;
+    out->fallTimeMs = this->m_fallTimeMs;
+    out->moveDir = this->m_moveDir;
+    out->moveDir2D = this->m_moveDir2D;
+    out->flags = this->m_flags;
+    out->currentSpeed = this->m_currentSpeed;
+}
+
+// OFFSET: 0x75B4F0
+void CMovement_C::RestoreMoveState(MoveState* in) {
+    this->m_anchorPos = in->anchorPos;
+    this->m_anchorFacing = in->anchorFacing;
+    this->m_anchorPitch = in->anchorPitch;
+    this->m_anchorElapsedMs = in->anchorElapsedMs;
+    this->m_fallTimeMs = in->fallTimeMs;
+    this->m_moveDir = in->moveDir;
+    this->m_moveDir2D = in->moveDir2D;
+    this->m_flags = in->flags;
+    this->m_currentSpeed = in->currentSpeed;
+}
+
+// OFFSET: 0x7619C0
+bool CMovement_C::WillPassObstacle(C2Vector* dir2D, C3Vector* startPos, float height) {
+    uint32_t durationMs = (uint32_t)(sqrtf((height + height) * 0.051837362f) * 1000.0f);
+
+    MoveState saved;
+    this->SaveMoveState(&saved);
+
+    this->StartFalling(0.0f);
+
+    float drop = this->RelDistanceFallen(durationMs);
+
+    float dx = this->m_moveDir2D.x;
+    float dy = this->m_moveDir2D.y;
+    float dz = -drop;
+
+    for (uint32_t elapsed = 0; elapsed < durationMs;) {
+        if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
+            break;
+
+        elapsed += this->FallDown(0, durationMs - elapsed, dx, dy, dz, 0);
+    }
+
+    this->RestoreMoveState(&saved);
+
+    C2Vector from = { startPos->x, startPos->y };
+    C2Vector to = { this->m_position.x, this->m_position.y };
+
+    float ex = to.x - from.x;
+    float ey = to.y - from.y;
+    float length = sqrtf(ex * ex + ey * ey);
+
+    if (length < this->m_collisionRadius)
+        return false;
+
+    float inverse = 1.0f / length;
+
+    return ex * inverse * dir2D->x + ey * inverse * dir2D->y > 0.98480773f;
+}
+
+// OFFSET: 0x761B00
+bool CMovement_C::AttemptStepUp(C2Vector* dir2D, C3Vector n) {
+    C3Vector savedPos = this->m_position;
+
+    C4Plane planes[7];
+    for (int32_t i = 0; i < 7; i++) {
+        planes[i].n = { 0.0f, 0.0f, 1.0f };
+        planes[i].d = 0.0f;
+    }
+
+    C2Vector dir = *dir2D;
+
+    float distance = this->m_collisionRadius + 0.0013888889f;
+    if (distance < this->GetStepUpHeight() * 1.1917536f)
+        distance = this->GetStepUpHeight() * 1.1917536f;
+
+    uint32_t facetIndex;
+    uint32_t planeCount;
+    float moved;
+
+    if (n.z <= 0.64278764f && n.z >= 0.0f) {
+        float inverse = 1.0f / sqrtf(n.x * n.x + n.y * n.y);
+
+        dir.x = -(n.x * inverse);
+        dir.y = -(n.y * inverse);
+
+        C3Vector back = { dir.x, dir.y, 0.0f };
+
+        if (!this->DistanceToMove(&CMovement_C::s_moveFacets, &back, distance, &facetIndex, planes, &planeCount, &moved, nullptr))
+            return false;
+
+        if (facetIndex == CMovement_C::s_moveFacets.facets.Count() || CMovement_C::s_moveFacets.facets[facetIndex].plane.n != n)
+            dir = *dir2D;
+    }
+
+    C3Vector up = { 0.0f, 0.0f, 1.0f };
+    float upMoved;
+
+    if (!this->DistanceToMove(&CMovement_C::s_moveFacets, &up, this->GetRemainingStepUpHeight(), &facetIndex, planes, &planeCount, &upMoved, nullptr))
+        return false;
+
+    float lift = upMoved;
+    if ((this->m_flags & MOVEMENTFLAG_SPLINE_ELEVATION) != 0)
+        lift = this->m_position.z - this->m_stepUpStartZ + upMoved;
+
+    if (fabsf(lift) < 0.00000023841858f) {
+        this->m_flags &= ~MOVEMENTFLAG_SPLINE_ELEVATION;
+        return true;
+    }
+
+    this->m_position.z += upMoved;
+
+    C3Vector along = { dir.x, dir.y, 0.0f };
+
+    if (!this->DistanceToMove(&CMovement_C::s_moveFacets, &along, distance, &facetIndex, planes, &planeCount, &moved, nullptr))
+        return false;
+
+    this->m_position.x += dir.x * moved;
+    this->m_position.y += dir.y * moved;
+
+    if (CMath::fnotequal(moved, distance)) {
+        int32_t detached;
+
+        if (this->UseWalkableRedirection(facetIndex, &detached)) {
+            float remaining = distance - moved;
+
+            C3Vector pushNormal = { 0.0f, 0.0f, 0.0f };
+            int32_t boxPush = this->GetBoxPushNormal(planes, planeCount, &pushNormal);
+
+            C3Vector flat = { dir.x, dir.y, 0.0f };
+            C3Vector push = this->CalcRunWalkWalkableObstaclePush(&flat, &remaining, CMovement_C::s_moveFacets.facets[facetIndex].plane.n, boxPush, &pushNormal);
+
+            C3Vector total;
+            total.x = dir.x * remaining + push.x;
+            total.y = remaining * dir.y + push.y;
+            total.z = push.z;
+
+            float length = sqrtf(total.x * total.x + total.y * total.y + total.z * total.z);
+
+            if (CMath::fnotequal(length, 0.0f)) {
+                total /= length;
+
+                float advanced;
+                if (!this->DistanceToMove(&CMovement_C::s_moveFacets, &total, length, &facetIndex, planes, &planeCount, &advanced, nullptr))
+                    return false;
+
+                total *= advanced;
+
+                C2Vector flat2 = { total.x, total.y };
+                moved += sqrtf(flat2.x * flat2.x + flat2.y * flat2.y);
+
+                this->m_position += total;
+                upMoved += total.z;
+            }
+        }
+    }
+
+    bool stepped = true;
+
+    if (facetIndex != CMovement_C::s_moveFacets.facets.Count() && this->m_collisionRadius >= moved) {
+        stepped = false;
+    } else {
+        C3Vector down = { 0.0f, 0.0f, -1.0f };
+        float dropped;
+
+        if (!this->DistanceToMove(&CMovement_C::s_moveFacets, &down, upMoved, &facetIndex, planes, &planeCount, &dropped, nullptr))
+            return false;
+
+        this->m_position.z -= dropped;
+
+        if (facetIndex != CMovement_C::s_moveFacets.facets.Count() && this->IsSurfaceTooSteep(facetIndex) && !this->WillPassObstacle(&dir, &savedPos, upMoved - dropped))
+            stepped = false;
+    }
+
+    this->m_position = savedPos;
+
+    if (!stepped) {
+        this->m_flags &= ~MOVEMENTFLAG_SPLINE_ELEVATION;
+        return true;
+    }
+
+    if ((this->m_flags & MOVEMENTFLAG_SPLINE_ELEVATION) == 0)
+        this->m_stepUpStartZ = savedPos.z;
+
+    this->m_flags |= MOVEMENTFLAG_SPLINE_ELEVATION;
+    return true;
 }

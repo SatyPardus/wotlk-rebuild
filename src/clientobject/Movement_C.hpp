@@ -16,6 +16,17 @@ struct ClipPolygon {
     int32_t count;
 };
 
+struct MoveState {
+    C3Vector anchorPos;
+    float anchorFacing;
+    float anchorPitch;
+    uint32_t anchorElapsedMs;
+    int32_t fallTimeMs;
+    C3Vector moveDir;
+    C2Vector moveDir2D;
+    uint32_t flags;
+    float currentSpeed;
+};
 
 class CMovement_C : public CMovementShared {
     public:
@@ -134,6 +145,10 @@ class CMovement_C : public CMovementShared {
     C3Vector GetSteepSurfacePushNormal(int32_t facet, C4Plane* planes, int32_t planeCount);
     C3Vector PushOffObstacleEdge(C3Vector* point, C3Vector* dir, int32_t facet);
     C2Vector CalcFallObstaclePush(C3Vector* dir, float moved, float requested, int32_t facet, C4Plane* planes, int32_t planeCount);
+    void SaveMoveState(MoveState* out);
+    void RestoreMoveState(MoveState* in);
+    bool WillPassObstacle(C2Vector* dir2D, C3Vector* startPos, float height);
+    bool AttemptStepUp(C2Vector* dir2D, C3Vector n);
 };
 
 #endif // CLIENTOBJECT_MOVEMENT_C_HPP

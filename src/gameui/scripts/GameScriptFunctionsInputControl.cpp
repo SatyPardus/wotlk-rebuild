@@ -5,11 +5,51 @@
 #include <gameui/CGInputControl.hpp>
 #include <gameui/CGGameUI.hpp>
 #include <util/StringTo.hpp>
-
+#include "clientobject/Unit_C.hpp"
+#include "clientobject/ObjectMgrClient.hpp"
 
 // OFFSET: 0x5FBF80
 static int32_t Script_JumpOrAscendStart(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    CGUnit_C* unit = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
+    if (!unit)
+        return 0;
+
+    if (!CGGameUI::CanPerformAction(0))
+        return 0;
+
+    if (CGInputControl::s_inputControl->SetControlBit(0x2000, CSimpleTop::m_eventTime)) {
+        CGInputControl::s_inputControl->UpdatePlayer(CSimpleTop::m_eventTime, 1);
+    }
+
+    if ((unit->m_passenger->m_flags & 0x2200000) == 0) {
+        //CheckToCancelCurrentChannelSpell();
+        if (unit->m_unit->UNIT_FIELD_HEALTH > 0
+        //    && !unit->IsOnSpline()
+        //    && !unit->IsAlteredFormTransitionPreventingMovement()
+        //    && unit->sub_5FA9E0()
+        //    && !unit->AnimSuppressesMovement()
+           ) {
+
+            //#####TESTING
+            unit->movementData.AddPlayerMoveEvent(CSimpleTop::m_eventTime, 10, 1, 0, 0, 0, 0);
+            //######
+            WHOA_UNIMPLEMENTED(0);
+        //
+        //    if (unit->ukn78())
+        //        unit->TryChangeStandState(0);
+        //
+        //    //auto player = ClntObjMgrGetActivePlayerObj();
+        //    //if (player)
+        //    //    player->ClearAFK(0);
+        //
+        //    if (!unit->GetCanFly()) {
+        //        unit->TryJumpOrAscend(CSimpleTop::m_eventTime);
+        //        return 0;
+        //    }
+        //    unit->OnFlightLocal(v3, 1);
+        }
+    }
+    return 0;
 }
 
 // OFFSET: 0x5FC0A0

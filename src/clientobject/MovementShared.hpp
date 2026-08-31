@@ -44,6 +44,7 @@ class CMovementShared : public CPassenger {
     bool IsOnFlyingSpline();
     bool IsOnFallingSpline();
     bool IsSplineFlyer_FlyingSwimming();
+    bool IsGravityDisabled();
     bool CanCollideWhileFlying();
     void CalcDirection();
     void CalcDirection(bool a2);
@@ -68,6 +69,7 @@ class CMovementShared : public CPassenger {
     bool StopTurn();
     bool StartFalling(float velocity);
     void StopFalling();
+    bool Jump(bool a2);
 
     int32_t PlotUnitMovement(int32_t time, C3Vector* out);
     int32_t PlotUnitMovement(int32_t time, C3Vector* out, float* outFacing, float* outPitch);
