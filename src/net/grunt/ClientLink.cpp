@@ -475,7 +475,7 @@ void Grunt::ClientLink::PackLogon(CDataStore& msg, const Logon& logon) {
     msg.Put(accountNameLen);
     msg.PutData(this->m_accountName, accountNameLen);
 
-    msg.Set(startPos, msg.Size() - startPos - 2);
+    msg.Set(startPos, (uint16_t)(msg.Size() - startPos - 2));
 }
 
 void Grunt::ClientLink::ProveVersion(const uint8_t* versionChecksum) {

@@ -447,6 +447,13 @@ uint32_t ClientServices::CharacterValidateName(const char* name) {
     return CHAR_NAME_SUCCESS;
 }
 
+void ClientServices::Send2(CDataStore* msg) {
+    if (!ClientServices::s_currentConnection) {
+        SErrDisplayAppFatal("");
+    }
+    ClientServices::s_currentConnection->Send(msg);
+}
+
 void ClientServices::InitLoginServerCVars(int32_t overwrite, const char* locale) {
     if ((ClientServices::s_realmListBNVar == nullptr || ClientServices::s_realmListVar == nullptr) || overwrite != 0 ) {
         ClientServices::s_decorateAccountName = CVar::Register(

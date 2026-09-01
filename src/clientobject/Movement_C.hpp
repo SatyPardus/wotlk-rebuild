@@ -38,34 +38,24 @@ class CMovement_C : public CMovementShared {
 
     // Static methods
     static CPlayerMoveEvent* AllocPlayerMoveEvent(int32_t eventTime, uint32_t eventId);
+    static void EnqueuePlayerMoveEvent(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, CPlayerMoveEvent* event);
+    static void FreeMoveEvent(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list);
     static void MoveUnits(uint32_t time, uint32_t prevTime);
 
     // Member variables
-    /* 0000 */ //DWORD ukn1;
+    /* 0000 */ int32_t m_gameTime;
     /* 00C8 */ float m_collisionRadius = 0.33333334f;
     /* 00CC */ float m_collisionHeight = 2.0277777f;
     /* 00D0 */ float m_stepUpHeight = 1.0f;
     /* 00D4 */ C3Vector m_interpolationPos;
-    /* 00E0 */ float m_interpolationFacing;
-    /* 00E4 */ float m_interpolationPitch;
-    /* 0000 */ //DWORD ukn10;
-    /* 0000 */ //DWORD ukn11;
-    /* 0000 */ //DWORD ukn12;
-    /* 0000 */ //DWORD ukn13;
-    /* 0000 */ //DWORD ukn14;
-    /* 0000 */ //DWORD ukn15;
-    /* 0000 */ //DWORD ukn16;
-    /* 0000 */ //DWORD ukn17;
-    /* 0000 */ //DWORD ukn18;
-    /* 0000 */ //DWORD ukn19;
-    /* 0000 */ //DWORD ukn20;
-    /* 0000 */ //DWORD ukn21;
-    /* 0000 */ //DWORD ukn22;
-    /* 0000 */ //DWORD ukn23;
-    /* 0000 */ //DWORD ukn24;
-    /* 0000 */ //DWORD ukn25;
-    /* 0000 */ //DWORD ukn26;
-    /* 0000 */ //DWORD ukn27;
+    /* 00E0 */ float m_interpolationFacing = 0.0f;
+    /* 00E4 */ float m_interpolationPitch = 0.0f;
+    /* 00E8 */ int16_t m_timeSkewSamples[32] = { -50, -50, -50, -50, -50, -50, -50, -50,
+                                               -50, -50, -50, -50, -50, -50, -50, -50,
+                                               50, 50, 50, 50, 50, 50, 50, 50,
+                                               50, 50, 50, 50, 50, 50, 50, 50 };
+    /* 0128 */ uint32_t m_timeSkewIndex = 0;
+    /* 012C */ int32_t m_timeSkew = 50;
     /* 0130 */ float m_interpolation = 0.0f;
     /* 0134 */ int32_t ukn29 = 0;
     /* 0138 */ STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link) m_moveQueue;
@@ -78,12 +68,18 @@ class CMovement_C : public CMovementShared {
     void ExecuteMovement(uint32_t time, uint32_t prevTime);
     int32_t UpdatePlayerMovement(int32_t time);
     void ApplyMovement(uint32_t a2, uint32_t a3);
+    void AddToMoversList();
     void RemoveFromMoversList(bool a2);
     bool GetCurrentHoverHeight(float* height, bool* a3, uint32_t* a4);
     void OnSplineStop(uint32_t time);
     bool OnSpline(C3Vector* points, uint32_t pointCount, int32_t duration, uint32_t flags, uint32_t id);
     bool IsFalling();
     bool IsValidPosition();
+    void UpdateHeartbeatTimerA(int32_t time);
+    void WriteMovementStatusToPacket(NETMESSAGE msgId, int32_t time, CDataStore* msg);
+    void GetMoveStatus(NETMESSAGE msgId, int32_t time, CClientMoveUpdate* moveUpdate);
+    bool UpdateStatus(int32_t time, CMovementStatus* status, int32_t eventId, float value);
+    bool UpdateStatusInternal(int32_t time, CMovementStatus* status, int32_t* outDelta, int32_t restrictFlags, int32_t skipTiming);
 
     void OnMoveStartLocal(int32_t eventTime, bool forward);
     void OnMoveStopLocal(int32_t eventTime);
@@ -95,13 +91,27 @@ class CMovement_C : public CMovementShared {
     void OnPitchStopLocal(int32_t eventTime);
     void OnTurnStartLocal(int32_t eventTime, bool left);
     void OnTurnStopLocal(int32_t eventTime);
+
+    bool OnMoveStart(int32_t time, CMovementStatus* update, bool forward);
+    bool OnMoveStop(int32_t time, CMovementStatus* update);
+    bool OnStrafeStart(int32_t time, CMovementStatus* update, bool left);
+    bool OnStrafeStop(int32_t time, CMovementStatus* update);
+    bool OnJump(int32_t time, CMovementStatus* update);
+    bool OnHeartbeat(int32_t time, CMovementStatus* update);
+    bool OnTurnStart(int32_t eventTime, CMovementStatus* update, bool left);
+    bool OnTurnStop(int32_t eventTime, CMovementStatus* update);
+
     void AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags);
+    void AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float value, CMovementStatus* update);
     void UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, uint32_t eventId);
     bool HasMoveEventBetween(uint32_t minEventId, uint32_t maxEventId);
     int32_t HandlePendingActions();
     int32_t RequestMove(int32_t a2, int32_t a3, C3Vector* a4);
     int32_t CollideRequestMove(int32_t a2, int32_t a3, C3Vector* a4);
+    int32_t UpdateTimeSkew(int32_t gameDelta, int32_t localDelta);
+    void SetInterpolation(int32_t time);
     bool Interpolate(int32_t now, int32_t time, C3Vector* pos, float* facing, float* pitch);
+    void Extrapolate(int32_t time, uint32_t elapsed);
 
     int32_t GetMoveStartTime(int32_t elapsed);
     float GetStepUpHeight();

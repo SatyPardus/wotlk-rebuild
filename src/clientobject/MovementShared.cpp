@@ -418,8 +418,8 @@ bool CMovementShared::StopMove() {
     if ((this->m_flags & 3) != 0) {
         if ((this->m_flags & 0x4000000) != 0) {
             this->m_flags = this->m_flags & 0xFBFFFFFF;
-            //if (!CMovementShared::IsFallingSwimmingFlying(this))
-            //    CMovementShared::sub_988370(this, 0.0);
+            // if (!CMovementShared::IsFallingSwimmingFlying(this))
+            //     CMovementShared::sub_988370(this, 0.0);
         }
         if ((this->m_flags & 0x1000) != 0) {
             this->m_flags = this->m_flags & 0xFFFCBFFF | 0x4000;
@@ -433,6 +433,14 @@ bool CMovementShared::StopMove() {
             this->m_flags = m_flags & 0xFFFCFFFF;
         return 0;
     }
+}
+
+// OFFSET: 0x98C8A0
+bool CMovementShared::StopMove(uint32_t flags) {
+    if ((flags & (MOVEMENTFLAG_BACKWARD | MOVEMENTFLAG_FORWARD)) == 0 || (this->m_flags & MOVEMENTFLAG_FALLING) != 0)
+        return 0;
+    this->ForceStopMove(1);
+    return 1;
 }
 
 // OFFSET: 0x98BD10
@@ -503,8 +511,8 @@ bool CMovementShared::StopStrafe() {
     if ((this->m_flags & MOVEMASK_STRAFE) != 0) {
         if ((this->m_flags & MOVEMENTFLAG_SPLINE_ELEVATION) != 0) {
             this->m_flags = this->m_flags & 0xFBFFFFFF;
-            //if (!CMovementShared::IsFallingSwimmingFlying(this))
-            //    CMovementShared::sub_988370(this, 0.0);
+            // if (!CMovementShared::IsFallingSwimmingFlying(this))
+            //     CMovementShared::sub_988370(this, 0.0);
         }
         if ((this->m_flags & 0x1000) != 0) {
             this->m_flags = this->m_flags & 0xFFF37FFF | 0x8000;
@@ -518,6 +526,14 @@ bool CMovementShared::StopStrafe() {
             this->m_flags = this->m_flags & 0xFFF3FFFF;
         return 0;
     }
+}
+
+// OFFSET: 0x988DC0
+bool CMovementShared::StopStrafe(uint32_t flags) {
+    if ((flags & 0xC) == 0 || (this->m_flags & 0x1000) != 0)
+        return 0;
+    this->ForceStopStrafe();
+    return 1;
 }
 
 // OFFSET: 0x988BA0
@@ -743,6 +759,89 @@ void CMovementShared::OnSpline(int32_t timePassed, C3Vector* points, uint32_t po
     }
     this->m_spline->m_effectStartTime = 0;
     this->m_spline->m_verticalAcceleration = 0.0;
+}
+
+// OFFSET: 0x987140
+void CMovementShared::GetMoveStatus(NETMESSAGE msgId, int32_t time, CClientMoveUpdate* moveUpdate) {
+    moveUpdate->status.m_gameTime = time;
+    moveUpdate->status.m_moveExtraFlags = this->m_flags2;
+    if (this->m_transportGuid != 0 || msgId == CMSG_MOVE_CHNG_TRANSPORT) {
+        //moveUpdate->status.m_transportGuid = this->m_transportGuid;
+        //moveUpdate->status.m_transportTime = MovementGetGlobals()->m_transportTime;
+        //if (MovementGetGlobals()->ukn78) {
+        //    moveUpdate->status.m_moveExtraFlags |= 0x400u;
+        //    moveUpdate->status.m_transportTime2 = MovementGetGlobals()->m_transportTime2;
+        //    MovementGetGlobals()->ukn78 = 0;
+        //} else {
+        //    moveUpdate->status.m_transportTime2 = 0;
+        //}
+        //moveUpdate->status.m_moveFlags |= 0x200u;
+        //moveUpdate->status.m_transportSeat = BYTE2(this->m_flags2);
+        SErrDisplayAppFatal("Not implemented yet");
+    } else {
+        moveUpdate->status.m_moveFlags &= ~0x200u;
+        moveUpdate->status.m_transportGuid.guid_low = 0;
+        moveUpdate->status.m_transportGuid.guid_high = 0;
+        moveUpdate->status.m_transportTime = 0.0;
+        moveUpdate->status.m_transportTime2 = 0;
+    }
+    if (this->IsOnSpline())
+        moveUpdate->status.m_moveFlags &= ~0x8000000u;
+    else
+        moveUpdate->status.m_moveFlags |= 0x8000000u;
+    moveUpdate->status.m_transportPosition = this->m_position;
+    moveUpdate->status.m_transportFacing = this->m_facing;
+    C3Vector pos;
+    this->GetPosition(&pos, &this->m_position);
+    moveUpdate->status.m_position = pos;
+    moveUpdate->status.m_facing = this->GetFacing(this->m_facing);
+    moveUpdate->status.m_pitch = this->m_pitch;
+    moveUpdate->status.m_fallTime = this->m_fallTimeMs;
+    if ((moveUpdate->status.m_moveFlags & 0x1000) != 0) {
+        moveUpdate->status.m_zSpeed = this->m_fallVelocity;
+        moveUpdate->status.m_sinAngle = this->m_moveDir2D.x;
+        moveUpdate->status.m_cosAngle = this->m_moveDir2D.y;
+        moveUpdate->status.m_xySpeed = this->m_currentSpeed;
+    }
+    if ((this->m_flags & 0x4000000) != 0)
+        moveUpdate->status.m_splineElevation = this->m_stepUpStartZ;
+}
+
+// OFFSET: 0x988920
+void CMovementShared::UpdateBaseStatus(CMovementStatus* status) {
+    this->m_position = status->m_position;
+    this->m_anchorPos = status->m_position;
+
+    this->m_facing = status->m_facing;
+    this->m_anchorFacing = status->m_facing;
+
+    this->m_pitch = status->m_pitch;
+    this->m_anchorPitch = status->m_pitch;
+
+    this->m_anchorElapsedMs = 0;
+    this->m_stepUpStartZ = status->m_splineElevation;
+
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) == 0)
+        this->m_currentSpeed = this->GetBaseSpeed(0);
+}
+
+// OFFSET: 0x988990
+void CMovementShared::UpdateFallState(CMovementStatus* status) {
+    this->m_fallTimeMs = status->m_fallTime;
+    this->m_fallVelocity = status->m_zSpeed;
+
+    float elapsed = status->m_fallTime * 0.001f;
+
+    this->m_fallStartZ = this->CalcFallStartElevation(elapsed, this->m_flags & 0x20000000, status->m_zSpeed) + this->m_position.z;
+
+    this->m_moveDir2D.x = status->m_sinAngle;
+    this->m_moveDir2D.y = status->m_cosAngle;
+
+    this->m_moveDir.x = status->m_sinAngle;
+    this->m_moveDir.y = status->m_cosAngle;
+    this->m_moveDir.z = 0.0f;
+
+    this->m_currentSpeed = status->m_xySpeed;
 }
 
 // OFFSET: 0x987D00

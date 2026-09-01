@@ -9,6 +9,10 @@
 #include "util/DataStore.hpp"
 #include "console/CVar.hpp"
 #include "clientobject/Movement.hpp"
+#include <gameui/CGInputControl.hpp>
+#include <gameui/CGWorldFrame.hpp>
+#include "gameui/camera/CGCamera.hpp"
+#include <util/Network.hpp>
 
 WGUID CGUnit_C::s_activeMover;
 CVar* CGUnit_C::s_cvShowFootPrintParticles;
@@ -354,6 +358,35 @@ bool CGUnit_C::InitializeExtendedDisplay(CGPlayer_C* player, bool hasExtendedDat
     return 1;
 }
 
+// OFFSET: 0x717C50
+void CGUnit_C::InitActiveMover(WGUID guid) {
+    CGUnit_C::s_activeMover = guid;
+    CDataStore msg;
+    msg.Put((uint32_t)CMSG_SET_ACTIVE_MOVER);
+    msg.Put((uint64_t)CGUnit_C::s_activeMover);
+    msg.Finalize();
+    ClientServices::Send2(&msg);
+
+    uint32_t time = OsGetAsyncTimeMs();
+    CGInputControl::GetActive()->UpdatePlayer(time, 1);
+
+    CGUnit_C* mover = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
+    if ((mover->m_passenger->m_flags & 0xC0100F) != 0)
+        mover->movementData.UpdateHeartbeatTimerA(time);
+
+    //v5 = (v4->ObjectBase.GetTransportGUID)(v4);
+    //if (v5) {
+    //    v6 = ClntObjMgrObjectPtr(v5, TYPEMASK_GAMEOBJECT);
+    //    if (v6) {
+    //        v7 = (v6->data0DC[16].m_terminator.m_prevlink->m_prevlink[21].m_prevlink)(v6->data0DC[16].m_terminator.m_prevlink);
+    //        MovementSetTransportUpdateTime(v7);
+    //    }
+    //}
+    //result = bn_CVehiclePassenger_C_OnSetActiveMover(v4);
+
+    msg.Destroy();
+}
+
 // OFFSET: 0x72D940
 void CGUnit_C::RefreshDataPointers() {
     uint32_t displayId = this->m_displayId;
@@ -474,9 +507,327 @@ bool CGUnit_C::IsLocalClientControlled() {
     return (this->unk_0A30 >> 10) & 1;
 }
 
+// OFFSET: 0x71EF20
+bool CGUnit_C::IsAllowedToSendMessage(NETMESSAGE msgId) {
+    if (this->m_obj->m_guid == CGUnit_C::s_activeMover) {
+        if (!this->m_passenger->IsOnSpline() || IsMessageAllowedWhileOnSpline(msgId))
+            return 1;
+    }
+    return false;
+}
+
 // OFFSET: 0x74B9B0
 void CGUnit_C::ToggleMovementFlag2_0x40(uint8_t flag) {
     this->movementData.ToggleMovementFlag2_0x40(flag);
+}
+
+// OFFSET: 0x7413F0
+bool CGUnit_C::ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat) {
+    // this->UpdateObjectEffectMovementStates();
+
+    switch (msgId) {
+    case MSG_MOVE_STOP:
+    case MSG_MOVE_STOP_STRAFE:
+    case MSG_MOVE_START_TURN_LEFT:
+    case MSG_MOVE_START_TURN_RIGHT:
+    case MSG_MOVE_STOP_TURN:
+    case MSG_MOVE_SET_RUN_MODE:
+    case MSG_MOVE_SET_WALK_MODE:
+    case MSG_MOVE_SET_TURN_RATE_CHEAT:
+    case MSG_MOVE_SET_TURN_RATE:
+    case MSG_MOVE_TOGGLE_COLLISION_CHEAT:
+    case MSG_MOVE_SET_FACING:
+    case MSG_MOVE_SET_PITCH_RATE_CHEAT:
+    case MSG_MOVE_SET_PITCH_RATE:
+        break;
+
+    case MSG_MOVE_START_PITCH_UP:
+    case MSG_MOVE_START_PITCH_DOWN:
+    case MSG_MOVE_STOP_PITCH:
+    case MSG_MOVE_SET_PITCH:
+        if ((this->m_passenger->m_flags & (MOVEMENTFLAG_FLYING | MOVEMENTFLAG_SWIMMING)) == 0 && (this->m_passenger->m_flags2 & MOVEMENTFLAG2_ALWAYS_ALLOW_PITCHING) == 0)
+            return 0;
+        break;
+
+    default:
+        // if (!IsMovementAckPacket_NeedsMovementStatus(opcode) && this->ukn78()) {
+        //     if ((this->m_obj->OBJECT_FIELD_TYPE & 0x10) != 0)
+        //         this->ChangeStandState(0);
+        // }
+        break;
+    }
+
+    bool result = false;
+
+    if (needAck) {
+        bool handled = false;
+
+        switch (msgId) {
+        case MSG_MOVE_START_TURN_LEFT:
+        case MSG_MOVE_START_TURN_RIGHT:
+        case MSG_MOVE_STOP_TURN:
+            if ((this->m_passenger->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_TURNING) != 0) {
+                // result = this->MoveEventHandler_190(time, opcode);
+                handled = true;
+            }
+            break;
+
+        case MSG_MOVE_START_PITCH_UP:
+        case MSG_MOVE_START_PITCH_DOWN:
+        case MSG_MOVE_STOP_PITCH:
+            if ((this->m_passenger->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_PITCHING) != 0) {
+                // result = this->MoveEventHandler_193(time, opcode);
+                handled = true;
+            }
+            break;
+
+        case MSG_MOVE_SET_FACING:
+        case MSG_MOVE_SET_PITCH:
+            // handled = this->sub_71AE80();
+            break;
+        }
+
+        if (!handled) {
+             if (this->SendMovementUpdate(time, msgId, value, index, transportGuid, transportSeat))
+                 result = true;
+            // if (this->sub_721C20(time))
+            //     result = true;
+        }
+    }
+
+    if (this->m_obj->m_guid == CGUnit_C::s_activeMover) {
+        switch (msgId) {
+        case CMSG_FORCE_MOVE_ROOT_ACK:
+        case CMSG_FORCE_MOVE_UNROOT_ACK:
+        case MSG_MOVE_STOP:
+        case MSG_MOVE_STOP_STRAFE:
+            if (msgId == CMSG_FORCE_MOVE_ROOT_ACK || msgId == CMSG_FORCE_MOVE_UNROOT_ACK)
+                CGInputControl::GetActive()->UpdatePlayer(time, 1);
+
+            if ((this->m_passenger->m_flags & MOVEMASK_ANIMATING) == 0) {
+                // this->HandlePendingTrackEvents();
+            }
+            break;
+
+        case MSG_MOVE_TELEPORT_ACK:
+            // CGInputControl::GetActive()->RemoveFlags_0xF0000();
+            CGInputControl::GetActive()->UpdatePlayer(time, 1);
+            // this->data9BC = OsGetAsyncTimeMs();
+
+            // if (this->IsAutoTracking())
+            //     this->ClearTrackingTarget(0, 1);
+
+            if (this->m_obj->m_guid == CGWorldFrame::GetActiveCamera()->m_targetGUID) {
+                // CGGameUI::ResetCamera(this->m_obj->m_guid);
+            }
+            break;
+
+        case CMSG_MOVE_SET_FLY:
+            CGInputControl::GetActive()->UpdatePlayer(time, 1);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    // this->sub_73ED10(opcode);
+    return result;
+}
+
+// OFFSET: 0x71F0C0
+bool CGUnit_C::SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat) {
+     //*&this->dataA34[7] = (GetRawFacing)(this);
+     //m_passenger = this->m_passenger;
+     //if ((m_passenger->m_flags & (MOVEMENTFLAG_FLYING | MOVEMENTFLAG_SWIMMING)) != 0 || (m_passenger->m_flags2 & MOVEMENTFLAG2_ALWAYS_ALLOW_PITCHING) != 0)
+     //    *&this->dataA34[8] = (this->ObjectBase.__vftable[1].PostReenable)(this);
+
+     CDataStore msg = CDataStore();
+     if (this->BuildMovementUpdate(time, msgId, &msg, value, index)) {
+         if (msgId == CMSG_CHANGE_SEATS_ON_CONTROLLED_VEHICLE) {
+             msg << transportGuid;
+             msg.Put(transportSeat);
+         }
+
+         if ((this->m_passenger->m_flags & (MOVEMENTFLAG_RIGHT | MOVEMENTFLAG_LEFT)) != 0)
+             this->unk_0A30 |= 0x4000000u;
+         if ((this->m_passenger->m_flags & (MOVEMENTFLAG_PITCH_DOWN | MOVEMENTFLAG_PITCH_UP)) != 0)
+             this->unk_0A30 |= 0x8000000u;
+
+         msg.Finalize();
+         ClientServices::Send2(&msg);
+         this->movementData.UpdateHeartbeatTimerA(time);
+         msg.Destroy();
+         return true;
+     } else {
+         msg.Destroy();
+         return false;
+     }
+}
+
+// OFFSET: 0x71EF80
+bool CGUnit_C::BuildMovementUpdate(int32_t time, NETMESSAGE msgId, CDataStore* msg, float value, uint32_t index) {
+     msg->Put((uint32_t)msgId);
+     *msg << this->m_obj->m_guid;
+     if (AckMessageNeedsIndex(msgId))
+         msg->Put(index);
+     if (IsAckMessage(msgId) || this->IsAllowedToSendMessage(msgId)) {
+         this->movementData.WriteMovementStatusToPacket(msgId, time, msg);
+         if (sub_7151F0(msgId))
+             msg->Put(value);
+         if ((this->movementData.m_flags & MOVEMENTFLAG_ONTRANSPORT) == 0) {
+             if ((this->m_passenger->m_flags & MOVEMENTFLAG_FALLING) != 0) {
+                 this->unk_0A30 |= 0x80u;
+                 return 1;
+             }
+             this->unk_0A30 &= ~0x80u;
+         }
+         return 1;
+     }
+}
+
+ // OFFSET: 0x740D30
+ bool CGUnit_C::OnMoveEvent(NETMESSAGE msgId, int32_t a3, CDataStore* msg) {
+     CMovementStatus status = {};
+     status.m_transportSeat = -1;
+
+     *msg >> status;
+
+     int32_t time = OsGetAsyncTimeMs();
+     int32_t changed = 0;
+
+     switch (msgId) {
+     case MSG_MOVE_START_FORWARD:
+         changed = this->movementData.OnMoveStart(time, &status, 1);
+         break;
+     case MSG_MOVE_START_BACKWARD:
+         changed = this->movementData.OnMoveStart(time, &status, 0);
+         break;
+     case MSG_MOVE_STOP:
+         changed = this->movementData.OnMoveStop(time, &status);
+         break;
+
+     case MSG_MOVE_START_STRAFE_LEFT:
+         changed = this->movementData.OnStrafeStart(time, &status, 1);
+         break;
+     case MSG_MOVE_START_STRAFE_RIGHT:
+         changed = this->movementData.OnStrafeStart(time, &status, 0);
+         break;
+     case MSG_MOVE_STOP_STRAFE:
+         changed = this->movementData.OnStrafeStop(time, &status);
+         break;
+
+     case MSG_MOVE_JUMP:
+         changed = this->movementData.OnJump(time, &status);
+         break;
+
+     case MSG_MOVE_START_TURN_LEFT:
+         changed = this->OnTurnStart(time, &status, 1);
+         break;
+     case MSG_MOVE_START_TURN_RIGHT:
+         changed = this->OnTurnStart(time, &status, 0);
+         break;
+     case MSG_MOVE_STOP_TURN:
+         changed = this->movementData.OnTurnStop(time, &status);
+         break;
+
+     //case MSG_MOVE_START_PITCH_UP:
+     //    changed = this->OnPitchStart(time, &status, 1);
+     //    break;
+     //case MSG_MOVE_START_PITCH_DOWN:
+     //    changed = this->OnPitchStart(time, &status, 0);
+     //    break;
+     //case MSG_MOVE_STOP_PITCH:
+     //    changed = this->movementData.OnPitchStop_1(time, &status);
+     //    break;
+     //
+     //case MSG_MOVE_SET_RUN_MODE:
+     //    changed = this->movementData.OnSetRunMode(time, &status, 1);
+     //    break;
+     //case MSG_MOVE_SET_WALK_MODE:
+     //    changed = this->movementData.OnSetRunMode(time, &status, 0);
+     //    break;
+     //
+     //case MSG_MOVE_TELEPORT:
+     //    changed = this->OnUnitMoveEvent(time, &status);
+     //    break;
+
+     case MSG_MOVE_FALL_LAND:
+     case MSG_MOVE_HEARTBEAT:
+         changed = this->movementData.OnHeartbeat(time, &status);
+         break;
+
+     //case MSG_MOVE_START_SWIM:
+     //case MSG_MOVE_START_SWIM_CHEAT:
+     //    changed = this->movementData.OnStartSwim(time, &status);
+     //    break;
+     //case MSG_MOVE_STOP_SWIM:
+     //case MSG_MOVE_STOP_SWIM_CHEAT:
+     //    changed = this->movementData.OnStopSwim(time, &status);
+     //    break;
+     //
+     //case MSG_MOVE_SET_FACING:
+     //    changed = this->movementData.OnSetFacing(time, &status);
+     //    break;
+     //case MSG_MOVE_SET_PITCH:
+     //    changed = this->movementData.OnSetPitch(time, &status);
+     //    break;
+     //
+     //case MSG_MOVE_ROOT:
+     //    changed = this->movementData.OnMoveRoot(time, &status);
+     //    break;
+     //case MSG_MOVE_UNROOT:
+     //    changed = this->OnMoveUnRoot(time, &status);
+     //    break;
+     //
+     //case MSG_MOVE_KNOCK_BACK:
+     //    changed = this->OnKnockbackPacket(time, &status, msg);
+     //    break;
+     //
+     //case MSG_MOVE_HOVER:
+     //    changed = this->movementData.OnMoveHover(time, &status);
+     //    break;
+     //case MSG_MOVE_FEATHER_FALL:
+     //    changed = this->movementData.OnSetFeatherFall(time, &status);
+     //    break;
+     //case MSG_MOVE_WATER_WALK:
+     //    changed = this->movementData.OnSetWaterWalk(time, &status);
+     //    break;
+     //
+     //case MSG_MOVE_UPDATE_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY:
+     //    changed = this->movementData.OnUpdateCanTransitionBetweenSwimAndFlyPacket(time, &status);
+     //    break;
+     //
+     //case MSG_MOVE_START_ASCEND:
+     //    changed = this->movementData.OnStartAscendOrDescendPacket(time, &status, 1);
+     //    break;
+     //case MSG_MOVE_START_DESCEND:
+     //    changed = this->movementData.OnStartAscendOrDescendPacket(time, &status, 0);
+     //    break;
+     //case MSG_MOVE_STOP_ASCEND:
+     //    changed = this->movementData.OnMoveStopAscendPacket(time, &status);
+     //    break;
+     //
+     //case MSG_MOVE_UPDATE_CAN_FLY:
+     //    changed = this->movementData.OnMoveUpdateCanFlyPacket(time, &status);
+     //    break;
+     //case MSG_MOVE_GRAVITY_CHNG:
+     //    changed = this->movementData.OnGravityChangePacket2(time, &status);
+     //    break;
+
+     case MSG_MOVE_TOGGLE_COLLISION_CHEAT:
+         return 1;
+
+     default:
+         return 0;
+     }
+
+     if (changed) {
+         // this->MoveEventHappened(msgId);
+         // this->sub_73AC30(0, -1);
+     }
+
+     return 1;
 }
 
 // OFFSET: 0x73AB20
@@ -490,6 +841,14 @@ void CGUnit_C::OnMoveUpdate(int32_t time, bool a3, bool a4) {
     //    this->dataA34[3] = -1;
     //CGUnit_C::UpdateFlightStatus(this, a2);
     //CGUnit_C::UpdateSwimmingStatus(&this->ObjectBase, a2, a3);
+}
+
+// OFFSET: 0x718890
+bool CGUnit_C::OnTurnStart(int32_t eventTime, CMovementStatus* update, bool left) {
+    if ((this->m_unit->UNIT_FIELD_FLAGS & 0x40000) != 0)
+        return 0;
+
+    return this->movementData.OnTurnStart(eventTime, update, left);
 }
 
 // OFFSET: 0x72E5D0
@@ -1240,29 +1599,29 @@ void CGUnit_C::ClientInitialize() {
 
 // OFFSET: 0x742220
 void CGUnit_C::Initialize() {
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_FORWARD, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_BACKWARD, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_STOP, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_STRAFE_LEFT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_STRAFE_RIGHT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_STOP_STRAFE, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_ASCEND, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_DESCEND, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_STOP_ASCEND, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_JUMP, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_TURN_LEFT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_TURN_RIGHT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_STOP_TURN, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_PITCH_UP, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_PITCH_DOWN, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_STOP_PITCH, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_SET_RUN_MODE, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_SET_WALK_MODE, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_TELEPORT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_SET_FACING, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_SET_PITCH, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_TOGGLE_COLLISION_CHEAT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_GRAVITY_CHNG, Packet_Group_21, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_FORWARD, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_BACKWARD, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_STOP, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_STRAFE_LEFT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_STRAFE_RIGHT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_STOP_STRAFE, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_ASCEND, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_DESCEND, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_STOP_ASCEND, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_JUMP, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_TURN_LEFT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_TURN_RIGHT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_STOP_TURN, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_PITCH_UP, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_PITCH_DOWN, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_STOP_PITCH, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_SET_RUN_MODE, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_SET_WALK_MODE, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_TELEPORT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_SET_FACING, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_SET_PITCH, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_TOGGLE_COLLISION_CHEAT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_GRAVITY_CHNG, &CGUnit_C::HandleMovementPacket, 0);
     //ClientServices::SetMessageHandler(MSG_MOVE_SET_RUN_SPEED, Packet_Group_22, 0);
     //ClientServices::SetMessageHandler(MSG_MOVE_SET_RUN_BACK_SPEED, Packet_Group_22, 0);
     //ClientServices::SetMessageHandler(MSG_MOVE_SET_WALK_SPEED, Packet_Group_22, 0);
@@ -1273,16 +1632,16 @@ void CGUnit_C::Initialize() {
     //ClientServices::SetMessageHandler(MSG_MOVE_SET_TURN_RATE, Packet_Group_22, 0);
     //ClientServices::SetMessageHandler(MSG_MOVE_SET_PITCH_RATE, Packet_Group_22, 0);
     //ClientServices::SetMessageHandler(MSG_MOVE_SET_COLLISION_HGT, Packet_Group_22, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_ROOT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_UNROOT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_SWIM, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_STOP_SWIM, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_START_SWIM_CHEAT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_STOP_SWIM_CHEAT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_HEARTBEAT, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_FALL_LAND, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_UPDATE_CAN_FLY, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_UPDATE_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY, Packet_Group_21, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_ROOT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_UNROOT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_SWIM, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_STOP_SWIM, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_START_SWIM_CHEAT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_STOP_SWIM_CHEAT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_HEARTBEAT, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_FALL_LAND, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_UPDATE_CAN_FLY, &CGUnit_C::HandleMovementPacket, 0);
+    ClientServices::SetMessageHandler(MSG_MOVE_UPDATE_CAN_TRANSITION_BETWEEN_SWIM_AND_FLY, &CGUnit_C::HandleMovementPacket, 0);
     //ClientServices::SetMessageHandler(MSG_MOVE_TELEPORT_ACK, Packet_Group_23, 0);
     //ClientServices::SetMessageHandler(MSG_MOVE_TIME_SKIPPED, Packet_MSG_MOVE_TIME_SKIPPED, 0);
     ClientServices::SetMessageHandler(SMSG_MONSTER_MOVE, &CGUnit_C::HandleMonsterMovePacket, 0);
@@ -1314,10 +1673,10 @@ void CGUnit_C::Initialize() {
     //ClientServices::SetMessageHandler(SMSG_MOVE_KNOCK_BACK, Packet_Group_23, 0);
     //ClientServices::SetMessageHandler(SMSG_MOUNTSPECIAL_ANIM, Packet_SMSG_MOUNTSPECIAL_ANIM, 0);
     //ClientServices::SetMessageHandler(SMSG_AI_REACTION, Packet_SMSG_AI_REACTION, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_KNOCK_BACK, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_HOVER, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_FEATHER_FALL, Packet_Group_21, 0);
-    //ClientServices::SetMessageHandler(MSG_MOVE_WATER_WALK, Packet_Group_21, 0);
+    //ClientServices::SetMessageHandler(MSG_MOVE_KNOCK_BACK, &CGUnit_C::OnMoveEvent, 0);
+    //ClientServices::SetMessageHandler(MSG_MOVE_HOVER, &CGUnit_C::OnMoveEvent, 0);
+    //ClientServices::SetMessageHandler(MSG_MOVE_FEATHER_FALL, &CGUnit_C::OnMoveEvent, 0);
+    //ClientServices::SetMessageHandler(MSG_MOVE_WATER_WALK, &CGUnit_C::OnMoveEvent, 0);
     //ClientServices::SetMessageHandler(SMSG_PET_ACTION_SOUND, Packet_SMSG_PET_ACTION_SOUND, 0);
     //ClientServices::SetMessageHandler(SMSG_PET_DISMISS_SOUND, Packet_SMSG_PET_DISMISS_SOUND, 0);
     //ClientServices::SetMessageHandler(SMSG_SPLINE_MOVE_ROOT, Packet_Group_25, 0);
@@ -1448,6 +1807,19 @@ int32_t CGUnit_C::HandleMonsterMovePacket(void* param, NETMESSAGE msgId, uint32_
         return 1;
     }
 
+    msg->Seek(msg->Size());
+    return 0;
+}
+
+// OFFSET: 0x741B60
+int32_t CGUnit_C::HandleMovementPacket(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
+    WGUID guid;
+    *msg >> guid;
+
+    CGUnit_C* unit = ClntObjMgrObjectPtr<CGUnit_C*>(guid, TYPEMASK_UNIT);
+    if (unit) {
+        return unit->OnMoveEvent(msgId, time, msg);
+    }
     msg->Seek(msg->Size());
     return 0;
 }

@@ -23,5 +23,6 @@ struct CClientMoveUpdate {
 };
 
 CDataStore& operator>>(CDataStore& msg, CClientMoveUpdate& move);
+CDataStore& operator<<(CDataStore& msg, CClientMoveUpdate& move);
 
 #endif

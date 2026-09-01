@@ -65,9 +65,30 @@ inline CDataStore& operator>>(CDataStore& msg, WGUID& guid) {
         }
     }
 
-    OsOutputDebugString("GUID %ull\n", guidFull);
-
     guid = guidFull;
+
+    return msg;
+}
+
+// OFFSET: 0x76DC80
+inline CDataStore& operator<<(CDataStore& msg, const WGUID& guid) {
+    uint64_t guidFull = static_cast<uint64_t>(guid);
+
+    uint32_t maskPos = msg.Size();
+    msg.Put(static_cast<uint8_t>(0));
+
+    uint8_t mask = 0;
+
+    for (int32_t i = 0; i < 8; i++) {
+        uint8_t byte = static_cast<uint8_t>(guidFull >> (i * 8));
+
+        if (byte) {
+            mask |= 1 << i;
+            msg.Put(byte);
+        }
+    }
+
+    msg.Set(maskPos, mask);
 
     return msg;
 }

@@ -3,6 +3,7 @@
 #include "db/Db.hpp"
 #include <storm/Error.hpp>
 #include "clientobject/ObjectMgrClient.hpp"
+#include <gameui/CGGameUI.hpp>
 
 CGPlayer_C::CGPlayer_C() {
 
@@ -38,18 +39,113 @@ void CGPlayer_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpd
     //v8 = this->ObjectBase.m_obj;
     //guid_low = v8->OBJECT_FIELD_GUID.guid_low;
     //v10 = v8->OBJECT_FIELD_GUID.guid_high;
-    //if (__PAIR64__(v10, guid_low) == ClntObjMgrGetActivePlayer())
-    //    CGPlayer_C::PostInitActivePlayer(this);
+    if (this->m_obj->m_guid == ClntObjMgrGetActivePlayer())
+        this->PostInitActivePlayer();
     //else
     //    CGPlayer_C::UpdatePartyMemberState(this);
     //CGUnit_C::UpdatePetReaction(this);
     //CGUnit_C::OnMoveUpdate(this, a2, 1, 1);
+}
 
-    //#### TESTING
-    if (this->m_obj->m_guid == ClntObjMgrGetActivePlayer()) {
-        CGUnit_C::s_activeMover = this->m_obj->m_guid;
-    }
-    //#####
+// OFFSET: 0x6E7F50
+void CGPlayer_C::PostInitActivePlayer() {
+    //this->movementData.m_flags |= 0x200u;
+    //CGPlayer_C::SetActiveMirrorHandlers(this);
+    //CGPlayer_C__LoadVocalUISounds(LOBYTE(this->m_unit->UNIT_FIELD_BYTES_0), this->m_player->PLAYER_BYTES_3[0]);
+    //NOP_0(this, 0, 0);
+    //maybe_CGSpellBook__ClearSpells();
+    //for (i = 0; i < dword_C9EB3C; ++i)
+    //    CGPlayer_C::AddKnownSpell(this, *(dword_C9EB40 + 2 * i), *(dword_C9EB40 + 4 * i + 2), 0, 1);
+    //CGSpellBook::UpdateSpells(1, 0, 1);
+    //bn_CGSpellBook_UpdateCompanions();
+    //CGClassTrainer::RefreshList();
+    //if (!ClntObjMgrGetPlayerType()) {
+    //    for (j = 0; j < 0x90; ++j) {
+    //        if ((dword_AD9F6C[j] & 0xF0000000) != 0 || bn_CGUnit_C_IsSpellKnown(dword_AD9F6C[j]))
+    //            maybe_CGActionBar__SetAction(j, dword_AD9F6C[j], 0, 1);
+    //    }
+    //    FrameScript::SignalEvent(176, "%d", 0);
+    //}
+    //if (CGUnit_C::CurrentShapeshiftForm_HasFlag_0x1(this)) {
+    //    CGSpellBook::UpdateUsable();
+    //    bn_CGSpellBook_UpdateSelection();
+    //    bn_CGActionBar_UpdateShapeShiftBar();
+    //    maybe_CGActionBar__UpdateBonusBar();
+    //    FrameScript::SignalEvent(377, 0);
+    //}
+    //v27[0] = -1;
+    //bn_CGWorldFrame_UpdateScreenEffect();
+    //ClntObjMgrEnumVisibleObjects(bn_AuraVisionUpdateHandler, v27);
+    //ActiveCamera = CGWorldFrame::GetActiveCamera();
+    //CGCamera::sub_6053D0(ActiveCamera, 0.0);
+    //if (!ClntObjMgrGetPlayerType()) {
+    //    bn_CGUnit_C_SetLocalClientControl(1);
+    //    v5 = &this->ObjectBase.m_obj->OBJECT_FIELD_GUID.guid_low;
+    //    v6 = *v5;
+    //    v7 = v5[1];
+    //    if (__PAIR64__(v7, v6) == ClntObjMgrGetActivePlayer()) {
+    //        PlayerData = this->m_player;
+    //        guid_low = PlayerData->PLAYER_FARSIGHT.guid_low;
+    //        guid_high = PlayerData->PLAYER_FARSIGHT.guid_high;
+    //        v22 = guid_low;
+    //    } else {
+    //        guid_high = 0;
+    //        v22 = 0;
+    //    }
+    //    v23 = guid_high;
+    //    v11 = this->m_unit;
+    //    v12 = *v11;
+    //    v13 = v11[1];
+    //    if (*v11) {
+    //        v14 = ClntObjMgrObjectPtr(__PAIR64__(v13, v12), TYPEMASK_UNIT);
+    //        v26 = v14;
+    //        if (v14 && (v14->m_unit->UNIT_FIELD_FLAGS & 0x1000000) != 0 && v22 == v12 && v23 == v13) {
+    //            bn_CGUnit_C_SetLocalClientControl(1);
+    //            v24 = v12;
+    //            v25 = v13;
+    //            goto LABEL_24;
+    //        }
+    //    } else {
+    //        v26 = 0;
+    //    }
+    //    v15 = this->ObjectBase.m_obj;
+    //    v24 = *v15;
+    //    v25 = v15[1];
+//LABEL_24:
+        CGGameUI::InitClientControlState(this->m_obj->m_guid);
+    //    v16 = this->ObjectBase.m_obj;
+    //    if (v24 != v16->OBJECT_FIELD_GUID.guid_low || v25 != v16->OBJECT_FIELD_GUID.guid_high)
+    //        maybe_CGPlayer_C__ToggleFarSight(this, v26);
+    //    CGGameUI::EnterWorld();
+    //    CGGameUI::UpdateActivePlayer();
+    //}
+    //Current = ClientServices::GetCurrent();
+    //CNetClient::sub_6B1840(Current, 1);
+    //if (dword_C9EAAC) {
+    //    maybe_CGGameUI__StartCinematic(dword_C9EAAC);
+    //    dword_C9EAAC = 0;
+    //} else if ((this->ObjectBase.GetTransportGUID)(this)) {
+    //    LoadingScreenSetTransparent(1);
+    //} else {
+    //    LoadingScreenDisable();
+    //}
+    //Spell_C_SetPlayerClass(BYTE1(this->m_unit->UNIT_FIELD_BYTES_0));
+    //bn_CGPlayer_C_CountEquippedGems(this);
+    //PLAYER_FLAGS = this->m_player->PLAYER_FLAGS;
+    //if ((PLAYER_FLAGS & 0x200) != 0) {
+    //    this->unk_1020[59] = 0;
+    //} else if ((PLAYER_FLAGS & 0x40000) == 0) {
+    //    this->unk_1020[59] = FrameTime::s_curTimeMs + 300000;
+    //}
+    //ClntObjMgrEnumVisibleObjects(bn_TrackingMaskUpdateProc, 0);
+    //CGCommentator::PostInit(this);
+    //if (SFile::IsStreamingMode()) {
+    //    if ((this->ObjectBase.GetTransportGUID)(this)) {
+    //        LoadingScreenDisable();
+    //        v19 = (this->ObjectBase.GetPosition)(this);
+    //        World::Preload(v19, v21);
+    //    }
+    //}
 }
 
 // OFFSET: 0x6DE980

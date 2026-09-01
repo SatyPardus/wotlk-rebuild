@@ -156,9 +156,18 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool GetCanFly();
     bool IsClientControlled();
     bool IsLocalClientControlled();
+    bool IsAllowedToSendMessage(NETMESSAGE msgId);
     void ToggleMovementFlag2_0x40(uint8_t flag);
 
+    bool ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
+    bool SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
+    bool BuildMovementUpdate(int32_t time, NETMESSAGE msgId, CDataStore* msg, float value, uint32_t index);
+
+    bool OnMoveEvent(NETMESSAGE msgId, int32_t time, CDataStore* msg); 
     void OnMoveUpdate(int32_t time, bool a3, bool a4);
+
+    bool OnTurnStart(int32_t eventTime, CMovementStatus* update, bool left);
+
     void OnMoveStartLocal(int32_t eventTime, bool forward);
     void OnMoveStopLocal(int32_t eventTime);
     void OnStrafeStartLocal(int32_t eventTime, bool left);
@@ -169,6 +178,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     void OnPitchStopLocal(int32_t eventTime);
     void OnTurnStartLocal(int32_t eventTime, bool left);
     void OnTurnStopLocal(int32_t eventTime);
+
     void OnMovementInitiated();
     void OnMonsterMove(CDataStore* msg, NETMESSAGE msgId, WGUID transportGuid, uint8_t transportFlags, bool a6);
     C3Vector* ComputeTransportRelativeMovement(WGUID guid, C3Vector* position, C3Vector* points, uint32_t* count);
@@ -188,9 +198,11 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     static void SetStorage(CGUnit_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
     static void ClientInitialize();
     static void Initialize();
+    static void InitActiveMover(WGUID guid);
 
     // Packet handlers
     static int32_t HandleMonsterMovePacket(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg);
+    static int32_t HandleMovementPacket(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg);
 };
 
 #endif // CLIENTOBJECT_UNIT_C_HPP

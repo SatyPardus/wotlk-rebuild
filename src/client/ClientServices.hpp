@@ -61,6 +61,7 @@ class ClientServices : public LoginResponse {
         static bool LoadCDKey();
         static int32_t GetExpansionLevel();
         static uint32_t CharacterValidateName(const char* name);
+        static void Send2(CDataStore* msg);
 
         // Virtual member functions
         virtual int32_t GetLoginServerType();

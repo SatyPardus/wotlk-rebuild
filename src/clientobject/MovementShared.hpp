@@ -4,6 +4,8 @@
 #include <cstdint>
 #include "clientobject/Passenger.hpp"
 #include "clientobject/CMoveSpline.hpp"
+#include <net/Types.hpp>
+#include "clientobject/CClientMoveUpdate.hpp"
 
 class CMovementShared : public CPassenger {
     public:
@@ -61,9 +63,11 @@ class CMovementShared : public CPassenger {
     float TimeToFallDistance(float distance, bool slowFall);
     bool StartMove(bool a2, bool a3);
     bool StopMove();
+    bool StopMove(uint32_t flags);
     void ForceStopMove(bool a2);
     bool StartStrafe(bool a2);
     bool StopStrafe();
+    bool StopStrafe(uint32_t flags);
     void ForceStopStrafe();
     bool StartAscensionDescension(bool a2);
     bool StopAscensionDescension();
@@ -81,6 +85,9 @@ class CMovementShared : public CPassenger {
     void AddSpline(C3Vector* dest);
     void RemoveSpline();
     void OnSpline(int32_t timePassed, C3Vector* points, uint32_t pointCount, int32_t duration, uint32_t flags, uint32_t id);
+    void GetMoveStatus(NETMESSAGE msgId, int32_t time, CClientMoveUpdate* moveUpdate);
+    void UpdateBaseStatus(CMovementStatus* status);
+    void UpdateFallState(CMovementStatus* status);
 
     int32_t PlotUnitMovement(int32_t time, C3Vector* out);
     int32_t PlotUnitMovement(int32_t time, C3Vector* out, float* outFacing, float* outPitch);

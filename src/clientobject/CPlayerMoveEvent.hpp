@@ -6,6 +6,8 @@
 #include <storm/List.hpp>
 #include "clientobject/WGUID.hpp"
 
+class CMovementStatus;
+
 class CPlayerMoveEvent {
     public:
     TSLink<CPlayerMoveEvent> m_link = {};
@@ -30,6 +32,8 @@ class CPlayerMoveEvent {
     uint8_t m_seat;
     uint8_t unk_0053;
     uint32_t unk_0054;
+
+    void FromMoveStatus(CMovementStatus* update);
 };
 
-#endif // CLIENTOBJECT_DYNAMIC_OBJECT_C_HPP
+#endif // CLIENTOBJECT_C_PLAYER_MOVE_EVENT_HPP

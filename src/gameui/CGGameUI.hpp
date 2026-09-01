@@ -4,12 +4,14 @@
 
 #include "ui/CSimpleTop.hpp"
 #include "ui/CSimpleFrame.hpp"
+#include "clientobject/WGUID.hpp"
 
 
 class CGGameUI {
     public:
         static void InitializeGame();
         static void Initialize();
+        static void InitClientControlState(WGUID guid);
         static void RegisterFrameFactories();
         static void Reload();
         static int32_t HandleDisplaySizeChanged(const CSizeEvent& event);

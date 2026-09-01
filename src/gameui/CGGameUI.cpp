@@ -23,6 +23,7 @@
 #include "util/SysMessage.hpp"
 #include "util/SFile.hpp"
 #include <util/Unimplemented.hpp>
+#include "clientobject/Unit_C.hpp"
 
 
 CSimpleTop* CGGameUI::m_simpleTop = nullptr;
@@ -188,6 +189,12 @@ void CGGameUI::Initialize() {
     //}
     //sub_4CFB90();
     //CGGameUI::m_currentlyReloadingUI = 0;
+}
+
+// OFFSET: 0x513880
+void CGGameUI::InitClientControlState(WGUID guid) {
+    CGGameUI::m_hasControl = true;
+    CGUnit_C::InitActiveMover(guid);
 }
 
 void CGGameUI::RegisterFrameFactories() {

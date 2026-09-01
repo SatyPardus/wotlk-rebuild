@@ -29,6 +29,34 @@ CPlayerMoveEvent* CMovement_C::AllocPlayerMoveEvent(int32_t eventTime, uint32_t 
     return moveEvent;
 }
 
+// OFFSET: 0x6EC090
+void CMovement_C::EnqueuePlayerMoveEvent(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, CPlayerMoveEvent* event) {
+    for (CPlayerMoveEvent* node = list->Head(); node; node = list->Next(node)) {
+        if ((int32_t)(event->m_eventTime - node->m_eventTime) < 0) {
+            list->LinkNode(event, STORM_LIST_LINK_BEFORE, node);
+            return;
+        }
+    }
+
+    list->LinkToTail(event);
+}
+
+// OFFSET: 0x6EB4E0
+void CMovement_C::FreeMoveEvent(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list) {
+    CPlayerMoveEvent* event = list->Head();
+
+    while (event) {
+        CPlayerMoveEvent* next = list->Next(event);
+
+        if (event->m_eventId != 49) {
+            list->UnlinkNode(event);
+            CMovement_C::s_playerMoveEventFreeList.LinkToTail(event);
+        }
+
+        event = next;
+    }
+}
+
 // OFFSET: 0x6F13E0
 void CMovement_C::MoveUnits(uint32_t time, uint32_t prevTime) {
     auto globals = MovementGetGlobals();
@@ -52,36 +80,21 @@ void CMovement_C::MoveUnits(uint32_t time, uint32_t prevTime) {
     }
 }
 
+// OFFSET: 0x6EBD30
 CMovement_C::CMovement_C(WGUID* transportGuid, C3Vector& position, float facing, WGUID* guid, CGUnit_C* unit)
     : CMovementShared(&WGUID(), position, facing, guid) {
     this->m_collisionRadius = 0.33333334f;
     this->m_collisionHeight = 2.0277777f;
     this->m_stepUpHeight = 1.0f;
-    //this->ukn5 = 0.0;
-    //this->ukn6 = 0.0;
-    //this->ukn7 = 0.0;
-    //this->ukn26 = 0;
-    //this->ukn28 = 0;
-    //this->ukn29 = 0;
+    this->m_interpolationPos.x = 0.0;
+    this->m_interpolationPos.y = 0.0;
+    this->m_interpolationPos.z = 0.0;
+    this->m_timeSkewIndex = 0;
+    this->m_interpolation = 0;
+    this->ukn29 = 0;
     this->m_unit = unit;
-    //CMovementShared::CalcDirection(a1, v8, 0, v6);
-    //this->ukn10 = -3211314;
-    //this->ukn11 = -3211314;
-    //this->ukn12 = -3211314;
-    //this->ukn13 = -3211314;
-    //this->ukn14 = -3211314;
-    //this->ukn15 = -3211314;
-    //this->ukn16 = -3211314;
-    //this->ukn17 = -3211314;
-    //this->ukn18 = 3276850;
-    //this->ukn19 = 3276850;
-    //this->ukn20 = 3276850;
-    //this->ukn21 = 3276850;
-    //this->ukn22 = 3276850;
-    //this->ukn23 = 3276850;
-    //this->ukn24 = 3276850;
-    //this->ukn25 = 3276850;
-    //this->ukn27 = 50;
+    this->CalcDirection(false);
+    this->m_timeSkew = 50;
 }
 
 // OFFSET: 0x6F1520
@@ -97,54 +110,47 @@ void CMovement_C::SetUpdateInfo(int32_t time, CClientMoveUpdate* update, uint32_
     this->m_anchorElapsedMs = 0;
     this->m_pitchRate = update->m_pitchRate;
     this->m_flags = 0;
-    //if ((v5->status.m_moveFlags & 0x8000000) != 0) {
-    //    CMovement::CreateSplineAndSetDest(this, &this->position.x);
-    //    CMovement_C::FlushMoveQueue(this, 0, 1);
-    //    CMovement_C::RemoveFromMoversList(this, 0);
-    //    CMoveSpline::CopyFrom(this->m_spline, &v5->m_moveSpline);
-    //    m_spline = this->m_spline;
-    //    m_spline->spline.unk_0000[112] = (m_spline->flags & 0x42000) != 0;
-    //} else {
-    //    v8 = this->m_spline;
-    //    if (v8 && (v8->flags & 0x800) != 0)
-    //        CGUnit_C::OnCollideFallLand(this->unit, 0, 1);
-    //    CMovement::sub_98B730(this);
-    //}
-    //CMovement::sub_6EB730(this, a4, a2, v5, &update, a4, 1);
-    //if ((&unk_C010FF & this->m_flags) != 0 || (m_next = this->m_moveQueue.m_terminator.m_next, (m_next & 1) == 0) && m_next) {
-    //    if (!this->m_globalUnitsLink.m_next) {
-    //        Globals = MovementGetGlobals();
-    //        if (Globals)
-    //            TSList::LinkToHead(&Globals->units, this);
-    //    }
-    //} else {
-    //    CMovement_C::RemoveFromMoversList(this, 1);
-    //}
-    //if ((&unk_C0100F & this->m_flags) != 0 && *&this->unit->ObjectBase.m_obj->OBJECT_FIELD_GUID == CGUnit_C::m_activeMover)
-    //    MovementGetGlobals()->timeCounterMaybe = a2 + 500;
-    //if ((&unk_C010FF & this->m_flags) == 0) {
-    //    if (a4) {
-    //        CMovement::sub_6ECCF0(this, a2);
-    //    } else if (CMovementShared::TryStartFalling(this)) {
-    //        if (!this->m_globalUnitsLink.m_next) {
-    //            v11 = MovementGetGlobals();
-    //            if (v11)
-    //                TSList::LinkToHead(&v11->units, this);
-    //        }
-    //    }
-    //}
+    if ((update->status.m_moveFlags & 0x8000000) != 0) {
+        this->AddSpline(&this->m_position);
+        //this->FlushMoveQueue(0, 1);
+        this->RemoveFromMoversList(0);
+        //this->m_spline->CopyFrom(&update->m_moveSpline);
+        m_spline = this->m_spline;
+        m_spline->spline.m_splineMode = (m_spline->flags & 0x42000) != 0;
+    } else {
+        //if (this->m_spline && (this->m_spline->flags & 0x800) != 0)
+        //    CGUnit_C::OnCollideFallLand(this->unit, 0, 1);
+        this->RemoveSpline();
+    }
+    int32_t outDelta;
+    this->UpdateStatusInternal(time, &update->status, &outDelta, a4, 1);
+    if ((this->m_flags & 0xC010FF) != 0 || !this->m_moveQueue.IsEmpty()) {
+        this->AddToMoversList();
+    } else {
+        this->RemoveFromMoversList(true);
+    }
+
+    if ((this->m_flags & 0xC0100F) != 0)
+        this->UpdateHeartbeatTimerA(time);
+    if ((this->m_flags & 0xC010FF) == 0) {
+        if (a4) {
+            this->AddPlayerMoveEvent(time, 9, true, 0, 0.0f, 0.0f, 0);
+        } else if (this->TryStartFalling()) {
+            this->AddToMoversList();
+        }
+    }
     //guid2 = this->guid2;
     //guid_low = guid2->guid_low;
     //guid_high = guid2->guid_high;
-    //v15 = CGUnit_C::sub_71C4D0(this->unit);
-    //MovementUpdateCameraYaw(guid_low, guid_high, v15, v16);
+    //CameraRelativeTo = CGUnit_C::GetCameraRelativeTo(this->unit);
+    //MovementUpdateCameraYaw(__PAIR64__(guid_high, guid_low), CameraRelativeTo);
 }
 
 // OFFSET: 0x6F09F0
 void CMovement_C::ExecuteMovement(uint32_t time, uint32_t prevTime) {
-    uint32_t delta = time - prevTime;
-    uint32_t cursor = prevTime;
-    uint32_t consumed = 0;
+    int32_t delta = time - prevTime;
+    int32_t cursor = prevTime;
+    int32_t consumed = 0;
 
     auto globals = MovementGetGlobals();
 
@@ -176,7 +182,7 @@ void CMovement_C::ExecuteMovement(uint32_t time, uint32_t prevTime) {
                 step = v8;
         }
     
-        if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && !this->IsOnSpline() && (this->m_flags & MOVEMASK_ANIMATING) != 0) {
+        if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && !this->IsOnSpline() && (this->m_flags & MOVEMASK_MOVING_FALL) != 0) {
             if (globals->timeCounterMaybe - cursor < step)
                 step = globals->timeCounterMaybe - cursor;
         }
@@ -190,8 +196,8 @@ void CMovement_C::ExecuteMovement(uint32_t time, uint32_t prevTime) {
                     globals->timeCounterMaybe += step;
                 } else {
                     this->ApplyMovement(cursor, step);
-                    //if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && (this->m_flags & MOVEMASK_ANIMATING) != 0 && !this->IsOnSpline() && (cursor - globals->timeCounterMaybe) >= 0)
-                    //    this->m_unit->SendMovementUpdate(cursor, 238, 0.0, 0, 0, 0, 255);
+                    if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && (this->m_flags & MOVEMASK_MOVING_FALL) != 0 && !this->IsOnSpline() && (cursor - globals->timeCounterMaybe) >= 0)
+                        this->m_unit->SendMovementUpdate(cursor, MSG_MOVE_HEARTBEAT, 0.0, 0, 0, 255);
                 }
             }
             consumed += step;
@@ -271,41 +277,41 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         switch (moveEvent->m_eventId) {
         case 0:
             this->StartMove(1, 0);
-            //updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_FORWARD, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_FORWARD, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
         case 1:
             this->StartMove(0, 0);
-            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_BACKWARD, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_BACKWARD, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
         case 2:
             this->StopMove();
-            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
         case 3:
             this->StartStrafe(1);
-            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_STRAFE_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_STRAFE_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
         case 4:
             this->StartStrafe(0);
-            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_STRAFE_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_STRAFE_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
         case 5:
             this->StopStrafe();
-            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_STRAFE, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_STRAFE, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
         case 6:
             if (this->StartAscensionDescension(1)) {
-                // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+                updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 255);
             }
             break;
         case 7:
             if (this->StartAscensionDescension(0)) {
-                // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_DESCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+                updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_DESCEND, moveEvent->m_needAck, 0.0, 0, 0, 255);
             }
             break;
         case 8:
             if (this->StopAscensionDescension()) {
-                // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+                updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 255);
             }
             break;
         case 9u:
@@ -319,21 +325,21 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             break;
         case 10u:
             if (this->Jump(1)) {
-                //updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_JUMP, v4->m_needAck, 0.0, 0, 0, 0, 255);
+                updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_JUMP, moveEvent->m_needAck, 0.0f, 0, 0, 255);
             }
             break;
         case 11:
             this->StartTurn(1);
-            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_TURN_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_TURN_LEFT, moveEvent->m_needAck, 0.0f, 0, 0, 255);
             break;
         case 12:
             this->StartTurn(0);
-            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_TURN_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_TURN_RIGHT, moveEvent->m_needAck, 0.0f, 0, 0, 255);
             break;
         case 13:
         case 50:
             this->StopTurn();
-            // updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_TURN, moveEvent->m_needAck, 0.0, 0, 0, 0, 255);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_TURN, moveEvent->m_needAck, 0.0f, 0, 0, 255);
             CGInputControl::GetActive()->OnTurnToAngleStop();
             break;
         //case 14u:
@@ -566,15 +572,15 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         //    break;
         }
 
-        //if (moveEvent->m_needAck && !updated && (&unk_C0100F & this->m_flags) != 0 && (&unk_C0100F & v45) == 0)
-        //    CMovement::sub_6E9B70(this, a2);
+        if (moveEvent->m_needAck && !updated && (this->m_flags & 0xC0100F) != 0 && (flags & 0xC0100F) == 0)
+            this->UpdateHeartbeatTimerA(time);
         //if (moveEvent->m_eventId != 44) {
         //    this->unit->unk_0A30 |= 0x20000000u;
         //    if (v4->unk_0050 && CMovement_C::HeartBeat(this, v4) && v46)
         //        CGUnit_C::OnCollideFallLand(this->unit, v45, IsFalling);
         //    this->unit->unk_0A30 &= ~0x20000000u;
         //}
-        //CMovement_C::SetInterpolation(this, a2);
+        this->SetInterpolation(time);
 
         moveEvent->m_link.Unlink();
         s_playerMoveEventFreeList.LinkToTail(moveEvent);
@@ -643,6 +649,18 @@ void CMovement_C::ApplyMovement(uint32_t a2, uint32_t a3) {
         if (this->IsOnFlyingSpline())
             this->UpdateAnchors(0);
     }
+}
+
+// OFFSET: none (inline)
+void CMovement_C::AddToMoversList() {
+    if (this->m_globalUnitLink.IsLinked())
+        return;
+
+    auto globals = MovementGetGlobals();
+    if (!globals)
+        return;
+
+    globals->m_movementUnits.LinkToHead(this);
 }
 
 // OFFSET: 0x6EAF50
@@ -726,6 +744,161 @@ bool CMovement_C::IsValidPosition() {
     return World::IsValidPosition(this->m_position.x, this->m_position.y, this->m_position.z, 2.0f);
 }
 
+// OFFSET: 0x6E9B70
+void CMovement_C::UpdateHeartbeatTimerA(int32_t time) {
+    if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover)
+        MovementGetGlobals()->timeCounterMaybe = time + 500;
+}
+
+// OFFSET: 0x7164B0
+void CMovement_C::WriteMovementStatusToPacket(NETMESSAGE msgId, int32_t time, CDataStore* msg) {
+    if (msgId == MSG_MOVE_TELEPORT_ACK) {
+        msg->Put(time);
+    } else {
+        CClientMoveUpdate moveUpdate;
+        this->GetMoveStatus(msgId, time, &moveUpdate);
+        *msg << moveUpdate;
+    }
+}
+
+// OFFSET: 0x6E90E0
+void CMovement_C::GetMoveStatus(NETMESSAGE msgId, int32_t time, CClientMoveUpdate* moveUpdate) {
+    moveUpdate->status.m_moveFlags = this->m_flags & 0x77FFFDFF;
+    this->CMovementShared::GetMoveStatus(msgId, time, moveUpdate);
+}
+
+// OFFSET: 0x6ED990
+bool CMovement_C::UpdateStatus(int32_t time, CMovementStatus* status, int32_t eventId, float value) {
+    int32_t delta = 0;
+
+    if (!this->UpdateStatusInternal(time, status, &delta, 0, 0)) {
+        this->AddPlayerMoveEvent(delta + time, eventId, 0, 0, value, status);
+        return 0;
+    }
+
+    if ((status->m_moveFlags & MOVEMENTFLAG_SPLINE_ENABLED) == 0) {
+        if (this->m_spline && (this->m_spline->flags & 0x400) != 0) {
+            // this->m_unit->OnCollideFallLand(0, 1);
+        }
+        this->RemoveSpline();
+    }
+
+    if ((this->m_flags & MOVEMASK_ANIMATING) != 0 || this->m_moveQueue.Head()) {
+        if (!this->m_globalUnitLink.m_next) {
+            CMovementGlobals* globals = MovementGetGlobals();
+            if (globals)
+                globals->m_movementUnits.LinkToHead(this);
+        }
+    } else {
+        this->RemoveFromMoversList(1);
+    }
+
+    return 1;
+}
+
+// OFFSET: 0x6EB730
+bool CMovement_C::UpdateStatusInternal(int32_t time, CMovementStatus* status, int32_t* outDelta, int32_t restrictFlags, int32_t skipTiming) {
+    if (!this->m_spline || (this->m_spline->flags & 0x400) != 0) {
+        // if (this->m_unit->dataF00[24] && (this->m_unit->dataF00[24]->unk_0010 & 0x200) != 0)
+        //     return 0;
+    }
+
+    if (this->m_spline)
+        skipTiming = 1;
+
+    if ((this->m_flags & 0x80000000) == 0) {
+        this->m_gameTime = status->m_gameTime;
+        this->m_statusTimeMs = time;
+        this->m_flags |= 0x80000000;
+    }
+
+    CMovementGlobals* globals = MovementGetGlobals();
+
+    if ((int32_t)(time - globals->m_lastUpdateTime) < 0)
+        time = globals->m_lastUpdateTime;
+
+    int32_t gameDelta = status->m_gameTime - this->m_gameTime;
+    int32_t localDelta = time - this->m_statusTimeMs;
+
+    if (gameDelta > 0)
+        this->m_gameTime = status->m_gameTime;
+    else
+        gameDelta = 0;
+
+    *outDelta = gameDelta - localDelta;
+
+    int32_t drift = this->UpdateTimeSkew(gameDelta, localDelta);
+
+    if (skipTiming) {
+        this->m_statusTimeMs = time + *outDelta;
+    } else {
+        if ((this->m_flags & MOVEMASK_ANIMATING) == 0 && !this->m_moveQueue.Head()) {
+            *outDelta += drift - this->m_timeSkew;
+
+            if (*outDelta < -500)
+                *outDelta = -500;
+            else if (*outDelta > 1000)
+                *outDelta = 1000;
+
+            if ((int32_t)(time + *outDelta - this->m_statusTimeMs) < 0)
+                *outDelta = this->m_statusTimeMs - time;
+
+            this->m_timeSkew = drift;
+        }
+
+        if (*outDelta < -500)
+            *outDelta = -500;
+        else if (*outDelta > 1000)
+            *outDelta = 1000;
+
+        this->m_statusTimeMs = time + *outDelta;
+
+        if ((int32_t)(globals->m_lastUpdateTime - this->m_statusTimeMs) < 0)
+            return 0;
+    }
+
+    uint32_t prevFlags = this->m_flags;
+    uint32_t newFlags = status->m_moveFlags;
+
+    bool wasFalling = (prevFlags & MOVEMENTFLAG_FALLING) != 0;
+    bool fellWithSpeed = wasFalling && this->m_fallVelocity != 0.0f;
+
+    if (restrictFlags && !skipTiming)
+        this->m_flags = prevFlags ^ ((prevFlags ^ newFlags) & 0x77E00DFF);
+    else
+        this->m_flags = prevFlags ^ ((prevFlags ^ newFlags) & 0x77FFFDFF);
+
+    this->m_flags2 = (this->m_flags2 & 0xFFFF0000) | status->m_moveExtraFlags;
+
+    this->UpdateBaseStatus(status);
+
+    if ((this->m_unit->m_modelFlags & 0x40000) != 0) {
+        // WGUID transportGuid = this->CMovementShared::UpdateTransportStatus(status);
+        // this->UpdateTransportStatus(transportGuid, status->m_transportSeat);
+    }
+
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0) {
+        this->UpdateFallState(status);
+    } else {
+        this->CalcDirection(0);
+        if (wasFalling) {
+            // this->m_unit->OnCollideFallLand(prevFlags, fellWithSpeed);
+        }
+    }
+
+    if (!skipTiming)
+        this->Extrapolate(this->m_statusTimeMs, globals->m_lastUpdateTime - this->m_statusTimeMs);
+
+    if ((this->m_flags & MOVEMASK_ANIMATING) == 0) {
+        this->m_unit->OnMoveUpdate(time, 1, 0);
+    }
+
+    CMovement_C::FreeMoveEvent(&this->m_moveQueue);
+    this->ukn29 = 0;
+
+    return 1;
+}
+
 // OFFSET: 0x6ECB50
 void CMovement_C::OnMoveStartLocal(int32_t eventTime, bool forward) {
     AddPlayerMoveEvent(eventTime, forward ? 0 : 1, true, 0, 0.0f, 0.0f, 0);
@@ -786,6 +959,79 @@ void CMovement_C::OnTurnStopLocal(int32_t eventTime) {
     this->UnlinkMoveEventById(&this->m_moveQueue, 50);
 }
 
+// OFFSET: 0x6F0CF0
+bool CMovement_C::OnMoveStart(int32_t time, CMovementStatus* update, bool forward) {
+    if (!this->UpdateStatus(time, update, forward ? 0 : 1, 0.0f) || !this->StartMove(forward, 0))
+        return false;
+
+    this->AddToMoversList();
+    return true;
+}
+
+// OFFSET: 0x6F0EB0
+bool CMovement_C::OnMoveStop(int32_t time, CMovementStatus* update) {
+    uint32_t flags = this->m_flags;
+    if (!this->UpdateStatus(time, update, 2, 0.0f) || !this->StopMove(flags) || (this->m_flags & (MOVEMENTFLAG_STRAFE_RIGHT | MOVEMENTFLAG_STRAFE_LEFT)) != 0)
+        return false;
+
+    this->RemoveFromMoversList(true);
+    return true;
+}
+
+// OFFSET: 0x6F0D60
+bool CMovement_C::OnStrafeStart(int32_t time, CMovementStatus* update, bool left) {
+    if (!this->UpdateStatus(time, update, left ? 3 : 4, 0.0f) || !this->StartStrafe(left))
+        return false;
+
+    this->AddToMoversList();
+    return true;
+}
+
+// OFFSET: 0x6F0F10
+bool CMovement_C::OnStrafeStop(int32_t time, CMovementStatus* update) {
+    uint32_t flags = this->m_flags;
+    if (!this->UpdateStatus(time, update, 5, 0.0f) || !this->StopStrafe(flags) || (this->m_flags & 0xC0000F) != 0)
+        return false;
+
+    this->RemoveFromMoversList(true);
+    return true;
+}
+
+// OFFSET: 0x6F0DD0
+bool CMovement_C::OnJump(int32_t time, CMovementStatus* update) {
+    if (!this->UpdateStatus(time, update, 10, 0.0f) || !this->Jump(1))
+        return false;
+
+    this->AddToMoversList();
+    return true;
+}
+
+// OFFSET: 0x6EF680
+bool CMovement_C::OnHeartbeat(int32_t time, CMovementStatus* update) {
+    return this->UpdateStatus(time, update, 43, 0.0f);
+}
+
+// OFFSET: 0x6F1010
+bool CMovement_C::OnTurnStart(int32_t time, CMovementStatus* update, bool left) {
+    if (!this->UpdateStatus(time, update, left ? 11 : 12, 0.0f))
+        return false;
+
+    this->StartTurn(left);
+    this->AddToMoversList();
+    return true;
+}
+
+// OFFSET: 0x6F1080
+bool CMovement_C::OnTurnStop(int32_t time, CMovementStatus* update) {
+    if (!this->UpdateStatus(time, update, 13, 0.0f))
+        return false;
+
+    bool result = this->StopTurn();
+    this->RemoveFromMoversList(true);
+    return result;
+}
+
+// OFFSET: 0x6EC840
 void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags) {
     CPlayerMoveEvent* moveEvent = AllocPlayerMoveEvent(eventTime, eventId);
     moveEvent->m_facing = facing;
@@ -793,11 +1039,35 @@ void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool n
     moveEvent->m_needAck = needAck;
     moveEvent->m_ackCounter = ackCounter;
     moveEvent->m_moveExtraFlags = flags;
-    this->m_moveQueue.LinkToTail(moveEvent);
+    CMovement_C::EnqueuePlayerMoveEvent(&this->m_moveQueue, moveEvent);
     if (!this->m_globalUnitLink.IsLinked()) {
         auto globals = MovementGetGlobals();
         if (globals)
             globals->m_movementUnits.LinkToHead(this);
+    }
+}
+
+// OFFSET: 0x6EC8B0
+void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float value, CMovementStatus* update) {
+    CPlayerMoveEvent* moveEvent = AllocPlayerMoveEvent(eventTime, eventId);
+    moveEvent->m_value = value;
+    moveEvent->m_needAck = needAck;
+    moveEvent->m_ackCounter = ackCounter;
+
+    bool queueEmpty = this->m_moveQueue.IsEmpty();
+
+    if (update)
+        moveEvent->FromMoveStatus(update);
+
+    auto globals = MovementGetGlobals();
+    CMovement_C::EnqueuePlayerMoveEvent(&this->m_moveQueue, moveEvent);
+    if (!this->m_globalUnitLink.IsLinked()) {
+        if (globals)
+            globals->m_movementUnits.LinkToHead(this);
+    }
+
+    if (update && queueEmpty) {
+        this->SetInterpolation(globals->m_lastUpdateTime);
     }
 }
 
@@ -965,48 +1235,142 @@ int32_t CMovement_C::CollideRequestMove(int32_t a2, int32_t a3, C3Vector* a4) {
     return consumed;
 }
 
+// OFFSET: 0x6E97D0
+int32_t CMovement_C::UpdateTimeSkew(int32_t gameDelta, int32_t localDelta) {
+    int32_t sample = this->m_timeSkew - gameDelta + localDelta;
+
+    if (sample < -0x8000)
+        sample = -0x8000;
+    else if (sample > 0x7FFF)
+        sample = 0x7FFF;
+
+    this->m_timeSkewSamples[this->m_timeSkewIndex] = static_cast<int16_t>(sample);
+    this->m_timeSkewIndex = (this->m_timeSkewIndex + 1) & 0x1F;
+
+    int32_t result = sample;
+
+    for (int32_t i = 0; i < 32; i++) {
+        if (this->m_timeSkewSamples[i] > result)
+            result = this->m_timeSkewSamples[i];
+    }
+
+    return result;
+}
+
+// OFFSET: 0x6EA6A0
+void CMovement_C::SetInterpolation(int32_t time) {
+    this->m_flags2 &= 0xFFFFE3FF;
+    this->m_interpolation = 0;
+
+    CPlayerMoveEvent* event = this->m_moveQueue.Head();
+
+    if (!event || !event->unk_0050 || event->m_eventId == 44)
+        return;
+
+    if (this->m_transportGuid != event->m_transportGuid)
+        return;
+
+    uint32_t span = event->m_eventTime - time;
+
+    if (!span)
+        return;
+
+    if ((this->m_flags & MOVEMASK_MOVING_FALL) != 0)
+        this->m_flags2 |= 0x400;
+
+    if (CMath::fnotequal(this->m_facing, event->m_facing))
+        this->m_flags2 |= 0x800;
+
+    if ((this->m_flags & MOVEMASK_SWIM_FLY) != 0 && CMath::fnotequal(this->m_pitch, event->m_pitch))
+        this->m_flags2 |= 0x1000;
+
+    this->m_interpolationPos = event->m_position - this->m_position;
+    this->m_interpolationFacing = CMath::normalizeAngleNegPiToPi(event->m_facing - this->m_facing);
+    this->m_interpolationPitch = CMath::normalizeAngleNegPiToPi(event->m_pitch - this->m_pitch);
+
+    this->m_interpolation = span;
+}
+
+// OFFSET: 0x6EA7E0
 bool CMovement_C::Interpolate(int32_t now, int32_t time, C3Vector* pos, float* facing, float* pitch) {
-    auto moveEvent = this->m_moveQueue.Head();
-    if (!moveEvent || moveEvent->m_eventTime - now < 0) {
-        this->m_flags2 &= ~0x1C00;
+    CPlayerMoveEvent* event = this->m_moveQueue.Head();
+    int32_t remaining = event ? static_cast<int32_t>(event->m_eventTime - now) : -1;
+
+    if (remaining < 0) {
+        this->m_flags2 &= ~(MOVEMENTFLAG2_INTERPOLATED_MOVEMENT | MOVEMENTFLAG2_INTERPOLATED_TURNING | MOVEMENTFLAG2_INTERPOLATED_PITCHING);
         return false;
     }
 
-    float delta = moveEvent->m_eventTime - now;
-    float t = delta / this->m_interpolation;
+    float t = static_cast<float>(remaining) / static_cast<float>(this->m_interpolation);
+    float inv = 1.0f - t;
 
-    //v9 = delta / this->m_interpolation;
-    //v21 = v9;
-    //v10 = 1.0 - v9;
-    //nowb = 1.0 - v9;
-    //if ((this->m_flags2 & 0x400) != 0) {
-    //    v11 = (m_next->m_position.x - this->m_interpolationPos.x * v9) * v10 + pos->x * v9;
-    //    v12 = (m_next->m_position.y - this->m_interpolationPos.y * v9) * v10 + pos->y * v9;
-    //    v20.z = v10 * (m_next->m_position.z - this->m_interpolationPos.z * v9) + pos->z * v9;
-    //    v13 = v11 - this->position.x;
-    //    if (v13 * v13 + (v12 - this->position.y) * (v12 - this->position.y) + 0.00000095367432 <= time * 0.001 * 60.0 * (time * 0.001 * 60.0)) {
-    //        v20.x = v11;
-    //        v20.y = v12;
-    //        *pos = v20;
-    //    } else {
-    //        LOWORD(this->m_flags2) &= ~0x400u;
-    //    }
-    //}
-    //if ((this->m_flags2 & 0x800) != 0) {
-    //    v14 = m_next->m_facing - v9 * *&this->m_interpolationFacing;
-    //    v15 = CMath::normalizeangle0to2pi_(v14) - *facing;
-    //    v16 = CMath::normalizeAngleNegPiToPi_(v15) * nowb + *facing;
-    //    *facing = CMath::normalizeangle0to2pi_(v16);
-    //    v9 = v21;
-    //}
-    //if ((this->m_flags2 & 0x1000) != 0) {
-    //    v17 = m_next->m_pitch - v9 * *&this->m_interpolationPitch;
-    //    v18 = CMath::normalizeangle0to2pi_(v17) - *pitch;
-    //    v19 = CMath::normalizeAngleNegPiToPi_(v18) * nowb + *pitch;
-    //    *pitch = CMath::normalizeangle0to2pi_(v19);
-    //}
+    if ((this->m_flags2 & MOVEMENTFLAG2_INTERPOLATED_MOVEMENT) != 0) {
+        C3Vector result;
+        result.x = (event->m_position.x - this->m_interpolationPos.x * t) * inv + pos->x * t;
+        result.y = (event->m_position.y - this->m_interpolationPos.y * t) * inv + pos->y * t;
+        result.z = (event->m_position.z - this->m_interpolationPos.z * t) * inv + pos->z * t;
 
-    return this->m_flags2 & MOVEMENTFLAG2_INTERPOLATED_MOVEMENT;
+        float dx = result.x - this->m_position.x;
+        float dy = result.y - this->m_position.y;
+        float budget = static_cast<float>(static_cast<uint32_t>(time)) * 0.001f * 60.0f;
+
+        if (dx * dx + dy * dy + 0.00000095367432f <= budget * budget)
+            *pos = result;
+        else
+            this->m_flags2 &= ~MOVEMENTFLAG2_INTERPOLATED_MOVEMENT;
+    }
+
+    if ((this->m_flags2 & MOVEMENTFLAG2_INTERPOLATED_TURNING) != 0) {
+        float target = CMath::normalizeangle0to2pi(event->m_facing - t * this->m_interpolationFacing);
+        *facing = CMath::normalizeangle0to2pi(CMath::normalizeAngleNegPiToPi(target - *facing) * inv + *facing);
+    }
+
+    if ((this->m_flags2 & MOVEMENTFLAG2_INTERPOLATED_PITCHING) != 0) {
+        float target = CMath::normalizeangle0to2pi(event->m_pitch - t * this->m_interpolationPitch);
+        *pitch = CMath::normalizeangle0to2pi(CMath::normalizeAngleNegPiToPi(target - *pitch) * inv + *pitch);
+    }
+
+    return (this->m_flags2 & MOVEMENTFLAG2_INTERPOLATED_MOVEMENT) != 0;
+}
+
+// OFFSET: 0x6EA550
+void CMovement_C::Extrapolate(int32_t time, uint32_t elapsed) {
+    if (!elapsed)
+        return;
+
+    if ((this->m_flags & MOVEMASK_MOVING_FALL) == 0)
+        return;
+
+    if (this->m_spline && (this->m_spline->flags & 0x400) == 0)
+        return;
+
+    C3Vector offset = { 0.0f, 0.0f, 0.0f };
+
+    if (elapsed > 250) {
+        uint32_t steps = (elapsed - 251) / 250 + 1;
+
+        do {
+            if ((this->m_flags & MOVEMASK_MOVING) != 0)
+                this->m_anchorElapsedMs += 250;
+
+            this->PlotUnitMovement(250, &offset);
+
+            if (World::IsValidPosition(this->m_position.x + offset.x, this->m_position.y + offset.y, this->m_position.z + offset.z, 0.0f))
+                this->RequestMove(time, 250, &offset);
+
+            elapsed -= 250;
+            time += 250;
+            steps--;
+        } while (steps);
+    }
+
+    if ((this->m_flags & MOVEMASK_MOVING) != 0)
+        this->m_anchorElapsedMs += elapsed;
+
+    this->PlotUnitMovement(this->m_anchorElapsedMs, &offset);
+
+    if (World::IsValidPosition(this->m_position.x + offset.x, this->m_position.y + offset.y, this->m_position.z + offset.z, 0.0f))
+        this->RequestMove(time, elapsed, &offset);
 }
 
 // OFFSET: 0x6E9F50
