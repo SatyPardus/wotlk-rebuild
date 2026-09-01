@@ -37,9 +37,11 @@ float SynthesizeCenter(float side1, float side2, float size) {
 void CLayoutFrame::ResizePending() {
     int32_t loading = 0;
 
-    for (CLayoutFrame* frame = LayoutFrame::s_resizePendingList.Head(); frame && loading < 32; frame = LayoutFrame::s_resizePendingList.Link(frame)->Next()) {
+    for (CLayoutFrame* frame = LayoutFrame::s_resizePendingList.Head(); frame && loading < 32;) {
+        auto next = LayoutFrame::s_resizePendingList.Next(frame);
         if (!frame->IsObjectLoaded()) {
             loading++;
+            frame = next;
             continue;
         }
 
@@ -47,6 +49,7 @@ void CLayoutFrame::ResizePending() {
             frame->m_flags &= ~0x4;
             LayoutFrame::s_resizePendingList.UnlinkNode(frame);
         }
+        frame = next;
     }
 }
 

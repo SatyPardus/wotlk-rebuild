@@ -673,7 +673,7 @@ const char* CSimpleFrame::GetObjectTypeName() {
 }
 
 void CSimpleFrame::EnableEvent(CSimpleEventType eventType, int32_t priority) {
-    if ((1 << eventType) & this->m_eventmask) {
+    if (((1 << eventType) & this->m_eventmask) != 0) {
         return;
     }
 
@@ -685,7 +685,7 @@ void CSimpleFrame::EnableEvent(CSimpleEventType eventType, int32_t priority) {
 }
 
 void CSimpleFrame::DisableEvent(CSimpleEventType eventType) {
-    if ((1 << eventType) & this->m_eventmask) {
+    if (((1 << eventType) & this->m_eventmask) == 0) {
         return;
     }
 

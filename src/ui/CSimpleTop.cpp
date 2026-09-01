@@ -375,7 +375,7 @@ int32_t CSimpleTop::OnMouseMove(const EVENT_DATA_MOUSE* pMouseData, void* param)
         mouseCapture->OnLayerTrackUpdate(mouseEvent);
     }
 
-    for (int32_t strata = FRAME_STRATA_DIALOG; strata >= FRAME_STRATA_WORLD; strata--) {
+    for (int32_t strata = FRAME_STRATA_TOOLTIP; strata >= FRAME_STRATA_WORLD; strata--) {
         auto priorities = &top->m_eventqueue[strata][SIMPLE_EVENT_MOUSE];
 
         for (int32_t i = 0; i < priorities->Count(); i++) {

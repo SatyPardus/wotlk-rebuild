@@ -99,7 +99,7 @@ void FrameScript_Object::UnregisterScriptEvent(const char* name) {
     }
 
     if (event->pendingSignalCount) {
-        auto node = event->unregisterListeners.Head();
+        auto node = event->registerListeners.Head();
 
         while (node) {
             if (node->listener == this) {
@@ -110,7 +110,7 @@ void FrameScript_Object::UnregisterScriptEvent(const char* name) {
         }
 
         if (node) {
-            event->unregisterListeners.DeleteNode(node);
+            event->registerListeners.DeleteNode(node);
         }
     }
 
