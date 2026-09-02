@@ -9,28 +9,9 @@
 
 // OFFSET: 0x7BDB10
 void CMapDoodadDef::UpdateBounds() {
-    //v19 = 0.0;
-    //v20 = 0.0;
-    //v21 = 0.0;
-    //v22 = 0.0;
-    //v23 = 0.0;
-    //v24 = 0.0;
-    //v28.x = 0.0;
-    //v28.y = 0.0;
-    //v28.z = 0.0;
-    //d = 0.0;
-    //v18.min.x = 0.0;
-    //n.y = 0.0;
-    //model = this->model;
-    //v18.min.y = 0.0;
-    //v18.min.z = 0.0;
-    //v18.max.x = 0.0;
-    //n.x = 0.0;
-    //v18.max.y = 0.0;
-    //n.z = 0.0;
-    //v18.max.z = 0.0;
     CAaSphere sphere;
     CAaBox box;
+    CAaBox m2Box;
 
     if (this->model) {
         CAaBox boundingBox = this->model->GetBoundingBox();
@@ -41,13 +22,7 @@ void CMapDoodadDef::UpdateBounds() {
 
         box = boundingBox;
         sphere = boundingSphere;
-    //    m_data = (M2Bounds*)v5->m_shared->m_data;
-    //    z = m_data[6].extent.max.z;
-    //    m_data = (M2Bounds*)((char*)m_data + 188);
-    //    v18.min.x = z;
-    //    v18.min.y = m_data->extent.min.y;
-    //    v18.min.z = m_data->extent.min.z;
-    //    v18.max = m_data->extent.max;
+        m2Box = this->model->m_shared->m_data->bounds.extent;
     }
     sphere.c = this->mat.TransformPoint(sphere.c);
     sphere.r *= this->scale;
@@ -58,11 +33,12 @@ void CMapDoodadDef::UpdateBounds() {
         this->bbox.b = this->position;
         this->bbox.t = this->position;
     }
-    //CWorldMath::TransformAABox(&this->mat, &v18.min.x, &this->bboxDoodadDef);
-    //v28.x = (v18.max.x + v18.min.x) * 0.5;
-    //v28.y = (v18.max.y + v18.min.y) * 0.5;
-    //v28.z = 0.5 * (v18.max.z + v18.min.z);
-    //this->vec2 = *C44Matrix::Translate(&v27.max, &v28, &this->mat);
+    CWorldMath::TransformAABox(this->mat, m2Box, this->bboxDoodadDef);
+    C3Vector v23;
+    v23.x = (m2Box.t.x + m2Box.b.x) * 0.5;
+    v23.y = (m2Box.t.y + m2Box.b.y) * 0.5;
+    v23.z = 0.5 * (m2Box.t.z + m2Box.b.z);
+    this->vec2 = this->mat.TransformPoint(v23);
     float v16 = std::max(
         this->bbox.t.x - this->bbox.b.x,
         std::max(
@@ -76,8 +52,8 @@ void CMapDoodadDef::UpdateBounds() {
             break;
     }
     this->fadeLevel = fadeLevel;
-    //if (((unsigned __int16)CWorld::enables & (unsigned __int16)Enable_8000) == 0 && i < 3u)
-    //    this->model->m_bitFlags &= ~0x40u;
+    if ((CWorld::s_enables & CWorld::Enables::Enable_8000) == 0 && fadeLevel < 3u)
+        this->model->f_flags &= ~0x40u;
 }
 
 // OFFSET: 0x7B4FA0

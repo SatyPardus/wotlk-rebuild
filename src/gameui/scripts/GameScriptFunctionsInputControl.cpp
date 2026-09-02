@@ -31,7 +31,7 @@ static int32_t Script_JumpOrAscendStart(lua_State* L) {
            ) {
 
             //#####TESTING
-            unit->movementData.AddPlayerMoveEvent(CSimpleTop::m_eventTime, 10, 1, 0, 0, 0, 0);
+            unit->movementData.AddPlayerMoveEvent(CSimpleTop::m_eventTime, MOVEEVENT_JUMP, 1, 0, 0, 0, 0);
             //######
             WHOA_UNIMPLEMENTED(0);
         //

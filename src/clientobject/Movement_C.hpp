@@ -6,6 +6,7 @@
 #include <storm/List.hpp>
 #include <cstdint>
 #include "world/World.hpp"
+#include "clientobject/Types.hpp"
 
 class CGUnit_C;
 class CClientMoveUpdate;
@@ -37,7 +38,7 @@ class CMovement_C : public CMovementShared {
     static CAaBox CMovement_C::s_queryBox;
 
     // Static methods
-    static CPlayerMoveEvent* AllocPlayerMoveEvent(int32_t eventTime, uint32_t eventId);
+    static CPlayerMoveEvent* AllocPlayerMoveEvent(int32_t eventTime, MoveEventId eventId);
     static void EnqueuePlayerMoveEvent(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, CPlayerMoveEvent* event);
     static void FreeMoveEvent(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list);
     static void MoveUnits(uint32_t time, uint32_t prevTime);
@@ -78,7 +79,7 @@ class CMovement_C : public CMovementShared {
     void UpdateHeartbeatTimerA(int32_t time);
     void WriteMovementStatusToPacket(NETMESSAGE msgId, int32_t time, CDataStore* msg);
     void GetMoveStatus(NETMESSAGE msgId, int32_t time, CClientMoveUpdate* moveUpdate);
-    bool UpdateStatus(int32_t time, CMovementStatus* status, int32_t eventId, float value);
+    bool UpdateStatus(int32_t time, CMovementStatus* status, MoveEventId eventId, float value);
     bool UpdateStatusInternal(int32_t time, CMovementStatus* status, int32_t* outDelta, int32_t restrictFlags, int32_t skipTiming);
 
     void OnMoveStartLocal(int32_t eventTime, bool forward);
@@ -101,9 +102,9 @@ class CMovement_C : public CMovementShared {
     bool OnTurnStart(int32_t eventTime, CMovementStatus* update, bool left);
     bool OnTurnStop(int32_t eventTime, CMovementStatus* update);
 
-    void AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags);
-    void AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float value, CMovementStatus* update);
-    void UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, uint32_t eventId);
+    void AddPlayerMoveEvent(int32_t eventTime, MoveEventId eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags);
+    void AddPlayerMoveEvent(int32_t eventTime, MoveEventId eventId, bool needAck, int32_t ackCounter, float value, CMovementStatus* update);
+    void UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, MoveEventId eventId);
     bool HasMoveEventBetween(uint32_t minEventId, uint32_t maxEventId);
     int32_t HandlePendingActions();
     int32_t RequestMove(int32_t a2, int32_t a3, C3Vector* a4);

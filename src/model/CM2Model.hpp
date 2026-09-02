@@ -23,6 +23,7 @@ struct M2SequenceFallback;
 struct M2TrackBase;
 struct M2ModelTextureTransform;
 struct M2ModelAttachment;
+class CFacet;
 
 struct CM2ModelCall {
     uint32_t type = -1;
@@ -63,6 +64,8 @@ class CM2Model {
         static uint8_t* s_sequenceBase;
         static uint32_t s_sequenceBaseSize;
         static uint32_t s_skinProfileBoneCountMax[];
+        static TSGrowableArray<C3Vector> s_collisionPositions;
+        static TSGrowableArray<uint32_t> s_collisionCodes;
 
         // Static functions
         static CM2Model* AllocModel(uint32_t* heapId);
@@ -234,6 +237,7 @@ class CM2Model {
         void UnoptimizeVisibleGeometry();
         void SetGeometryVisible(uint32_t start, uint32_t end, int32_t visible);
         void ReplaceTexture(uint32_t textureId, HTEXTURE texture);
+        void GetCollisionFacets(CAaBox* box, C44Matrix* mat, TSGrowableArray<CFacet>* facets);
 };
 
 #endif

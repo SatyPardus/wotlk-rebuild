@@ -15,7 +15,7 @@ World::FacetData CMovement_C::s_liquidFacets;
 CAaBox CMovement_C::s_queryBox;
 
 // OFFSET: 0x6EBC70
-CPlayerMoveEvent* CMovement_C::AllocPlayerMoveEvent(int32_t eventTime, uint32_t eventId) {
+CPlayerMoveEvent* CMovement_C::AllocPlayerMoveEvent(int32_t eventTime, MoveEventId eventId) {
     CPlayerMoveEvent* moveEvent = s_playerMoveEventFreeList.Head();
     if (!moveEvent) {
         moveEvent = new (SMemAlloc(sizeof(CPlayerMoveEvent), __FILE__, __LINE__, 8)) CPlayerMoveEvent();
@@ -134,7 +134,7 @@ void CMovement_C::SetUpdateInfo(int32_t time, CClientMoveUpdate* update, uint32_
         this->UpdateHeartbeatTimerA(time);
     if ((this->m_flags & 0xC010FF) == 0) {
         if (a4) {
-            this->AddPlayerMoveEvent(time, 9, true, 0, 0.0f, 0.0f, 0);
+            this->AddPlayerMoveEvent(time, MOVEEVENT_START_FALLING, true, 0, 0.0f, 0.0f, 0);
         } else if (this->TryStartFalling()) {
             this->AddToMoversList();
         }
@@ -235,7 +235,7 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         if (!moveEvent || time - moveEvent->m_eventTime < 0)
             break;
 
-        //if ((this->m_unit->objectclass1[24] && (*(this->m_unit->objectclass1[24] + 16) & 0x200) != 0) || (moveEvent->m_eventId == 44 && CGUnit_C::MaybeDeferTeleport(&moveEvent->m_transportGuid))) {
+        //if ((this->m_unit->objectclass1[24] && (*(this->m_unit->objectclass1[24] + 16) & 0x200) != 0) || (moveEvent->m_eventId == MOVEEVENT_TELEPORT && CGUnit_C::MaybeDeferTeleport(&moveEvent->m_transportGuid))) {
         //    return 2;
         //}
 
@@ -244,9 +244,13 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
 
         uint32_t flags = this->m_flags;
         uint32_t id = moveEvent->m_eventId;
-        bool isMoveEvent = (id >= 0 && id <= 5)  || id == 9 || id == 10 || id == 45 || id == 46;
-        bool isSwimEvent = (id == 21 || id == 22);
-        bool isKnockback = (id == 34);
+        bool isMoveEvent = (id >= MOVEEVENT_START_FORWARD && id <= MOVEEVENT_STOP_STRAFE)
+            || id == MOVEEVENT_START_FALLING
+            || id == MOVEEVENT_JUMP
+            || id == MOVEEVENT_SET_FLYING
+            || id == MOVEEVENT_UNSET_FLYING;
+        bool isSwimEvent = (id == MOVEEVENT_START_SWIM || id == MOVEEVENT_STOP_SWIM);
+        bool isKnockback = (id == MOVEEVENT_KNOCK_BACK);
 
         bool blocked = (isMoveEvent && (flags & (MOVEMENTFLAG_ONTRANSPORT | MOVEMENTFLAG_ROOT | MOVEMENTFLAG_PENDING_ROOT)) != 0)
                     || (isSwimEvent && (flags & (MOVEMENTFLAG_ONTRANSPORT | MOVEMENTFLAG_ROOT)) != 0)
@@ -275,53 +279,53 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
 
         bool updated = false;
         switch (moveEvent->m_eventId) {
-        case 0:
+        case MOVEEVENT_START_FORWARD:
             this->StartMove(1, 0);
             updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_FORWARD, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
-        case 1:
+        case MOVEEVENT_START_BACKWARD:
             this->StartMove(0, 0);
             updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_BACKWARD, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
-        case 2:
+        case MOVEEVENT_STOP:
             this->StopMove();
             updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
-        case 3:
+        case MOVEEVENT_START_STRAFE_LEFT:
             this->StartStrafe(1);
             updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_STRAFE_LEFT, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
-        case 4:
+        case MOVEEVENT_START_STRAFE_RIGHT:
             this->StartStrafe(0);
             updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_STRAFE_RIGHT, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
-        case 5:
+        case MOVEEVENT_STOP_STRAFE:
             this->StopStrafe();
             updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_STRAFE, moveEvent->m_needAck, 0.0, 0, 0, 255);
             break;
-        case 6:
+        case MOVEEVENT_START_ASCEND:
             if (this->StartAscensionDescension(1)) {
                 updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 255);
             }
             break;
-        case 7:
+        case MOVEEVENT_START_DESCEND:
             if (this->StartAscensionDescension(0)) {
                 updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_START_DESCEND, moveEvent->m_needAck, 0.0, 0, 0, 255);
             }
             break;
-        case 8:
+        case MOVEEVENT_STOP_ASCEND:
             if (this->StopAscensionDescension()) {
                 updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP_ASCEND, moveEvent->m_needAck, 0.0, 0, 0, 255);
             }
             break;
-        case 9u:
-            //if (!this->TryStartFalling())
-            //    break;
+        case MOVEEVENT_START_FALLING:
+            if (!this->TryStartFalling())
+                break;
             //CGUnit_C::OnCollideFalling(this->unit);
-            //if (!v4->m_needAck)
-            //    goto LABEL_146;
-            //CGUnit_C::SendMovementUpdate(this->unit, a2, MSG_MOVE_HEARTBEAT, 0.0, 0, 0, 0, 255);
-            //updated = 1;
+            if (!moveEvent->m_needAck)
+                break;
+            this->m_unit->SendMovementUpdate(time, MSG_MOVE_HEARTBEAT, 0.0f, 0, 0, 255);
+            updated = 1;
             break;
         case 10u:
             if (this->Jump(1)) {
@@ -574,12 +578,12 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
 
         if (moveEvent->m_needAck && !updated && (this->m_flags & 0xC0100F) != 0 && (flags & 0xC0100F) == 0)
             this->UpdateHeartbeatTimerA(time);
-        //if (moveEvent->m_eventId != 44) {
-        //    this->unit->unk_0A30 |= 0x20000000u;
+        if (moveEvent->m_eventId != 44) {
+            this->m_unit->unk_0A30 |= 0x20000000u;
         //    if (v4->unk_0050 && CMovement_C::HeartBeat(this, v4) && v46)
         //        CGUnit_C::OnCollideFallLand(this->unit, v45, IsFalling);
-        //    this->unit->unk_0A30 &= ~0x20000000u;
-        //}
+            this->m_unit->unk_0A30 &= ~0x20000000u;
+        }
         this->SetInterpolation(time);
 
         moveEvent->m_link.Unlink();
@@ -768,7 +772,7 @@ void CMovement_C::GetMoveStatus(NETMESSAGE msgId, int32_t time, CClientMoveUpdat
 }
 
 // OFFSET: 0x6ED990
-bool CMovement_C::UpdateStatus(int32_t time, CMovementStatus* status, int32_t eventId, float value) {
+bool CMovement_C::UpdateStatus(int32_t time, CMovementStatus* status, MoveEventId eventId, float value) {
     int32_t delta = 0;
 
     if (!this->UpdateStatusInternal(time, status, &delta, 0, 0)) {
@@ -901,32 +905,32 @@ bool CMovement_C::UpdateStatusInternal(int32_t time, CMovementStatus* status, in
 
 // OFFSET: 0x6ECB50
 void CMovement_C::OnMoveStartLocal(int32_t eventTime, bool forward) {
-    AddPlayerMoveEvent(eventTime, forward ? 0 : 1, true, 0, 0.0f, 0.0f, 0);
+    AddPlayerMoveEvent(eventTime, forward ? MOVEEVENT_START_FORWARD : MOVEEVENT_START_BACKWARD, true, 0, 0.0f, 0.0f, 0);
 }
 
 // OFFSET: 0x6ECDE0
 void CMovement_C::OnMoveStopLocal(int32_t eventTime) {
-    AddPlayerMoveEvent(eventTime, 2, true, 0, 0.0f, 0.0f, 0);
+    AddPlayerMoveEvent(eventTime, MOVEEVENT_STOP, true, 0, 0.0f, 0.0f, 0);
 }
 
 // OFFSET: 0x6ECBB0
 void CMovement_C::OnStrafeStartLocal(int32_t eventTime, bool left) {
-    AddPlayerMoveEvent(eventTime, left ? 3 : 4, true, 0, 0.0f, 0.0f, 0);
+    AddPlayerMoveEvent(eventTime, left ? MOVEEVENT_START_STRAFE_LEFT : MOVEEVENT_START_STRAFE_RIGHT, true, 0, 0.0f, 0.0f, 0);
 }
 
 // OFFSET: 0x6ECE40
 void CMovement_C::OnStrafeStopLocal(int32_t eventTime) {
-    AddPlayerMoveEvent(eventTime, 5, true, 0, 0.0f, 0.0f, 0);
+    AddPlayerMoveEvent(eventTime, MOVEEVENT_STOP_STRAFE, true, 0, 0.0f, 0.0f, 0);
 }
 
 // OFFSET: 0x6EF2A0
 void CMovement_C::OnAscendDescendStartLocal(int32_t eventTime, bool up) {
-    AddPlayerMoveEvent(eventTime, up ? 6 : 7, true, 0, 0.0f, 0.0f, 0);
+    AddPlayerMoveEvent(eventTime, up ? MOVEEVENT_START_ASCEND : MOVEEVENT_START_DESCEND, true, 0, 0.0f, 0.0f, 0);
 }
 
 // OFFSET: 0x6EF310
 void CMovement_C::OnAscendDescendStopLocal(int32_t eventTime) {
-    AddPlayerMoveEvent(eventTime, 8, true, 0, 0.0f, 0.0f, 0);
+    AddPlayerMoveEvent(eventTime, MOVEEVENT_STOP_ASCEND, true, 0, 0.0f, 0.0f, 0);
 }
 
 // OFFSET: 0x6F1310
@@ -947,21 +951,21 @@ void CMovement_C::OnTurnStartLocal(int32_t eventTime, bool left) {
     //    else
     //        CMovement_C::OnTurnToAngleLocal(this, a2, v5);
     //} else {
-    this->AddPlayerMoveEvent(eventTime, 12 - (left != 0), 1, 0, 0.0, 0.0, 0);
-    this->UnlinkMoveEventById(&this->m_moveQueue, 50);
+    this->AddPlayerMoveEvent(eventTime, left ? MOVEEVENT_START_TURN_LEFT : MOVEEVENT_START_TURN_RIGHT, 1, 0, 0.0, 0.0, 0);
+    this->UnlinkMoveEventById(&this->m_moveQueue, MOVEEVENT_STOP_TURN_AT_ANGLE);
     CGInputControl::GetActive()->OnTurnToAngleStop();
     //}
 }
 
 // OFFSET: 0x6ECEA0
 void CMovement_C::OnTurnStopLocal(int32_t eventTime) {
-    this->AddPlayerMoveEvent(eventTime, 13, 1, 0, 0.0, 0.0, 0);
-    this->UnlinkMoveEventById(&this->m_moveQueue, 50);
+    this->AddPlayerMoveEvent(eventTime, MOVEEVENT_STOP_TURN, 1, 0, 0.0, 0.0, 0);
+    this->UnlinkMoveEventById(&this->m_moveQueue, MOVEEVENT_STOP_TURN_AT_ANGLE);
 }
 
 // OFFSET: 0x6F0CF0
 bool CMovement_C::OnMoveStart(int32_t time, CMovementStatus* update, bool forward) {
-    if (!this->UpdateStatus(time, update, forward ? 0 : 1, 0.0f) || !this->StartMove(forward, 0))
+    if (!this->UpdateStatus(time, update, forward ? MOVEEVENT_START_FORWARD : MOVEEVENT_START_BACKWARD, 0.0f) || !this->StartMove(forward, 0))
         return false;
 
     this->AddToMoversList();
@@ -971,7 +975,7 @@ bool CMovement_C::OnMoveStart(int32_t time, CMovementStatus* update, bool forwar
 // OFFSET: 0x6F0EB0
 bool CMovement_C::OnMoveStop(int32_t time, CMovementStatus* update) {
     uint32_t flags = this->m_flags;
-    if (!this->UpdateStatus(time, update, 2, 0.0f) || !this->StopMove(flags) || (this->m_flags & (MOVEMENTFLAG_STRAFE_RIGHT | MOVEMENTFLAG_STRAFE_LEFT)) != 0)
+    if (!this->UpdateStatus(time, update, MOVEEVENT_STOP, 0.0f) || !this->StopMove(flags) || (this->m_flags & (MOVEMENTFLAG_STRAFE_RIGHT | MOVEMENTFLAG_STRAFE_LEFT)) != 0)
         return false;
 
     this->RemoveFromMoversList(true);
@@ -980,7 +984,7 @@ bool CMovement_C::OnMoveStop(int32_t time, CMovementStatus* update) {
 
 // OFFSET: 0x6F0D60
 bool CMovement_C::OnStrafeStart(int32_t time, CMovementStatus* update, bool left) {
-    if (!this->UpdateStatus(time, update, left ? 3 : 4, 0.0f) || !this->StartStrafe(left))
+    if (!this->UpdateStatus(time, update, left ? MOVEEVENT_START_STRAFE_LEFT : MOVEEVENT_START_STRAFE_RIGHT, 0.0f) || !this->StartStrafe(left))
         return false;
 
     this->AddToMoversList();
@@ -990,7 +994,7 @@ bool CMovement_C::OnStrafeStart(int32_t time, CMovementStatus* update, bool left
 // OFFSET: 0x6F0F10
 bool CMovement_C::OnStrafeStop(int32_t time, CMovementStatus* update) {
     uint32_t flags = this->m_flags;
-    if (!this->UpdateStatus(time, update, 5, 0.0f) || !this->StopStrafe(flags) || (this->m_flags & 0xC0000F) != 0)
+    if (!this->UpdateStatus(time, update, MOVEEVENT_STOP_STRAFE, 0.0f) || !this->StopStrafe(flags) || (this->m_flags & 0xC0000F) != 0)
         return false;
 
     this->RemoveFromMoversList(true);
@@ -999,7 +1003,7 @@ bool CMovement_C::OnStrafeStop(int32_t time, CMovementStatus* update) {
 
 // OFFSET: 0x6F0DD0
 bool CMovement_C::OnJump(int32_t time, CMovementStatus* update) {
-    if (!this->UpdateStatus(time, update, 10, 0.0f) || !this->Jump(1))
+    if (!this->UpdateStatus(time, update, MOVEEVENT_JUMP, 0.0f) || !this->Jump(1))
         return false;
 
     this->AddToMoversList();
@@ -1008,12 +1012,12 @@ bool CMovement_C::OnJump(int32_t time, CMovementStatus* update) {
 
 // OFFSET: 0x6EF680
 bool CMovement_C::OnHeartbeat(int32_t time, CMovementStatus* update) {
-    return this->UpdateStatus(time, update, 43, 0.0f);
+    return this->UpdateStatus(time, update, MOVEEVENT_HEARTBEAT, 0.0f);
 }
 
 // OFFSET: 0x6F1010
 bool CMovement_C::OnTurnStart(int32_t time, CMovementStatus* update, bool left) {
-    if (!this->UpdateStatus(time, update, left ? 11 : 12, 0.0f))
+    if (!this->UpdateStatus(time, update, left ? MOVEEVENT_START_TURN_LEFT : MOVEEVENT_START_TURN_RIGHT, 0.0f))
         return false;
 
     this->StartTurn(left);
@@ -1023,7 +1027,7 @@ bool CMovement_C::OnTurnStart(int32_t time, CMovementStatus* update, bool left) 
 
 // OFFSET: 0x6F1080
 bool CMovement_C::OnTurnStop(int32_t time, CMovementStatus* update) {
-    if (!this->UpdateStatus(time, update, 13, 0.0f))
+    if (!this->UpdateStatus(time, update, MOVEEVENT_STOP_TURN, 0.0f))
         return false;
 
     bool result = this->StopTurn();
@@ -1032,7 +1036,7 @@ bool CMovement_C::OnTurnStop(int32_t time, CMovementStatus* update) {
 }
 
 // OFFSET: 0x6EC840
-void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags) {
+void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, MoveEventId eventId, bool needAck, int32_t ackCounter, float facing, float pitch, uint16_t flags) {
     CPlayerMoveEvent* moveEvent = AllocPlayerMoveEvent(eventTime, eventId);
     moveEvent->m_facing = facing;
     moveEvent->m_pitch = pitch;
@@ -1048,7 +1052,7 @@ void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool n
 }
 
 // OFFSET: 0x6EC8B0
-void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool needAck, int32_t ackCounter, float value, CMovementStatus* update) {
+void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, MoveEventId eventId, bool needAck, int32_t ackCounter, float value, CMovementStatus* update) {
     CPlayerMoveEvent* moveEvent = AllocPlayerMoveEvent(eventTime, eventId);
     moveEvent->m_value = value;
     moveEvent->m_needAck = needAck;
@@ -1072,7 +1076,7 @@ void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, uint32_t eventId, bool n
 }
 
 // OFFSET: 0x6EB590
-void CMovement_C::UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, uint32_t eventId) {
+void CMovement_C::UnlinkMoveEventById(STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link)* list, MoveEventId eventId) {
     for (CPlayerMoveEvent* event = list->Head(); event;) {
         auto next = list->Next(event);
 

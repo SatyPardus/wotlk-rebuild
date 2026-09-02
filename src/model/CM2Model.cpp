@@ -13,11 +13,14 @@
 #include <tempest/Math.hpp>
 #include "model/M2Internal.hpp"
 #include <db/StaticDb.hpp>
+#include <tempest/facet/CFacet.hpp>
 
 uint32_t CM2Model::s_loadingSequence = 0xFFFFFFFF;
 uint8_t* CM2Model::s_sequenceBase;
 uint32_t CM2Model::s_sequenceBaseSize;
 uint32_t CM2Model::s_skinProfileBoneCountMax[] = { 256, 64, 53, 21 };
+TSGrowableArray<C3Vector> CM2Model::s_collisionPositions;
+TSGrowableArray<uint32_t> CM2Model::s_collisionCodes;
 
 CM2Model* CM2Model::AllocModel(uint32_t* heapId) {
     uint32_t memHandle;
@@ -2215,4 +2218,109 @@ void CM2Model::ReplaceTexture(uint32_t textureId, HTEXTURE texture) {
     // TODO ribbon and particle stuff
 
     this->f_flags &= ~0x10u;
+}
+
+// OFFSET: 0x82EC30
+void CM2Model::GetCollisionFacets(CAaBox* box, C44Matrix* mat, TSGrowableArray<CFacet>* facets) {
+    if (!this->m_loaded) {
+        this->WaitForLoad(nullptr);
+    }
+
+    M2Data* data = this->m_shared->m_data;
+
+    if (CM2Model::s_collisionPositions.Count() < data->collisionPositions.count) {
+        CM2Model::s_collisionPositions.SetCount(data->collisionPositions.count);
+    }
+
+    if (CM2Model::s_collisionCodes.Count() < data->collisionPositions.count) {
+        CM2Model::s_collisionCodes.SetCount(data->collisionPositions.count);
+    }
+
+    for (uint32_t i = 0; i < data->collisionPositions.count; i++) {
+        C3Vector& position = CM2Model::s_collisionPositions[i];
+        position = mat->TransformPoint(data->collisionPositions[i]);
+
+        uint32_t code = 0;
+
+        if (position.x < box->b.x) {
+            code = 1;
+        } else if (position.x > box->t.x) {
+            code = 2;
+        }
+
+        if (position.y < box->b.y) {
+            code |= 4;
+        } else if (position.y > box->t.y) {
+            code |= 8;
+        }
+
+        if (position.z < box->b.z) {
+            code |= 0x10;
+        } else if (position.z > box->t.z) {
+            code |= 0x20;
+        }
+
+        CM2Model::s_collisionCodes[i] = code;
+    }
+
+    C33Matrix rotation(*mat);
+
+    float lengthSq = rotation.a1 * rotation.a1 + rotation.a2 * rotation.a2 + rotation.a0 * rotation.a0;
+    if (lengthSq > 0.00000023841858f) {
+        float inverse = 1.0f / sqrtf(lengthSq);
+        rotation.a0 *= inverse;
+        rotation.a1 *= inverse;
+        rotation.a2 *= inverse;
+    }
+
+    lengthSq = rotation.b2 * rotation.b2 + rotation.b1 * rotation.b1 + rotation.b0 * rotation.b0;
+    if (lengthSq > 0.00000023841858f) {
+        float inverse = 1.0f / sqrtf(lengthSq);
+        rotation.b0 *= inverse;
+        rotation.b1 *= inverse;
+        rotation.b2 *= inverse;
+    }
+
+    lengthSq = rotation.c2 * rotation.c2 + rotation.c1 * rotation.c1 + rotation.c0 * rotation.c0;
+    if (lengthSq > 0.00000023841858f) {
+        float inverse = 1.0f / sqrtf(lengthSq);
+        rotation.c0 *= inverse;
+        rotation.c1 *= inverse;
+        rotation.c2 *= inverse;
+    }
+
+    uint32_t total = facets->Count();
+
+    for (uint32_t i = 0; i < data->collisionFaceNormals.count; i++) {
+        uint32_t code = CM2Model::s_collisionCodes[data->collisionIndices[i * 3 + 1]] & CM2Model::s_collisionCodes[data->collisionIndices[i * 3 + 2]] & CM2Model::s_collisionCodes[data->collisionIndices[i * 3]];
+
+        if (code == 0) {
+            total++;
+        }
+    }
+
+    facets->Reserve(total, 0);
+
+    for (uint32_t i = 0; i < data->collisionFaceNormals.count; i++) {
+        uint16_t i0 = data->collisionIndices[i * 3];
+        uint16_t i1 = data->collisionIndices[i * 3 + 1];
+        uint16_t i2 = data->collisionIndices[i * 3 + 2];
+
+        if ((CM2Model::s_collisionCodes[i1] & CM2Model::s_collisionCodes[i2] & CM2Model::s_collisionCodes[i0]) != 0) {
+            continue;
+        }
+
+        CFacet* facet = facets->New();
+
+        facet->v[0] = CM2Model::s_collisionPositions[i0];
+        facet->v[1] = CM2Model::s_collisionPositions[i1];
+        facet->v[2] = CM2Model::s_collisionPositions[i2];
+
+        C3Vector& normal = data->collisionFaceNormals[i];
+
+        facet->plane.n.x = normal.y * rotation.b0 + normal.z * rotation.c0 + normal.x * rotation.a0;
+        facet->plane.n.y = normal.z * rotation.c1 + normal.x * rotation.a1 + normal.y * rotation.b1;
+        facet->plane.n.z = normal.x * rotation.a2 + normal.y * rotation.b2 + normal.z * rotation.c2;
+        facet->plane.d = -(facet->v[0].z * facet->plane.n.z + facet->v[0].y * facet->plane.n.y + facet->v[0].x * facet->plane.n.x);
+    }
 }

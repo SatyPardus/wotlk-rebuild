@@ -11,7 +11,7 @@
 
 class CMapDoodadDef : public CMapStaticEntity, public TSHashObject<CMapDoodadDef, uint32_t> {
     public:
-    uint32_t uniqueId;
+    uint32_t uniqueId = 0;
     //void* unk_094;
     //void* unk_098;
     //void* prevMapDoodadDef_09C;
@@ -20,8 +20,8 @@ class CMapDoodadDef : public CMapStaticEntity, public TSHashObject<CMapDoodadDef
     TSLink<CMapDoodadDef> doodadDefLink;
     //int32_t unk_0B0;
     //int32_t unk_0B4;
-    //int32_t unk_0B8;
-    //int32_t unk_0BC;
+    int32_t unk_0B8 = 0;
+    int32_t unk_0BC = 0;
     CAaBox bboxDoodadDef;
     C44Matrix mat;
     C44Matrix identity;

@@ -149,6 +149,8 @@ class CMap {
     static void CreateImpassableFacets(CMapChunk* chunk, CAaBox* box, World::FacetData* facets, uint32_t flags);
     static bool GetChunkFacets(int32_t chunkX, int32_t chunkY, CiRect* subRect, CAaBox* a4, CAaBox* box, World::FacetData* facets, uint32_t flags);
     static bool CreateFlightBoundsFacets(int32_t areaX, int32_t areaY, CAaBox* box, World::FacetData* facets);
+    static void AppendMapObjFacets(CMapDoodadDef* def, CAaBox* box, World::FacetData* facets);
+    static bool GetDoodadDefFacets(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, CAaBox* box, World::FacetData* facets, uint32_t flags);
 };
 
 #endif

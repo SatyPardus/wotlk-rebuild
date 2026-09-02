@@ -19,6 +19,7 @@
 #include <tempest/ray/CRay.hpp>
 #include <tempest/segment/C3Segment.hpp>
 #include <world/World.hpp>
+#include "model/CM2Shared.hpp"
 
 char CMap::mapPath[STORM_MAX_PATH];
 char CMap::mapName[STORM_MAX_PATH];
@@ -2200,8 +2201,8 @@ bool CMap::GetChunkFacets(int32_t chunkX, int32_t chunkY, CiRect* subRect, CAaBo
     for (uint32_t i = firstFacet; i < count; i++)
         facets->facetIds[i] = 0;
 
-    //if ((flags & 0xF0000F) != 0 && !CMap::QueryMapObjFacets(&chunk->doodadDefLinkList, box, facets, flags))
-    //    return false;
+    if ((flags & 0xF0000F) != 0 && !CMap::GetDoodadDefFacets(&chunk->doodadDefLinkList, box, facets, flags))
+        return false;
     //if ((flags & 0xF00000) != 0)
     //    CMap::QueryDestructibleFacets(&chunk->TSExplicitList__m_linkoffset_DC, box, facets, flags);
 
@@ -2283,6 +2284,60 @@ bool CMap::CreateFlightBoundsFacets(int32_t areaX, int32_t areaY, CAaBox* box, W
     facets->facetIds.SetCount(count);
     for (uint32_t i = firstFacet; i < count; i++)
         facets->facetIds[i] = 0;
+
+    return true;
+}
+
+// OFFSET: 0x7A4AF0
+void CMap::AppendMapObjFacets(CMapDoodadDef* def, CAaBox* box, World::FacetData* facets) {
+    uint32_t firstFacet = facets->facets.Count();
+
+    def->model->GetCollisionFacets(box, &def->mat, &facets->facets);
+
+    uint32_t count = facets->facets.Count();
+    facets->facetIds.SetCount(count);
+
+    for (uint32_t i = firstFacet; i < count; i++) {
+        facets->facetIds[i] = static_cast<uint64_t>(static_cast<uint32_t>(def->unk_0BC)) << 32 | static_cast<uint32_t>(def->unk_0B8);
+    }
+}
+
+// OFFSET: 0x7A50C0
+bool CMap::GetDoodadDefFacets(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, CAaBox* box, World::FacetData* facets, uint32_t flags) {
+    if ((flags & 0xF0000F) == 0) {
+        return true;
+    }
+
+    for (auto link = linkList->Head(); link;) {
+        auto next = linkList->Next(link);
+
+        CMapDoodadDef* def = reinterpret_cast<CMapDoodadDef*>(link->owner);
+
+        if ((def->flags & MAPOBJ_FLAG_NO_HITTEST) == 0 && def->unkCounter != CMap::s_queryTag && def->model) {
+            uint32_t classMask = (def->unk_0B8 | def->unk_0BC) ? 0xF00000 : 0xF;
+
+            if (flags & classMask) {
+                CAaBox bbox = def->bboxDoodadDef;
+
+                if ((def->flags & MAPOBJ_FLAG_PREPARED) == 0) {
+                    def->unk_07C |= 0x10000;
+                    CWorldMath::TransformAABox(def->mat, def->model->m_shared->m_boundingBox, bbox);
+                }
+
+                if (box->Intersects(&bbox)) {
+                    if (def->flags & MAPOBJ_FLAG_PREPARED) {
+                        CMap::AppendMapObjFacets(def, box, facets);
+                    } else {
+                        World::AddAaBoxFacets(&bbox, facets);
+                    }
+                }
+
+                def->unkCounter = CMap::s_queryTag;
+            }
+        }
+
+        link = next;
+    }
 
     return true;
 }
