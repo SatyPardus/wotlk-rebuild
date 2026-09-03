@@ -261,7 +261,7 @@ void CCharacterSelection::SetCharFacing(float facing) {
 }
 
 // OFFSET: 0x4E38F0
-void CharacterSelectionDisplay::Destroy() {
+void CCharacterSelection::Shutdown() {
     // TODO LoadingScreenMiniDisable
 
     if (CCharacterComponent::m_activePlayerComponent) {
@@ -269,19 +269,41 @@ void CharacterSelectionDisplay::Destroy() {
         CCharacterComponent::m_activePlayerComponent = nullptr;
     }
 
-    // TODO the selected character's component is detached from the list and stashed
-    // into CCharacterComponent::m_activePlayerComponent here, which needs
-    // RemoveHandItem, RemoveItem, RemoveVisuals, AttachToSceneRecursive and
-    // GetDisplayIdFromRaceAndGender
+    //v1 = 0;
+    //if (CCharacterSelection::s_characterList.m_count) {
+    //    m_data = CCharacterSelection::s_characterList.m_data;
+    //    do {
+    //        m_component = m_data[v0].m_component;
+    //        if (m_component) {
+    //            m_model = m_component->m_data.m_model;
+    //            if (m_model) {
+    //                if (v1 == dword_AC4370) {
+    //                    if (m_data[v0].m_characterInfo.classId == 3) {
+    //                        CCharacterComponent::RemoveHandItem(m_model, 17, 0, 0);
+    //                        CCharacterComponent::RemoveItem(CCharacterSelection::s_characterList.m_data[v0].m_component, 11);
+    //                    }
+    //                    maybe_CCharacterComponent__RemoveVisuals(m_model);
+    //                    bn_CM2Model_AttachToSceneRecursive(s_m2Scene);
+    //                    CCharacterComponent::m_activePlayerComponent = CCharacterSelection::s_characterList.m_data[v0].m_component;
+    //                    CGPlayer_C::s_displayId = GetDisplayIdFromRaceAndGender(CCharacterSelection::s_characterList.m_data[v0].m_characterInfo.raceId, CCharacterSelection::s_characterList.m_data[v0].m_characterInfo.genderId);
+    //                    CCharacterSelection::s_characterList.m_data[v0].m_component = 0;
+    //                    m_data = CCharacterSelection::s_characterList.m_data;
+    //                }
+    //            }
+    //        }
+    //        ++v1;
+    //        ++v0;
+    //    } while (v1 < CCharacterSelection::s_characterList.m_count);
+    //}
 
-    CharacterSelectionDisplay::FreeComponents(&CCharacterSelection::s_characterList);
+    CCharacterSelection::FreeComponents(&CCharacterSelection::s_characterList);
     CCharacterSelection::s_characterList.Clear();
 
     // TODO SetSelectedCharacterInfo(0)
 }
 
 // OFFSET: 0x4E3080
-void CharacterSelectionDisplay::FreeComponents(TSGrowableArray<CharacterSelectionDisplay>* list) {
+void CCharacterSelection::FreeComponents(TSGrowableArray<CharacterSelectionDisplay>* list) {
     for (uint32_t i = 0; i < list->Count(); i++) {
         auto& display = (*list)[i];
 

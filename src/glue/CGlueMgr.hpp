@@ -113,9 +113,8 @@ class CGlueMgr {
         static void SetScreen(const char* screen);
         static void StatusDialogClick();
         static void Sub4D8BA0();
-        static void Destroy();
-        static void Shutdown();
         static void Suspend();
+        static void Shutdown();
         static void UpdateCurrentScreen(const char* screen);
         static bool HandleBattlenetDisconnect();
         static void DeleteCharacter(uint64_t guid);

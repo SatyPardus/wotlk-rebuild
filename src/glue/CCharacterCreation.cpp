@@ -74,6 +74,7 @@ void CCharacterCreation::Initialize() {
     } while (weirdCondition || factionSwitch == 1);
 }
 
+// OFFSET: 0x4E1E20
 void CCharacterCreation::Shutdown() {
     if (CCharacterCreation::m_character) {
         CCharacterComponent::FreeComponent(CCharacterCreation::m_character);

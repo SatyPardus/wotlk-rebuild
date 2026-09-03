@@ -600,30 +600,33 @@ CCharacterComponent::~CCharacterComponent() {
         this->m_data.m_model = nullptr;
     }
     this->m_link.Unlink();
-    //m_itemDisplayID = this->m_itemDisplayID;
-    //v17 = 9;
-    //while (1) {
-    //    m_itemDisplayID -= 15;
-    //    do {
-    //        if (m_itemDisplayID[v3])
-    //            TextureCacheDestroyTexture(m_itemDisplayID[v3]);
-    //        m_itemDisplayID[v3] = 0;
-    //        m_itemDisplayID[v3++ + 7] = 0;
-    //    } while (v3 < 7);
-    //    if (--v17 < 0)
-    //        break;
-    //    v3 = 0;
-    //}
-    //m_section = this->m_section;
-    //for (i = 4; i >= 0; --i) {
-    //    m_section = (m_section - 12);
-    //    for (j = 0; j < 7; ++j) {
-    //        result = m_section->layerTex[j];
-    //        if (result)
-    //            result = TextureCacheDestroyTexture(m_section->layerTex[j]->gap0);
-    //        m_section->layerTex[j] = 0;
-    //    }
-    //}
+
+    for (int32_t s = NUM_COMPONENT_SECTIONS - 1; s >= 0; s--) {
+        CharacterSection& section = this->m_section[s];
+
+        for (int32_t i = 0; i < 7; i++) {
+            if (section.layerTex[i]) {
+                TextureCacheDestroyTexture(section.layerTex[i]);
+            }
+
+            section.layerTex[i] = nullptr;
+            section.layerItemDisplayId[i] = 0;
+        }
+    }
+
+    for (int32_t v = 4; v >= 0; v--) {
+        CharacterBaseVariation& variation = this->m_baseVariation[v];
+
+        for (int32_t i = 0; i < 3; i++) {
+            if (variation.m_texture[i]) {
+                TextureCacheDestroyTexture(variation.m_texture[i]);
+            }
+
+            variation.m_texture[i] = nullptr;
+        }
+    }
+
+    this->m_link.Unlink();
 }
 
 // OFFSET: 0x4EA150

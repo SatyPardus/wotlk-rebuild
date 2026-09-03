@@ -21,14 +21,13 @@ class CACHEENTRY : public TSHashObject<CACHEENTRY, HASHKEY_NONE> {
     CAsyncObject* m_asyncObject;
     TCTEXTUREINFO m_info;
     char m_fileName[128];
-    uint32_t m_refCount;
+    int32_t m_refCount;
     uint32_t m_memHandle;
     void* m_data;
     uint32_t m_flags;
 
     CACHEENTRY();
     ~CACHEENTRY();
-    void Unlink();
     bool LoadTexture();
 
     static void LoadSuccessCallback(void* handle);

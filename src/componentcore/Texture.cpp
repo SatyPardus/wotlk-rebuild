@@ -37,13 +37,6 @@ CACHEENTRY::~CACHEENTRY() {
     this->m_fileName[0] = 0;
 }
 
-void CACHEENTRY::Unlink() {
-    if (this->m_linktoslot.Next()) {
-        this->m_linktoslot.Unlink();
-        this->m_linktofull.Unlink();
-    }
-}
-
 bool CACHEENTRY::LoadTexture() {
     SFile* file = nullptr;
     if (!SFile::OpenEx(0, this->m_fileName, 0, &file)) {
@@ -97,7 +90,7 @@ void TextureCacheDestroyTexture(CACHEENTRY* entry) {
 
     entry->m_refCount--;
     if (entry->m_refCount <= 0) {
-        entry->Unlink();
+        s_cacheTable.Unlink(entry);
         uint32_t handle = entry->m_memHandle;
         entry->~CACHEENTRY();
         ObjectFree(*s_entryHeap, handle);

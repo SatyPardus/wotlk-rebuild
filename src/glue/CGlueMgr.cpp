@@ -1100,8 +1100,23 @@ void CGlueMgr::Sub4D8BA0() {
     ClientServices::Connection()->Connect();
 }
 
+
+// OFFSET: 0x4DBBC0
+void CGlueMgr::Shutdown() {
+    // TODO the pending-server-alert drain loop
+
+    // TODO AccountDataShutdownBasicSystem, CKBPage::Shutdown,
+    // TODO CKBSystem::Shutdown, CRealmList::Shutdown
+
+    CGlueMgr::Suspend();
+
+    EventUnregister(EVENT_ID_IDLE, &CGlueMgr::Idle);
+
+    CGlueMgr::m_initialized = 0;
+}
+
 // OFFSET: 0x4D8930
-void CGlueMgr::Destroy() {
+void CGlueMgr::Suspend() {
     CGlueMgr::m_suspended = 1;
 
     if (CGlueMgr::m_ffxActive) {
@@ -1115,12 +1130,11 @@ void CGlueMgr::Destroy() {
             delete CGlueMgr::m_deathEffect;
         }
 
-        // TODO FFX_Destroy
+        //bn_FFX_Destroy();
     }
 
-    CharacterSelectionDisplay::Destroy();
-
-    // TODO CCharCreateInfo::Destroy
+    CCharacterSelection::Shutdown();
+    CCharacterCreation::Shutdown();
 
     if (CGlueMgr::m_simpleTop) {
         delete CGlueMgr::m_simpleTop;
@@ -1132,45 +1146,16 @@ void CGlueMgr::Destroy() {
         CGlueMgr::m_cursorMipBits = nullptr;
     }
 
-    // TODO SystemUnregisterFunctions, UnregisterSimpleFrameScriptMethods,
-    // TODO GlueScriptEventsUnregisterFunctions,
-    // TODO CharacterSelectionDisplay::UnregisterLuaFunctions,
-    // TODO CCharCreateInfo::UnregisterLuaFunctions, RealmList::UnregisterLuaFunctions,
-    // TODO SI2::UnregisterScriptFunctions, CAccountMsg::UnregisterScriptFunctions,
-    // TODO CGVideoOptions::UnregisterScriptFunctions, s_scriptFunctionsLoaded = 0
-
-    FrameXML_FreeHashNodes();
-
-    // TODO ClearMessageHandler for SMSG_CHAR_RENAME,
-    // TODO SMSG_SET_PLAYER_DECLINED_NAMES_RESULT, SMSG_CHAR_CUSTOMIZE,
-    // TODO SMSG_REALM_SPLIT, SMSG_KICK_REASON, SMSG_CHAR_FACTION_CHANGE
-}
-
-// OFFSET: 0x4DBBC0
-void CGlueMgr::Shutdown() {
-    // TODO the pending-server-alert drain loop
-
-    // TODO AccountDataShutdownBasicSystem, CKBPage::Shutdown,
-    // TODO CKBSystem::Shutdown, CRealmList::Shutdown
-
-    CGlueMgr::Destroy();
-
-    EventUnregister(EVENT_ID_IDLE, &CGlueMgr::Idle);
-
-    CGlueMgr::m_initialized = 0;
-}
-
-void CGlueMgr::Suspend() {
-    CGlueMgr::m_suspended = 1;
-
-    // TODO
-
-    if (CGlueMgr::m_simpleTop) {
-        delete CGlueMgr::m_simpleTop;
-        CGlueMgr::m_simpleTop = nullptr;
-    }
-
-    // TODO
+    //bn_SystemUnregisterFunctions();
+    //UnregisterSimpleFrameScriptMethods();
+    //bn_GlueScriptEventsUnregisterFunctions();
+    //CharacterSelectionDisplay::UnregisterLuaFunctions();
+    //CCharCreateInfo::UnregisterLuaFunctions();
+    //RealmList::UnregisterLuaFunctions();
+    //SI2::UnregisterScriptFunctions();
+    //bn_CAccountMsg_UnregisterScriptFunctions();
+    //CGVideoOptions::UnregisterScriptFunctions();
+    //bnl_CGlueMgr__s_scriptFunctionsLoaded = 0;
 
     FrameXML_FreeHashNodes();
     ClientServices::ClearMessageHandler(SMSG_CHAR_RENAME);
@@ -1178,7 +1163,7 @@ void CGlueMgr::Suspend() {
     ClientServices::ClearMessageHandler(SMSG_CHAR_CUSTOMIZE);
     ClientServices::ClearMessageHandler(SMSG_REALM_SPLIT);
     ClientServices::ClearMessageHandler(SMSG_KICK_REASON);
-    // TODO: ClientServices::ClearMessageHandler(1242);
+    ClientServices::ClearMessageHandler(SMSG_CHAR_FACTION_CHANGE);
 }
 
 void CGlueMgr::UpdateCurrentScreen(const char* screen) {
