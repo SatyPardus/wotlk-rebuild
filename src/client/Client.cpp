@@ -219,8 +219,54 @@ void ClientPostClose(int32_t a1) {
     EventPostCloseEx(nullptr);
 }
 
+// OFFSET: 0x402910
+void WowClientDestroy() {
+    //ValidateNameDestroy();
+    //sub_7E01B0();
+    //maybe_AllocBlizzard_0();
+    //InputControlDestroy();
+    CGlueMgr::Shutdown();
+    //bn_ShutdownAddOns();
+    //maybe_AddonInfo__AssertPoolEmpty();
+    //bn_DBCache_ClearHandlers();
+    //bn_DBCache_Destroy();
+    //NOP(v1);
+    //maybe_ClntObjMgrDestruct();
+    CCharacterComponent::Destroy();
+    FrameXML_FreeHashNodes();
+    //FrameXML_ClearFactories();
+    //bn_ComSatClient_Shutdown();
+    //maybe_WowClientDestroy__AssertPoolsEmpty();
+    //SoundEngine__ShutdownOrRestart(0);
+    FrameScript_Destroy();
+    //maybe_CShaderEffectManager__Shutdown(&off_B1D5E4);
+    //bn_LoadingScreenShutdown();
+    //maybe_WowSysMessageOutput__Shutdown();
+    ConsoleCommandUnregister("reloadUI");
+    ConsoleCommandUnregister("perf");
+    ConsoleCommandUnregister("timingInfo");
+    //bn_ClientDBShutdown();
+    //s_enabled = 0;
+}
+
+// OFFSET: 0x4066D0
 int32_t DestroyEngineCallback(const void* a1, void* a2) {
-    // TODO
+    //RemoveConsoleDeviceDefaultCallback(SetDefaults);
+    //ClientDestroyGame(0, 0, 0);
+    WowClientDestroy();
+    ClientServices::ClearMessageHandler(SMSG_TUTORIAL_FLAGS);
+    //ClientServices::Destroy();
+    //maybe_DestroyEngineHandles();
+    //CWorld::Destroy();
+    //ConsoleScreenDestroy();
+    //GxuFontShutdown();
+    //M2Destroy();
+    //maybe_DestroyModelBlob();
+    //TextureDestroy();
+    //AsyncFileReadDestroy();
+    //off_AD9838[0]();
+    //HeapUsageDestroy();
+    //ObjectAllocDestroy();
     return 1;
 }
 
@@ -624,15 +670,37 @@ int32_t InitializeGlobal() {
     return 1;
 }
 
-void DestroyGlobal() {
-    // TODO
-
+// OFFSET: 0x406B70
+void BeginCloseGame() {
+    //bn_SMemSetDebugFlags(0, 8);
+    //bn_OsIMEDestroy();
     OsTimeShutdown();
     EventDestroy();
     ConsoleDeviceDestroy();
+    //v4[0] = 0;
+    //v4[1] = 0;
+    //Block = 0;
+    //v6 = 0;
+    //RunOnceExecute(v4, maybe_CVar__Delete);
+    //if (Block)
+    //    SMemFree(Block, ".PAD", -2, 0);
     CVar::Destroy();
-
-    // TODO
+    //sub_7685C0();
+    //maybe_CStringMemory__Shutdown();
+    //CloseAllArchives();
+    //maybe_ShutdownStreamingIfTrial();
+    //StopStreaming();
+    //result = dword_B2F9A4;
+    //if (dword_B2F9A4) {
+    //    if (g_Startup_StringsDB.minIndex <= 1 && g_Startup_StringsDB.maxIndex >= 1 && (v1 = g_Startup_StringsDB.Rows[-g_Startup_StringsDB.minIndex + 1]) != 0)
+    //        v2 = *(v1 + 8);
+    //    else
+    //        v2 = "World of Warcraft";
+    //    if (dword_B2F9A4 >= g_Startup_StringsDB.minIndex && dword_B2F9A4 <= g_Startup_StringsDB.maxIndex && (v3 = g_Startup_StringsDB.Rows[dword_B2F9A4 - g_Startup_StringsDB.minIndex]) != 0)
+    //        return maybe_ShowFatalErrorMessageBox(0, 0, *(v3 + 8), v2);
+    //    else
+    //        return maybe_ShowFatalErrorMessageBox(0, 0, "Unknown Error", v2);
+    //}
 }
 
 // OFFSET: 0x406C70 TODO
@@ -670,7 +738,7 @@ void CommonMain() {
 
     if (InitializeGlobal()) {
         EventDoMessageLoop();
-        DestroyGlobal();
+        BeginCloseGame();
     }
 
     StormDestroy();

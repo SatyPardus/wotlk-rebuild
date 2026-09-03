@@ -356,7 +356,13 @@ void EventSetMouseMode(MOUSEMODE mode, uint32_t holdButton) {
     STORM_VALIDATE(mode < MOUSE_MODES);
     STORM_VALIDATE_END_VOID;
 
-    auto contextId = *reinterpret_cast<uint32_t*>(PropGet(PROP_EVENTCONTEXT));
+    auto hContext = PropGet(PROP_EVENTCONTEXT);
+
+    if (!hContext) {
+        return;
+    }
+
+    auto contextId = *reinterpret_cast<uint32_t*>(hContext);
     int32_t findMask;
     auto context = TSingletonInstanceId<EvtContext, offsetof(EvtContext, m_id)>::s_idTable.Ptr(
         contextId,

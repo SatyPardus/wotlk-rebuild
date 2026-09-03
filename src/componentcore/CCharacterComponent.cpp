@@ -20,6 +20,7 @@ CVar* CCharacterComponent::g_componentTextureLevelVar = nullptr;
 CVar* CCharacterComponent::g_componentThreadVar = nullptr;
 CVar* CCharacterComponent::g_componentCompressVar = nullptr;
 
+CCharacterComponent* CCharacterComponent::m_activePlayerComponent = nullptr;
 uint32_t* CCharacterComponent::s_heap = nullptr;
 uint32_t CCharacterComponent::s_chrVarArrayLength = 0;
 st_race* CCharacterComponent::s_chrVarArray = nullptr;
@@ -284,6 +285,84 @@ void CCharacterComponent::FreeComponent(CCharacterComponent* component) {
     uint32_t handle = component->m_heapIndex;
     component->~CCharacterComponent();
     ObjectFree(*CCharacterComponent::s_heap, handle);
+}
+
+// OFFSET: 0x4F2320
+bool CCharacterComponent::Destroy() {
+    if (CCharacterComponent::m_activePlayerComponent) {
+        CCharacterComponent::FreeComponent(CCharacterComponent::m_activePlayerComponent);
+        CCharacterComponent::m_activePlayerComponent = nullptr;
+    }
+
+    // if (CCharacterComponent::s_bComponentThread) {
+    //     CCharacterComponent::ThreadDestroy();
+    // }
+
+    if (CCharacterComponent::s_textureBuffer) {
+        TextureFreeMippedImg(
+            CCharacterComponent::s_textureBuffer,
+            PIXEL_ARGB8888,
+            CCharacterComponent::s_textureSize,
+            CCharacterComponent::s_textureSize
+        );
+
+        CCharacterComponent::s_textureBuffer = nullptr;
+    }
+
+    //if (dword_B6B86C) {
+    //    TextureFreeMippedImg(dword_B6B86C, 0, s_textureSize, s_textureSize);
+    //    dword_B6B86C = 0;
+    //}
+    //if (dword_B6B868) {
+    //    TextureFreeMippedImg(dword_B6B868, 2, s_textureSize, s_textureSize);
+    //    dword_B6B868 = 0;
+    //}
+
+    if (CCharacterComponent::s_chrVarArray) {
+        for (uint32_t race = 0; race < CCharacterComponent::s_chrVarArrayLength; race++) {
+            for (int32_t v = 0; v < 5; v++) {
+                CharVariationList& list = CCharacterComponent::s_chrVarArray[race].m_variation[v];
+
+                for (int32_t i = 0; i < list.numVariations; i++) {
+                    if (list.variation[i].color) {
+                        STORM_FREE(list.variation[i].color);
+                    }
+                }
+
+                if (list.variation) {
+                    STORM_FREE(list.variation);
+                }
+            }
+        }
+
+        STORM_FREE(CCharacterComponent::s_chrVarArray);
+    }
+
+    CCharacterComponent::s_chrVarArray = nullptr;
+    CCharacterComponent::s_chrVarArrayLength = 0;
+
+    TextureCacheDestroy();
+
+    if (CCharacterComponent::s_characterFacialHairStylesList) {
+        STORM_FREE(CCharacterComponent::s_characterFacialHairStylesList);
+    }
+
+    if (CCharacterComponent::s_heap) {
+        STORM_FREE(CCharacterComponent::s_heap);
+    }
+
+    CCharacterComponent::s_heap = nullptr;
+
+    // TODO CGPlayer_C::s_displayId = 0;
+
+    EventUnregisterEx(
+        EVENT_ID_POLL,
+        reinterpret_cast<EVENTHANDLERFUNC>(CCharacterComponent::Update),
+        nullptr,
+        -1
+    );
+
+    return true;
 }
 
 // OFFSET: 0x4E9D50

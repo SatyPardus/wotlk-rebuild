@@ -12,6 +12,9 @@ class CM2Lighting;
 struct CharacterSelectionDisplay {
     CharacterSelectionDisplay() = default;
 
+    static void Destroy();
+    static void FreeComponents(TSGrowableArray<CharacterSelectionDisplay>* list);
+
     CHARACTER_INFO m_characterInfo = {};
     CCharacterComponent* m_component = nullptr;
     CM2Model* m_petModel = nullptr;

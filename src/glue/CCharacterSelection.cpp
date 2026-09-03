@@ -260,6 +260,42 @@ void CCharacterSelection::SetCharFacing(float facing) {
     }
 }
 
+// OFFSET: 0x4E38F0
+void CharacterSelectionDisplay::Destroy() {
+    // TODO LoadingScreenMiniDisable
+
+    if (CCharacterComponent::m_activePlayerComponent) {
+        CCharacterComponent::FreeComponent(CCharacterComponent::m_activePlayerComponent);
+        CCharacterComponent::m_activePlayerComponent = nullptr;
+    }
+
+    // TODO the selected character's component is detached from the list and stashed
+    // into CCharacterComponent::m_activePlayerComponent here, which needs
+    // RemoveHandItem, RemoveItem, RemoveVisuals, AttachToSceneRecursive and
+    // GetDisplayIdFromRaceAndGender
+
+    CharacterSelectionDisplay::FreeComponents(&CCharacterSelection::s_characterList);
+    CCharacterSelection::s_characterList.Clear();
+
+    // TODO SetSelectedCharacterInfo(0)
+}
+
+// OFFSET: 0x4E3080
+void CharacterSelectionDisplay::FreeComponents(TSGrowableArray<CharacterSelectionDisplay>* list) {
+    for (uint32_t i = 0; i < list->Count(); i++) {
+        auto& display = (*list)[i];
+
+        if (display.m_petModel) {
+            display.m_petModel->Release();
+        }
+
+        if (display.m_component) {
+            CCharacterComponent::FreeComponent(display.m_component);
+            display.m_component = nullptr;
+        }
+    }
+}
+
 void CCharacterSelection::ClearCharacterList() {
     CCharacterSelection::s_characterList.Clear();
     if (CCharacterSelection::m_modelFrame) {

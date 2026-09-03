@@ -7,6 +7,7 @@
 #include "client/ClientServices.hpp"
 #include "gx/Coordinate.hpp"
 #include "gx/Device.hpp"
+#include "gx/Texture.hpp"
 #include "gx/CGVideoOptions.hpp"
 #include "math/Utils.hpp"
 #include "net/Connection.hpp"
@@ -1097,6 +1098,66 @@ void CGlueMgr::Sub4D8BA0() {
     CGlueMgr::m_idleState = IDLE_ACCOUNT_LOGIN;
     CGlueMgr::m_showedDisconnect = 0;
     ClientServices::Connection()->Connect();
+}
+
+// OFFSET: 0x4D8930
+void CGlueMgr::Destroy() {
+    CGlueMgr::m_suspended = 1;
+
+    if (CGlueMgr::m_ffxActive) {
+        CGlueMgr::m_ffxActive = false;
+
+        if (CGlueMgr::m_glowEffect) {
+            delete CGlueMgr::m_glowEffect;
+        }
+
+        if (CGlueMgr::m_deathEffect) {
+            delete CGlueMgr::m_deathEffect;
+        }
+
+        // TODO FFX_Destroy
+    }
+
+    CharacterSelectionDisplay::Destroy();
+
+    // TODO CCharCreateInfo::Destroy
+
+    if (CGlueMgr::m_simpleTop) {
+        delete CGlueMgr::m_simpleTop;
+        CGlueMgr::m_simpleTop = nullptr;
+    }
+
+    if (CGlueMgr::m_cursorMipBits) {
+        TextureFreeMippedImg(CGlueMgr::m_cursorMipBits, PIXEL_ARGB8888, 32, 32);
+        CGlueMgr::m_cursorMipBits = nullptr;
+    }
+
+    // TODO SystemUnregisterFunctions, UnregisterSimpleFrameScriptMethods,
+    // TODO GlueScriptEventsUnregisterFunctions,
+    // TODO CharacterSelectionDisplay::UnregisterLuaFunctions,
+    // TODO CCharCreateInfo::UnregisterLuaFunctions, RealmList::UnregisterLuaFunctions,
+    // TODO SI2::UnregisterScriptFunctions, CAccountMsg::UnregisterScriptFunctions,
+    // TODO CGVideoOptions::UnregisterScriptFunctions, s_scriptFunctionsLoaded = 0
+
+    FrameXML_FreeHashNodes();
+
+    // TODO ClearMessageHandler for SMSG_CHAR_RENAME,
+    // TODO SMSG_SET_PLAYER_DECLINED_NAMES_RESULT, SMSG_CHAR_CUSTOMIZE,
+    // TODO SMSG_REALM_SPLIT, SMSG_KICK_REASON, SMSG_CHAR_FACTION_CHANGE
+}
+
+// OFFSET: 0x4DBBC0
+void CGlueMgr::Shutdown() {
+    // TODO the pending-server-alert drain loop
+
+    // TODO AccountDataShutdownBasicSystem, CKBPage::Shutdown,
+    // TODO CKBSystem::Shutdown, CRealmList::Shutdown
+
+    CGlueMgr::Destroy();
+
+    EventUnregister(EVENT_ID_IDLE, &CGlueMgr::Idle);
+
+    CGlueMgr::m_initialized = 0;
 }
 
 void CGlueMgr::Suspend() {

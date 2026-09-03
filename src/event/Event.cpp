@@ -54,6 +54,11 @@ int32_t EventIsControlKeyDown() {
 
 int32_t EventIsKeyDown(KEY key) {
     auto hContext = PropGet(PROP_EVENTCONTEXT);
+
+    if (!hContext) {
+        return 0;
+    }
+
     auto contextId = *reinterpret_cast<uint32_t*>(hContext);
     int32_t findMask;
 
@@ -148,6 +153,10 @@ void EventRegisterEx(EVENTID id, EVENTHANDLERFUNC handler, void* param, float pr
 
     HEVENTCONTEXT hContext = PropGet(PROP_EVENTCONTEXT);
 
+    if (!hContext) {
+        return;
+    }
+
     uint32_t contextId = *reinterpret_cast<uint32_t*>(hContext);
     int32_t findMask;
 
@@ -175,6 +184,10 @@ void EventUnregister(EVENTID id, EVENTHANDLERFUNC handler) {
 
 void EventUnregisterEx(EVENTID id, EVENTHANDLERFUNC handler, void* param, uint32_t flags) {
     HEVENTCONTEXT hContext = PropGet(PROP_EVENTCONTEXT);
+
+    if (!hContext) {
+        return;
+    }
 
     uint32_t contextId = *reinterpret_cast<uint32_t*>(hContext);
     int32_t findMask;

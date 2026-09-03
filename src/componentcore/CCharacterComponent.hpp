@@ -52,9 +52,12 @@ class CCharacterComponent {
     static bool s_bInRenderPrep;
     static MipBits* s_textureBuffer;
 
+    static CCharacterComponent* m_activePlayerComponent;
+
     // Static functions
     static void Initialize();
     static void Initialize(EGxTexFormat format, uint32_t mipLevels, int32_t useThreads, int32_t useCompression);
+    static bool Destroy();
     static int32_t Update(const void*, void*);
     static CCharacterComponent* AllocComponent();
     static void FreeComponent(CCharacterComponent* component);

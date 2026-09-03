@@ -44,6 +44,7 @@ class CSimpleTop : public CLayoutFrame {
         static int32_t OnMouseUp(const EVENT_DATA_MOUSE* pMouseData, void* param);
         static int32_t OnMouseWheel(const EVENT_DATA_MOUSE* pMouseData, void* param);
         static float RoundToPixelHeight(float ddcHeight);
+        static void FreeFrameStrataNodes(CFrameStrata* strata);
 
         // Member variables
         HLAYER m_screenLayer;
@@ -66,6 +67,7 @@ class CSimpleTop : public CLayoutFrame {
         ~CSimpleTop();
         void CompressStrata(int32_t strata);
         void EnableEvents();
+
         void DisableEvents();
         void HideFrame(CSimpleFrame* frame, int32_t a4);
         void MoveOrResizeFrame(const CMouseEvent& evt);

@@ -15,6 +15,7 @@ typedef HOBJECT HTEXTURE;
 
 typedef void (TEXTURE_CALLBACK)(EGxTexCommand, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint32_t&, const void*&);
 
+class C2Vector;
 class CImVector;
 
 static int32_t s_asyncLoadBufferUsed;
@@ -103,6 +104,8 @@ void TextureFreeGxTex(CGxTex* texId);
 
 void TextureFreeMippedImg(MipBits* image, PIXEL_FORMAT format, uint32_t width, uint32_t height);
 
+int32_t TextureOnAtlas(CTexture*);
+int32_t TextureGetAtlasOffsetAndScale(CTexture*, C2Vector*, float*);
 CGxTex* TextureGetGxTex(CTexture*, int32_t, CStatus*);
 
 CGxTex* TextureGetGxTex(HTEXTURE, int32_t, CStatus*);

@@ -25,10 +25,10 @@ class CScriptObject : public FrameScript_Object {
         // Virtual member functions
         /* 00 */ virtual ~CScriptObject();
         /* 01 */ virtual char* GetName();
-        /* 02 */ virtual bool IsA(int32_t type);
-        /* 03 */ virtual CScriptObject* GetScriptObjectParent() = 0;
-        /* 04 */ virtual bool IsA(const char* typeName);
-        /* 05 */ virtual const char* GetObjectTypeName();
+        /* 04 */ virtual bool IsA(int32_t type);
+        /* 05 */ virtual CScriptObject* GetScriptObjectParent() = 0;
+        /* 06 */ virtual bool IsA(const char* typeName);
+        /* 07 */ virtual const char* GetObjectTypeName();
 
         // Member functions
         void CreateName(const char* source, char* dest, uint32_t destsize);

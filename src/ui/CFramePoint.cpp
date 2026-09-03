@@ -3,14 +3,12 @@
 
 const float CFramePoint::UNDEFINED = 3.4028237e38;
 
+// OFFSET: 0x49CA40
 CFramePoint::CFramePoint(CLayoutFrame* relative, FRAMEPOINT framePoint, float offsetX, float offsetY) {
     this->m_offset = { offsetX, offsetY };
     this->m_framePoint = framePoint;
     this->m_relative = relative;
 
-    // TODO
-    // - this doesn't appear to be zeroed out
-    // - what is it actually checking?
     this->m_flags = (this->m_flags & 0x2) >= 1 ? 0x6 : 0;
 }
 
@@ -18,6 +16,7 @@ CLayoutFrame* CFramePoint::GetRelative() {
     return this->m_relative;
 }
 
+// OFFSET: 0x49C830
 int32_t CFramePoint::GetRelativeRect(CRect& rect) {
     bool flag2initial = this->m_flags & 0x2;
 
@@ -62,10 +61,10 @@ int32_t CFramePoint::GetRelativeRect(CRect& rect) {
     }
 
     if (relative->IsAttachmentOrigin()) {
-        rect.minY -= rect.minY;
-        rect.minX -= rect.minX;
         rect.maxY -= rect.minY;
         rect.maxX -= rect.minX;
+        rect.minY = 0.0f;
+        rect.minX = 0.0f;
     }
 
     if (!flag2initial) {
@@ -75,6 +74,7 @@ int32_t CFramePoint::GetRelativeRect(CRect& rect) {
     return 1;
 }
 
+// OFFSET: 0x49C7F0
 void CFramePoint::MarkUnused() {
     this->m_framePoint = FRAMEPOINT_NUMPOINTS;
     this->m_offset = { 0.0f, 0.0f };
@@ -82,6 +82,7 @@ void CFramePoint::MarkUnused() {
     this->m_flags = this->m_flags & 0x2 ? 0x2 | 0x4 | 0x8 : 0x8;
 }
 
+// OFFSET: 0x49C7B0
 void CFramePoint::SetRelative(CLayoutFrame* relative, FRAMEPOINT relativePoint, float offsetX, float offsetY) {
     this->m_offset = { offsetX, offsetY };
     this->m_framePoint = relativePoint;
@@ -89,6 +90,7 @@ void CFramePoint::SetRelative(CLayoutFrame* relative, FRAMEPOINT relativePoint, 
     this->m_flags = this->m_flags & 0x2 ? 0x2 | 0x4 : 0x0;
 }
 
+// OFFSET: 0x49C900
 float CFramePoint::X(float scale) {
     CRect relative = { 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -117,6 +119,7 @@ float CFramePoint::X(float scale) {
     }
 }
 
+// OFFSET: 0x49C9A0
 float CFramePoint::Y(float scale) {
     CRect relative = { 0.0f, 0.0f, 0.0f, 0.0f };
 

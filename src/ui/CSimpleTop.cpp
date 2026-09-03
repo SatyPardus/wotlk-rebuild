@@ -15,112 +15,46 @@
 CSimpleTop* CSimpleTop::s_instance;
 uint32_t CSimpleTop::m_eventTime;
 
+// OFFSET: 0x496100
+void CSimpleTop::FreeFrameStrataNodes(CFrameStrata* strata) {
+    for (uint32_t i = 0; i < strata->levels.Count(); i++) {
+        auto node = strata->levels[i];
+
+        if (node) {
+            node->~CFrameStrataNode();
+            SMemFree(node, __FILE__, __LINE__, 0x0);
+        }
+
+        strata->levels[i] = nullptr;
+    }
+}
+
 // OFFSET: 0x496170
 CSimpleTop::~CSimpleTop() {
-    //v1 = this;
-    //this->__vftable = (CLayoutFrame_vtbl*)&off_9EBBE0;
-    //while (1) {
-    //    m_next = v1->m_destroyed.m_terminator.m_next;
-    //    if (((unsigned __int8)m_next & 1) != 0 || !m_next)
-    //        break;
-    //    m_linkoffset = v1->m_destroyed.m_linkoffset;
-    //    v4 = *(int*)((char*)&m_next->__vftable + m_linkoffset);
-    //    v5 = (FrameScript_Object_vtbl**)((char*)&m_next->__vftable + m_linkoffset);
-    //    if (v4) {
-    //        v6 = v5[1];
-    //        if ((v6 & 1) == 0 && v6) {
-    //            v1 = this;
-    //            v7 = (_DWORD*)((char*)v5 + v6 - *(_DWORD*)(v4 + 4));
-    //        } else {
-    //            v7 = (_DWORD*)(v6 & 0xFFFFFFFE);
-    //        }
-    //        *v7 = v4;
-    //        *(_DWORD*)(*v5 + 4) = v5[1];
-    //        *v5 = 0;
-    //        v5[1] = 0;
-    //    }
-    //}
-    //while (1) {
-    //    v8 = v1->m_frames.m_terminator.m_next;
-    //    if (((unsigned __int8)v8 & 1) != 0 || !v8)
-    //        break;
-    //    v9 = v1->m_frames.m_linkoffset;
-    //    v10 = *(int*)((char*)&v8->__vftable + v9);
-    //    v11 = (FrameScript_Object_vtbl**)((char*)&v8->__vftable + v9);
-    //    if (v10) {
-    //        v12 = v11[1];
-    //        if ((v12 & 1) == 0 && v12)
-    //            v13 = (_DWORD*)((char*)v11 + v12 - *(_DWORD*)(v10 + 4));
-    //        else
-    //            v13 = (_DWORD*)(v12 & 0xFFFFFFFE);
-    //        *v13 = v10;
-    //        *(_DWORD*)(*v11 + 4) = v11[1];
-    //        *v11 = 0;
-    //        v11[1] = 0;
-    //    }
-    //    ((void(__thiscall*)(CSimpleFrame*, int))v8->Destroy)(v8, 1);
-    //    v1 = this;
-    //}
-    //frameStratas = v1->frameStratas;
-    //v15 = 9;
-    //do {
-    //    v16 = *frameStratas;
-    //    if (*frameStratas) {
-    //        maybe_CSimpleTop__FreeFrameStrataNodes(*frameStratas);
-    //        SMemFree(v16, (int)"delete", -1, 0);
-    //    }
-    //    *frameStratas++ = 0;
-    //    --v15;
-    //} while (v15);
-    //sub_4858B0();
-    //sub_4964C0();
-    //maybe_CSimpleFontRender__DestroyShaders();
-    //maybe_CSimpleRender__DestroyShaders();
+    while (auto frame = this->m_destroyed.Head()) {
+        this->m_destroyed.UnlinkNode(frame);
+    }
+
+    while (auto frame = this->m_frames.Head()) {
+        this->m_frames.UnlinkNode(frame);
+        delete frame;
+    }
+
+    for (int32_t s = 0; s < NUM_FRAME_STRATA; s++) {
+        auto strata = this->m_strata[s];
+
+        if (strata) {
+            CSimpleTop::FreeFrameStrataNodes(strata);
+            strata->~CFrameStrata();
+            SMemFree(strata, __FILE__, __LINE__, 0x0);
+        }
+
+        this->m_strata[s] = nullptr;
+    }
+
     this->DisableEvents();
     HandleClose(this->m_screenLayer);
     CSimpleTop::s_instance = nullptr;
-    //p_m_checkFocus = &this->m_checkFocus;
-    //v18 = 44;
-    //do {
-    //    v19 = (void*)*(p_m_checkFocus - 5);
-    //    p_m_checkFocus -= 7;
-    //    if (v19)
-    //        SMemFree(v19, (int)".PAVFRAMEPRIORITY@@", -2, 0);
-    //    --v18;
-    //    *p_m_checkFocus = 0;
-    //    p_m_checkFocus[1] = 0;
-    //    p_m_checkFocus[2] = 0;
-    //} while (v18 >= 0);
-    //bn_TSList_TSGetExplicitLink_UnlinkAll(&this->m_destroyed.m_linkoffset);
-    //p_m_terminator = &this->m_destroyed.m_terminator;
-    //m_prevlink = this->m_destroyed.m_terminator.m_prevlink;
-    //if (m_prevlink) {
-    //    v22 = this->m_destroyed.m_terminator.m_next;
-    //    if (((unsigned __int8)v22 & 1) == 0 && v22)
-    //        v23 = (FrameScript_Object_vtbl**)((char*)&v22->__vftable + (char*)p_m_terminator - (char*)m_prevlink->m_next);
-    //    else
-    //        v23 = (_DWORD*)((unsigned int)v22 & 0xFFFFFFFE);
-    //    *v23 = m_prevlink;
-    //    this->m_destroyed.m_terminator.m_prevlink->m_next = this->m_destroyed.m_terminator.m_next;
-    //    p_m_terminator->m_prevlink = 0;
-    //    this->m_destroyed.m_terminator.m_next = 0;
-    //}
-    //bn_TSList_TSGetExplicitLink_UnlinkAll(&this->m_frames.m_linkoffset);
-    //v24 = &this->m_frames.m_terminator;
-    //v25 = this->m_frames.m_terminator.m_prevlink;
-    //if (v25) {
-    //    v26 = this->m_frames.m_terminator.m_next;
-    //    if (((unsigned __int8)v26 & 1) == 0 && v26)
-    //        v27 = (FrameScript_Object_vtbl**)((char*)&v26->__vftable + (char*)v24 - (char*)v25->m_next);
-    //    else
-    //        v27 = (_DWORD*)((unsigned int)v26 & 0xFFFFFFFE);
-    //    *v27 = v25;
-    //    this->m_frames.m_terminator.m_prevlink->m_next = this->m_frames.m_terminator.m_next;
-    //    v24->m_prevlink = 0;
-    //    this->m_frames.m_terminator.m_next = 0;
-    //}
-
-    CLayoutFrame::~CLayoutFrame();
 }
 
 void PaintScreen(void* param, const RECTF* rect, const RECTF* visible, float elapsedSec) {
@@ -128,6 +62,7 @@ void PaintScreen(void* param, const RECTF* rect, const RECTF* visible, float ela
     CSimpleTop::s_instance->OnLayerRender();
 }
 
+// OFFSET: 0x494280
 int32_t CSimpleTop::OnChar(const EVENT_DATA_CHAR* pCharData, void* param) {
     CSimpleTop* top = static_cast<CSimpleTop*>(param);
 
@@ -160,6 +95,7 @@ int32_t CSimpleTop::OnChar(const EVENT_DATA_CHAR* pCharData, void* param) {
     return eaten == 0;
 }
 
+// OFFSET: 0x4955E0
 int32_t CSimpleTop::OnDisplaySizeChanged(const EVENT_DATA_SIZE* pSizeData, void* param) {
     CSimpleTop* top = static_cast<CSimpleTop*>(param);
 
@@ -180,16 +116,19 @@ int32_t CSimpleTop::OnDisplaySizeChanged(const EVENT_DATA_SIZE* pSizeData, void*
     return 1;
 }
 
+// OFFSET: 0x494970
 int32_t CSimpleTop::OnFocusChanged(const void* a1, void* a2) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x494320
 int32_t CSimpleTop::OnIme(const void* a1, void* a2) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x4943C0
 int32_t CSimpleTop::OnKeyDown(const EVENT_DATA_KEY* pKeyData, void* param) {
     CSimpleTop* top = static_cast<CSimpleTop*>(param);
     CSimpleTop::m_eventTime = pKeyData->time;
@@ -232,6 +171,7 @@ int32_t CSimpleTop::OnKeyDown(const EVENT_DATA_KEY* pKeyData, void* param) {
     return eaten == 0;
 }
 
+// OFFSET: 0x494530
 int32_t CSimpleTop::OnKeyDownRepeat(const EVENT_DATA_KEY* pKeyData, void* param) {
     CSimpleTop* top = static_cast<CSimpleTop*>(param);
     CSimpleTop::m_eventTime = pKeyData->time;
@@ -253,6 +193,7 @@ int32_t CSimpleTop::OnKeyDownRepeat(const EVENT_DATA_KEY* pKeyData, void* param)
     return eaten == 0;
 }
 
+// OFFSET: 0x494490
 int32_t CSimpleTop::OnKeyUp(const EVENT_DATA_KEY* pKeyData, void* param) {
     CSimpleTop* top = static_cast<CSimpleTop*>(param);
     CSimpleTop::m_eventTime = pKeyData->time;
@@ -278,6 +219,7 @@ int32_t CSimpleTop::OnKeyUp(const EVENT_DATA_KEY* pKeyData, void* param) {
     return eaten == 0;
 }
 
+// OFFSET: 0x495470
 int32_t CSimpleTop::OnMouseDown(const EVENT_DATA_MOUSE* pMouseData, void* param) {
     CSimpleTop* top = static_cast<CSimpleTop*>(param);
 
@@ -332,6 +274,7 @@ int32_t CSimpleTop::OnMouseDown(const EVENT_DATA_MOUSE* pMouseData, void* param)
     return 0;
 }
 
+// OFFSET: 0x4945A0
 int32_t CSimpleTop::OnMouseMove(const EVENT_DATA_MOUSE* pMouseData, void* param) {
     CSimpleTop* top = static_cast<CSimpleTop*>(param);
 
@@ -408,11 +351,13 @@ int32_t CSimpleTop::OnMouseMove(const EVENT_DATA_MOUSE* pMouseData, void* param)
     return nextFocus == nullptr;
 }
 
+// OFFSET: 0x494730
 int32_t CSimpleTop::OnMouseMoveRelative(const EVENT_DATA_MOUSE* pMouseData, void* param) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x4947A0
 int32_t CSimpleTop::OnMouseUp(const EVENT_DATA_MOUSE* pMouseData, void* param) {
     CSimpleTop* top = static_cast<CSimpleTop*>(param);
 
@@ -451,11 +396,13 @@ int32_t CSimpleTop::OnMouseUp(const EVENT_DATA_MOUSE* pMouseData, void* param) {
     return 0;
 }
 
+// OFFSET: 0x494890
 int32_t CSimpleTop::OnMouseWheel(const EVENT_DATA_MOUSE* pMouseData, void* param) {
     // TODO
     return 0;
 }
 
+// OFFSET: 0x493E00
 float CSimpleTop::RoundToPixelHeight(float ddcHeight) {
     if (abs(ddcHeight) < 0.00000023841858) {
         return ddcHeight;
@@ -556,10 +503,12 @@ CSimpleTop::CSimpleTop() : CLayoutFrame() {
     CSimpleTexture::Init();
 }
 
+// OFFSET: 0x495060
 void CSimpleTop::CompressStrata(int32_t strata) {
     // TODO
 }
 
+// OFFSET: 0x4959F0
 void CSimpleTop::EnableEvents() {
     EventRegisterEx(EVENT_ID_CHAR, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnChar), this, 1.0);
     EventRegisterEx(EVENT_ID_IME, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnIme), this, 1.0);
@@ -575,6 +524,7 @@ void CSimpleTop::EnableEvents() {
     EventRegisterEx(EVENT_ID_FOCUS, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnFocusChanged), this, 1.0);
 }
 
+// OFFSET: 0x495B00
 void CSimpleTop::DisableEvents() {
     EventUnregisterEx(EVENT_ID_CHAR, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnChar), this, -1);
     EventUnregisterEx(EVENT_ID_IME, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnIme), this, -1);
@@ -590,6 +540,7 @@ void CSimpleTop::DisableEvents() {
     EventUnregisterEx(EVENT_ID_FOCUS, reinterpret_cast<EVENTHANDLERFUNC>(CSimpleTop::OnFocusChanged), this, -1);
 }
 
+// OFFSET: 0x493F30
 void CSimpleTop::HideFrame(CSimpleFrame* frame, int32_t a4) {
     if (this->m_layout.frame == frame && !a4) {
         if (this->m_layout.frame) {
@@ -604,6 +555,7 @@ void CSimpleTop::HideFrame(CSimpleFrame* frame, int32_t a4) {
     this->m_strata[frame->m_strata]->RemoveFrame(frame);
 }
 
+// OFFSET: 0x495320
 void CSimpleTop::OnLayerUpdate(float elapsedSec) {
     // TODO
     // - walk m_destroyed and perform some cleanup
@@ -623,6 +575,7 @@ void CSimpleTop::OnLayerUpdate(float elapsedSec) {
     }
 }
 
+// OFFSET: 0x495410
 void CSimpleTop::OnLayerRender() {
     C2Vector v13 = { 0.0f, 0.0f };
     CameraSetupScreenProjection(this->m_rect, v13, 0.0f, 0);
@@ -634,10 +587,12 @@ void CSimpleTop::OnLayerRender() {
     }
 }
 
+// OFFSET: 0x493CE0
 void CSimpleTop::MoveOrResizeFrame(const CMouseEvent& evt) {
     // TODO
 }
 
+// OFFSET: 0x493C10
 void CSimpleTop::NotifyFrameLayerChanged(CSimpleFrame* frame, uint32_t layer) {
     auto strata = this->m_strata[frame->m_strata];
     auto level = strata->levels[frame->m_level];
@@ -645,6 +600,7 @@ void CSimpleTop::NotifyFrameLayerChanged(CSimpleFrame* frame, uint32_t layer) {
     strata->batchDirty = 1;
 }
 
+// OFFSET: 0x495840
 void CSimpleTop::NotifyFrameMovedOrResized(CSimpleFrame* frame) {
     auto strata = this->m_strata[frame->m_strata];
     strata->levelsDirty = 1;
@@ -656,6 +612,7 @@ void CSimpleTop::NotifyFrameMovedOrResized(CSimpleFrame* frame) {
     this->m_checkFocus = 1;
 }
 
+// OFFSET: 0x4951A0
 int32_t CSimpleTop::RaiseFrame(CSimpleFrame* frame, int32_t checkOcclusion) {
     if (!(frame->m_flags & 0x01)) {
         frame = frame->m_parent;
@@ -676,7 +633,7 @@ int32_t CSimpleTop::RaiseFrame(CSimpleFrame* frame, int32_t checkOcclusion) {
     if (checkOcclusion) {
         auto layout = static_cast<CLayoutFrame*>(frame);
 
-        if (!(layout->m_flags & 0x100) || layout->IsResizePending()) {
+        if (!(layout->m_flags & 0x1) || layout->IsResizePending()) {
             frame->Resize(1);
         }
 
@@ -694,6 +651,7 @@ int32_t CSimpleTop::RaiseFrame(CSimpleFrame* frame, int32_t checkOcclusion) {
     return 1;
 }
 
+// OFFSET: 0x495880
 void CSimpleTop::RegisterForEvent(CSimpleFrame* frame, CSimpleEventType event, int32_t a4, uint32_t priority) {
     auto& queue = this->m_eventqueue[frame->m_strata][event];
 
@@ -705,15 +663,17 @@ void CSimpleTop::RegisterForEvent(CSimpleFrame* frame, CSimpleEventType event, i
 
     queue.Insert(framePriority);
 
-    if (!a4 || event == SIMPLE_EVENT_MOUSE) {
+    if (!a4 && event == SIMPLE_EVENT_MOUSE) {
         this->m_checkFocus = 1;
     }
 }
 
+// OFFSET: 0x494F90
 void CSimpleTop::RegisterFrame(CSimpleFrame* frame) {
     this->m_frames.LinkToTail(frame);
 }
 
+// OFFSET: 0x493C80
 void CSimpleTop::SetCursor(MipBits* image) {
     if (image) {
         auto cursor = g_theGxDevicePtr->CursorLock();
@@ -723,6 +683,7 @@ void CSimpleTop::SetCursor(MipBits* image) {
     }
 }
 
+// OFFSET: 0x4960D0
 void CSimpleTop::ShowFrame(CSimpleFrame* frame, int32_t a3) {
     this->m_strata[frame->m_strata]->AddFrame(frame);
     frame->RegisterForEvents(a3);
@@ -743,6 +704,7 @@ int32_t CSimpleTop::StartMoveOrResizeFrame(CSimpleFrame* frame, MOVERESIZE_REASO
     return 0;
 }
 
+// OFFSET: 0x495900
 void CSimpleTop::UnregisterForEvent(CSimpleFrame* frame, CSimpleEventType event, int32_t a4) {
     auto& queue = this->m_eventqueue[frame->m_strata][event];
 
@@ -750,7 +712,10 @@ void CSimpleTop::UnregisterForEvent(CSimpleFrame* frame, CSimpleEventType event,
 
     for (int32_t i = 0; i < queue.Count(); i++) {
         if (queue[i]->frame == frame) {
+            auto framePriority = queue[i];
+
             queue.Remove(i);
+            SMemFree(framePriority, __FILE__, __LINE__, 0x0);
             found = 1;
 
             break;
@@ -785,6 +750,7 @@ void CSimpleTop::UnregisterForEvent(CSimpleFrame* frame, CSimpleEventType event,
     }
 }
 
+// OFFSET: 0x494FA0
 void CSimpleTop::UnregisterFrame(CSimpleFrame* frame) {
     this->HideFrame(frame, 0);
 

@@ -71,6 +71,7 @@ bool CFrameStrataNode::RemoveFrame(CSimpleFrame* frame) {
     return this->batchDirty != 0;
 }
 
+// OFFSET: 0x495DE0
 void CFrameStrata::AddFrame(CSimpleFrame* frame) {
     // TODO
     // - potentially an inlined TSFixedArray function?
@@ -106,10 +107,20 @@ void CFrameStrata::AddFrame(CSimpleFrame* frame) {
     this->batchDirty |= (level->batchDirty != 0);
 }
 
+// OFFSET: 0x494E60
 void CFrameStrata::CheckOcclusion() {
-    // TODO
+    for (uint32_t i = 0; i < this->topLevel; i++) {
+        auto level = this->levels[i];
+
+        for (auto frame = level->frames.Head(); frame; frame = level->frames.Link(frame)->Next()) {
+            if (frame->m_flags & 0x1) {
+                frame->SetFrameFlag(0x10, this->FrameOccluded(frame));
+            }
+        }
+    }
 }
 
+// OFFSET: 0x494EE0
 int32_t CFrameStrata::BuildBatches(int32_t a2) {
     if (this->levelsDirty) {
         this->CheckOcclusion();
@@ -135,8 +146,40 @@ int32_t CFrameStrata::BuildBatches(int32_t a2) {
     return this->batchDirty;
 }
 
+// OFFSET: 0x494D20
 int32_t CFrameStrata::FrameOccluded(CSimpleFrame* frame) {
-    // TODO
+    CRect frameRect = { 0.0f, 0.0f, 0.0f, 0.0f };
+    CRect otherRect = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    for (uint32_t i = frame->m_level; i < this->topLevel; i++) {
+        auto level = this->levels[i];
+
+        for (auto other = level->frames.Head(); other; other = level->frames.Link(other)->Next()) {
+            if (other == frame) {
+                continue;
+            }
+
+            CSimpleFrame* ancestor = other->m_parent;
+
+            while (ancestor && ancestor != frame) {
+                ancestor = ancestor->m_parent;
+            }
+
+            if (ancestor) {
+                continue;
+            }
+
+            frame->GetRect(&frameRect);
+            other->GetRect(&otherRect);
+
+            CRect intersection = CRect::Intersection(frameRect, otherRect);
+
+            if (intersection.maxY > intersection.minY && intersection.maxX > intersection.minX) {
+                return 1;
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -157,6 +200,7 @@ void CFrameStrata::RemoveFrame(CSimpleFrame* frame) {
     }
 }
 
+// OFFSET: 0x494F30
 void CFrameStrata::RenderBatches() {
     for (int32_t i = 0; i < this->topLevel; i++) {
         auto renderList = &this->levels[i]->renderList;

@@ -156,6 +156,7 @@ void FrameScript_CreateEvents(const char* names[], uint32_t count) {
     }
 }
 
+// OFFSET: 0x81A9A0
 void FrameScript_Destroy() {
     lua_close(FrameScript::s_context);
     FrameScript::s_context = nullptr;

@@ -104,6 +104,15 @@ void TextureCacheDestroyTexture(CACHEENTRY* entry) {
     }
 }
 
+// OFFSET: 0x4F2E20
+void TextureCacheDestroy() {
+    if (s_entryHeap) {
+        STORM_FREE(s_entryHeap);
+    }
+
+    s_entryHeap = nullptr;
+}
+
 // OFFSET: 0x4F3110
 CACHEENTRY* TextureCacheAllocEntry() {
     if (!s_entryHeap) {

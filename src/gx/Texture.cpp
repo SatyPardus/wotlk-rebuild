@@ -11,6 +11,7 @@
 #include <storm/Error.hpp>
 #include <storm/String.hpp>
 #include <async/AsyncFileRead.hpp>
+#include <tempest/Vector.hpp>
 
 namespace Texture {
     int32_t s_createBlpAsync = 1; // Invented name
@@ -1197,6 +1198,37 @@ int32_t TextureGetDimensions(CTexture* texture, uint32_t* width, uint32_t* heigh
 
 int32_t TextureGetDimensions(HTEXTURE textureHandle, uint32_t* width, uint32_t* height, int32_t force) {
     return TextureGetDimensions(TextureGetTexturePtr(textureHandle), width, height, force);
+}
+
+// OFFSET: 0x4B5460
+int32_t TextureOnAtlas(CTexture* texture) {
+    if (!texture) {
+        SErrSetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    return texture->atlas != nullptr;
+}
+
+// OFFSET: 0x4B5490
+int32_t TextureGetAtlasOffsetAndScale(CTexture* texture, C2Vector* offset, float* scale) {
+    if (!texture) {
+        SErrSetLastError(ERROR_INVALID_PARAMETER);
+        return 0;
+    }
+
+    if (!texture->atlas) {
+        return 0;
+    }
+
+    *scale = 0.125f;
+
+    int32_t blockIndex = texture->atlasBlockIndex;
+
+    offset->x = 0.125f * (blockIndex & 7);
+    offset->y = ((blockIndex >> 3) & 7) * *scale;
+
+    return 1;
 }
 
 CGxTex* TextureGetGxTex(CTexture* texture, int32_t a2, CStatus* status) {

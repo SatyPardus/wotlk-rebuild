@@ -34,22 +34,29 @@ float SynthesizeCenter(float side1, float side2, float size) {
     }
 }
 
+// OFFSET: 0x4898B0
 void CLayoutFrame::ResizePending() {
-    int32_t loading = 0;
+    uint32_t sweeps = 0;
 
-    for (CLayoutFrame* frame = LayoutFrame::s_resizePendingList.Head(); frame && loading < 32;) {
-        auto next = LayoutFrame::s_resizePendingList.Next(frame);
-        if (!frame->IsObjectLoaded()) {
-            loading++;
+    while (LayoutFrame::s_resizePendingList.Head() && sweeps < 32) {
+        for (CLayoutFrame* frame = LayoutFrame::s_resizePendingList.Head(); frame;) {
+            if (!frame->IsObjectLoaded()) {
+                frame = LayoutFrame::s_resizePendingList.Next(frame);
+                continue;
+            }
+
+            int32_t resized = frame->OnFrameResize();
+            auto next = LayoutFrame::s_resizePendingList.Next(frame);
+
+            if (resized || (frame->m_resizeCounter--, frame->m_resizeCounter == 0)) {
+                frame->m_flags &= ~0x4;
+                LayoutFrame::s_resizePendingList.UnlinkNode(frame);
+            }
+
             frame = next;
-            continue;
         }
 
-        if (frame->OnFrameResize() || (frame->m_resizeCounter--, frame->m_resizeCounter == 0)) {
-            frame->m_flags &= ~0x4;
-            LayoutFrame::s_resizePendingList.UnlinkNode(frame);
-        }
-        frame = next;
+        sweeps++;
     }
 }
 
@@ -73,6 +80,7 @@ CLayoutFrame::~CLayoutFrame() {
     // List and Link cleanup handled by respective dtor
 }
 
+// OFFSET: 0x489710
 void CLayoutFrame::AddToResizeList() {
     if (LayoutFrame::s_resizePendingList.IsLinked(this)) {
         return;
@@ -88,6 +96,10 @@ void CLayoutFrame::AddToResizeList() {
                 dependent = frame;
             }
         }
+
+        if (dependent) {
+            break;
+        }
     }
 
     if (dependent) {
@@ -99,6 +111,7 @@ void CLayoutFrame::AddToResizeList() {
     this->m_resizeCounter = 6;
 }
 
+// OFFSET: 0x489100
 float CLayoutFrame::Bottom() {
     if (this->m_guard.bottom) {
         return CFramePoint::UNDEFINED;
@@ -128,6 +141,7 @@ float CLayoutFrame::Bottom() {
     return bottom;
 }
 
+// OFFSET: 0x4893C0
 int32_t CLayoutFrame::CalculateRect(CRect* rect) {
     rect->minX = this->Left();
 
@@ -194,12 +208,14 @@ int32_t CLayoutFrame::CalculateRect(CRect* rect) {
     return 1;
 }
 
+// OFFSET: 0x48A160
 bool CLayoutFrame::CanBeAnchorFor(CLayoutFrame* frame) {
     // TODO
 
     return true;
 }
 
+// OFFSET: 0x488F50
 float CLayoutFrame::CenterX() {
     if (this->m_guard.centerX) {
         return CFramePoint::UNDEFINED;
@@ -229,6 +245,7 @@ float CLayoutFrame::CenterX() {
     return centerX;
 }
 
+// OFFSET: 0x488FE0
 float CLayoutFrame::CenterY() {
     if (this->m_guard.centerY) {
         return CFramePoint::UNDEFINED;
@@ -258,10 +275,12 @@ float CLayoutFrame::CenterY() {
     return centerY;
 }
 
+// OFFSET: 0x48A510
 void CLayoutFrame::ClearAllPoints() {
     this->FreePoints();
 }
 
+// OFFSET: 0x48B130
 void CLayoutFrame::DestroyLayout() {
     for (int32_t i = 0; i < FRAMEPOINT_NUMPOINTS; i++) {
         auto point = this->m_points[i];
@@ -280,7 +299,7 @@ void CLayoutFrame::DestroyLayout() {
         auto frame = node->frame;
 
         for (int32_t i = 0; i < FRAMEPOINT_NUMPOINTS; i++) {
-            auto point = this->m_points[i];
+            auto point = frame->m_points[i];
 
             if (point && point->m_relative == this) {
                 point->MarkUnused();
@@ -293,6 +312,7 @@ void CLayoutFrame::DestroyLayout() {
     this->m_resizeList.Clear();
 }
 
+// OFFSET: 0x48A200
 void CLayoutFrame::FreePoints() {
     for (int32_t i = 0; i < FRAMEPOINT_NUMPOINTS; i++) {
         auto point = this->m_points[i];
@@ -307,6 +327,7 @@ void CLayoutFrame::FreePoints() {
     }
 }
 
+// OFFSET: 0x488D20
 void CLayoutFrame::GetClampRectInsets(float& a1, float& a2, float& a3, float& a4) {
     a4 = 0.0f;
     a3 = 0.0f;
@@ -314,6 +335,7 @@ void CLayoutFrame::GetClampRectInsets(float& a1, float& a2, float& a3, float& a4
     a1 = 0.0f;
 }
 
+// OFFSET: 0x488ED0
 void CLayoutFrame::GetFirstPointX(const FRAMEPOINT* const pointarray, int32_t elements, float& x) {
     // TODO
     // - what's up with this loop?
@@ -325,6 +347,7 @@ void CLayoutFrame::GetFirstPointX(const FRAMEPOINT* const pointarray, int32_t el
     }
 }
 
+// OFFSET: 0x488F10
 void CLayoutFrame::GetFirstPointY(const FRAMEPOINT* const pointarray, int32_t elements, float& y) {
     // TODO
     // - what's up with this loop?
@@ -344,6 +367,7 @@ CLayoutFrame* CLayoutFrame::GetLayoutParent() {
     return nullptr;
 }
 
+// OFFSET: 0x489230
 int32_t CLayoutFrame::GetRect(CRect* rect) {
     if (!(this->m_flags & 0x1)) {
         return 0;
@@ -357,10 +381,12 @@ int32_t CLayoutFrame::GetRect(CRect* rect) {
     return 1;
 }
 
+// OFFSET: 0x488D00
 float CLayoutFrame::GetHeight() {
     return this->m_height;
 }
 
+// OFFSET: 0x488D10
 float CLayoutFrame::GetWidth() {
     return this->m_width;
 }
@@ -406,6 +432,7 @@ int32_t CLayoutFrame::IsObjectLoaded() {
     return 1;
 }
 
+// OFFSET: 0x4891D0
 int32_t CLayoutFrame::IsResizeDependency(CLayoutFrame* dependentFrame) {
     CLayoutFrame* v2 = nullptr;
 
@@ -430,10 +457,12 @@ int32_t CLayoutFrame::IsResizeDependency(CLayoutFrame* dependentFrame) {
     return 0;
 }
 
+// OFFSET: 0x488CF0
 uint32_t CLayoutFrame::IsResizePending() {
     return this->m_flags & 0x4;
 }
 
+// OFFSET: 0x4892A0
 float CLayoutFrame::Left() {
     if (this->m_guard.left) {
         return CFramePoint::UNDEFINED;
@@ -463,6 +492,7 @@ float CLayoutFrame::Left() {
     return left;
 }
 
+// OFFSET: 0x48B2D0
 void CLayoutFrame::LoadXML(const XMLNode* node, CStatus* status) {
     const XMLNode* size = node->GetChildByName("Size");
     float width;
@@ -578,6 +608,7 @@ void CLayoutFrame::LoadXML(const XMLNode* node, CStatus* status) {
     }
 }
 
+// OFFSET: 0x489570
 int32_t CLayoutFrame::OnFrameResize() {
     CRect rect = { 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -617,12 +648,14 @@ int32_t CLayoutFrame::OnFrameResize() {
     return this->m_flags & 0x1;
 }
 
+// OFFSET: 0x48A1D0
 void CLayoutFrame::OnFrameSizeChanged(const CRect& rect) {
     for (auto node = this->m_resizeList.Head(); node; node = this->m_resizeList.Link(node)->Next()) {
         node->frame->Resize(0);
     }
 }
 
+// OFFSET: 0x489A00
 void CLayoutFrame::OnProtectedAttach(CLayoutFrame* frame) {
     if (this->m_flags & 0x400) {
         frame->SetProtectFlag(0x400);
@@ -633,16 +666,18 @@ void CLayoutFrame::OnProtectedAttach(CLayoutFrame* frame) {
     }
 }
 
+// OFFSET: 0x489A40
 void CLayoutFrame::OnProtectedDetach(CLayoutFrame* frame) {
     if ((this->m_layoutFlags & 0x70000) != 0)
         frame->SetProtectFlag(0x400);
 }
 
+// OFFSET: 0x489270
 int32_t CLayoutFrame::PtInFrameRect(const C2Vector& pt) {
-    // TODO
-    return 0;
+    return (this->m_flags & 0x1) && this->m_rect.IsPointInside(pt);
 }
 
+// OFFSET: 0x489C30
 void CLayoutFrame::RegisterResize(CLayoutFrame* frame, uint32_t dep) {
     for (auto node = this->m_resizeList.Head(); node; node = this->m_resizeList.Link(node)->Next()) {
         if (node->frame == frame) {
@@ -665,6 +700,7 @@ void CLayoutFrame::RegisterResize(CLayoutFrame* frame, uint32_t dep) {
     }
 }
 
+// OFFSET: 0x489DE0
 void CLayoutFrame::Resize(int32_t force) {
     if (force && !(this->m_flags & 0x8) && this->OnFrameResize()) {
         LayoutFrame::s_resizePendingList.UnlinkNode(this);
@@ -687,6 +723,7 @@ void CLayoutFrame::Resize(int32_t force) {
     }
 }
 
+// OFFSET: 0x489070
 float CLayoutFrame::Right() {
     if (this->m_guard.right) {
         return CFramePoint::UNDEFINED;
@@ -716,6 +753,7 @@ float CLayoutFrame::Right() {
     return right;
 }
 
+// OFFSET: 0x48A3E0
 void CLayoutFrame::SetAllPoints(CLayoutFrame* relative, int32_t doResize) {
     STORM_ASSERT(relative);
     STORM_ASSERT(relative != this);
@@ -762,6 +800,7 @@ void CLayoutFrame::SetAllPoints(CLayoutFrame* relative, int32_t doResize) {
     }
 }
 
+// OFFSET: 0x48A520
 void CLayoutFrame::SetDeferredResize(int32_t enable) {
     if (enable) {
         this->m_flags |= 0x2;
@@ -780,16 +819,18 @@ void CLayoutFrame::SetDeferredResize(int32_t enable) {
     }
 }
 
+// OFFSET: 0x489FA0
 void CLayoutFrame::SetHeight(float height) {
     this->m_flags &= ~0x8;
     this->m_height = height;
     this->Resize(0);
 }
 
+// OFFSET: 0x489E90
 bool CLayoutFrame::SetLayoutScale(float scale, bool force) {
     STORM_ASSERT(scale);
 
-    if (force || (!AreEqual(this->m_layoutScale, scale, WHOA_EPSILON_1) && scale > 0.00000011920929)) {
+    if ((force || !AreEqual(this->m_layoutScale, scale, WHOA_EPSILON_1)) && scale > 0.00000011920929) {
         this->m_layoutScale = scale;
         this->m_rect = { 0.0f, 0.0f, 0.0f, 0.0f };
         this->m_flags &= ~0x1;
@@ -804,20 +845,23 @@ bool CLayoutFrame::SetLayoutScale(float scale, bool force) {
 
 // OFFSET: 0x489F20
 bool CLayoutFrame::SetLayoutDepth(float depth, bool force) {
-    if (force || depth > 0.00000011920929) {
-        if (depth < 0.2f)
-            depth = 0.2f;
-        this->m_layoutDepth = depth;
-        this->m_flags &= ~0x100;
-
-        this->Resize(0);
-
-        return true;
+    if (!force && AreEqual(this->m_layoutDepth, depth, WHOA_EPSILON_1)) {
+        return false;
     }
 
-    return false;
+    if (depth < 0.2f) {
+        depth = 0.2f;
+    }
+
+    this->m_flags &= ~0x1;
+    this->m_layoutDepth = depth;
+
+    this->Resize(0);
+
+    return true;
 }
 
+// OFFSET: 0x48A260
 void CLayoutFrame::SetPoint(FRAMEPOINT point, CLayoutFrame* relative, FRAMEPOINT relativePoint, float offsetX, float offsetY, int32_t doResize) {
     STORM_ASSERT(relative);
     STORM_ASSERT(relative != this);
@@ -869,10 +913,12 @@ void CLayoutFrame::SetPoint(FRAMEPOINT point, CLayoutFrame* relative, FRAMEPOINT
     }
 }
 
+// OFFSET: 0x4896C0
 void CLayoutFrame::SetProtectFlag(uint32_t flag) {
     // TODO
 }
 
+// OFFSET: 0x489FC0
 void CLayoutFrame::SetSize(float width, float height) {
     this->m_flags &= ~0x8;
     this->m_width = width;
@@ -880,12 +926,14 @@ void CLayoutFrame::SetSize(float width, float height) {
     this->Resize(0);
 }
 
+// OFFSET: 0x489F80
 void CLayoutFrame::SetWidth(float width) {
     this->m_flags &= ~0x8;
     this->m_width = width;
     this->Resize(0);
 }
 
+// OFFSET: 0x488DB0
 int32_t CLayoutFrame::GetFramePointX(const FRAMEPOINT* const pointarray, int32_t elements, float& x) {
     for (int32_t i = 0; i < elements; i++) {
         FRAMEPOINT f = pointarray[i];
@@ -909,6 +957,7 @@ int32_t CLayoutFrame::GetFramePointX(const FRAMEPOINT* const pointarray, int32_t
     return 1;
 }
 
+// OFFSET: 0x488E40
 int32_t CLayoutFrame::GetFramePointY(const FRAMEPOINT* const pointarray, int32_t elements, float& y) {
     for (int32_t i = 0; i < elements; i++) {
         FRAMEPOINT f = pointarray[i];
@@ -932,6 +981,7 @@ int32_t CLayoutFrame::GetFramePointY(const FRAMEPOINT* const pointarray, int32_t
     return 1;
 }
 
+// OFFSET: 0x489330
 float CLayoutFrame::Top() {
     if (this->m_guard.top) {
         return CFramePoint::UNDEFINED;
@@ -961,10 +1011,12 @@ float CLayoutFrame::Top() {
     return top;
 }
 
+// OFFSET: 0x48A840
 void CLayoutFrame::UnflattenFrame(CLayoutFrame* frame) {
     // TODO
 }
 
+// OFFSET: 0x489D70
 void CLayoutFrame::UnregisterResize(CLayoutFrame* frame, uint32_t dep) {
     for (auto node = this->m_resizeList.Head(); node; node = this->m_resizeList.Link(node)->Next()) {
         if (node->frame == frame) {

@@ -83,6 +83,37 @@ CSimpleFrame::~CSimpleFrame() {
     if (this->m_titleRegion)
         delete this->m_titleRegion;
 
+    for (int32_t layer = 0; layer < NUM_SIMPLEFRAME_DRAWLAYERS; layer++) {
+        this->m_drawlayers[layer].UnlinkAll();
+
+        if (this->m_batch[layer]) {
+            this->m_batch[layer]->~CRenderBatch();
+            SMemFree(this->m_batch[layer], __FILE__, __LINE__, 0x0);
+            this->m_batch[layer] = nullptr;
+        }
+    }
+
+    auto region = this->m_regions.Head();
+
+    while (region) {
+        auto next = this->m_regions.Link(region)->Next();
+
+        this->m_regions.UnlinkNode(region);
+        delete region;
+
+        region = next;
+    }
+
+    this->m_renderList.UnlinkAll();
+
+    while (auto node = this->m_children.Head()) {
+        if (!node->frame) {
+            break;
+        }
+
+        delete node->frame;
+    }
+
     if (this->m_parent)
         this->m_parent->UnparentFrame(this);
 

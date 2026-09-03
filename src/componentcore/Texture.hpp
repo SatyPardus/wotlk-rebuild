@@ -35,6 +35,7 @@ class CACHEENTRY : public TSHashObject<CACHEENTRY, HASHKEY_NONE> {
 };
 
 void TextureCacheDestroyTexture(CACHEENTRY* entry);
+void TextureCacheDestroy();
 CACHEENTRY* TextureCacheAllocEntry();
 CACHEENTRY* TextureCacheCreateTexture(const char* file);
 void TextureCacheFreeRequest(void* asyncObject);

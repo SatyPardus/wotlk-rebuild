@@ -45,6 +45,7 @@ CRenderBatch::~CRenderBatch() {
     this->Clear();
 }
 
+// OFFSET: 0x485F00
 void CRenderBatch::Clear() {
     this->m_texturelist.SetCount(0);
 
@@ -58,12 +59,14 @@ void CRenderBatch::Clear() {
     this->m_count = 0;
 }
 
+// OFFSET: 0x484450
 void CRenderBatch::Finish() {
     if (this->m_texturelist.Count() > 1) {
         qsort(this->m_texturelist.m_data, this->m_texturelist.Count(), sizeof(CSimpleBatchedMesh), SortByTexture);
     }
 }
 
+// OFFSET: 0x4846F0
 void CRenderBatch::Queue(CTexture* texture, EGxBlend alphaMode, int32_t posCount, const C3Vector* position, const C2Vector* texCoord, int32_t colorCount, const CImVector* color, int32_t idxCount, const uint16_t* indices, CGxShader* shader) {
     CGxTex* textureID = TextureGetGxTex(texture, 1, nullptr);
 
@@ -85,17 +88,16 @@ void CRenderBatch::Queue(CTexture* texture, EGxBlend alphaMode, int32_t posCount
     mesh->indices = const_cast<uint16_t*>(indices);
     mesh->idxCount = idxCount;
 
-    // TODO
-    // - implement atlas stuff
-    mesh->onAtlas = 0;
-    // mesh->onAtlas = TextureOnAtlas(texture);
-    // if (onAtlas) {
-    //     TextureGetAtlasOffsetAndScale(mesh->texture, mesh->offset, mesh->scale);
-    // }
+    mesh->onAtlas = TextureOnAtlas(texture);
+
+    if (mesh->onAtlas) {
+        TextureGetAtlasOffsetAndScale(mesh->texture, &mesh->atlasOffset, &mesh->atlasScale);
+    }
 
     this->m_count++;
 }
 
+// OFFSET: 0x4858E0
 void CRenderBatch::QueueCallback(void (*callback)(void*), void* param) {
     auto node = this->m_callbacks.NewNode(2, 0, 0);
     node->callback = callback;
@@ -104,6 +106,7 @@ void CRenderBatch::QueueCallback(void (*callback)(void*), void* param) {
     this->m_count++;
 }
 
+// OFFSET: 0x4843A0
 void CRenderBatch::QueueFontString(CSimpleFontString* string) {
     CRect rect = { 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -132,6 +135,7 @@ void CRenderBatch::QueueFontString(CSimpleFontString* string) {
     }
 }
 
+// OFFSET: 0x4847A0
 void CRenderBatch::QueueTexture(CSimpleTexture* texture) {
     CGxTex* gxTex = TextureGetGxTex(texture->m_texture, texture->m_nonBlocking ? 0 : 2, 0);
 

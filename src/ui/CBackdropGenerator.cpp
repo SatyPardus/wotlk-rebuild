@@ -8,13 +8,17 @@
 #include <common/XML.hpp>
 #include <storm/Error.hpp>
 
+// OFFSET: 0x4A2D40
 CBackdropGenerator::CBackdropGenerator() {
     this->m_color.Set(1.0f, 1.0f, 1.0f, 1.0f);
     this->m_borderColor.Set(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
+// OFFSET: 0x4A29D0
 void CBackdropGenerator::Generate(const CRect* rect) {
-    STORM_ASSERT(rect);
+    STORM_VALIDATE_BEGIN;
+    STORM_VALIDATE(rect);
+    STORM_VALIDATE_END_VOID;
 
     C2Vector texCoords[4];
 
@@ -86,6 +90,7 @@ void CBackdropGenerator::Generate(const CRect* rect) {
     this->SetBorderVertexColor(this->m_borderColor);
 }
 
+// OFFSET: 0x4A2780
 void CBackdropGenerator::LoadXML(XMLNode* node, CStatus* status) {
     const char* bgFileAttr = node->GetAttributeByName("bgFile");
     const char* edgeFileAttr = node->GetAttributeByName("edgeFile");
@@ -134,7 +139,9 @@ void CBackdropGenerator::LoadXML(XMLNode* node, CStatus* status) {
             }
 
         } else if (!SStrCmpI(child->GetName(), "Color", STORM_MAX_STR)) {
-            // TODO
+            CImVector color = { 0 };
+            LoadXML_Color(child, color);
+            this->SetVertexColor(color);
 
         } else if (!SStrCmpI(child->GetName(), "BorderColor", STORM_MAX_STR)) {
             CImVector borderColor = { 0 };
@@ -152,6 +159,7 @@ void CBackdropGenerator::LoadXML(XMLNode* node, CStatus* status) {
     }
 }
 
+// OFFSET: 0x4A25F0
 void CBackdropGenerator::SetVertexColor(const CImVector& color) {
     this->m_color = color;
     if (this->m_backgroundTexture) {
@@ -159,6 +167,7 @@ void CBackdropGenerator::SetVertexColor(const CImVector& color) {
     }
 }
 
+// OFFSET: 0x4A2630
 void CBackdropGenerator::SetBorderVertexColor(const CImVector& borderColor) {
     this->m_borderColor = borderColor;
 
@@ -195,8 +204,11 @@ void CBackdropGenerator::SetBorderVertexColor(const CImVector& borderColor) {
     }
 }
 
+// OFFSET: 0x4A2E00
 void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
-    STORM_ASSERT(frame);
+    STORM_VALIDATE_BEGIN;
+    STORM_VALIDATE(frame);
+    STORM_VALIDATE_END_VOID;
 
     C2Vector texCoords[4];
 

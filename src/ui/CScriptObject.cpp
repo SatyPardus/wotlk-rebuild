@@ -21,6 +21,7 @@ int32_t CScriptObject::GetObjectType() {
     return CScriptObject::s_objectType;
 }
 
+// OFFSET: 0x48B5F0
 CScriptObject* CScriptObject::GetScriptObjectByName(const char* name, int32_t type) {
     lua_State* L = FrameScript_GetContext();
 
@@ -43,6 +44,7 @@ CScriptObject* CScriptObject::GetScriptObjectByName(const char* name, int32_t ty
     }
 }
 
+// OFFSET: 0x48B730
 CScriptObject::~CScriptObject() {
     if (this->m_name.GetString()) {
         this->UnregisterScriptObject(this->m_name.GetString());
@@ -54,6 +56,7 @@ CScriptObject::~CScriptObject() {
  * @brief Converts the value of the name="" attribute into a fully resolved name.
  * @param source eg. $parentCategory from <FontString name="$parentCategory" />
  */
+// OFFSET: 0x48B540
 void CScriptObject::CreateName(const char* source, char* dest, uint32_t destsize) {
     // If source is not $parent, use it as the name
     uint32_t v5 = SStrLen("$parent");
@@ -62,7 +65,7 @@ void CScriptObject::CreateName(const char* source, char* dest, uint32_t destsize
         return;
     }
 
-    SStrCopy(dest, "", 0x7FFFFFFF);
+    SStrCopy(dest, "Top", 0x7FFFFFFF);
 
     CScriptObject* parent = this->GetScriptObjectParent();
 
@@ -95,6 +98,7 @@ void CScriptObject::CreateName(const char* source, char* dest, uint32_t destsize
     SStrPack(dest, &source[v8], destsize);
 }
 
+// OFFSET: 0x431E80
 char* CScriptObject::GetName() {
     return this->m_name.m_str;
 }
@@ -107,6 +111,7 @@ void CScriptObject::PreLoadXML(const XMLNode* node, CStatus* status) {
     }
 }
 
+// OFFSET: 0x48B6C0
 void CScriptObject::SetName(const char* name) {
     // If name is already set, clear it out
     if (this->m_name.m_str) {
@@ -126,14 +131,17 @@ void CScriptObject::SetName(const char* name) {
     }
 }
 
+// OFFSET: 0x48B6B0
 const char* CScriptObject::GetObjectTypeName() {
     return CScriptObject::s_objectTypeName;
 }
 
+// OFFSET: 0x482AF0
 bool CScriptObject::IsA(int32_t type) {
     return type == CScriptObject::s_objectType;
 }
 
+// OFFSET: 0x482B10
 bool CScriptObject::IsA(const char* typeName) {
     return SStrCmpI(typeName, CScriptObject::s_objectTypeName, 0x7FFFFFFFu) == 0;
 }
