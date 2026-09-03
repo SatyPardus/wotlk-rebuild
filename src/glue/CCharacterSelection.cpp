@@ -269,32 +269,25 @@ void CCharacterSelection::Shutdown() {
         CCharacterComponent::m_activePlayerComponent = nullptr;
     }
 
-    //v1 = 0;
-    //if (CCharacterSelection::s_characterList.m_count) {
-    //    m_data = CCharacterSelection::s_characterList.m_data;
-    //    do {
-    //        m_component = m_data[v0].m_component;
-    //        if (m_component) {
-    //            m_model = m_component->m_data.m_model;
-    //            if (m_model) {
-    //                if (v1 == dword_AC4370) {
-    //                    if (m_data[v0].m_characterInfo.classId == 3) {
-    //                        CCharacterComponent::RemoveHandItem(m_model, 17, 0, 0);
-    //                        CCharacterComponent::RemoveItem(CCharacterSelection::s_characterList.m_data[v0].m_component, 11);
-    //                    }
-    //                    maybe_CCharacterComponent__RemoveVisuals(m_model);
-    //                    bn_CM2Model_AttachToSceneRecursive(s_m2Scene);
-    //                    CCharacterComponent::m_activePlayerComponent = CCharacterSelection::s_characterList.m_data[v0].m_component;
-    //                    CGPlayer_C::s_displayId = GetDisplayIdFromRaceAndGender(CCharacterSelection::s_characterList.m_data[v0].m_characterInfo.raceId, CCharacterSelection::s_characterList.m_data[v0].m_characterInfo.genderId);
-    //                    CCharacterSelection::s_characterList.m_data[v0].m_component = 0;
-    //                    m_data = CCharacterSelection::s_characterList.m_data;
-    //                }
-    //            }
-    //        }
-    //        ++v1;
-    //        ++v0;
-    //    } while (v1 < CCharacterSelection::s_characterList.m_count);
-    //}
+    for (uint32_t i = 0; i < CCharacterSelection::s_characterList.Count(); i++) {
+        auto& display = CCharacterSelection::s_characterList[i];
+        auto component = display.m_component;
+
+        if (!component || !component->m_data.m_model) {
+            continue;
+        }
+
+        if (i != CCharacterSelection::m_selectionIndex) {
+            continue;
+        }
+
+        // TODO classId == 3: RemoveHandItem(model, 17, 0, 0) + RemoveItem(component, 11)
+        // TODO RemoveVisuals(model), CM2Model::AttachToSceneRecursive(s_m2Scene)
+        // TODO CGPlayer_C::s_displayId = GetDisplayIdFromRaceAndGender(raceId, genderId)
+
+        CCharacterComponent::m_activePlayerComponent = component;
+        display.m_component = nullptr;
+    }
 
     CCharacterSelection::FreeComponents(&CCharacterSelection::s_characterList);
     CCharacterSelection::s_characterList.Clear();

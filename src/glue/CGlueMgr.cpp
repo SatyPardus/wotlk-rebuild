@@ -2,6 +2,7 @@
 #include "glue/CRealmList.hpp"
 #include "glue/CCharacterSelection.hpp"
 #include "glue/CCharacterCreation.hpp"
+#include "clientobject/ObjectMgrClient.hpp"
 #include "console/Console.hpp"
 #include "client/Client.hpp"
 #include "client/ClientServices.hpp"
@@ -1215,18 +1216,23 @@ void CGlueMgr::PollEnterWorld() {
         CGlueMgr::m_showedDisconnect = 0;
         //SI3::StopGlueMusic(3.0);
         //SI3::StopGlueAmbience(-1.0);
-        ClientServices::CharacterLogin(CGlueMgr::m_characterInfo->guid, C3Vector());
+        ClientServices::CharacterLogin(static_cast<uint64_t>(g_tlsBlock.loginCharacterGuid), C3Vector());
         return;
     }
 
     auto info = CGlueMgr::m_characterInfo;
+
+    g_tlsBlock.loginCharacterGuid = info->guid;
+
+    uint32_t mapID = info->mapID;
+    C3Vector position = info->position;
 
     if (info->firstLogin) {
         // sub_4D9660(info->classID, mapID, info->raceID, info->position);
     }
 
     CGlueMgr::Suspend();
-    ClientInitializeGame(info->mapID, &info->position);
+    ClientInitializeGame(mapID, &position);
 }
 
 void CGlueMgr::SurveyDownloadStart() {
