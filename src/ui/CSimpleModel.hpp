@@ -6,6 +6,7 @@
 #include "model/Model2.hpp"
 #include <tempest/Vector.hpp>
 #include <tempest/Box.hpp>
+#include "common/DataAllocator.hpp"
 
 class CStatus;
 class XMLNode;
@@ -13,6 +14,7 @@ class XMLNode;
 class CSimpleModel : public CSimpleFrame {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static int32_t s_metatable;
         static int32_t s_objectType;
 
@@ -24,6 +26,7 @@ class CSimpleModel : public CSimpleFrame {
         static void RegisterScriptMethods(lua_State* L);
         static void RenderModel(void* arg);
         static bool SetLightHelper(lua_State* L, int32_t index, CM2Light* light);
+        static void operator delete(void* ptr);
 
         // Member variables
         CM2Scene* m_scene = nullptr;

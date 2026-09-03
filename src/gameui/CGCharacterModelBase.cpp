@@ -2,11 +2,18 @@
 #include "gameui/CGCharacterModelBaseScript.hpp"
 #include <bc/Memory.hpp>
 
+CDataAllocator CGCharacterModelBase::s_allocator(sizeof(CGCharacterModelBase), 5);
+
+void CGCharacterModelBase::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CGCharacterModelBase::s_allocator, ptr);
+    }
+}
+
 int32_t CGCharacterModelBase::s_metatable;
 
 CSimpleFrame* CGCharacterModelBase::Create(CSimpleFrame* parent) {
-    // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGCharacterModelBase@@", -2);
-    return NEW(CGCharacterModelBase, parent);
+    return ALLOCATOR_NEW(CGCharacterModelBase::s_allocator, CGCharacterModelBase, parent);
 }
 
 void CGCharacterModelBase::CreateScriptMetaTable() {

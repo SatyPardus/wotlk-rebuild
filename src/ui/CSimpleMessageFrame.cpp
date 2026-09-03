@@ -1,6 +1,14 @@
 #include "ui/CSimpleMessageFrame.hpp"
 #include "ui/CSimpleMessageFrameScript.hpp"
 
+CDataAllocator CSimpleMessageFrame::s_allocator(sizeof(CSimpleMessageFrame), 5);
+
+void CSimpleMessageFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleMessageFrame::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleMessageFrame::s_metatable = 0;
 int32_t CSimpleMessageFrame::s_objectType = 0;
 

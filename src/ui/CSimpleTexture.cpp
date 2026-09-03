@@ -15,6 +15,14 @@
 #include <common/XML.hpp>
 #include <storm/String.hpp>
 
+CDataAllocator CSimpleTexture::s_allocator(sizeof(CSimpleTexture), 736);
+
+void CSimpleTexture::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleTexture::s_allocator, ptr);
+    }
+}
+
 CGxShader* CSimpleTexture::s_imageModePixelShaders[2] = {};
 
 uint16_t CSimpleTexture::s_indices[] = {
@@ -91,7 +99,7 @@ CSimpleTexture::~CSimpleTexture() {
         HandleClose(this->m_texture);
     }
 
-    // TODO CSimpleTexture::s_count++;
+    // TODO CSimpleTexture::s_count--;
 }
 
 void CSimpleTexture::Draw(CRenderBatch* batch) {

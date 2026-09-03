@@ -17,6 +17,14 @@
 #include <storm/String.hpp>
 #include <tempest/Math.hpp>
 
+CDataAllocator CSimpleFontString::s_allocator(sizeof(CSimpleFontString), 809);
+
+void CSimpleFontString::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleFontString::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleFontString::s_count;
 int32_t CSimpleFontString::s_metatable;
 int32_t CSimpleFontString::s_objectType;

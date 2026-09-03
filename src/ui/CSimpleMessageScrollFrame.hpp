@@ -2,10 +2,12 @@
 #define UI_C_SIMPLE_MESSAGE_SCROLL_FRAME_HPP
 
 #include "ui/CSimpleHyperlinkedFrame.hpp"
+#include "common/DataAllocator.hpp"
 
 class CSimpleMessageScrollFrame : public CSimpleHyperlinkedFrame {
     public:
     // Static variables
+    static CDataAllocator s_allocator;
     static int32_t s_metatable;
     static int32_t s_objectType;
 
@@ -13,6 +15,7 @@ class CSimpleMessageScrollFrame : public CSimpleHyperlinkedFrame {
     static void CreateScriptMetaTable();
     static int32_t GetObjectType();
     static void RegisterScriptMethods(lua_State* L);
+    static void operator delete(void* ptr);
 
     // Member functions
     CSimpleMessageScrollFrame(CSimpleFrame* parent);

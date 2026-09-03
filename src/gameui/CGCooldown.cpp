@@ -2,11 +2,18 @@
 #include "gameui/CGCooldownScript.hpp"
 #include <bc/Memory.hpp>
 
+CDataAllocator CGCooldown::s_allocator(sizeof(CGCooldown), 100);
+
+void CGCooldown::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CGCooldown::s_allocator, ptr);
+    }
+}
+
 int32_t CGCooldown::s_metatable;
 
 CSimpleFrame* CGCooldown::Create(CSimpleFrame* parent) {
-    // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGCooldown@@", -2);
-    return NEW(CGCooldown, parent);
+    return ALLOCATOR_NEW(CGCooldown::s_allocator, CGCooldown, parent);
 }
 
 void CGCooldown::CreateScriptMetaTable() {

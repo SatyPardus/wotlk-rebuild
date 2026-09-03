@@ -2,12 +2,14 @@
 #define UI_C_SIMPLE_MODEL_FFX_HPP
 
 #include "ui/CSimpleModel.hpp"
+#include "common/DataAllocator.hpp"
 
 class CSimpleFrame;
 
 class CSimpleModelFFX : public CSimpleModel {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static int32_t s_metatable;
 
         // Member variables
@@ -21,6 +23,7 @@ class CSimpleModelFFX : public CSimpleModel {
         static void CreateScriptMetaTable();
         static void RegisterScriptMethods(lua_State* L);
         static void Render(void* arg);
+        static void operator delete(void* ptr);
 
         // Virtual member functions
         virtual int32_t GetScriptMetaTable();

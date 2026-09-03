@@ -2,11 +2,18 @@
 #include "gameui/CGQuestPOIFrameScript.hpp"
 #include <bc/Memory.hpp>
 
+CDataAllocator CGQuestPOIFrame::s_allocator(sizeof(CGQuestPOIFrame), 5);
+
+void CGQuestPOIFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CGQuestPOIFrame::s_allocator, ptr);
+    }
+}
+
 int32_t CGQuestPOIFrame::s_metatable;
 
 CSimpleFrame* CGQuestPOIFrame::Create(CSimpleFrame* parent) {
-    // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGQuestPOIFrame@@", -2);
-    return NEW(CGQuestPOIFrame, parent);
+    return ALLOCATOR_NEW(CGQuestPOIFrame::s_allocator, CGQuestPOIFrame, parent);
 }
 
 void CGQuestPOIFrame::CreateScriptMetaTable() {

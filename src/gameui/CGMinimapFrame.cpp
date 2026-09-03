@@ -2,11 +2,18 @@
 #include "gameui/CGMinimapFrameScript.hpp"
 #include <bc/Memory.hpp>
 
+CDataAllocator CGMinimapFrame::s_allocator(sizeof(CGMinimapFrame), 1);
+
+void CGMinimapFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CGMinimapFrame::s_allocator, ptr);
+    }
+}
+
 int32_t CGMinimapFrame::s_metatable;
 
 CSimpleFrame* CGMinimapFrame::Create(CSimpleFrame* parent) {
-    // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGMinimapFrame@@", -2);
-    return NEW(CGMinimapFrame, parent);
+    return ALLOCATOR_NEW(CGMinimapFrame::s_allocator, CGMinimapFrame, parent);
 }
 
 void CGMinimapFrame::CreateScriptMetaTable() {

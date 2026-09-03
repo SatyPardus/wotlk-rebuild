@@ -8,6 +8,14 @@
 #include <bc/Memory.hpp>
 #include <common/XML.hpp>
 
+CDataAllocator CGTooltip::s_allocator(sizeof(CGTooltip), 5);
+
+void CGTooltip::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CGTooltip::s_allocator, ptr);
+    }
+}
+
 int32_t CGTooltip::s_metatable;
 int32_t CGTooltip::s_objectType;
 CImVector CGTooltip::s_defaultColor{ 0, 210, 255, 255 };
@@ -35,8 +43,7 @@ const char* CGTooltip::s_itemQualityColorStrings[8] = {
 };
 
 CSimpleFrame* CGTooltip::Create(CSimpleFrame* parent) {
-    // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGTooltip@@", -2);
-    return NEW(CGTooltip, parent);
+    return ALLOCATOR_NEW(CGTooltip::s_allocator, CGTooltip, parent);
 }
 
 void CGTooltip::CreateScriptMetaTable() {
@@ -160,8 +167,7 @@ void CGTooltip::AddLine(
 
         char name[256];
         SStrPrintf(name, sizeof(name), "%sTextLeft%d", this->GetDisplayName(), this->m_linesMax + 1);
-        // TODO: CDataAllocator
-        auto leftFontString = NEW(CSimpleFontString, this, 2, 1);
+        auto leftFontString = ALLOCATOR_NEW(CSimpleFontString::s_allocator, CSimpleFontString, this, 2, 1);
         leftFontString->SetName(name);
         leftFontString->SetFontObject(lastLeftString->GetFontObject());
 
@@ -171,8 +177,7 @@ void CGTooltip::AddLine(
         leftFontString->Hide();
 
         SStrPrintf(name, sizeof(name), "%sTextRight%d", this->GetDisplayName(), this->m_linesMax + 1);
-        // TODO: CDataAllocator
-        auto rightFontString = NEW(CSimpleFontString, this, 2, 1);
+        auto rightFontString = ALLOCATOR_NEW(CSimpleFontString::s_allocator, CSimpleFontString, this, 2, 1);
         rightFontString->SetName(name);
         rightFontString->SetFontObject(lastRightString->GetFontObject());
 

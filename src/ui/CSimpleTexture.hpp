@@ -5,6 +5,7 @@
 #include "ui/CSimpleRegion.hpp"
 #include "ui/Types.hpp"
 #include <tempest/Vector.hpp>
+#include "common/DataAllocator.hpp"
 
 class CGxShader;
 class CRect;
@@ -14,6 +15,7 @@ class CSimpleFrame;
 class CSimpleTexture : public CSimpleRegion {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static CGxShader* s_imageModePixelShaders[];
         static uint16_t s_indices[];
         static int32_t s_metatable;
@@ -26,6 +28,7 @@ class CSimpleTexture : public CSimpleRegion {
         static int32_t GetObjectType();
         static void Init();
         static void RegisterScriptMethods(lua_State* L);
+        static void operator delete(void* ptr);
 
         // Member variables
         HTEXTURE m_texture = nullptr;

@@ -23,6 +23,14 @@
 #include <storm/String.hpp>
 #include <storm/Unicode.hpp>
 
+CDataAllocator CSimpleFrame::s_allocator(sizeof(CSimpleFrame), 100);
+
+void CSimpleFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleFrame::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleFrame::s_metatable;
 int32_t CSimpleFrame::s_objectType;
 const char* CSimpleFrame::s_objectTypeName = "Frame";

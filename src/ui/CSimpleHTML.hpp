@@ -5,6 +5,7 @@
 #include "ui/CSimpleHyperlinkedFrame.hpp"
 #include "ui/Types.hpp"
 #include <storm/List.hpp>
+#include "common/DataAllocator.hpp"
 
 class CStatus;
 class XMLNode;
@@ -18,6 +19,7 @@ struct CONTENTNODE : TSLinkedNode<CONTENTNODE> {
 class CSimpleHTML : public CSimpleHyperlinkedFrame, CSimpleFontedFrame {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static int32_t s_metatable;
         static int32_t s_objectType;
 
@@ -25,6 +27,7 @@ class CSimpleHTML : public CSimpleHyperlinkedFrame, CSimpleFontedFrame {
         static void CreateScriptMetaTable();
         static int32_t GetObjectType();
         static void RegisterScriptMethods(lua_State* L);
+        static void operator delete(void* ptr);
 
         // Member variables
         STORM_LIST(CONTENTNODE) m_content;

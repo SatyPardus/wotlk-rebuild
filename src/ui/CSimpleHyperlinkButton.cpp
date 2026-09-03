@@ -4,6 +4,13 @@
 #include "gx/Coordinate.hpp"
 #include <bc/Memory.hpp>
 
+CDataAllocator CSimpleHyperlinkButton::s_allocator(sizeof(CSimpleHyperlinkButton), 10);
+
+void CSimpleHyperlinkButton::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleHyperlinkButton::s_allocator, ptr);
+    }
+}
 
 CSimpleHyperlinkButton::CSimpleHyperlinkButton(CSimpleHyperlinkedFrame* parent)
     : CSimpleButton(parent) {

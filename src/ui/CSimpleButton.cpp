@@ -12,6 +12,14 @@
 #include <common/XML.hpp>
 #include <storm/String.hpp>
 
+CDataAllocator CSimpleButton::s_allocator(sizeof(CSimpleButton), 100);
+
+void CSimpleButton::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleButton::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleButton::s_metatable;
 int32_t CSimpleButton::s_objectType;
 
@@ -463,8 +471,7 @@ int32_t CSimpleButton::SetHighlight(const char* texFile, EGxBlend blendMode) {
         return 1;
     }
 
-    // TODO auto m = CDataAllocator::GetData(CSimpleTexture::s_allocator, 0, __FILE__, __LINE__);
-    auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
     auto texture = new (m) CSimpleTexture(this, DRAWLAYER_HIGHLIGHT, 1);
 
     if (!texture->SetTexture(texFile, false, false, CSimpleTexture::s_textureFilterMode, ImageMode_UI)) {
@@ -559,8 +566,7 @@ int32_t CSimpleButton::SetStateTexture(CSimpleButtonState state, const char* tex
         return 1;
     }
 
-    // TODO void* m = CDataAllocator::GetData(CSimpleTexture::s_allocator, 0, __FILE__, __LINE__);
-    auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
     auto texture = new (m) CSimpleTexture(nullptr, 2, 1);
 
     if (texture->SetTexture(texFile, false, false, CSimpleTexture::s_textureFilterMode, ImageMode_UI)) {
@@ -580,10 +586,7 @@ int32_t CSimpleButton::SetStateTexture(CSimpleButtonState state, const char* tex
 void CSimpleButton::SetText(const char* string) {
     if ((string && *string) || this->m_text) {
         if (!this->m_text) {
-            // TODO
-            // auto m = CDataAllocator::GetData(CSimpleFontString::s_allocator, 0, __FILE__, __LINE__);
-
-            auto m = SMemAlloc(sizeof(CSimpleFontString), __FILE__, __LINE__, 0x0);
+            auto m = ALLOCATOR_GET(CSimpleFontString::s_allocator);
             auto text = new (m) CSimpleFontString(this, 2, 1);
 
             this->SetFontString(text);

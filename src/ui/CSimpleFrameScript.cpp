@@ -59,7 +59,7 @@ int32_t CSimpleFrame_CreateTexture(lua_State* L) {
         }
     }
 
-    auto texture = NEW(CSimpleTexture, frame, drawLayer, 1);
+    auto texture = ALLOCATOR_NEW(CSimpleTexture::s_allocator, CSimpleTexture, frame, drawLayer, 1);
     if (name && *name) {
         texture->SetName(name);
     }
@@ -116,7 +116,7 @@ int32_t CSimpleFrame_CreateFontString(lua_State* L) {
         }
     }
 
-    auto fontString = NEW(CSimpleFontString, frame, drawLayer, 1);
+    auto fontString = ALLOCATOR_NEW(CSimpleFontString::s_allocator, CSimpleFontString, frame, drawLayer, 1);
     if (name && *name) {
         fontString->SetName(name);
     }

@@ -3,6 +3,14 @@
 #include "ui/CSimpleSliderScript.hpp"
 #include "util/Lua.hpp"
 
+CDataAllocator CSimpleSlider::s_allocator(sizeof(CSimpleSlider), 5);
+
+void CSimpleSlider::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleSlider::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleSlider::s_metatable;
 int32_t CSimpleSlider::s_objectType;
 

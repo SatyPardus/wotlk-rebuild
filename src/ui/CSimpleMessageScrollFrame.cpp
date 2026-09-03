@@ -1,6 +1,14 @@
 #include "ui/CSimpleMessageScrollFrame.hpp"
 #include "ui/CSimpleMessageScrollFrameScript.hpp"
 
+CDataAllocator CSimpleMessageScrollFrame::s_allocator(sizeof(CSimpleMessageScrollFrame), 5);
+
+void CSimpleMessageScrollFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleMessageScrollFrame::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleMessageScrollFrame::s_metatable = 0;
 int32_t CSimpleMessageScrollFrame::s_objectType = 0;
 

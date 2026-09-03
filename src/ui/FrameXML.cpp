@@ -24,87 +24,57 @@ TSHashTable<FrameFactoryNode, HASHKEY_STRI> FrameXML::s_factoryHash;
 TSHashTable<HashedNode, HASHKEY_STRI> FrameXML::s_nodeHash;
 
 CSimpleFrame* Create_SimpleButton(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleFrame::s_simpleButtonHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleButton), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleButton::s_allocator);
     return new (m) CSimpleButton(parent);
 }
 
 CSimpleFrame* Create_SimpleCheckButton(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleCheckbox::s_simpleCheckboxHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleCheckbox), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleCheckbox::s_allocator);
     return new (m) CSimpleCheckbox(parent);
 }
 
 CSimpleFrame* Create_SimpleEditBox(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleEditBox::s_simpleEditBoxHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleEditBox), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleEditBox::s_allocator);
     return new (m) CSimpleEditBox(parent);
 }
 
 CSimpleFrame* Create_SimpleFrame(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleFrame::s_simpleFrameHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleFrame), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleFrame::s_allocator);
     return new (m) CSimpleFrame(parent);
 }
 
 CSimpleFrame* Create_SimpleMessageFrame(CSimpleFrame* parent) {
-    // TODO
-
-    auto m = SMemAlloc(sizeof(CSimpleMessageFrame), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleMessageFrame::s_allocator);
     return new (m) CSimpleMessageFrame(parent);
 }
 
 CSimpleFrame* Create_SimpleModel(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleFrame::s_simpleModelHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleModel), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleModel::s_allocator);
     return new (m) CSimpleModel(parent);
 }
 
 CSimpleFrame* Create_SimpleScrollFrame(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleScrollFrame::s_simpleScrollHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleScrollFrame), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleScrollFrame::s_allocator);
     return new (m) CSimpleScrollFrame(parent);
 }
 
 CSimpleFrame* Create_SimpleScrollingMessageFrame(CSimpleFrame* parent) {
-    // TODO
-
-    auto m = SMemAlloc(sizeof(CSimpleMessageScrollFrame), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleMessageScrollFrame::s_allocator);
     return new (m) CSimpleMessageScrollFrame(parent);
 }
 
 CSimpleFrame* Create_SimpleSlider(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleSlider::s_simpleSliderHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleSlider), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleSlider::s_allocator);
     return new (m) CSimpleSlider(parent);
 }
 
 CSimpleFrame* Create_SimpleHTML(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleHTML::s_simpleHTMLHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleHTML), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleHTML::s_allocator);
     return new (m) CSimpleHTML(parent);
 }
 
 CSimpleFrame* Create_SimpleStatusBar(CSimpleFrame* parent) {
-    // TODO
-
-    auto m = SMemAlloc(sizeof(CSimpleStatusBar), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleStatusBar::s_allocator);
     return new (m) CSimpleStatusBar(parent);
 }
 
@@ -115,10 +85,7 @@ CSimpleFrame* Create_SimpleColorSelect(CSimpleFrame* parent) {
 }
 
 CSimpleFrame* Create_SimpleMovieFrame(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleMovie::s_simpleMovieHeap, 0, __FILE__, __LINE__);
-
-    auto m = SMemAlloc(sizeof(CSimpleMovieFrame), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleMovieFrame::s_allocator);
     return new (m) CSimpleMovieFrame(parent);
 }
 

@@ -244,10 +244,7 @@ int32_t LoadXML_Insets(const XMLNode* node, float& left, float& right, float& to
 }
 
 CSimpleFontString* LoadXML_String(const XMLNode* node, CSimpleFrame* frame, CStatus* status) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleFontString::s_allocator, 0, a__avcsimplefon, -2);
-
-    auto m = SMemAlloc(sizeof(CSimpleFontString), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleFontString::s_allocator);
     auto fontString = new (m) CSimpleFontString(frame, 2, 1);
 
     fontString->PreLoadXML(node, status);
@@ -258,10 +255,7 @@ CSimpleFontString* LoadXML_String(const XMLNode* node, CSimpleFrame* frame, CSta
 }
 
 CSimpleTexture* LoadXML_Texture(const XMLNode* node, CSimpleFrame* frame, CStatus* status) {
-    // TODO
-    // auto m = (CSimpleTexture *)CDataAllocator::GetData((int)CSimpleTexture::s_allocator, 0, a__avcsimpletex, -2);
-
-    auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+    auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
     auto texture = new (m) CSimpleTexture(frame, 2, 1);
 
     texture->PreLoadXML(node, status);

@@ -12,6 +12,14 @@
 #include <common/XML.hpp>
 #include <tempest/Matrix.hpp>
 
+CDataAllocator CSimpleScrollFrame::s_allocator(sizeof(CSimpleScrollFrame), 5);
+
+void CSimpleScrollFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleScrollFrame::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleScrollFrame::s_metatable;
 int32_t CSimpleScrollFrame::s_objectType;
 

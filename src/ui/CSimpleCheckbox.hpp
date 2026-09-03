@@ -2,10 +2,12 @@
 #define UI_C_SIMPLE_CHECKBOX_HPP
 
 #include "ui/CSimpleButton.hpp"
+#include "common/DataAllocator.hpp"
 
 class CSimpleCheckbox : public CSimpleButton {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static int32_t s_metatable;
         static int32_t s_objectType;
 
@@ -13,6 +15,7 @@ class CSimpleCheckbox : public CSimpleButton {
         static void CreateScriptMetaTable();
         static int32_t GetObjectType();
         static void RegisterScriptMethods(lua_State* L);
+        static void operator delete(void* ptr);
 
         // Member variables
         int32_t m_checked = 0;

@@ -5,6 +5,7 @@
 #include "gx/Types.hpp"
 #include "gx/Texture.hpp"
 #include <tempest/Vector.hpp>
+#include "common/DataAllocator.hpp"
 
 class CRect;
 class CRenderBatch;
@@ -20,6 +21,7 @@ class CSimpleMovieFrame : public CSimpleFrame {
 
 
     // Static variables
+    static CDataAllocator s_allocator;
     static int32_t s_metatable;
     static int32_t s_objectType;
 
@@ -29,6 +31,7 @@ class CSimpleMovieFrame : public CSimpleFrame {
     static void RegisterScriptMethods(lua_State* L);
     static void RenderMovie(void* param);
     static void TextureCallback(EGxTexCommand, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint32_t&, const void*&);
+    static void operator delete(void* ptr);
 
     // Member variables
     void* m_audioChannel = nullptr;

@@ -8,6 +8,14 @@
 #include "util/StringTo.hpp"
 #include <common/XML.hpp>
 
+CDataAllocator CSimpleHTML::s_allocator(sizeof(CSimpleHTML), 5);
+
+void CSimpleHTML::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleHTML::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleHTML::s_metatable;
 int32_t CSimpleHTML::s_objectType;
 
@@ -49,8 +57,7 @@ CSimpleHTML::CSimpleHTML(CSimpleFrame* parent) : CSimpleHyperlinkedFrame(parent)
 }
 
 void CSimpleHTML::AddText(const char* text, HTML_TEXT_TYPE type, uint32_t justify) {
-    // TODO auto stringMem = CDataAllocator::GetData(CSimpleFontString::s_allocator, 0x0, __FILE__, __LINE__);
-    auto stringMem = SMemAlloc(sizeof(CSimpleFontString), __FILE__, __LINE__, 0x0);
+    auto stringMem = ALLOCATOR_GET(CSimpleFontString::s_allocator);
     auto string = new (stringMem) CSimpleFontString(this, DRAWLAYER_ARTWORK, 1);
 
     if (this->m_layoutAnchor) {

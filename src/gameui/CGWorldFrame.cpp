@@ -26,6 +26,13 @@
 #include <world/daynight/DNInfo.hpp>
 #include "gameui/CGUIBindings.hpp"
 
+CDataAllocator CGWorldFrame::s_allocator(sizeof(CGWorldFrame), 1);
+
+void CGWorldFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CGWorldFrame::s_allocator, ptr);
+    }
+}
 
 CGWorldFrame* CGWorldFrame::s_currentWorldFrame = nullptr;
 
@@ -160,9 +167,7 @@ int32_t CGWorldFrame::OnLayerKeyUp(const CKeyEvent& evt) {
 }
 
 CSimpleFrame* CGWorldFrame::Create(CSimpleFrame* parent) {
-    // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGWorldFrame@@", -2);
-
-    auto m = SMemAlloc(sizeof(CGWorldFrame), __FILE__, __LINE__, 0);
+    auto m = ALLOCATOR_GET(CGWorldFrame::s_allocator);
     return m ? (new (m) CGWorldFrame(parent)) : nullptr;
 }
 

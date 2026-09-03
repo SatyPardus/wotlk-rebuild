@@ -3,6 +3,7 @@
 
 #include "ui/CSimpleFrame.hpp"
 #include <tempest/Vector.hpp>
+#include "common/DataAllocator.hpp"
 
 class CRect;
 class CRenderBatch;
@@ -10,6 +11,7 @@ class CRenderBatch;
 class CSimpleScrollFrame : public CSimpleFrame {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static int32_t s_metatable;
         static int32_t s_objectType;
 
@@ -18,6 +20,7 @@ class CSimpleScrollFrame : public CSimpleFrame {
         static int32_t GetObjectType();
         static void RegisterScriptMethods(lua_State* L);
         static void RenderScrollChild(void* param);
+        static void operator delete(void* ptr);
 
         // Member variables
         int32_t m_updateScrollChild = 0;

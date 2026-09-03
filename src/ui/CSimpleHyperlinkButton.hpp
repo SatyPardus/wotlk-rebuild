@@ -2,11 +2,18 @@
 #define UI_C_SIMPLE_HYPERLINK_BUTTON_HPP
 
 #include "ui/CSimpleButton.hpp"
+#include "common/DataAllocator.hpp"
 
 class CSimpleHyperlinkedFrame;
 
 class CSimpleHyperlinkButton : public CSimpleButton {
     public:
+    // Static variables
+    static CDataAllocator s_allocator;
+
+    // Static functions
+    static void operator delete(void* ptr);
+
     // Member functions
     CSimpleHyperlinkButton(CSimpleHyperlinkedFrame* parent);
     void SetHyperlink(CSimpleFontString* string, const GXUFONTHYPERLINKINFO* hyperlink);

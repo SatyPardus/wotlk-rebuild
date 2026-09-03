@@ -2,11 +2,18 @@
 #include "gameui/CGDressUpModelFrameScript.hpp"
 #include <bc/Memory.hpp>
 
+CDataAllocator CGDressUpModelFrame::s_allocator(sizeof(CGDressUpModelFrame), 5);
+
+void CGDressUpModelFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CGDressUpModelFrame::s_allocator, ptr);
+    }
+}
+
 int32_t CGDressUpModelFrame::s_metatable;
 
 CSimpleFrame* CGDressUpModelFrame::Create(CSimpleFrame* parent) {
-    // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGDressUpModelFrame@@", -2);
-    return NEW(CGDressUpModelFrame, parent);
+    return ALLOCATOR_NEW(CGDressUpModelFrame::s_allocator, CGDressUpModelFrame, parent);
 }
 
 void CGDressUpModelFrame::CreateScriptMetaTable() {

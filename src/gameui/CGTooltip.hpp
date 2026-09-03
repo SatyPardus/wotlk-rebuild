@@ -3,6 +3,7 @@
 
 #include "ui/CSimpleFrame.hpp"
 #include "ui/CSimpleTop.hpp"
+#include "common/DataAllocator.hpp"
 
 class CSimpleStatusBar;
 class CSimpleFontString;
@@ -27,6 +28,7 @@ class CGTooltip : public CSimpleFrame {
     const float TOOLTIP_FADE_TIME = 2.0f;
 
     // Static variables
+    static CDataAllocator s_allocator;
     static int32_t s_metatable;
     static int32_t s_objectType;
     static CImVector s_defaultColor;
@@ -40,6 +42,7 @@ class CGTooltip : public CSimpleFrame {
     static void RegisterScriptMethods(lua_State* L);
     static CImVector* GetItemQualityColor(uint32_t index);
     static const char* GetItemQualityColorString(uint32_t index);
+    static void operator delete(void* ptr);
 
     // Member functions
     CGTooltip(CSimpleFrame* parent);

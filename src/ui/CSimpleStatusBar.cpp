@@ -6,6 +6,14 @@
 #include "util/StringTo.hpp"
 #include <common/XML.hpp>
 
+CDataAllocator CSimpleStatusBar::s_allocator(sizeof(CSimpleStatusBar), 5);
+
+void CSimpleStatusBar::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleStatusBar::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleStatusBar::s_metatable = 0;
 int32_t CSimpleStatusBar::s_objectType = 0;
 
@@ -58,8 +66,7 @@ void CSimpleStatusBar::SetBarTexture(const char* texFile, int32_t layer) {
         return;
     }
 
-    // TODO: CDataAllocator__GetData(CSimpleTexture::s_allocator, 0, ".?AVCSimpleTexture@@", -2);
-    auto texture = NEW(CSimpleTexture, nullptr, DRAWLAYER_ARTWORK, 0);
+    auto texture = ALLOCATOR_NEW(CSimpleTexture::s_allocator, CSimpleTexture, nullptr, DRAWLAYER_ARTWORK, 0);
     if (texture->SetTexture(texFile, false, false, GxTex_Linear, ImageMode_UI)) {
         texture->SetAllPoints(this, 1);
         texture->SetBlendMode(GxBlend_Add);

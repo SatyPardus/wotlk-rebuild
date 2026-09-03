@@ -3,6 +3,7 @@
 
 #include "ui/CSimpleFrame.hpp"
 #include <tempest/Vector.hpp>
+#include "common/DataAllocator.hpp"
 
 class CSimpleFont;
 class CSimpleFontString;
@@ -18,6 +19,7 @@ enum CSimpleButtonState {
 class CSimpleButton : public CSimpleFrame {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static int32_t s_metatable;
         static int32_t s_objectType;
 
@@ -25,6 +27,7 @@ class CSimpleButton : public CSimpleFrame {
         static void CreateScriptMetaTable();
         static int32_t GetObjectType();
         static void RegisterScriptMethods(lua_State* L);
+        static void operator delete(void* ptr);
 
         // Member variables
         uint32_t m_doubleClickTime = 0;

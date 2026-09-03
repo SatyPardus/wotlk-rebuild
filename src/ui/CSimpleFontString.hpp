@@ -4,6 +4,7 @@
 #include "gx/Font.hpp"
 #include "ui/CSimpleFontable.hpp"
 #include "ui/CSimpleRegion.hpp"
+#include "common/DataAllocator.hpp"
 
 class CRenderBatch;
 class CSimpleFrame;
@@ -11,6 +12,7 @@ class CSimpleFrame;
 class CSimpleFontString : public CSimpleRegion, public CSimpleFontable {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static int32_t s_count;
         static int32_t s_metatable;
         static int32_t s_objectType;
@@ -20,6 +22,7 @@ class CSimpleFontString : public CSimpleRegion, public CSimpleFontable {
         static void CreateScriptMetaTable();
         static int32_t GetObjectType();
         static void RegisterScriptMethods(lua_State* L);
+        static void operator delete(void* ptr);
 
         // Member variables
         HTEXTFONT m_font = nullptr;

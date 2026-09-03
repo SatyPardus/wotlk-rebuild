@@ -4,6 +4,7 @@
 #include "ui/CSimpleFrame.hpp"
 #include "ui/CSimpleTop.hpp"
 #include "clientobject/CGObject_C.hpp"
+#include "common/DataAllocator.hpp"
 
 class CGCamera;
 
@@ -14,6 +15,9 @@ struct KEYDOWNSTATE {
 
 class CGWorldFrame : public CSimpleFrame {
     public:
+    static CDataAllocator s_allocator;
+    static void operator delete(void* ptr);
+
     CGWorldFrame(CSimpleFrame* parent);
 
     void UpdateObject(CGObject_C* obj, int a3);

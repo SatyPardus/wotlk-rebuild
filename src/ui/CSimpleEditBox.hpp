@@ -3,6 +3,7 @@
 
 #include "ui/CSimpleFrame.hpp"
 #include "ui/CSimpleFontedFrame.hpp"
+#include "common/DataAllocator.hpp"
 
 class CSimpleFontString;
 class CSimpleTexture;
@@ -10,6 +11,7 @@ class CSimpleTexture;
 class CSimpleEditBox : public CSimpleFrame, CSimpleFontedFrame {
     public:
         // Static variables
+        static CDataAllocator s_allocator;
         static CSimpleEditBox* s_currentFocus;
         static int32_t s_metatable;
         static int32_t s_objectType;
@@ -20,6 +22,7 @@ class CSimpleEditBox : public CSimpleFrame, CSimpleFontedFrame {
         static void RegisterScriptMethods(lua_State* L);
         static void SetKeyboardFocus(CSimpleEditBox* editBox);
         static void ClearKeyboardFocus(CSimpleEditBox* editBox, bool);
+        static void operator delete(void* ptr);
 
         // Member variables
         int32_t m_autoFocus : 1;

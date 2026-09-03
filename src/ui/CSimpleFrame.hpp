@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <storm/List.hpp>
 #include <storm/Hash.hpp>
+#include "common/DataAllocator.hpp"
 
 class CBackdropGenerator;
 class CCharEvent;
@@ -24,6 +25,8 @@ class FRAMEATTR : public TSHashObject<FRAMEATTR, HASHKEY_STRI> {
 
 class CSimpleFrame : public CScriptRegion {
     public:
+        static CDataAllocator s_allocator;
+
         // Static members
         static int32_t s_metatable;
         static int32_t s_objectType;
@@ -33,6 +36,7 @@ class CSimpleFrame : public CScriptRegion {
         static void CreateScriptMetaTable();
         static int32_t GetObjectType();
         static void RegisterScriptMethods(lua_State* L);
+        static void operator delete(void* ptr);
 
         // Member variables
         CSimpleTop* m_top = nullptr;

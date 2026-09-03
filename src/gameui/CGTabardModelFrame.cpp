@@ -2,11 +2,18 @@
 #include "gameui/CGTabardModelFrameScript.hpp"
 #include <bc/Memory.hpp>
 
+CDataAllocator CGTabardModelFrame::s_allocator(sizeof(CGTabardModelFrame), 1);
+
+void CGTabardModelFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CGTabardModelFrame::s_allocator, ptr);
+    }
+}
+
 int32_t CGTabardModelFrame::s_metatable;
 
 CSimpleFrame* CGTabardModelFrame::Create(CSimpleFrame* parent) {
-    // TODO:  Data = CDataAllocator__GetData(0, ".?AVCGTabardModelFrame@@", -2);
-    return NEW(CGTabardModelFrame, parent);
+    return ALLOCATOR_NEW(CGTabardModelFrame::s_allocator, CGTabardModelFrame, parent);
 }
 
 void CGTabardModelFrame::CreateScriptMetaTable() {

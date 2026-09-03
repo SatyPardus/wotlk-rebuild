@@ -2,10 +2,12 @@
 #define UI_C_SIMPLE_MESSAGE_FRAME_HPP
 
 #include "ui/CSimpleFrame.hpp"
+#include "common/DataAllocator.hpp"
 
 class CSimpleMessageFrame : public CSimpleFrame {
     public:
     // Static variables
+    static CDataAllocator s_allocator;
     static int32_t s_metatable;
     static int32_t s_objectType;
 
@@ -13,6 +15,7 @@ class CSimpleMessageFrame : public CSimpleFrame {
     static void CreateScriptMetaTable();
     static int32_t GetObjectType();
     static void RegisterScriptMethods(lua_State* L);
+    static void operator delete(void* ptr);
 
     // Member functions
     CSimpleMessageFrame(CSimpleFrame* parent);

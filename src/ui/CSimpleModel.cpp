@@ -13,6 +13,14 @@
 #include <tempest/Math.hpp>
 #include "util/Lua.hpp"
 
+CDataAllocator CSimpleModel::s_allocator(sizeof(CSimpleModel), 3);
+
+void CSimpleModel::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleModel::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleModel::s_metatable;
 int32_t CSimpleModel::s_objectType;
 

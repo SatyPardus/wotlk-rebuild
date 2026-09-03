@@ -260,6 +260,13 @@ static const uint32_t s_imageDataOffsets[6] = {
     19200, 98304, 102400, 0, 67200, 155648
 };
 
+CDataAllocator CSimpleMovieFrame::s_allocator(sizeof(CSimpleMovieFrame), 5);
+
+void CSimpleMovieFrame::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleMovieFrame::s_allocator, ptr);
+    }
+}
 
 int32_t CSimpleMovieFrame::s_metatable;
 int32_t CSimpleMovieFrame::s_objectType;

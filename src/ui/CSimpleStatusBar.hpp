@@ -2,10 +2,12 @@
 #define UI_C_SIMPLE_STATUS_BAR_HPP
 
 #include "ui/CSimpleFrame.hpp"
+#include "common/DataAllocator.hpp"
 
 class CSimpleStatusBar : public CSimpleFrame {
     public:
     // Static variables
+    static CDataAllocator s_allocator;
     static int32_t s_metatable;
     static int32_t s_objectType;
 
@@ -13,6 +15,7 @@ class CSimpleStatusBar : public CSimpleFrame {
     static void CreateScriptMetaTable();
     static int32_t GetObjectType();
     static void RegisterScriptMethods(lua_State* L);
+    static void operator delete(void* ptr);
 
     // Member functions
     CSimpleStatusBar(CSimpleFrame* parent);

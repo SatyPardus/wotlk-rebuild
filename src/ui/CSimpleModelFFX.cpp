@@ -4,12 +4,18 @@
 #include "ui/CSimpleModelFFXScript.hpp"
 #include <bc/Memory.hpp>
 
+CDataAllocator CSimpleModelFFX::s_allocator(sizeof(CSimpleModelFFX), 5);
+
+void CSimpleModelFFX::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleModelFFX::s_allocator, ptr);
+    }
+}
+
 int32_t CSimpleModelFFX::s_metatable;
 
 CSimpleFrame* CSimpleModelFFX::Create(CSimpleFrame* parent) {
-    // TODO
-    // auto m = CDataAllocator::GetData(CSimpleModelFFX::s_simpleModelFFXHeap, 0, __FILE__, __LINE__);
-    return NEW(CSimpleModelFFX, parent);
+    return ALLOCATOR_NEW(CSimpleModelFFX::s_allocator, CSimpleModelFFX, parent);
 }
 
 void CSimpleModelFFX::Render(void* arg) {

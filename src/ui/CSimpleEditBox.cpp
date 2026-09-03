@@ -16,6 +16,14 @@
 #include <storm/String.hpp>
 #include <storm/Unicode.hpp>
 
+CDataAllocator CSimpleEditBox::s_allocator(sizeof(CSimpleEditBox), 5);
+
+void CSimpleEditBox::operator delete(void* ptr) {
+    if (ptr) {
+        ALLOCATOR_PUT(CSimpleEditBox::s_allocator, ptr);
+    }
+}
+
 CSimpleEditBox* CSimpleEditBox::s_currentFocus;
 int32_t CSimpleEditBox::s_metatable;
 int32_t CSimpleEditBox::s_objectType;
@@ -108,9 +116,7 @@ CSimpleEditBox::CSimpleEditBox(CSimpleFrame* parent) : CSimpleFrame(parent) {
 
     this->m_font->m_attributes.SetJustifyH(0x1);
 
-    // TODO
-    // auto stringMem = CDataAllocator::GetData(CSimpleFontString::s_allocator, 0, __FILE__, __LINE__);
-    auto stringMem = SMemAlloc(sizeof(CSimpleFontString), __FILE__, __LINE__, 0x0);
+    auto stringMem = ALLOCATOR_GET(CSimpleFontString::s_allocator);
     auto string = new (stringMem) CSimpleFontString(this, DRAWLAYER_ARTWORK, 1);
     this->m_string = string;
 
@@ -119,9 +125,7 @@ CSimpleEditBox::CSimpleEditBox(CSimpleFrame* parent) : CSimpleFrame(parent) {
     this->SetMultiLine(0);
 
     for (int32_t i = 0; i < 3; i++) {
-        // TODO
-        // auto highlightMem = CDataAllocator::GetData(CSimpleTexture::s_allocator, 0, __FILE__, __LINE__);
-        auto highlightMem = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto highlightMem = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto highlight = new (highlightMem) CSimpleTexture(this, DRAWLAYER_ARTWORK, 0);
         this->m_highlight[i] = highlight;
     }
@@ -132,9 +136,7 @@ CSimpleEditBox::CSimpleEditBox(CSimpleFrame* parent) : CSimpleFrame(parent) {
         this->m_highlight[i]->SetTexture(highlightColor);
     }
 
-    // TODO
-    // auto cursorMem = CDataAllocator::GetData(CSimpleTexture::s_allocator, 0, __FILE__, __LINE__);
-    auto cursorMem = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+    auto cursorMem = ALLOCATOR_GET(CSimpleTexture::s_allocator);
     auto cursor = new (cursorMem) CSimpleTexture(this, DRAWLAYER_ARTWORK_OVERLAY, 1);
     cursor->Hide();
     this->m_cursor = cursor;

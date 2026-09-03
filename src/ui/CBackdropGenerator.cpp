@@ -204,10 +204,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     const char* border = this->m_border.GetString();
 
     if (background && *background) {
-        // TODO
-        // CSimpleTexture* backgroundTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto backgroundTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND, 1);
 
         this->m_backgroundTexture = backgroundTexture;
@@ -223,10 +220,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     }
 
     if (this->m_pieces & 0x1) {
-        // TODO
-        // CSimpleTexture* leftTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto leftTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND_BORDER, 1);
 
         this->m_leftTexture = leftTexture;
@@ -242,10 +236,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     }
 
     if (this->m_pieces & 0x2) {
-        // TODO
-        // CSimpleTexture* rightTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto rightTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND_BORDER, 1);
 
         this->m_rightTexture = rightTexture;
@@ -261,10 +252,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     }
 
     if (this->m_pieces & 0x4) {
-        // TODO
-        // CSimpleTexture* topTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto topTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND_BORDER, 1);
 
         this->m_topTexture = topTexture;
@@ -280,10 +268,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     }
 
     if (this->m_pieces & 0x8) {
-        // TODO
-        // CSimpleTexture* bottomTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto bottomTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND_BORDER, 1);
 
         this->m_bottomTexture = bottomTexture;
@@ -299,10 +284,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     }
 
     if (this->m_pieces & 0x10) {
-        // TODO
-        // CSimpleTexture* topLeftTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto topLeftTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND_BORDER, 1);
 
         this->m_topLeftTexture = topLeftTexture;
@@ -322,10 +304,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     }
 
     if (this->m_pieces & 0x20) {
-        // TODO
-        // CSimpleTexture* topRightTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto topRightTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND_BORDER, 1);
 
         this->m_topRightTexture = topRightTexture;
@@ -345,10 +324,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     }
 
     if (this->m_pieces & 0x40) {
-        // TODO
-        // CSimpleTexture* bottomLeftTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto bottomLeftTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND_BORDER, 1);
 
         this->m_bottomLeftTexture = bottomLeftTexture;
@@ -368,10 +344,7 @@ void CBackdropGenerator::SetOutput(CSimpleFrame* frame) {
     }
 
     if (this->m_pieces & 0x80) {
-        // TODO
-        // CSimpleTexture* bottomRightTexture = CSimpleTexture::s_allocator.GetData(0, __FILE__, __LINE__);
-
-        auto m = SMemAlloc(sizeof(CSimpleTexture), __FILE__, __LINE__, 0x0);
+        auto m = ALLOCATOR_GET(CSimpleTexture::s_allocator);
         auto bottomRightTexture = new (m) CSimpleTexture(frame, DRAWLAYER_BACKGROUND_BORDER, 1);
 
         this->m_bottomRightTexture = bottomRightTexture;
