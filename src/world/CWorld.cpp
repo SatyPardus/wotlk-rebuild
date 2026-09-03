@@ -31,6 +31,7 @@ Weather* CWorld::s_weather;
 bool CWorld::s_prepareAll;
 bool CWorld::s_areaOfInterestJumped;
 
+// OFFSET: 0x780F50
 void CWorld::Initialize() {
     CWorld::s_enables |=
           Enables::Enable_Doodads
@@ -45,9 +46,7 @@ void CWorld::Initialize() {
         | Enables::Enable_DetailDoodads
         | Enables::Enable_1000000
         | Enables::Enable_Particulates
-        | Enables::Enable_LowDetail
-        // TODO DEBUGGING
-        | Enables::Enable_Collisions;
+        | Enables::Enable_LowDetail;
 
     //flt_CD769C = 0.0;
     //CWorld::frameCnt = 0;
@@ -195,6 +194,7 @@ void CWorld::Initialize() {
     //sub_77ED40();
 }
 
+// OFFSET: 0x781430
 void CWorld::LoadMap(const char* mapName, C3Vector* position, int32_t zoneID) {
     // TODO: calculate far clip
     CWorld::s_farClip = 1583.3334f;

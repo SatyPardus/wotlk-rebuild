@@ -19,6 +19,7 @@
 #include <tempest/math/CMath.hpp>
 #include <console/DebugScreen.hpp>
 #include "CWorldMath.hpp"
+#include "model/CM2Shared.hpp"
 
 CM2Scene* CWorldScene::s_m2Scene;
 HTEXTURE CWorldScene::s_defaultTexture;
@@ -607,7 +608,59 @@ void CWorldScene::CullSortTable(CRect* a1) {
 
 // OFFSET: 0x7987A0
 void CWorldScene::CullDoodads(CSortEntry* entry, uint8_t fadeLevel) {
-    
+    for (auto mapDoodadDef = entry->doodadDefList.Head(); mapDoodadDef;) {
+        auto next = entry->doodadDefList.Next(mapDoodadDef);
+
+        mapDoodadDef->doodadDefLink.Unlink();
+
+        if (mapDoodadDef->fadeLevel < fadeLevel) {
+            mapDoodadDef = next;
+            continue;
+        }
+
+        if (mapDoodadDef->model && (mapDoodadDef->flags & MAPOBJ_FLAG_PREPARED) != 0) {
+            //mapDoodadDef->unk_0B0 = CWorldScene::s_cullPass;
+            mapDoodadDef->unk_025 = 1;
+
+            bool visible = false;
+
+            if (!CWorldScene::FrustumCull(&mapDoodadDef->sphere) && !CWorldOcclusion::QueryVolumes(&mapDoodadDef->sphere)) {
+                mapDoodadDef->unk_025 = 0;
+                visible = CWorldOcclusion::QueryBuffer(&mapDoodadDef->sphere, 16) < 2;
+            }
+
+            if (visible) {
+                CWorldScene::AddDoodadDefModelToModelScene(mapDoodadDef);
+                ++CWorldScene::s_doodadsRendered;
+            } else {
+                bool animate = (mapDoodadDef->unk_07C & 0x400) != 0;
+
+                if (!animate) {
+                    float dx = mapDoodadDef->sphere.c.x - CWorldScene::s_activeWorldView.x;
+                    float dy = mapDoodadDef->sphere.c.y - CWorldScene::s_activeWorldView.y;
+                    float dz = mapDoodadDef->sphere.c.z - CWorldScene::s_activeWorldView.z;
+                    animate = (dx * dx + dy * dy + dz * dz < 100.0f);
+                }
+
+                mapDoodadDef->model->SetAnimating(animate ? 1 : 0);
+            }
+        } else {
+            CAaBox transformed;
+            transformed.b.x = 0.0f;
+            transformed.b.y = 0.0f;
+            transformed.b.z = 0.0f;
+            transformed.t.x = 0.0f;
+            transformed.t.y = 0.0f;
+            transformed.t.z = 0.0f;
+
+            CAaBox bounds = mapDoodadDef->model->m_shared->m_boundingBox;
+
+            CWorldMath::TransformAABox(mapDoodadDef->mat, bounds, transformed);
+            //CWorldScene::s_barrier.AddBarrier(&transformed, 10.0f);
+        }
+
+        mapDoodadDef = next;
+    }
 }
 
 // OFFSET: 0x791CB0
@@ -642,6 +695,43 @@ void CWorldScene::AddDoodadDefModelToModelScene(CMapDoodadDef* a1) {
         //else
         //    model->m_bitFlags |= 0x10000u;
         //a1->model->ukn74.a2 = v15;
+    }
+}
+
+// OFFSET: 0x7998A0
+void CWorldScene::AddDoodadDefs(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, uint32_t a2) {
+    if ((CWorld::s_enables & CWorld::Enables::Enable_Doodads) == 0)
+        return;
+
+    for (auto link = linkList->Head(); link;) {
+        auto next = linkList->Next(link);
+
+        CMapDoodadDef* mapDoodadDef = (CMapDoodadDef*)link->owner;
+
+        if ((mapDoodadDef->flags & MAPOBJ_FLAG_PREPARED) == 0 || mapDoodadDef->doodadDefLink.m_prevlink || !mapDoodadDef->model) {
+            link = next;
+            continue;
+        }
+
+        uint32_t sortIndex = a2;
+
+        float dist = mapDoodadDef->sphere.c.y * CWorldScene::camPlaneXY.n.y + mapDoodadDef->sphere.c.z * CWorldScene::camPlaneXY.n.z + mapDoodadDef->sphere.c.x * CWorldScene::camPlaneXY.n.x + CWorldScene::camPlaneXY.d - mapDoodadDef->sphere.r;
+
+        if (dist > 0.0f) {
+            sortIndex = lrintf(dist * 0.029999999f - 0.5f);
+
+            if (sortIndex >= 64) {
+                link = next;
+                continue;
+            }
+
+            if (sortIndex < a2)
+                sortIndex = a2;
+        }
+
+        CWorldScene::sortTable.table[sortIndex].doodadDefList.LinkToTail(mapDoodadDef);
+
+        link = next;
     }
 }
 
@@ -725,7 +815,7 @@ void CWorldScene::CullMapObjDefGroups(CSortEntry* entry, CRect* a2, uint32_t a3)
             && !CWorldOcclusion::QueryVolumes(&mapObjDefGroup->sphere)
             && !CWorldOcclusion::QueryBuffer(&mapObjDefGroup->bbox, 1)) {
             CWorldScene::CullMapObjDefGroupFromExterior(mapObjDef, mapObjDefGroup, a2, 0);
-            //CWorldScene::AddDoodadDefs(&m_next->unk_78, a3);
+            CWorldScene::AddDoodadDefs(&mapObjDefGroup->doodadDefLinkList, a3);
         }
 
         mapObjDefGroup = next;

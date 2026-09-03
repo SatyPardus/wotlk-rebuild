@@ -114,7 +114,7 @@ void CMovement_C::SetUpdateInfo(int32_t time, CClientMoveUpdate* update, uint32_
         this->AddSpline(&this->m_position);
         //this->FlushMoveQueue(0, 1);
         this->RemoveFromMoversList(0);
-        //this->m_spline->CopyFrom(&update->m_moveSpline);
+        this->m_spline->CopyFrom(&update->m_moveSpline);
         m_spline = this->m_spline;
         m_spline->spline.m_splineMode = (m_spline->flags & 0x42000) != 0;
     } else {
@@ -614,11 +614,11 @@ void CMovement_C::ApplyMovement(uint32_t a2, uint32_t a3) {
         int32_t delta = a3 - v24;
         this->m_anchorElapsedMs += delta;
         if (this->IsOnSpline()) {
-            //if (!this->PlotUnitSplineMovement(this, a2, delta, dst))
-            //    return;
-            //vec.x = dst.x - this->m_anchorPos.x;
-            //vec.y = dst.y - this->m_anchorPos.y;
-            //vec.z = dst.z - this->m_anchorPos.z;
+            if (!this->PlotUnitSplineMovement(a2, delta, &dst))
+                return;
+            vec.x = dst.x - this->m_anchorPos.x;
+            vec.y = dst.y - this->m_anchorPos.y;
+            vec.z = dst.z - this->m_anchorPos.z;
         } else {
             int32_t moveStart = this->GetMoveStartTime(delta);
             if (!this->PlotUnitMovement(moveStart, &vec) && (this->m_flags & MOVEMENTFLAG_HOVER) == 0)
@@ -647,12 +647,61 @@ void CMovement_C::ApplyMovement(uint32_t a2, uint32_t a3) {
     }
 
     if (this->IsValidPosition()) {
-    //    v11 = this->m_spline;
-    //    if (v11 && (v11->flags & 0x400) == 0)
-    //        CMovement_C::SnapToSpline(this, &dst, 0);
+        if (this->IsOnSpline())
+            this->SnapToSpline(&dst, 0);
         if (this->IsOnFlyingSpline())
             this->UpdateAnchors(0);
     }
+}
+
+// OFFSET: 0x6E9C30
+bool CMovement_C::PlotUnitSplineMovement(int32_t time, uint32_t elapsed, C3Vector* out) {
+    uint32_t flags2 = this->m_flags2;
+
+    bool wasJumping = false;
+    if ((flags2 & MOVEMENTFLAG2_UNK8) != 0 && this->m_spline && (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_PARABOLIC) != 0)
+        wasJumping = true;
+
+    bool wasAnimating = false;
+    if ((flags2 & MOVEMENTFLAG2_UNK9) != 0 && this->m_spline && (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & Animation) != 0)
+        wasAnimating = true;
+
+    if (!this->CMovementShared::PlotUnitSplineMovement(time, out))
+        return 0;
+
+    if (!wasJumping && (this->m_flags2 & MOVEMENTFLAG2_UNK8) != 0 && this->m_spline && (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & SPLINE_FLAG_PARABOLIC) != 0)
+        this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_JUMP, true, 0.0f, 0, 0, 255);
+
+    //if (!wasAnimating && (this->m_flags2 & MOVEMENTFLAG2_UNK9) != 0 && this->m_spline && (this->m_spline->flags & SPLINE_FLAG_NO_SPLINE) == 0 && (this->m_spline->flags & Animation) != 0)
+    //    this->m_unit->SetAnimType(static_cast<uint8_t>(this->m_spline->flags));
+
+    uint32_t flags = this->m_flags;
+    if ((flags & MOVEMASK_MOVING_FALL) == 0)
+        return 1;
+
+    float dx = out->x - this->m_position.x;
+    float dy = out->y - this->m_position.y;
+    float dz = out->z - this->m_position.z;
+
+    float horizontal = dx * dx + dy * dy;
+    float seconds = elapsed * 0.001f;
+
+    if (horizontal / (seconds * seconds) <= 3600.0f && dz * dz + horizontal <= 9.0f)
+        return 1;
+
+    this->m_position = *out;
+
+    if ((flags & MOVEMENTFLAG_FALLING) != 0) {
+        if (this->IsOnFallingSpline())
+            this->m_fallTimeMs = this->m_spline->start;
+        else
+            this->m_fallStartZ = this->CalcFallStartElevation(this->m_fallTimeMs);
+    }
+
+    C3Vector position;
+    this->GetPosition(&position, &this->m_position);
+
+    return 0;
 }
 
 // OFFSET: none (inline)
@@ -3671,4 +3720,23 @@ bool CMovement_C::AttemptStepUp(C2Vector* dir2D, C3Vector n) {
 
     this->m_flags |= MOVEMENTFLAG_SPLINE_ELEVATION;
     return true;
+}
+
+// OFFSET: 0x6E9470
+void CMovement_C::SnapToSpline(C3Vector* a2, bool a3) {
+    float v1 = a2->x - this->m_position.x;
+    float v2 = a2->y - this->m_position.y;
+    float v3 = a2->z - this->m_position.z;
+    if (a3 || (v1 * v1 + v2 * v2 + v3 * v3) >= 9.0f) {
+        this->m_position = *a2;
+        if ((this->m_spline->flags & SPLINE_FLAG_FALLING) != 0) {
+            this->m_fallTimeMs = this->m_spline->start;
+            this->UpdateAnchors(false);
+        } else {
+            this->StopFallingAlwaysAnchor();
+        }
+
+        C3Vector v8;
+        this->GetPosition(&v8, &this->m_position);
+    }
 }

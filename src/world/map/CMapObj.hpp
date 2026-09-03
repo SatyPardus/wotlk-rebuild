@@ -6,6 +6,7 @@
 #include "storm/Hash.hpp"
 #include "async/CAsyncObject.hpp"
 #include "world/map/CMapObjGroup.hpp"
+#include "world/map/CMapObjDefGroup.hpp"
 #include "world/map/CFrustum.hpp"
 #include "tempest/segment/C3Segment.hpp"
 
@@ -84,6 +85,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     void GetBounds(CAaBox* box);
     void GetGroupBounds(CAaSphere* sphere, int32_t index);
     void GetGroupBounds(CAaBox* box, int32_t index);
+    int32_t GetDoodadSet(uint16_t index);
     CMapObjGroup* GetGroup(int32_t index, bool a3);
     uint32_t GetGroupFlags(int32_t index);
     SMOGroupInfo* GetGroupInfo(int32_t index);
@@ -91,6 +93,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     uint32_t CreateWmoIgnoreFlags(uint32_t a1);
     char* GetGroupName(int32_t index);
     void RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_LIST(CFrustum, sceneLink)* frustumList);
+    void CreateRefs(CMapObjGroup* mapObjGroup, CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup);
     void CreateMaterial(uint8_t texture);
     void CreateMaterials();
     bool TestBounds(C3Vector& start, C3Vector& end);

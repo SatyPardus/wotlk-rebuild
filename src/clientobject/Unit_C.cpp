@@ -82,8 +82,8 @@ CGUnit_C::CGUnit_C(CClientObjCreate& objCreate, uint32_t time)
 void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3) {
     //CMovement::sub_6EA520(&this->movementData, a3);
     //*&this->data9E0[87] = bn_CGUnit_C_GetModelScale(this->m_unit->UNIT_FIELD_DISPLAYID);
-    //if ((this->ObjectBase.m_obj->OBJECT_FIELD_TYPE & TYPEMASK_PLAYER) == 0)
-    //    CGUnit_C::OnMoveUpdate(this, a2, 1, 1);
+    if ((this->m_obj->m_type & TYPEMASK_PLAYER) == 0)
+        this->OnMoveUpdate(time, 1, 1);
     //bn_CGUnit_C_UpdateSelectionRadius(this);
     //maybe_CGObject_C__UpdateEffectAttachments(this);
     this->CGObject_C::PostInit(time, objCreate, isUpdate3);
@@ -92,13 +92,13 @@ void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdat
     //m_worldModel = this->ObjectBase.m_worldModel;
     //CM2Model::SetSequenceCallback(m_worldModel, maybe_CGUnit_C__DispatchAnimEnd, this->ObjectBase.m_obj->OBJECT_FIELD_GUID.guid_low, this->ObjectBase.m_obj->OBJECT_FIELD_GUID.guid_high);
     //CWorldScene::LoadModel(m_worldModel, COERCE_FLOAT(bn_AnimEventCallback_1), *&this->ObjectBase.m_obj->OBJECT_FIELD_GUID.guid_low, *&this->ObjectBase.m_obj->OBJECT_FIELD_GUID.guid_high);
-    //if (this->displayInfo) {
+    if (this->m_displayInfo) {
     //    bn_CCharacterComponent_ApplyMonsterGeosets(this->ObjectBase.m_worldModel, this->displayInfo);
     //    maybe_CCharacterComponent__ReplaceMonsterSkin(this->ObjectBase.m_worldModel, this->displayInfo, this->modelData);
     //    modelData = this->modelData;
     //    if (modelData)
     //        this->ObjectBase.m_worldModel->f_flags ^= (this->ObjectBase.m_worldModel->f_flags ^ (modelData->m_flags >> 7)) & 4;
-    //}
+    }
     //this->data9C0 = this->m_unit->UNIT_FIELD_MOUNTDISPLAYID;
     //v8 = this->modelData;
     //this->data9E0[23] = v8->m_footprintTextureID;
@@ -1160,8 +1160,7 @@ void CGUnit_C::OnMonsterMove(CDataStore* msg, NETMESSAGE msgId, WGUID transportG
 
                 duration = durationMs;
 
-                // haveSpline = this->movementData.sub_6EB680(points, n, durationMs, splineFlags, moveTicks) != 0;
-                haveSpline = false;
+                haveSpline = this->movementData.OnSpline(points, n, durationMs, splineFlags, moveTicks) != 0;
             } else {
                 haveSpline = false;
             }

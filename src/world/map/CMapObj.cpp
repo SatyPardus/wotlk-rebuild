@@ -252,6 +252,21 @@ void CMapObj::GetGroupBounds(CAaBox* box, int32_t index) {
     }
 }
 
+// OFFSET: 0x7AEC30
+int32_t CMapObj::GetDoodadSet(uint16_t index) {
+    if (!this->isGroupLoaded || index >= this->doodadDefCount || !this->doodadSetCount)
+        return -1;
+
+    for (int32_t i = 0; i < this->doodadSetCount; i++) {
+        SMODoodadSet* set = &this->doodadSetList[i];
+
+        if (set->count && index >= set->startIdx && index <= set->startIdx + set->count - 1)
+            return i;
+    }
+
+    return -1;
+}
+
 // OFFSET: 0x7AE7B0
 uint32_t CMapObj::GetGroupFlags(int32_t index) {
     if (this->isGroupLoaded)
@@ -501,6 +516,50 @@ void CMapObj::RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_
     //    bn_CMapObj_RenderNormals(Group);
     //if ((CWorld::enables & Enable_WMOPortals) != 0)
     //    (bn_CMapObj_RenderPortals)(Group);
+}
+
+// OFFSET: 0x7BF740
+void CMapObj::CreateRefs(CMapObjGroup* mapObjGroup, CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup) {
+    for (uint32_t i = 0; i < mapObjGroup->doodadRefListCount; i++) {
+        uint16_t doodadIndex = mapObjGroup->doodadRefList[i];
+        uint32_t doodadSet = this->GetDoodadSet(doodadIndex);
+        uint16_t setIndex = 0;
+
+        if (doodadSet && doodadSet != mapObjDef->doodadSet) {
+            uint32_t slot = 0;
+            while (slot < 3 && doodadSet != mapObjDef->doodadSetOverrides[slot])
+                slot++;
+
+            if (slot >= 3)
+                continue;
+            if (doodadSet == 0)
+                continue;
+
+            setIndex = doodadSet;
+        }
+
+        SMODoodadDef* doodadDef = &this->doodadDefList[doodadIndex];
+        char* doodadName = &this->doodadNameList[doodadDef->flags & 0xFFFFFF];
+
+        CMapDoodadDef* mapDoodadDef = CMap::CreateDoodadDef(doodadIndex, doodadDef, doodadName, mapObjDef->m_hashval + 1, &mapObjDef->mat, setIndex);
+
+        CMapBaseObjLink* link = CMap::AllocBaseObjLink(mapDoodadDef);
+        link->ref = mapObjDefGroup;
+
+        if (setIndex)
+            mapObjDefGroup->doodadDefLinkList.LinkToHead(link);
+        else
+            mapObjDefGroup->doodadDefLinkList.LinkToTail(link);
+
+        if ((mapObjDefGroup->flags & 2) != 0 && (mapDoodadDef->flags & 4) == 0) {
+            mapDoodadDef->flags |= 2;
+        } else {
+            mapDoodadDef->diffuseLightScale = 1.0f;
+            mapDoodadDef->flags = (mapDoodadDef->flags & ~2u) | 4;
+        }
+    }
+
+    mapObjDefGroup->flags |= 8;
 }
 
 // OFFSET: 0x7D7710

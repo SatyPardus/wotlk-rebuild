@@ -52,6 +52,7 @@ class CMovementShared : public CPassenger {
     void CalcDirection();
     void CalcDirection(bool a2);
     float CalcFallStartElevation(float elapsed, int32_t slowFall, float velocity);
+    float CalcFallStartElevation(int32_t time);
     void CalcCurrentSpeed(bool ignoreFalling);
     float CalcTimeFallen(float distance, int32_t upward);
     float GetDistanceFallen();
@@ -59,6 +60,7 @@ class CMovementShared : public CPassenger {
     float RelDistanceFallen(int32_t elapsedMs);
     void UpdateAnchors(bool a2);
     float GetBaseSpeed(bool a2);
+    float GetModifiedSplineDuration();
     float TimeToJumpPeak();
     float TimeToFallDistance(float distance, bool slowFall);
     bool StartMove(bool a2, bool a3);
@@ -98,6 +100,9 @@ class CMovementShared : public CPassenger {
     void PlotStraight(float dt, C3Vector* out);
     float PlotPitch(float dt);
     float PlotFacing(float dt);
+    void ConvertCurrentSplineToLoopingSpline(int32_t timePassed);
+    float PlotSplineElevation(uint32_t elapsedMs, float z);
+    bool PlotUnitSplineMovement(int32_t time, C3Vector* out);
 };
 
 #endif // CLIENTOBJECT_MOVEMENT_SHARED_HPP

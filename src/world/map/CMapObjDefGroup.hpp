@@ -22,7 +22,7 @@ class CMapObjDefGroup : public CMapBaseObj {
     int32_t unk_64;
     int32_t unk_68;
     STORM_EXPLICIT_LIST(CFrustum, sceneLink) frustumList;
-    //TSList unk_78;
+    STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) doodadDefLinkList;
     //DWORD unk_84;
     //DWORD unk_88;
     //DWORD unk_8C;

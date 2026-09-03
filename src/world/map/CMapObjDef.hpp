@@ -43,8 +43,7 @@ class CMapObjDef : public CMapBaseObj, public TSHashObject<CMapObjDef, uint32_t>
     CImVector argbColor;
     int32_t unk_148;
     int32_t unk_14C;
-    int32_t unk_150;
-    int32_t unk_154;
+    int16_t doodadSetOverrides[3];
 
     CMapObjDef();
     void ConvertInlineGroupsToArray();

@@ -69,6 +69,7 @@ class CMovement_C : public CMovementShared {
     void ExecuteMovement(uint32_t time, uint32_t prevTime);
     int32_t UpdatePlayerMovement(int32_t time);
     void ApplyMovement(uint32_t a2, uint32_t a3);
+    bool PlotUnitSplineMovement(int32_t time, uint32_t elapsed, C3Vector* out);
     void AddToMoversList();
     void RemoveFromMoversList(bool a2);
     bool GetCurrentHoverHeight(float* height, bool* a3, uint32_t* a4);
@@ -161,6 +162,7 @@ class CMovement_C : public CMovementShared {
     void RestoreMoveState(MoveState* in);
     bool WillPassObstacle(C2Vector* dir2D, C3Vector* startPos, float height);
     bool AttemptStepUp(C2Vector* dir2D, C3Vector n);
+    void SnapToSpline(C3Vector* a2, bool a3);
 };
 
 #endif // CLIENTOBJECT_MOVEMENT_C_HPP

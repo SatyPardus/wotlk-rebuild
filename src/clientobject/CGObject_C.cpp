@@ -11,8 +11,58 @@ CGObject_C::CGObject_C() {
 }
 
 CGObject_C::CGObject_C(CClientObjCreate& objCreate, uint32_t time) {
-
+    //a1->hashObject.m_linktoslot.m_prevlink = 0;
+    //a1->hashObject.m_linktoslot.m_next = 0;
+    //a1->hashObject.m_linktofull.m_prevlink = 0;
+    //a1->hashObject.m_linktofull.m_next = 0;
+    //a1->hashObject.m_key.m_guid = 0i64;
+    //a1->__vftable = off_9F3A70;
+    //a1->ukn_0054 = 0;
+    //a1->ukn_0058 = 0;
+    //a1->ukn_0060[0].m_terminator.m_next = 0;
+    //a1->ukn_0060[0].m_linkoffset = 0;
+    //p_m_terminator = &a1->ukn_0060[0].m_terminator;
+    //p_m_terminator->m_prevlink = p_m_terminator;
+    //a1->ukn_0060[0].m_terminator.m_next = (p_m_terminator | 1);
+    //a1->ukn_0060[1].m_terminator.m_next = 0;
+    //a1->ukn_0060[1].m_linkoffset = 0;
+    //a1->ukn_0060[1].m_terminator.m_prevlink = &a1->ukn_0060[1].m_terminator;
+    //a1->ukn_0060[1].m_terminator.m_next = (&a1->ukn_0060[1].m_terminator | 1);
+    //a1->ukn_0060[2].m_terminator.m_next = 0;
+    //a1->ukn_0060[2].m_linkoffset = 0;
+    //a1->ukn_0060[2].m_terminator.m_prevlink = &a1->ukn_0060[2].m_terminator;
+    //a1->ukn_0060[2].m_terminator.m_next = (&a1->ukn_0060[2].m_terminator | 1);
+    //a1->ukn_0060[3].m_terminator.m_next = 0;
+    //a1->ukn_0060[3].m_linkoffset = 0;
+    //a1->ukn_0060[3].m_terminator.m_prevlink = &a1->ukn_0060[3].m_terminator;
+    //a1->ukn_0060[3].m_terminator.m_next = (&a1->ukn_0060[3].m_terminator | 1);
+    //a1->ukn_0060[4].m_terminator.m_next = 0;
+    //a1->ukn_0060[4].m_linkoffset = 0;
+    //a1->ukn_0060[4].m_terminator.m_prevlink = &a1->ukn_0060[4].m_terminator;
+    //a1->ukn_0060[4].m_terminator.m_next = (&a1->ukn_0060[4].m_terminator | 1);
+    //a1->ukn_0060[5].m_terminator.m_next = 0;
+    //a1->ukn_0060[5].m_linkoffset = 0;
+    //a1->ukn_0060[5].m_terminator.m_prevlink = &a1->ukn_0060[5].m_terminator;
+    //a1->ukn_0060[5].m_terminator.m_next = (&a1->ukn_0060[5].m_terminator | 1);
+    this->m_scale = 1.0;
+    this->unk_009C = 1.0;
+    //*&a1->ukn_00A4 = 1.0;
+    //this->m_model = 0;
+    this->m_height = 1.0;
+    //a1->ukn_0090 = 0;
+    //a1->ukn_0094 = 0;
+    //a1->ukn_00A0 = 0;
+    //a1->ukn_00A8 = 0;
+    //a1->ukn_00B0 = 0;
+    this->m_worldModel = 0;
+    this->m_worldObject = 0;
+    this->m_modelFlags = 0;
+    //a1->ukn_00C0 = 0;
+    //a1->ukn_00C4 = 0;
+    //a1->ukn_00C8 = 0xFF000000;
+    //*(&a1->ukn_00C8 + 1) = 0;
     ClntObjMgrLinkInNewObject(this);
+    this->m_scale = this->m_obj->m_scale;
 }
 
 void CGObject_C::SetTypeID(OBJECT_TYPE_ID typeID) {
@@ -263,8 +313,7 @@ bool CGObject_C::GetModelFileName(const char** fileName) {
 
 // OFFSET: 0x4D5F90
 float CGObject_C::GetTrueScale() {
-    //return *&this->unk_009C * *&this->unk_0098;
-    return 1.0f;
+    return this->unk_009C * this->m_scale;
 }
 
 // OFFSET: 0x7442E0

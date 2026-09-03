@@ -30,7 +30,7 @@ class CMapDoodadDef : public CMapStaticEntity, public TSHashObject<CMapDoodadDef
     //int32_t unk_160;
     //int32_t unk_164;
     //int32_t unk_168;
-    //int32_t unk_16C;
+    int32_t doodadSet;
 
     void SelectLights(CM2Lighting* lighting) override;
     void SelectUnderwater(CM2Lighting* lighting) override;

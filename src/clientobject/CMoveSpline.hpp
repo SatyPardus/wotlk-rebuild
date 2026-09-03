@@ -32,6 +32,8 @@ struct CMoveSpline {
     uint32_t unk_0218;
 
     static void Skip(CDataStore* msg);
+
+    void CopyFrom(CMoveSpline* source);
 };
 
 CDataStore& operator>>(CDataStore& msg, CMoveSpline& spline);

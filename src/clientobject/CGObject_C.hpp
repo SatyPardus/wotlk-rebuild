@@ -41,6 +41,8 @@ class CGObject {
 class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID> {
     public:
     // Member variables
+    /* 0x0098 */ float m_scale = 1.0f;
+    /* 0x009C */ float unk_009C = 1.0f;
     /* 0x00AC */ float m_height = 1.0f;
     /* 0x00B4 */ CM2Model* m_worldModel = nullptr;
     /* 0x00B8 */ CMapEntity* m_worldObject = nullptr;

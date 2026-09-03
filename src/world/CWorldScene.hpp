@@ -11,15 +11,15 @@
 #include "world/map/CMapObjDefGroup.hpp"
 #include "world/map/CPortalView.hpp"
 #include "world/map/CMapEntity.hpp"
+#include "world/map/CMapDoodadDef.hpp"
 
 class CM2Scene;
-class CMapDoodadDef;
 
 struct CSortEntry {
     STORM_EXPLICIT_LIST(CMapChunk, sortListLink) mapChunkList;
     STORM_EXPLICIT_LIST(CMapObjDefGroup, sortEntryLink) exteriorGroupList;
     STORM_EXPLICIT_LIST(CMapEntity, sortEntryLink) entityList;
-    //TSList doodadDefList;
+    STORM_EXPLICIT_LIST(CMapDoodadDef, doodadDefLink) doodadDefList;
     //TSList liquidList;
     //TSList occluderList;
     //TSList unkList7;
@@ -138,6 +138,7 @@ class CWorldScene {
     static void CullMapObjDefGroupFromExterior(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, CRect* a3, uint32_t a4);
     static void CullEntitys(CSortEntry* entry);
     static void AddDoodadDefModelToModelScene(CMapDoodadDef* a1);
+    static void AddDoodadDefs(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, uint32_t a2);
     static void Render(const C3Vector& cameraPos, float time);
     static void RenderChunks();
     static void RenderMapObjDefGroups();

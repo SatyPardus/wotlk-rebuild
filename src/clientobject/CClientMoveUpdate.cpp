@@ -25,7 +25,7 @@ CDataStore& operator>>(CDataStore& msg, CClientMoveUpdate& move) {
     msg.Get(move.m_turnRate);
     msg.Get(move.m_pitchRate);
 
-    if (move.status.m_moveFlags & 0x8000000) {
+    if ((move.status.m_moveFlags & 0x8000000) != 0) {
         msg >> move.m_moveSpline;
     }
 

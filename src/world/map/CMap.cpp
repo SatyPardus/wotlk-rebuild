@@ -764,6 +764,53 @@ CMapDoodadDef* CMap::CreateDoodadDef(char* fileName, SMDoodadDef* doodadDef, C3V
     return mapDoodadDef;
 }
 
+// OFFSET: 0x7BEF40
+CMapDoodadDef* CMap::CreateDoodadDef(uint32_t doodadRef, SMODoodadDef* doodadDef, char* name, uint32_t uniqueId, C44Matrix* mat, uint16_t doodadSet) {
+    CMapDoodadDef* mapDoodadDef = CMap::doodadDefHashtable.Ptr(doodadRef, uniqueId);
+    if (mapDoodadDef)
+        return mapDoodadDef;
+
+    mapDoodadDef = CMap::AllocDoodadDef();
+    CMap::doodadDefHashtable.Insert(mapDoodadDef, doodadRef, uniqueId);
+    CMap::doodadDefList.LinkToTail(mapDoodadDef);
+
+    mapDoodadDef->position = doodadDef->position;
+    mapDoodadDef->position = mapDoodadDef->position * *mat;
+
+    mapDoodadDef->scale = doodadDef->scale;
+    mapDoodadDef->sphere.c = mapDoodadDef->position;
+    mapDoodadDef->sphere.r = 0.0f;
+    mapDoodadDef->bbox.b = mapDoodadDef->position;
+    mapDoodadDef->bbox.t = mapDoodadDef->position;
+    mapDoodadDef->doodadSet = doodadSet;
+
+    mapDoodadDef->flags = MAPOBJ_FLAG_UNPLACED;
+    if ((doodadDef->flags & 0x1000000) != 0)
+        mapDoodadDef->flags = MAPOBJ_FLAG_PROJ_TEX | MAPOBJ_FLAG_UNPLACED;
+
+    mapDoodadDef->model = nullptr;
+    mapDoodadDef->mat = C44Matrix();
+    mapDoodadDef->mat.Translate(doodadDef->position);
+    mapDoodadDef->mat.Rotate(doodadDef->orientation);
+    mapDoodadDef->mat.Scale(mapDoodadDef->scale);
+    mapDoodadDef->identity = mapDoodadDef->mat;
+    mapDoodadDef->mat *= *mat;
+
+    // CMapStaticEntity::AdjustLightmap(&doodadDef->color, &mapDoodadDef->m2DiffuseColor, 112, &mapDoodadDef->m2AmbietColor, 96);
+
+    mapDoodadDef->model = CWorldScene::s_m2Scene->CreateModel(name, 32);
+    if (mapDoodadDef->model) {
+        mapDoodadDef->model->m_flag8000 = 1;
+        mapDoodadDef->model->m_worldTransform = mapDoodadDef->mat;
+        // CWorldScene::LoadModel(mapDoodadDef->model, CMapStaticEntity::ModelEventCallback, mapDoodadDef, 0.0f);
+        mapDoodadDef->model->m_lightingCallback = &CMapStaticEntity::ModelLightingCallback;
+        mapDoodadDef->model->m_lightingArg = mapDoodadDef;
+        mapDoodadDef->model->SetBoneSequence(0xFFFFFFFF, 0, 0xFFFFFFFF, 0, 1.0f, 1, 1);
+    }
+
+    return mapDoodadDef;
+}
+
 // OFFSET: 0x7C09F0
 void CMap::FreeBaseObjLink(CMapBaseObjLink* link) {
     link->ownerLink.Unlink();
@@ -1197,7 +1244,7 @@ void CMap::PrepareMapObjDefs(bool a1) {
                     if ((mapObjDefGroup->flags & 0x10) == 0)
                         mapObjDefGroup->MarkPrepared();
                     if ((mapObjDefGroup->flags & 0x8) == 0) {
-                        //CMapObj::CreateRefs(v24, v12, i, v9);
+                        mapObjDef->owner->CreateRefs(mapObjGroup, mapObjDef, mapObjDefGroup);
                         //CMap::FreeBaseObjLinksInBounds(&v9->bbox);
                     }
                 }
@@ -2056,8 +2103,8 @@ bool CMap::GetMapObjFacets(CAaBox* a1, CAaBox* box, World::FacetData* facets, ui
                 continue;
             }
 
-            // if ((flags & 0xF0000F) != 0 && !CMap::QueryMapObjFacets(&group->unk_78, box, facets, flags))
-            //     return false;
+            if ((flags & 0xF0000F) != 0 && !CMap::GetDoodadDefFacets(&group->doodadDefLinkList, box, facets, flags))
+                return false;
             // if ((flags & 0xF00000) != 0)
             //     CMap::QueryDestructibleFacets(&group->unk_84, box, facets, flags);
         }
