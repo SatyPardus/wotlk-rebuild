@@ -128,7 +128,7 @@ void CSimpleStatusBar::RunOnValueChanged() {
     if (this->m_onValueChanged.luaRef) {
         auto L = FrameScript_GetContext();
         lua_pushnumber(L, this->m_value);
-        this->RunScript(this->m_onMinMaxChanged, 1, 0);
+        this->RunScript(this->m_onValueChanged, 1, 0);
     }
 }
 
