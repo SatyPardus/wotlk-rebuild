@@ -23,6 +23,7 @@ void CSimpleButton::operator delete(void* ptr) {
 int32_t CSimpleButton::s_metatable;
 int32_t CSimpleButton::s_objectType;
 
+// OFFSET: 0x978400
 void CSimpleButton::CreateScriptMetaTable() {
     lua_State* L = FrameScript_GetContext();
     int32_t ref = FrameScript_Object::CreateScriptMetaTable(L, &CSimpleButton::RegisterScriptMethods);
@@ -42,6 +43,7 @@ void CSimpleButton::RegisterScriptMethods(lua_State* L) {
     FrameScript_Object::FillScriptMethodTable(L, SimpleButtonMethods, NUM_SIMPLE_BUTTON_SCRIPT_METHODS);
 }
 
+// OFFSET: 0x970520
 CSimpleButton::CSimpleButton(CSimpleFrame* parent) : CSimpleFrame(parent) {
     this->m_pressedOffset = { 0.001, -0.001 };
 
@@ -54,6 +56,7 @@ CSimpleButton::CSimpleButton(CSimpleFrame* parent) : CSimpleFrame(parent) {
     this->SetFrameFlag(0x10000, 1);
 }
 
+// OFFSET: 0x970440
 void CSimpleButton::Enable(int32_t enabled) {
     if (enabled) {
         if (this->m_state != BUTTONSTATE_DISABLED) {
@@ -95,6 +98,7 @@ CSimpleButtonState CSimpleButton::GetButtonState() {
     return this->m_state;
 }
 
+// OFFSET: 0x96F200
 FrameScript_Object::ScriptIx* CSimpleButton::GetScriptByName(const char* name, ScriptData& data) {
     auto parentScript = CSimpleFrame::GetScriptByName(name, data);
 
@@ -125,10 +129,12 @@ FrameScript_Object::ScriptIx* CSimpleButton::GetScriptByName(const char* name, S
     return nullptr;
 }
 
+// OFFSET: 0x96F1F0
 int32_t CSimpleButton::GetScriptMetaTable() {
     return CSimpleButton::s_metatable;
 }
 
+// OFFSET: 0x9621E0
 bool CSimpleButton::IsA(int32_t type) {
     return type == CSimpleButton::s_objectType
         || type == CSimpleFrame::s_objectType
@@ -136,6 +142,7 @@ bool CSimpleButton::IsA(int32_t type) {
         || type == CScriptObject::s_objectType;
 }
 
+// OFFSET: 0x96FED0
 void CSimpleButton::LoadXML(XMLNode* node, CStatus* status) {
     CSimpleFrame::LoadXML(node, status);
 
@@ -246,11 +253,13 @@ void CSimpleButton::LoadXML(XMLNode* node, CStatus* status) {
     // - motionScriptsWhileDisabled
 }
 
+// OFFSET: 0x962120
 void CSimpleButton::LockHighlight(int32_t lock) {
     CSimpleFrame::LockHighlight(lock);
     this->UpdateTextState(this->m_state);
 }
 
+// OFFSET: 0x96FD70
 void CSimpleButton::OnClick(const char* btn, int32_t a3) {
     // TODO
     // - also check this->m_unk != 1
@@ -272,10 +281,12 @@ void CSimpleButton::OnClick(const char* btn, int32_t a3) {
     }
 }
 
+// OFFSET: 0x96FDD0
 void CSimpleButton::OnDoubleClick(const char* btn) {
     // TODO
 }
 
+// OFFSET: 0x96FCA0
 void CSimpleButton::OnLayerCursorEnter(int32_t a2) {
     if (this->m_state == BUTTONSTATE_DISABLED) {
         // TODO
@@ -292,6 +303,7 @@ void CSimpleButton::OnLayerCursorEnter(int32_t a2) {
     }
 }
 
+// OFFSET: 0x96FD00
 void CSimpleButton::OnLayerCursorExit(int32_t a2, int32_t a3) {
     if (this->m_state == BUTTONSTATE_DISABLED) {
         // TODO
@@ -308,6 +320,7 @@ void CSimpleButton::OnLayerCursorExit(int32_t a2, int32_t a3) {
     }
 }
 
+// OFFSET: 0x96F410
 void CSimpleButton::OnLayerHide() {
     if (this->m_state && !this->m_stateLocked) {
         this->SetButtonState(BUTTONSTATE_NORMAL, 0);
@@ -316,6 +329,7 @@ void CSimpleButton::OnLayerHide() {
     CSimpleFrame::OnLayerHide();
 }
 
+// OFFSET: 0x96FA80
 int32_t CSimpleButton::OnLayerMouseDown(const CMouseEvent& evt, const char* btn) {
     if (CSimpleFrame::OnLayerMouseDown(evt, btn)) {
         return 1;
@@ -323,7 +337,11 @@ int32_t CSimpleButton::OnLayerMouseDown(const CMouseEvent& evt, const char* btn)
 
     C2Vector pt = { evt.x, evt.y };
 
-    if ((btn || this->TestHitRect(pt)) && this->m_state != BUTTONSTATE_DISABLED) {
+    if (btn || this->TestHitRect(pt)) {
+        if (this->m_state == BUTTONSTATE_DISABLED) {
+            return 1;
+        }
+
         int32_t v7 = btn ? 0x7FFFFFFF : evt.button;
 
         if (this->m_clickAction & v7) {
@@ -350,6 +368,7 @@ int32_t CSimpleButton::OnLayerMouseDown(const CMouseEvent& evt, const char* btn)
     return 0;
 }
 
+// OFFSET: 0x96FB60
 int32_t CSimpleButton::OnLayerMouseUp(const CMouseEvent& evt, const char* btn) {
     if (CSimpleFrame::OnLayerMouseUp(evt, btn)) {
         return 1;
@@ -394,6 +413,7 @@ int32_t CSimpleButton::OnLayerMouseUp(const CMouseEvent& evt, const char* btn) {
     return 1;
 }
 
+// OFFSET: 0x96F090
 void CSimpleButton::RunOnClickScript(const char* btn, int32_t down) {
     if (this->m_preClick.luaRef) {
         auto L = FrameScript_GetContext();
@@ -420,6 +440,7 @@ void CSimpleButton::RunOnClickScript(const char* btn, int32_t down) {
     }
 }
 
+// OFFSET: 0x96FE30
 void CSimpleButton::SetButtonState(CSimpleButtonState state, int32_t stateLocked) {
     this->m_stateLocked = stateLocked;
 
@@ -442,10 +463,12 @@ void CSimpleButton::SetButtonState(CSimpleButtonState state, int32_t stateLocked
     this->m_state = state;
 }
 
+// OFFSET: 0x96F480
 void CSimpleButton::SetClickAction(uint64_t action) {
     this->m_clickAction = action;
 }
 
+// OFFSET: 0x96F3C0
 void CSimpleButton::SetHighlight(CSimpleTexture* texture, EGxBlend blend) {
     if (texture == this->m_highlightTexture) {
         return;
@@ -463,6 +486,7 @@ void CSimpleButton::SetHighlight(CSimpleTexture* texture, EGxBlend blend) {
     this->m_highlightTexture = texture;
 }
 
+// OFFSET: 0x96F9B0
 int32_t CSimpleButton::SetHighlight(const char* texFile, EGxBlend blendMode) {
     if (this->m_highlightTexture) {
         this->m_highlightTexture->SetTexture(texFile, false, false, CSimpleTexture::s_textureFilterMode, ImageMode_UI);
@@ -487,6 +511,7 @@ int32_t CSimpleButton::SetHighlight(const char* texFile, EGxBlend blendMode) {
     return 1;
 }
 
+// OFFSET: 0x96F7B0
 void CSimpleButton::SetFontString(CSimpleFontString* text) {
     if (this->m_text == text) {
         return;
@@ -498,28 +523,28 @@ void CSimpleButton::SetFontString(CSimpleFontString* text) {
 
     if (text) {
         text->SetFrame(this, 2, 1);
-    }
 
-    if (!text->Sub482AC0()) {
-        auto font = this->m_normalFont;
+        if (!text->Sub482AC0()) {
+            auto font = this->m_normalFont;
 
-        int32_t styleFlags;
+            int32_t styleFlags;
 
-        if (font) {
-            styleFlags = font->m_attributes.m_styleFlags;
-        } else {
-            styleFlags = 0;
-        }
+            if (font) {
+                styleFlags = font->m_attributes.m_styleFlags;
+            } else {
+                styleFlags = 0;
+            }
 
-        float offsetX = 0.0f;
-        float offsetY = 0.0f;
+            float offsetX = 0.0f;
+            float offsetY = 0.0f;
 
-        if (styleFlags & 0x1) {
-            text->SetPoint(FRAMEPOINT_LEFT, this, FRAMEPOINT_LEFT, offsetX, offsetY, 1);
-        } else if (styleFlags & 0x4) {
-            text->SetPoint(FRAMEPOINT_RIGHT, this, FRAMEPOINT_RIGHT, offsetX, offsetY, 1);
-        } else {
-            text->SetPoint(FRAMEPOINT_CENTER, this, FRAMEPOINT_CENTER, offsetX, offsetY, 1);
+            if (styleFlags & 0x1) {
+                text->SetPoint(FRAMEPOINT_LEFT, this, FRAMEPOINT_LEFT, offsetX, offsetY, 1);
+            } else if (styleFlags & 0x4) {
+                text->SetPoint(FRAMEPOINT_RIGHT, this, FRAMEPOINT_RIGHT, offsetX, offsetY, 1);
+            } else {
+                text->SetPoint(FRAMEPOINT_CENTER, this, FRAMEPOINT_CENTER, offsetX, offsetY, 1);
+            }
         }
     }
 
@@ -532,6 +557,7 @@ void CSimpleButton::SetPressedOffset(C2Vector& offset) {
     this->m_pressedOffset = offset;
 }
 
+// OFFSET: 0x96F920
 void CSimpleButton::SetStateTexture(CSimpleButtonState state, CSimpleTexture* texture) {
     if (this->m_textures[state] == texture) {
         return;
@@ -559,6 +585,7 @@ void CSimpleButton::SetStateTexture(CSimpleButtonState state, CSimpleTexture* te
     }
 }
 
+// OFFSET: 0x970370
 int32_t CSimpleButton::SetStateTexture(CSimpleButtonState state, const char* texFile) {
     if (this->m_textures[state])  {
         this->m_textures[state]->SetTexture(texFile, false, false, CSimpleTexture::s_textureFilterMode, ImageMode_UI);
@@ -583,6 +610,7 @@ int32_t CSimpleButton::SetStateTexture(CSimpleButtonState state, const char* tex
     return 0;
 }
 
+// OFFSET: 0x96F860
 void CSimpleButton::SetText(const char* string) {
     if ((string && *string) || this->m_text) {
         if (!this->m_text) {
@@ -596,6 +624,7 @@ void CSimpleButton::SetText(const char* string) {
     }
 }
 
+// OFFSET: 0x96F4A0
 void CSimpleButton::UpdateTextState(CSimpleButtonState state) {
     if (!this->m_text) {
         return;
