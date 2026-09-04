@@ -18,6 +18,7 @@
 #include <util/StringTo.hpp>
 #include "gx/Device.hpp"
 #include <common/datastore/CDataStore.hpp>
+#include <console/Console.hpp>
 
 // OFFSET: 0x4DBE10
 int32_t Script_IsShiftKeyDown(lua_State* L) {
@@ -870,7 +871,8 @@ int32_t Script_SetClearConfigData(lua_State* L) {
 
 // OFFSET: 0x4DD400
 int32_t Script_RestartGx(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    ConsoleCommandExecute("gxRestart", 1);
+    return 0;
 }
 
 // OFFSET: 0x510DC0

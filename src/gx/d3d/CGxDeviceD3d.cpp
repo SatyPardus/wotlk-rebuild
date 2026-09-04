@@ -5,6 +5,7 @@
 #include "math/Utils.hpp"
 #include <algorithm>
 #include <DirectXMath.h>
+#include <gx/Texture.hpp>
 
 int32_t CGxDeviceD3d::s_clientAdjustWidth;
 int32_t CGxDeviceD3d::s_clientAdjustHeight;
@@ -1268,8 +1269,62 @@ void CGxDeviceD3d::IDestroyD3d() {
     CGxDeviceD3d::IUnloadD3dLib(this->m_d3dLib, this->m_d3d);
 }
 
+// OFFSET: 0x6A5680
+void CGxDeviceD3d::IReleaseD3dVertexDecl() {
+    for (int32_t i = 0; i < GxVertexBufferFormats_Last; i++) {
+        if (this->m_d3dVertexDecl[i]) {
+            this->m_d3dVertexDecl[i]->Release();
+            this->m_d3dVertexDecl[i] = nullptr;
+        }
+    }
+
+    // for (uint32_t i = 0; i < this->m_gxVertexDecl.Count(); i++) {
+    //     this->m_gxVertexDecl[i].m_decl->Release();
+    // }
+    // this->m_gxVertexDecl.SetCount(0);
+}
+
 void CGxDeviceD3d::IDestroyD3dDevice() {
-    // TODO
+    // if (CGxDevice::s_uiVertexShader[0]) { this->ShaderDestroy(&CGxDevice::s_uiVertexShader[0]); }
+    // if (CGxDevice::s_uiVertexShader[1]) { this->ShaderDestroy(&CGxDevice::s_uiVertexShader[1]); }
+    // if (CGxDevice::s_uiPixelShader) { this->ShaderDestroy(&CGxDevice::s_uiPixelShader); }
+
+    this->ICursorDestroy();
+
+    this->IReleaseD3dResources(1);
+
+    this->IReleaseD3dVertexDecl();
+
+    if (this->m_eventQuery) {
+        this->m_eventQuery->Release();
+        this->m_eventQuery = nullptr;
+    }
+
+    if (this->m_texture3B58) {
+        GxTexDestroy(this->m_texture3B58);
+        this->m_texture3B58 = nullptr;
+    }
+
+    // if (this->m_d3dStereoHandle) {
+    //     NvAPI_Stereo_DestroyHandle(this->m_d3dStereoHandle);
+    //     this->m_d3dStereoHandle = 0;
+    // }
+
+    if (this->m_d3dDevice) {
+        this->m_d3dDevice->Release();
+        this->m_d3dDevice = nullptr;
+    }
+
+    // if (this->m_d3dNVAPI) {
+    //     uint8_t enabled;
+    //     if (!NvAPI_Stereo_IsEnabled(&enabled)) {
+    //         if (this->m_d3dStereoRestore) {
+    //             if (!enabled) { NvAPI_Stereo_Enable(); }
+    //         } else if (enabled) {
+    //             NvAPI_Stereo_Disable();
+    //         }
+    //     }
+    // }
 }
 
 void CGxDeviceD3d::IReleaseD3dPools(int32_t a2) {
@@ -1300,9 +1355,33 @@ void CGxDeviceD3d::IReleaseD3dPools(int32_t a2) {
     }
 }
 
-void CGxDeviceD3d::IReleaseD3dResources(int32_t a2) {
-    // TODO
+// OFFSET: 0x6A5E40
+void CGxDeviceD3d::IReleaseD3dShaders(int32_t a2) {
+    if (!a2) {
+        return;
+    }
 
+    for (auto shader = this->m_shaderList[GxSh_Pixel].Head(); shader; shader = this->m_shaderList[GxSh_Pixel].Next(shader)) {
+        if (shader->apiSpecific) {
+            static_cast<IUnknown*>(shader->apiSpecific)->Release();
+            shader->apiSpecific = nullptr;
+            shader->loaded = 0;
+        }
+    }
+
+    for (auto shader = this->m_shaderList[GxSh_Vertex].Head(); shader; shader = this->m_shaderList[GxSh_Vertex].Next(shader)) {
+        if (shader->apiSpecific) {
+            static_cast<IUnknown*>(shader->apiSpecific)->Release();
+            shader->apiSpecific = nullptr;
+            shader->loaded = 0;
+        }
+    }
+}
+
+// OFFSET: 0x690150
+void CGxDeviceD3d::IReleaseD3dResources(int32_t a2) {
+    this->ITexForceRecreation(a2);
+    this->IReleaseD3dShaders(a2);
     this->IReleaseD3dPools(a2);
 
     memset(this->m_deviceStates, 0xFF, sizeof(this->m_deviceStates));
@@ -1317,10 +1396,56 @@ void CGxDeviceD3d::IReleaseD3dResources(int32_t a2) {
         this->m_defDepthSurface = nullptr;
     }
 
-    // TODO
+    if (this->m_defDepthStencilSurface) {
+        this->m_defDepthStencilSurface->Release();
+        this->m_defDepthStencilSurface = nullptr;
+    }
+
+    if (this->m_surface3B44) {
+        this->m_surface3B44->Release();
+        this->m_surface3B44 = nullptr;
+    }
+
+    if (this->m_eventQuery) {
+        this->m_eventQuery->Release();
+        this->m_eventQuery = nullptr;
+    }
+
+    // this->IReleaseD3dQueries();
 
     if (this->m_d3dDevice) {
-        this->m_d3dDevice->ShowCursor(false);
+        this->m_d3dDevice->ShowCursor(FALSE);
+    }
+}
+
+// OFFSET: 0x6A2AA0
+void CGxDeviceD3d::ITexForceRecreation(int32_t a2) {
+    for (auto tex = this->m_textures.Head(); tex; tex = this->m_textures.Next(tex)) {
+        if (!tex->m_apiSpecificData) {
+            continue;
+        }
+
+        if (!a2 && !tex->m_flags.m_renderTarget) {
+            continue;
+        }
+
+        if (!tex->m_needsCreation && (tex->m_apiSpecificData || tex->m_apiSpecificData2)) {
+            static_cast<IUnknown*>(tex->m_apiSpecificData)->Release();
+        }
+
+        tex->m_apiSpecificData = this->m_texture3B58;
+        tex->m_needsCreation = 1;
+
+        CiRect updateRect = { 0, 0, 0, 0 };
+        this->TexMarkForUpdate(tex, updateRect, 0);
+
+        uint32_t size;
+        const void* data;
+        tex->m_userFunc(GxTex_3, tex->m_width, tex->m_height, 0, 0, tex->m_userArg, size, data);
+    }
+
+    if (this->m_hwnd && this->m_d3dDevice) {
+        // this->NotifyOnTextureRecreation();
     }
 }
 

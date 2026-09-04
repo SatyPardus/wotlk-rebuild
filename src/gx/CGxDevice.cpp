@@ -1539,6 +1539,7 @@ void CGxDevice::ShaderCreate(CGxShader* shaders[], EGxShTarget target, const cha
     this->IShaderLoad(shaders, target, a4, a5, permutations);
 }
 
+// OFFSET: 0x685C60
 int32_t CGxDevice::TexCreate(EGxTexTarget target, uint32_t width, uint32_t height, uint32_t depth, EGxTexFormat format, EGxTexFormat dataFormat, CGxTexFlags flags, void* userArg, void (*userFunc)(EGxTexCommand, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint32_t&, const void*&), const char* name, CGxTex*& texId) {
     auto tex = NEW(CGxTex,
         target,
@@ -1555,14 +1556,14 @@ int32_t CGxDevice::TexCreate(EGxTexTarget target, uint32_t width, uint32_t heigh
 
     texId = tex;
 
-    // TODO
-    // - link tex to list in device
+    this->m_textures.LinkToTail(tex);
 
     return 1;
 }
 
+// OFFSET: 0x687980
 void CGxDevice::TexDestroy(CGxTex* texId) {
-    // TODO
+    this->m_textures.UnlinkNode(texId);
 
     DEL(texId);
 }

@@ -17,9 +17,9 @@
 #include <storm/Log.hpp>
 #include <tempest/Box.hpp>
 #include <tempest/Rect.hpp>
+#include "gx/texture/CGxTex.hpp"
 
 class CGxBatch;
-class CGxTex;
 class CGxTexFlags;
 
 struct CGxAppRenderState {
@@ -128,6 +128,7 @@ class CGxDevice {
         /* 0x0000 */ uint32_t m_appMasterEnables = 0;
         /* 0x0000 */ uint32_t m_hwMasterEnables = 0;
         /* 0x0000 */ TSList<CGxPool, TSGetLink<CGxPool>> m_poolList;
+        /* 0x0000 */ STORM_EXPLICIT_LIST(CGxTex, m_link) m_textures;
         /* 0x0000 */ CGxBuf* m_bufLocked[GxPoolTargets_Last];
         /* 0x0000 */ CGxPool* m_vertexPool = nullptr;
         /* 0x0000 */ CGxPool* m_indexPool = nullptr;

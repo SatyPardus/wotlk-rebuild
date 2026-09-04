@@ -240,11 +240,15 @@ class CGxDeviceD3d : public CGxDevice {
     int32_t m_inScene;
     int32_t m_ambientOnlyMode;
     D3DFORMAT m_devAdapterFormat;
+    LPDIRECT3DSURFACE9 m_defDepthStencilSurface = nullptr;
     LPDIRECT3DSURFACE9 m_defColorSurface = nullptr;
     LPDIRECT3DSURFACE9 m_defDepthSurface = nullptr;
+    LPDIRECT3DSURFACE9 m_surface3B44 = nullptr;
+    LPDIRECT3DQUERY9 m_eventQuery = nullptr;
     int32_t m_hwCursorNeedsUpdate = 1;
     LPDIRECT3DTEXTURE9 m_hwCursorTexture = nullptr;
     LPDIRECT3DSURFACE9 m_hwCursorBitmap = nullptr;
+    CGxTex* m_texture3B58 = nullptr;
     LPDIRECT3DVERTEXDECLARATION9 m_d3dCurrentVertexDecl;
     LPDIRECT3DINDEXBUFFER9 m_d3dCurrentIndexBuf;
     LPDIRECT3DVERTEXBUFFER9 m_d3dVertexStreamBuf[8];
@@ -294,8 +298,11 @@ class CGxDeviceD3d : public CGxDevice {
     void ISetPresentParms(D3DPRESENT_PARAMETERS& d3dpp, const CGxFormat& format);
     void IDestroyD3d();
     void IDestroyD3dDevice();
+    void IReleaseD3dVertexDecl();
     void IReleaseD3dPools(int32_t a2);
+    void IReleaseD3dShaders(int32_t a2);
     void IReleaseD3dResources(int32_t a2);
+    void ITexForceRecreation(int32_t a2);
     void ISceneBegin();
     void ISceneEnd();
     void ISetCaps(const CGxFormat& format);

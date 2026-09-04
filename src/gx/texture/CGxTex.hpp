@@ -4,6 +4,7 @@
 #include "gx/Types.hpp"
 #include <cstdint>
 #include <tempest/Rect.hpp>
+#include <storm/List.hpp>
 
 class CGxTexFlags {
     public:
@@ -58,6 +59,7 @@ class CGxTex {
         void (*m_userFunc)(EGxTexCommand, uint32_t, uint32_t, uint32_t, uint32_t, void*, uint32_t&, const void*&);
         void* m_apiSpecificData;
         void* m_apiSpecificData2; // invented name
+        TSLink<CGxTex> m_link;
         uint8_t m_needsUpdate;
         uint8_t m_needsCreation;
         uint8_t m_needsFlagUpdate;

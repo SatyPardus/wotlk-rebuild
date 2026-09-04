@@ -336,10 +336,206 @@ void GxTexSetWrap(CGxTex* texId, EGxTexWrapMode wrapU, EGxTexWrapMode wrapV) {
     g_theGxDevicePtr->TexSetWrap(texId, wrapU, wrapV);
 }
 
-int32_t ReloadMips(const char* filename, uint32_t a2, MipBits*& mipBits) {
-    // TODO
+// TODO
+// - order: width, height or height, width?
+void RequestImageDimensions(uint32_t* width, uint32_t* height, uint32_t* bestMip) {
+    CGxCaps systemCaps;
+    memcpy(&systemCaps, &GxCaps(), sizeof(systemCaps));
 
-    return 0;
+    auto maxTextureSize = systemCaps.m_texMaxSize[GxTex_2d];
+
+    if (maxTextureSize) {
+        while (*height > maxTextureSize || *width > maxTextureSize) {
+            *height >>= 1;
+            *width >>= 1;
+
+            ++*bestMip;
+
+            if (!*height) {
+                *height = 1;
+            }
+
+            if (!*width) {
+                *width = 1;
+            }
+        }
+    } else {
+        // TODO
+        // SErrSetLastError(0x57u);
+    }
+}
+
+// OFFSET: 0x4B8070
+int32_t LoadBlpMips(char* ext, const char* filename, int32_t a3, MipBits*& mipBits, uint32_t* width, uint32_t* height, int32_t* isOpaque, uint32_t* alphaBits, PIXEL_FORMAT* dataFormat) {
+    STORM_ASSERT(filename);
+
+    if (ext) {
+        ext[0] = '.';
+        ext[1] = 'b';
+        ext[2] = 'l';
+        ext[3] = 'p';
+        ext[4] = '\0';
+    }
+
+    CBLPFile texFile;
+
+    if (!texFile.Open(filename, a3)) {
+        texFile.Close();
+        return 0;
+    }
+
+    uint32_t imgAlphaBits = texFile.AlphaBits();
+    uint32_t imgWidth = texFile.Width();
+    uint32_t imgHeight = texFile.Height();
+
+    PIXEL_FORMAT format;
+
+    if (!dataFormat || (format = *dataFormat, format == PIXEL_UNSPECIFIED)) {
+        if (imgAlphaBits) {
+            format = imgAlphaBits == 1 ? PIXEL_ARGB1555 : PIXEL_ARGB4444;
+        } else {
+            format = PIXEL_RGB565;
+        }
+    }
+
+    mipBits = TextureAllocMippedImg(format, imgWidth, imgHeight);
+
+    if (!texFile.LockChain2(filename, format, mipBits, 0, 0)) {
+        texFile.Close();
+        return 0;
+    }
+
+    if (width) {
+        *width = imgWidth;
+    }
+
+    if (height) {
+        *height = imgHeight;
+    }
+
+    if (isOpaque) {
+        *isOpaque = imgAlphaBits == 0;
+    }
+
+    if (alphaBits) {
+        *alphaBits = imgAlphaBits;
+    }
+
+    if (dataFormat) {
+        *dataFormat = format;
+    }
+
+    texFile.Close();
+
+    return 1;
+}
+
+// OFFSET: 0x4B5C30
+int32_t sub_4B5C30(char* ext, const char* filename, int32_t a2, MipBits*& mipBits, uint32_t* width, uint32_t* height, EGxTexFormat* texFormat, int32_t* isOpaque, uint32_t* alphaBits, PIXEL_FORMAT* dataFormat) {
+    if (ext) {
+        SStrCopy(ext, ".blp", 0x7FFFFFFF);
+    }
+
+    CBLPFile texFile;
+
+    if (!texFile.Open(filename, a2)) {
+        texFile.Close();
+        return 0;
+    }
+
+    EGxTexFormat gxTexFormat = GxTex_Argb8888;
+    PIXEL_FORMAT format = PIXEL_ARGB8888;
+
+    if (texFile.m_header.colorEncoding == 2) {
+        format = static_cast<PIXEL_FORMAT>(texFile.m_header.preferredFormat);
+
+        if (format == PIXEL_DXT1) {
+            if (GxCaps().m_texFmt[GxTex_Dxt1]) {
+                gxTexFormat = GxTex_Dxt1;
+            } else if (texFile.m_header.alphaSize) {
+                gxTexFormat = GxTex_Argb1555;
+                format = PIXEL_ARGB1555;
+            } else {
+                gxTexFormat = GxTex_Rgb565;
+                format = PIXEL_RGB565;
+            }
+        } else if (format == PIXEL_DXT3) {
+            if (GxCaps().m_texFmt[GxTex_Dxt3]) {
+                gxTexFormat = GxTex_Dxt3;
+            } else {
+                gxTexFormat = GxTex_Argb4444;
+                format = PIXEL_ARGB4444;
+            }
+        } else if (format == PIXEL_DXT5) {
+            if (GxCaps().m_texFmt[GxTex_Dxt5]) {
+                gxTexFormat = GxTex_Dxt5;
+            } else {
+                gxTexFormat = GxTex_Argb4444;
+                format = PIXEL_ARGB4444;
+            }
+        }
+    }
+
+    uint32_t imgWidth = texFile.Width();
+    uint32_t imgHeight = texFile.Height();
+    uint32_t bestMip = 0;
+
+    RequestImageDimensions(&imgWidth, &imgHeight, &bestMip);
+
+    if (width) {
+        *width = imgWidth;
+    }
+
+    if (height) {
+        *height = imgHeight;
+    }
+
+    if (texFormat) {
+        *texFormat = gxTexFormat;
+    }
+
+    if (isOpaque) {
+        *isOpaque = texFile.AlphaBits() == 0;
+    }
+
+    if (alphaBits) {
+        *alphaBits = texFile.AlphaBits();
+    }
+
+    if (dataFormat) {
+        *dataFormat = format;
+    }
+
+    if (!texFile.LockChain2(filename, format, mipBits, bestMip, 0)) {
+        texFile.Close();
+        return 0;
+    }
+
+    texFile.Close();
+
+    return 1;
+}
+
+// OFFSET: 0x4B5E10
+int32_t ReloadMips(const char* filename, uint32_t a2, MipBits*& mipBits) {
+    char path[260];
+    SStrCopy(path, filename, sizeof(path));
+
+    char* ext = path + SStrLen(path);
+    ext[0] = '.';
+    ext[1] = 'b';
+    ext[2] = 'l';
+    ext[3] = 'p';
+    ext[4] = '\0';
+
+    const char* loadName = path;
+
+    // char aliasPath[260];
+    // if (TextureBuildAliasPath(aliasPath, path)) {
+    //     loadName = aliasPath;
+    // }
+
+    return sub_4B5C30(nullptr, loadName, a2, mipBits, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
 }
 
 void TextureFreeGxTex(CGxTex* texId) {
@@ -441,8 +637,29 @@ void GxuUpdateSingleColorTexture(EGxTexCommand cmd, uint32_t w, uint32_t h, uint
     }
 }
 
+// OFFSET: 0x4B5280
 void GetDefaultTexture(uint32_t height, uint32_t width) {
-    // TODO
+    MippedImgSet(PIXEL_ARGB8888, width, height, Texture::s_mipBits);
+
+    uint32_t levelWidth = width;
+    uint32_t levelHeight = height;
+    uint32_t level = 0;
+
+    while (levelWidth > 1 || levelHeight > 1) {
+        memset(Texture::s_mipBits->mip[level], 0xFF, 4 * levelWidth * levelHeight);
+
+        levelWidth >>= 1;
+        if (!levelWidth) {
+            levelWidth = 1;
+        }
+
+        levelHeight >>= 1;
+        if (!levelHeight) {
+            levelHeight = 1;
+        }
+
+        level++;
+    }
 }
 
 void GetTextureFormats(PIXEL_FORMAT* pixFormat, EGxTexFormat* gxTexFormat, PIXEL_FORMAT preferredFormat, int32_t alphaBits) {
@@ -570,35 +787,6 @@ void MippedImgSet(uint32_t fourCC, uint32_t width, uint32_t height, MipBits* bit
         bits->mip[level] = reinterpret_cast<C4Pixel*>(reinterpret_cast<uintptr_t>(&bits[levelCount]) + offset);
         levelDataSize = CalcLevelSize(level, width, height, fourCC);
         offset += levelDataSize;
-    }
-}
-
-// TODO
-// - order: width, height or height, width?
-void RequestImageDimensions(uint32_t* width, uint32_t* height, uint32_t* bestMip) {
-    CGxCaps systemCaps;
-    memcpy(&systemCaps, &GxCaps(), sizeof(systemCaps));
-
-    auto maxTextureSize = systemCaps.m_texMaxSize[GxTex_2d];
-
-    if (maxTextureSize) {
-        while (*height > maxTextureSize || *width > maxTextureSize) {
-            *height >>= 1;
-            *width >>= 1;
-
-            ++*bestMip;
-
-            if (!*height) {
-                *height = 1;
-            }
-
-            if (!*width) {
-                *width = 1;
-            }
-        }
-    } else {
-        // TODO
-        // SErrSetLastError(0x57u);
     }
 }
 
@@ -1661,72 +1849,17 @@ int32_t LoadTgaMips(char* ext, const char* filename, int32_t a3, MipBits*& mipBi
     return 1;
 }
 
-int32_t LoadBlpMips(char* ext, const char* filename, int32_t a3, MipBits*& mipBits, uint32_t* width, uint32_t* height, int32_t* isOpaque, PIXEL_FORMAT* dataFormat) {
-    STORM_ASSERT(filename);
-
-    if (ext) {
-        ext[0] = '.';
-        ext[1] = 'b';
-        ext[2] = 'l';
-        ext[3] = 'p';
-        ext[4] = '\0';
-    }
-
-    uint32_t bestMip;
-
-    CBLPFile texFile;
-
-    if (!texFile.Open(filename, a3)) {
-        texFile.Close();
-        return 0;
-    }
-
-    auto imgWidth = texFile.Width();
-    auto imgHeight = texFile.Height();
-
-    PIXEL_FORMAT format;
-    if (!dataFormat || (format = *dataFormat, format == PIXEL_UNSPECIFIED)) {
-        if (texFile.AlphaBits()) {
-            format = texFile.AlphaBits() == 1 ? PIXEL_ARGB1555 : PIXEL_ARGB4444;
-        } else {
-            format = PIXEL_RGB565;
-        }
-    }
-
-    auto image = TextureAllocMippedImg(format, imgWidth, imgHeight);
-
-    if (!texFile.LockChain2(filename, format, mipBits, 0, 0)) {
-        texFile.Close();
-        return 0;
-    }
-
-    if (width) {
-        *width = imgWidth;
-    }
-
-    if (height) {
-        *height = imgHeight;
-    }
-
-    if (isOpaque) {
-        *isOpaque = texFile.AlphaBits() == 0;
-    }
-
-    if (dataFormat) {
-        *dataFormat = format;
-    }
-
-    texFile.Close();
-
-    return 1;
-}
-
+// OFFSET: 0x4B81D0
 MipBits* TextureLoadImage(const char* filename, uint32_t* width, uint32_t* height, PIXEL_FORMAT* dataFormat, int32_t* isOpaque, CStatus* status, uint32_t* alphaBits, int32_t a8) {
     STORM_ASSERT(filename);
     STORM_ASSERT(width);
     STORM_ASSERT(height);
+    STORM_ASSERT(dataFormat);
 
-    // OsOutputDebugString("TextureLoadImage() blocking load: %s.\n", filename)
+    if (!filename || !width || !height || !dataFormat) {
+        SErrSetLastError(0x57);
+        return nullptr;
+    }
 
     char loadFileName[STORM_MAX_PATH];
 
@@ -1741,9 +1874,9 @@ MipBits* TextureLoadImage(const char* filename, uint32_t* width, uint32_t* heigh
 
     for (uint32_t i = 0; i < NUM_IMAGE_FORMATS; i++) {
         if (imageFormat == IMAGE_FORMAT_TGA) {
-            LoadTgaMips(ext, loadFileName, a8, mipImages, width, height, nullptr, isOpaque, alphaBits, dataFormat);
+            LoadTgaMips(ext, loadFileName, a8, mipImages, width, height, nullptr, nullptr, alphaBits, dataFormat);
         } else if (imageFormat == IMAGE_FORMAT_BLP) {
-            LoadBlpMips(ext, loadFileName, a8, mipImages, width, height, isOpaque, dataFormat);
+            LoadBlpMips(ext, loadFileName, a8, mipImages, width, height, isOpaque, alphaBits, dataFormat);
         }
 
         imageFormat++;
@@ -1754,7 +1887,10 @@ MipBits* TextureLoadImage(const char* filename, uint32_t* width, uint32_t* heigh
         }
     }
 
-    status->Add(STATUS_FATAL, "Error loading texure file \"%s\": unsupported image format\n", filename);
+    if (status) {
+        status->Add(STATUS_FATAL, "Error loading texure file \"%s\": unsupported image format\n", filename);
+    }
+
     return nullptr;
 }
 
