@@ -843,11 +843,6 @@ void CSimpleFontString::SetText(const char* text, int32_t a3) {
     this->ClearString();
 }
 
-int32_t CSimpleFontString::Sub482AC0() {
-    // TODO
-    return 0;
-}
-
 void CSimpleFontString::SetTextLength(uint32_t a2) {
     // TODO
 }

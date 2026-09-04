@@ -1036,3 +1036,14 @@ void CLayoutFrame::UnregisterResize(CLayoutFrame* frame, uint32_t dep) {
         }
     }
 }
+
+// OFFSET: 0x482AC0
+bool CLayoutFrame::HasAnyFramepoints() {
+    for (int32_t i = 0; i < FRAMEPOINT_NUMPOINTS; i++) {
+        auto point = this->m_points[i];
+        if (point && !(point->m_flags & 0x08)) {
+            return true;
+        }
+    }
+    return false;
+}

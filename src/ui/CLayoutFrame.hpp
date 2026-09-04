@@ -101,6 +101,7 @@ class CLayoutFrame {
         float Top();
         void UnflattenFrame(CLayoutFrame* frame);
         void UnregisterResize(CLayoutFrame* frame, uint32_t dep);
+        bool HasAnyFramepoints();
 };
 
 namespace LayoutFrame {

@@ -243,8 +243,14 @@ void CSimpleSlider::SetValue(float value) {
 }
 
 float CSimpleSlider::Sub96BC10(float value) {
-    // TODO
-    return value;
+    if (0.0 == this->m_valueStep)
+        return value;
+    auto v2 = value - this->m_baseValue;
+    auto v3 = this->m_valueStep * 0.5f;
+    if (v2 <= 0.0f)
+        return ((v2 - v3) / this->m_valueStep) * this->m_valueStep + this->m_baseValue;
+    else
+        return ((v2 + v3) / this->m_valueStep) * this->m_valueStep + this->m_baseValue;
 }
 
 // OFFSET: 0x96C1B0

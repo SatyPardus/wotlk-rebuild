@@ -524,7 +524,7 @@ void CSimpleButton::SetFontString(CSimpleFontString* text) {
     if (text) {
         text->SetFrame(this, 2, 1);
 
-        if (!text->Sub482AC0()) {
+        if (!text->HasAnyFramepoints()) {
             auto font = this->m_normalFont;
 
             int32_t styleFlags;
