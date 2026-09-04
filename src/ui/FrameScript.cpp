@@ -836,6 +836,8 @@ int32_t FrameScript_Initialize(int32_t a1) {
     luaopen_string(FrameScript::s_context);
     lua_settop(FrameScript::s_context, -2);
     luaopen_table(FrameScript::s_context);
+    lua_pushcclosure(FrameScript::s_context, table_wipe, 0);
+    lua_setfield(FrameScript::s_context, -2, "wipe");
     lua_settop(FrameScript::s_context, -2);
     luaopen_math(FrameScript::s_context);
     lua_settop(FrameScript::s_context, -2);
