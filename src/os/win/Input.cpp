@@ -769,6 +769,20 @@ int32_t OsWindowProc(void* window, uint32_t message, uintptr_t wparam, intptr_t 
         break;
     }
 
+    case WM_MOUSEWHEEL: {
+        POINT point;
+        if (s_osMouseMode == 1) {
+            point.x = s_mousePos.x;
+            point.y = s_mousePos.y;
+        } else {
+            GetCursorPos(&point);
+        }
+
+        ScreenToClient(hwnd, &point);
+        OsQueuePut(OS_INPUT_MOUSE_WHEEL, GET_WHEEL_DELTA_WPARAM(wparam), point.x, point.y, 0);
+        return 0;
+    }
+
     case WM_MOUSEMOVE: {
         // TODO
 

@@ -89,7 +89,7 @@ void CGGameUI::Initialize() {
     FrameScript_Flush();
     LoadScriptFunctions();
     FrameScript_CreateEvents(g_scriptEvents, 722);
-    //CGGameUI::RegisterGameCVars();
+    CGGameUI::RegisterGameCVars();
 
     CGUIBindings::Initialize();
     CGGameUI::RegisterFrameFactories();
@@ -228,4 +228,28 @@ bool CGGameUI::CanPerformAction(int32_t action) {
 // OFFSET: 0x519280
 void CGGameUI::ClearCursor(bool a1, bool a2) {
     WHOA_UNIMPLEMENTED();
+}
+
+// OFFSET: 0x51FB00
+int32_t CGGameUI::HandleMouseDown(const CMouseEvent& evt) {
+    if (evt.button == MOUSE_BUTTON_RIGHT) {
+        // if (Spell_C_IsTargeting()) {
+        //     if (Spell_C_IsCursorWorldObjectHousing()) {
+        //         Spell_C_CursorWorldObjectRotate();
+        //     } else {
+        //         Spell_C_StopTargeting();
+        //     }
+        // }
+
+        // if (CGPlayer_C::IsGiftWrapping()) {
+        //     CGGameUI::ClearCursor(1, 1);
+        // }
+
+        // if (CursorGetResetMode() == 17) {
+        //     CursorSetResetMode(1);
+        //     CursorSetMode(1);
+        // }
+    }
+
+    return 0;
 }

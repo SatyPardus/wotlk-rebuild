@@ -142,7 +142,7 @@ void MODIFIEDCLICK::GetBinding(BINDING_SET set, char* binding, int32_t maxLength
     }
 
     if (this->m_data[set].m_modifiers) {
-        CGUIBindings::AddMetaPrefix(this->m_data[set].m_modifiers, binding, &maxLength);
+        CGUIBindings::AddMetaPrefix(this->m_data[set].m_modifiers, &binding, &maxLength);
     }
     if (this->m_data[set].m_button) {
         uint32_t button = StringToMouseButton(this->m_data[set].m_button);
@@ -243,17 +243,17 @@ void CGUIBindings::LoadBindings(BINDING_SET set, const char* buffer) {
 }
 
 // OFFSET: 0x55D990
-bool CGUIBindings::AddMetaPrefix(uint32_t modifiers, char* binding, int32_t* maxLength) {
+bool CGUIBindings::AddMetaPrefix(uint32_t modifiers, char** binding, int32_t* maxLength) {
     if ((modifiers & 0x30) == 0x30) {
-        SStrCopy(binding, "ALT-", *maxLength);
+        SStrCopy(*binding, "ALT-", *maxLength);
         *binding += 4;
         *maxLength -= 4;
     } else if ((modifiers & 0x10) != 0) {
-        SStrCopy(binding, "LALT-", *maxLength);
+        SStrCopy(*binding, "LALT-", *maxLength);
         *binding += 5;
         *maxLength -= 5;
     } else if ((modifiers & 0x20) != 0) {
-        SStrCopy(binding, "RALT-", *maxLength);
+        SStrCopy(*binding, "RALT-", *maxLength);
         *binding += 5;
         *maxLength -= 5;
     }
@@ -262,15 +262,15 @@ bool CGUIBindings::AddMetaPrefix(uint32_t modifiers, char* binding, int32_t* max
         return false;
 
     if ((modifiers & 0xC) == 0xC) {
-        SStrCopy(binding, "CTRL-", *maxLength);
+        SStrCopy(*binding, "CTRL-", *maxLength);
         *binding += 5;
         *maxLength -= 5;
     } else if ((modifiers & 0x4) != 0) {
-        SStrCopy(binding, "LCTRL-", *maxLength);
+        SStrCopy(*binding, "LCTRL-", *maxLength);
         *binding += 6;
         *maxLength -= 6;
     } else if ((modifiers & 0x8) != 0) {
-        SStrCopy(binding, "RCTRL-", *maxLength);
+        SStrCopy(*binding, "RCTRL-", *maxLength);
         *binding += 6;
         *maxLength -= 6;
     }
@@ -279,15 +279,15 @@ bool CGUIBindings::AddMetaPrefix(uint32_t modifiers, char* binding, int32_t* max
         return false;
 
     if ((modifiers & 0x3) == 0x3) {
-        SStrCopy(binding, "SHIFT-", *maxLength);
+        SStrCopy(*binding, "SHIFT-", *maxLength);
         *binding += 6;
         *maxLength -= 6;
     } else if ((modifiers & 0x1) != 0) {
-        SStrCopy(binding, "LSHIFT-", *maxLength);
+        SStrCopy(*binding, "LSHIFT-", *maxLength);
         *binding += 7;
         *maxLength -= 7;
     } else if ((modifiers & 0x2) != 0) {
-        SStrCopy(binding, "RSHIFT-", *maxLength);
+        SStrCopy(*binding, "RSHIFT-", *maxLength);
         *binding += 7;
         *maxLength -= 7;
     }
@@ -362,7 +362,7 @@ bool CGUIBindings::KeyEventToString(const CKeyEvent& evt, char* name, int32_t ma
 
     if (key <= 5)
         state &= ~(1 << key);
-    if (!CGUIBindings::AddMetaPrefix(state, name, &maxLength))
+    if (!CGUIBindings::AddMetaPrefix(state, &name, &maxLength))
         return 0;
 
     auto keyName = CGUIBindings::GetKeyName(key);
@@ -921,7 +921,7 @@ KEYBINDING* CGUIBindings::GetKeyBinding(BINDING_MODE mode, char* keystring) {
 
         char* p = buf;
         int32_t len = sizeof(buf);
-        CGUIBindings::AddMetaPrefix(modifiers, p, &len);
+        CGUIBindings::AddMetaPrefix(modifiers, &p, &len);
         SStrCopy(p, keystring, len);
 
         over = this->m_overrideBindings.Ptr(buf);
@@ -946,6 +946,63 @@ KEYBINDING* CGUIBindings::GetKeyBinding(BINDING_MODE mode, char* keystring) {
         !SStrCmpI(command, "SPELL ", 6) || !SStrCmpI(command, "ITEM ", 5) || !SStrCmpI(command, "MACRO ", 6) || !SStrCmpI(command, "CLICK ", 6) || this->m_commands.Ptr(command) != nullptr;
 
     return runnable ? binding : nullptr;
+}
+
+// OFFSET: 0x55E340
+char* CGUIBindings::MouseEventToString(const CMouseEvent& evt, char* name, int32_t maxLength) {
+    char* cursor = name;
+
+    if (!CGUIBindings::AddMetaPrefix(evt.metaKeyState, &cursor, &maxLength)) {
+        return nullptr;
+    }
+
+    if (evt.id < 0x400500C8) {
+        return nullptr;
+    }
+
+    if (evt.id > 0x400500C9) {
+        if (evt.id != 0x400500CD) {
+            return nullptr;
+        }
+
+        if ((evt.wheelDistance & 0x80000000) == 0) {
+            SStrCopy(cursor, "MOUSEWHEELUP", maxLength);
+        } else {
+            SStrCopy(cursor, "MOUSEWHEELDOWN", maxLength);
+        }
+
+        return name;
+    }
+
+    switch (evt.button) {
+    case MOUSE_BUTTON_LEFT:
+        SStrCopy(cursor, "BUTTON1", maxLength);
+        return name;
+
+    case MOUSE_BUTTON_MIDDLE:
+        SStrCopy(cursor, "BUTTON3", maxLength);
+        return name;
+
+    case MOUSE_BUTTON_RIGHT:
+        SStrCopy(cursor, "BUTTON2", maxLength);
+        return name;
+
+    default: {
+        *cursor = '\0';
+
+        int32_t index = 4;
+
+        while (evt.button != (1 << (index - 1))) {
+            if (++index >= 32) {
+                return name;
+            }
+        }
+
+        SStrPrintf(cursor, maxLength, "BUTTON%d", index);
+
+        return name;
+    }
+    }
 }
 
 // OFFSET: 0x563150

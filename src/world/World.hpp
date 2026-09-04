@@ -54,6 +54,7 @@ namespace World {
     bool GetFacets(CAaBox* a1, CAaBox* a2, FacetData* a3, uint32_t a4, uint32_t* a5);
     void AddAaBoxFacets(CAaBox* box, FacetData* facets);
     uint32_t TriDataToFacetData(void* unused, FacetData* facets, uint32_t idLow, uint32_t idHigh);
+    int32_t GetFlightBoundsLower(const C3Vector& pos, float* height);
 
 }
 

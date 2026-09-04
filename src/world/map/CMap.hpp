@@ -152,6 +152,7 @@ class CMap {
     static bool CreateFlightBoundsFacets(int32_t areaX, int32_t areaY, CAaBox* box, World::FacetData* facets);
     static void AppendMapObjFacets(CMapDoodadDef* def, CAaBox* box, World::FacetData* facets);
     static bool GetDoodadDefFacets(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, CAaBox* box, World::FacetData* facets, uint32_t flags);
+    static int32_t GetFlightBounds(const C3Vector& pos, float* height, int32_t which);
 };
 
 #endif

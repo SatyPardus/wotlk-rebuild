@@ -398,8 +398,50 @@ int32_t CSimpleTop::OnMouseUp(const EVENT_DATA_MOUSE* pMouseData, void* param) {
 
 // OFFSET: 0x494890
 int32_t CSimpleTop::OnMouseWheel(const EVENT_DATA_MOUSE* pMouseData, void* param) {
-    // TODO
-    return 0;
+    CSimpleTop* top = static_cast<CSimpleTop*>(param);
+
+    int32_t handled = 0;
+
+    CMouseEvent mouseEvent;
+    mouseEvent = *pMouseData;
+
+    CSimpleTop::m_eventTime = pMouseData->time;
+
+    mouseEvent.id = 0x400500CD;
+
+    float ddcX = 0.0f;
+    float ddcY = 0.0f;
+    NDCToDDC(top->m_mousePosition.x, top->m_mousePosition.y, &ddcX, &ddcY);
+
+    C2Vector pt = { ddcX, ddcY };
+
+    for (int32_t strata = NUM_FRAME_STRATA - 1; strata >= 0; strata--) {
+        if (handled) {
+            break;
+        }
+
+        auto& queue = top->m_eventqueue[strata][SIMPLE_EVENT_MOUSEWHEEL];
+
+        queue.m_iterator = 0;
+
+        while (queue.m_iterator < queue.m_count) {
+            auto framePriority = queue[queue.m_iterator];
+
+            queue.m_iterator++;
+
+            if (!framePriority || handled) {
+                break;
+            }
+
+            auto frame = framePriority->frame;
+
+            if (frame->TestHitRect(pt)) {
+                handled = frame->OnLayerMouseWheel(mouseEvent);
+            }
+        }
+    }
+
+    return handled == 0;
 }
 
 // OFFSET: 0x493E00

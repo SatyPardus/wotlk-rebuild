@@ -192,6 +192,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 24 */ bool GetModelFileName(const char** fileName) override;
     /* 36 */ void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) override;
 
+    virtual float GetPitch();
+
     // Static functions
     static const char* GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut = nullptr);
     static const char* GetDisplayClassNameFromRecord(ChrClassesRec* record, uint8_t sexIn, uint8_t* sexOut = nullptr);

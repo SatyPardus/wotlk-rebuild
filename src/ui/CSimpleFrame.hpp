@@ -118,6 +118,7 @@ class CSimpleFrame : public CScriptRegion {
         virtual int32_t OnLayerKeyDownRepeat(const CKeyEvent& evt);
         virtual int32_t OnLayerMouseDown(const CMouseEvent& evt, const char* btn);
         virtual int32_t OnLayerMouseUp(const CMouseEvent& evt, const char* btn);
+        virtual int32_t OnLayerMouseWheel(const CMouseEvent& evt);
         virtual void PostLoadXML(XMLNode* node, CStatus* status);
         virtual void UnregisterRegion(CSimpleRegion* region);
         virtual int32_t GetBoundsRect(CRect& bounds);
@@ -161,6 +162,7 @@ class CSimpleFrame : public CScriptRegion {
         void RunOnLoadScript();
         void RunOnMouseDownScript(const char* btn);
         void RunOnMouseUpScript(const char* btn);
+        void RunOnMouseWheelScript(int32_t delta);
         void RunOnShowScript();
         void RunOnSizeChangedScript(float width, float height);
         void RunOnUpdateScript(float elapsedSec);

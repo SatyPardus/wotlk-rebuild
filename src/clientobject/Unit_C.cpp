@@ -1503,6 +1503,11 @@ void CGUnit_C::ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) {
     }
 }
 
+// OFFSET: 0x6E6FC0
+float CGUnit_C::GetPitch() {
+    return this->movementData.m_pitch;
+}
+
 const char* CGUnit_C::GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut) {
     if (sexOut) {
         *sexOut = sexIn;

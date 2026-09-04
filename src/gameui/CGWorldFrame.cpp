@@ -25,6 +25,8 @@
 #include <world/daynight/DayNight.hpp>
 #include <world/daynight/DNInfo.hpp>
 #include "gameui/CGUIBindings.hpp"
+#include <util/Input.hpp>
+#include "gameui/CGGameUI.hpp"
 
 CDataAllocator CGWorldFrame::s_allocator(sizeof(CGWorldFrame), 1);
 
@@ -164,6 +166,66 @@ int32_t CGWorldFrame::OnLayerKeyUp(const CKeyEvent& evt) {
     }
 
     return result;
+}
+
+// OFFSET: 0x4F6C10
+int32_t CGWorldFrame::OnLayerMouseDown(const CMouseEvent& evt, const char* btn) {
+    if (this->CSimpleFrame::OnLayerMouseDown(evt, btn) || CGGameUI::HandleMouseDown(evt)) {
+        return 1;
+    }
+
+    auto& state = this->m_mouseDown[MouseButtonToIndex(evt.button)];
+
+    if (!CGUIBindings::MouseEventToString(evt, state.m_keyString, sizeof(state.m_keyString))) {
+        return 0;
+    }
+
+    state.m_modifiers = evt.metaKeyState;
+
+    return CGUIBindings::s_bindings->ExecKey(state.m_modifiers, state.m_keyString, 1, 1, BINDING_MODE_4);
+}
+
+// OFFSET: 0x4F6C90
+int32_t CGWorldFrame::OnLayerMouseUp(const CMouseEvent& evt, const char* btn) {
+    if (this->CSimpleFrame::OnLayerMouseUp(evt, btn)) {
+        return 1;
+    }
+
+    int32_t result = 0;
+
+    auto& state = this->m_mouseDown[MouseButtonToIndex((uint32_t)evt.button)];
+
+    if (!state.m_keyString[0]) {
+        state.m_modifiers = 0;
+        CGUIBindings::MouseEventToString(evt, state.m_keyString, sizeof(state.m_keyString));
+    }
+
+    if (state.m_keyString[0]) {
+        state.m_modifiers |= evt.metaKeyState;
+
+        result = CGUIBindings::s_bindings->ExecKey(state.m_modifiers, state.m_keyString, 0, 1, BINDING_MODE_4);
+
+        state.m_keyString[0] = '\0';
+    }
+
+    return result;
+}
+
+// OFFSET: 0x4F5C80
+int32_t CGWorldFrame::OnLayerMouseWheel(const CMouseEvent& evt) {
+    if (this->CSimpleFrame::OnLayerMouseWheel(evt) || !evt.wheelDistance) {
+        return 1;
+    }
+
+    char keyString[32];
+
+    if (!CGUIBindings::MouseEventToString(evt, keyString, sizeof(keyString))) {
+        return 0;
+    }
+
+    int32_t down = CGUIBindings::s_bindings->ExecKey(evt.metaKeyState, keyString, 1, 1, BINDING_MODE_4);
+
+    return CGUIBindings::s_bindings->ExecKey(evt.metaKeyState, keyString, 0, 1, BINDING_MODE_4) + down;
 }
 
 CSimpleFrame* CGWorldFrame::Create(CSimpleFrame* parent) {

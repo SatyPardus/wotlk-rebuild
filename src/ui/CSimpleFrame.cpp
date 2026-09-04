@@ -467,6 +467,16 @@ void CSimpleFrame::RunOnMouseUpScript(const char* btn) {
     }
 }
 
+// OFFSET: 0x48F170
+void CSimpleFrame::RunOnMouseWheelScript(int32_t delta) {
+    if (this->m_onMouseWheel.luaRef) {
+        auto L = FrameScript_GetContext();
+        lua_pushnumber(L, delta);
+
+        this->RunScript(this->m_onMouseWheel, 1, 0);
+    }
+}
+
 void CSimpleFrame::RunOnShowScript() {
     if (this->m_onShow.luaRef && !this->m_loading) {
         this->RunScript(this->m_onShow, 0, 0);
@@ -1278,6 +1288,17 @@ int32_t CSimpleFrame::OnLayerMouseUp(const CMouseEvent& evt, const char* btn) {
     // this->m_top->m_char1234 = old1234;
 
     return 0;
+}
+
+// OFFSET: 0x48FDB0
+int32_t CSimpleFrame::OnLayerMouseWheel(const CMouseEvent& evt) {
+    if (!this->m_visible || !this->m_onMouseWheel.luaRef) {
+        return 0;
+    }
+
+    this->RunOnMouseWheelScript(2 * (evt.wheelDistance >= 0) - 1);
+
+    return 1;
 }
 
 void CSimpleFrame::OnLayerShow() {

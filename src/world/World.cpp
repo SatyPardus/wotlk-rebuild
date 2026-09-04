@@ -228,6 +228,11 @@ namespace World {
         return i;
     }
 
+    // OFFSET: 0x77F8D0
+    int32_t GetFlightBoundsLower(const C3Vector& pos, float* height) {
+        return CMap::GetFlightBounds(pos, height, 1);
+    }
+
 } // namespace World
 
 World::TriData::Batch* World::TriData::AllocBatch(uint32_t indexCount, uint32_t faceCount) {

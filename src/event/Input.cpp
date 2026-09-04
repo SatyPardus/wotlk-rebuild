@@ -152,6 +152,23 @@ void PostMouseMove(EvtContext* context, int32_t x, int32_t y, int32_t time) {
     IEvtQueueDispatch(context, EVENT_ID_MOUSEMOVE, &data);
 }
 
+// OFFSET: 0x47FFB0
+void IEvtDispatchMouseWheel(EvtContext* context, int32_t a2, int32_t x, int32_t y, int32_t time) {
+    EVENT_DATA_MOUSE data;
+
+    data.mode = Input::s_mouseMode;
+    data.button = MOUSE_BUTTON_NONE;
+    data.buttonState = Input::s_buttonState;
+    data.metaKeyState = Input::s_metaKeyState;
+    data.flags = GenerateMouseFlags();
+    data.time = time;
+    data.wheelDistance = a2;
+
+    ConvertPosition(x, y, &data.x, &data.y);
+
+    IEvtQueueDispatch(context, EVENT_ID_MOUSEWHEEL, &data);
+}
+
 void PostMouseUp(EvtContext* context, MOUSEBUTTON button, int32_t x, int32_t y, uint32_t flags, int32_t time) {
     Input::s_buttonState &= ~button;
     Input::s_currentMouse = C2iVector(x, y);
@@ -274,7 +291,7 @@ void ProcessInput(const int32_t param[], OSINPUT id, int32_t* shutdown, EvtConte
             break;
 
         case OS_INPUT_MOUSE_WHEEL:
-            // TODO
+            IEvtDispatchMouseWheel(context, param[0], param[1], param[2], param[3]);
             break;
 
         case OS_INPUT_MOUSE_MOVE_RELATIVE:

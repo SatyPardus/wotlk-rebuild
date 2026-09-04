@@ -87,7 +87,8 @@ class CGUIBindings {
     static void Initialize();
     static void LoadBindings();
     static void LoadBindings(BINDING_SET set, const char* buffer);
-    static bool AddMetaPrefix(uint32_t modifiers, char* binding, int32_t* maxLength);
+    static bool AddMetaPrefix(uint32_t modifiers, char** binding, int32_t* maxLength);
+    static char* MouseEventToString(const CMouseEvent& evt, char* name, int32_t maxLength);
     static void AddModifiers(uint32_t* modifiers, char** keystring);
     static bool IsKeyDown(KEY key);
     static bool KeyEventToString(const CKeyEvent& evt, char* name, int32_t maxLength);

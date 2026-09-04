@@ -100,6 +100,29 @@ TSGrowableArray<uint16_t> CMap::debugIndexArray;
 int32_t CMap::s_subVertexIndex[5] = { 0, 9, 17, 1, 18 };
 int32_t CMap::s_subTriIndex[4][3] = { { 17, 9, 0 }, { 9, 1, 0 }, { 9, 17, 18 }, { 9, 18, 1 } };
 
+static const int32_t s_flightTriangle[8][3] = {
+    { 3, 0, 4 },
+    { 0, 1, 4 },
+    { 1, 2, 4 },
+    { 2, 5, 4 },
+    { 5, 8, 4 },
+    { 8, 7, 4 },
+    { 7, 6, 4 },
+    { 6, 3, 4 }
+};
+
+static const C2Vector s_flightCorner[9] = {
+    { 0.0f, 0.0f },
+    { 0.0f, -266.66666f },
+    { 0.0f, -533.33331f },
+    { -266.66666f, 0.0f },
+    { -266.66666f, -266.66666f },
+    { -266.66666f, -533.33331f },
+    { -533.33331f, 0.0f },
+    { -533.33331f, -266.66666f },
+    { -533.33331f, -533.33331f }
+};
+
 // OFFSET: 0x79E7C0
 void CMap::Initialize() {
     //NOP();
@@ -2387,4 +2410,76 @@ bool CMap::GetDoodadDefFacets(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* lin
     }
 
     return true;
+}
+
+// OFFSET: 0x7AD700
+int32_t CMap::GetFlightBounds(const C3Vector& pos, float* height, int32_t which) {
+    if (CMap::bDungeon) {
+        return 0;
+    }
+
+    int32_t base = which == 1 ? 9 : 0;
+
+    int32_t tileY = static_cast<int32_t>(rintf(-(pos.y - 17066.666f) * 0.0037499999f - 0.5f));
+    int32_t tileX = static_cast<int32_t>(rintf(-(pos.x - 17066.666f) * 0.0037499999f - 0.5f));
+
+    auto area = CMap::areaTable[(tileX >> 1) * 64 + (tileY >> 1)];
+
+    if (!area) {
+        return 0;
+    }
+
+    if (area->asyncObject) {
+        return 0;
+    }
+
+    if (!area->flyingBbox) {
+        return 0;
+    }
+
+    float dx = pos.x - area->topLeft2.x;
+    float dy = pos.y - area->topLeft2.y;
+
+    int32_t triangle;
+
+    if (tileY & 1) {
+        if (tileX & 1) {
+            triangle = dy >= dx ? 5 : 4;
+        } else {
+            triangle = dy >= -533.33331f - dx ? 2 : 3;
+        }
+    } else if (tileX & 1) {
+        triangle = dy >= -533.33331f - dx ? 7 : 6;
+    } else {
+        triangle = dy < dx;
+    }
+
+    int32_t i0 = s_flightTriangle[triangle][0];
+    int32_t i1 = s_flightTriangle[triangle][1];
+    int32_t i2 = s_flightTriangle[triangle][2];
+
+    C3Vector p0 = { s_flightCorner[i0].x, s_flightCorner[i0].y, static_cast<float>(area->flyingBbox[base + i0]) };
+    C3Vector p1 = { s_flightCorner[i1].x, s_flightCorner[i1].y, static_cast<float>(area->flyingBbox[base + i1]) };
+    C3Vector p2 = { s_flightCorner[i2].x, s_flightCorner[i2].y, static_cast<float>(area->flyingBbox[base + i2]) };
+
+    float e1x = p1.x - p0.x;
+    float e1y = p1.y - p0.y;
+    float e1z = p1.z - p0.z;
+
+    float e2x = p2.x - p0.x;
+    float e2y = p2.y - p0.y;
+    float e2z = p2.z - p0.z;
+
+    C3Vector normal;
+    normal.x = e1y * e2z - e1z * e2y;
+    normal.y = e1z * e2x - e2z * e1x;
+    normal.z = e1x * e2y - e1y * e2x;
+
+    normal.Normalize();
+
+    float d = p0.x * normal.x + p0.y * normal.y + p0.z * normal.z;
+
+    *height = (normal.y * dy - d + normal.x * dx) * (-1.0f / normal.z);
+
+    return 1;
 }

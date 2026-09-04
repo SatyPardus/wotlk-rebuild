@@ -28,6 +28,9 @@ class CGWorldFrame : public CSimpleFrame {
     void OnFrameRender(CRenderBatch* batch, uint32_t layer) override;
     int32_t OnLayerKeyDown(const CKeyEvent& evt) override;
     int32_t OnLayerKeyUp(const CKeyEvent& evt) override;
+    int32_t OnLayerMouseDown(const CMouseEvent& evt, const char* btn) override;
+    int32_t OnLayerMouseUp(const CMouseEvent& evt, const char* btn) override;
+    int32_t OnLayerMouseWheel(const CMouseEvent& evt) override;
 
     static CSimpleFrame* Create(CSimpleFrame* parent);
     static void RenderWorld(void* param);
@@ -35,7 +38,7 @@ class CGWorldFrame : public CSimpleFrame {
     static bool ObjectEnumProc(void* param, uint32_t status, uint64_t param64, uint32_t param32);
 
     /* 0B18 */ KEYDOWNSTATE m_keyDown[787];
-    /* 79C4 */
+    /* 79C4 */ KEYDOWNSTATE m_mouseDown[31];
     /* 7E20 */ CGCamera* m_camera = nullptr;
 
     public:

@@ -11,12 +11,14 @@ class CGGameUI {
     public:
         static void InitializeGame();
         static void Initialize();
+        static void RegisterGameCVars();
         static void InitClientControlState(WGUID guid);
         static void RegisterFrameFactories();
         static void Reload();
         static int32_t HandleDisplaySizeChanged(const CSizeEvent& event);
         static bool CanPerformAction(int32_t action);
         static void ClearCursor(bool a1, bool a2);
+        static int32_t HandleMouseDown(const CMouseEvent& evt);
 
     public:
         static CSimpleTop* m_simpleTop;
