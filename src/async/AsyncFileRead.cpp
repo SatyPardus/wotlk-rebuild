@@ -4,6 +4,7 @@
 #include <common/Prop.hpp>
 #include <common/Time.hpp>
 #include <storm/Error.hpp>
+#include <event/Event.hpp>
 
 uint32_t AsyncFileRead::s_threadSleep;
 uint32_t AsyncFileRead::s_handlerTimeout = 100;
@@ -347,4 +348,63 @@ bool AsyncFileReadCancel(CAsyncObject* object, void (*callback)(void*)) {
 void AsyncFileReadSetProgressCallback(CALLBACK_FUNC callback, void* param) {
     AsyncFileRead::s_progressCallback = callback;
     AsyncFileRead::s_progressParam = param;
+}
+
+// OFFSET: 0x4B9AB0
+void sub_4B9AB0() {
+    for (auto object = AsyncFileRead::s_asyncFileReadPostList.Head(); object; object = AsyncFileRead::s_asyncFileReadPostList.Head()) {
+        AsyncFileRead::s_asyncFileReadPostList.UnlinkNode(object);
+
+        if (object->userFailedCallback) {
+            object->userFailedCallback(object->userArg);
+        }
+    }
+}
+
+// OFFSET: 0x4BA310
+void AsyncFileReadDestroyQueue(CAsyncQueue* queue) {
+    queue->list14.UnlinkAll();
+
+    queue->readList.UnlinkAll();
+
+    AsyncFileRead::s_asyncQueueList.UnlinkNode(queue);
+}
+
+// OFFSET: 0x4BAC50
+void AsyncFileReadDestroy() {
+    for (auto thread = AsyncFileRead::s_asyncThreadList.Head(); thread; thread = AsyncFileRead::s_asyncThreadList.Next(thread)) {
+        AsyncFileRead::s_shutdownEvent.Set();
+
+        thread->thread.Wait(0xFFFFFFFF);
+    }
+
+    sub_4B9AB0();
+
+    // maybe_AsyncFileRead__FreeAsyncObjects(AsyncFileRead::s_asyncFileReadFreeList);
+
+    for (auto queue = AsyncFileRead::s_asyncQueueList.Head(); queue; queue = AsyncFileRead::s_asyncQueueList.Head()) {
+        AsyncFileReadDestroyQueue(queue);
+
+        SMemFree(queue, __FILE__, __LINE__, 0);
+    }
+
+    AsyncFileRead::s_asyncQueues[0] = nullptr;
+    AsyncFileRead::s_asyncQueues[1] = nullptr;
+    AsyncFileRead::s_asyncQueues[2] = nullptr;
+
+    AsyncFileRead::s_asyncThreadList.Clear();
+
+    AsyncFileRead::s_asyncPollHandlers.SetCount(0);
+    AsyncFileRead::s_asyncStatusHandlers.SetCount(0);
+
+    AsyncFileRead::s_progressCallback = nullptr;
+    AsyncFileRead::s_progressParam = nullptr;
+    AsyncFileRead::s_ingameProgressCallback = nullptr;
+    AsyncFileRead::s_ingameStartCallback = nullptr;
+
+    if (SFile::IsStreamingMode()) {
+        // EventUnregisterEx(EVENT_ID_IDLE, &NetQueuePromoteLocalFiles, nullptr, 2);
+    }
+
+    EventUnregisterEx(EVENT_ID_POLL, &AsyncFileReadPollHandler, nullptr, -1);
 }

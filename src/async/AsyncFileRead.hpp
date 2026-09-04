@@ -64,4 +64,6 @@ bool AsyncFileReadCancel(CAsyncObject* object, void (*callback)(void*));
 
 void AsyncFileReadSetProgressCallback(CALLBACK_FUNC callback, void* param);
 
+void AsyncFileReadDestroy();
+
 #endif

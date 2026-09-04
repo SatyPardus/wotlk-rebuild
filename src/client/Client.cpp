@@ -263,7 +263,7 @@ int32_t DestroyEngineCallback(const void* a1, void* a2) {
     //M2Destroy();
     //maybe_DestroyModelBlob();
     //TextureDestroy();
-    //AsyncFileReadDestroy();
+    AsyncFileReadDestroy();
     //off_AD9838[0]();
     //HeapUsageDestroy();
     //ObjectAllocDestroy();
