@@ -23,7 +23,7 @@ void CGTabardModelFrame::CreateScriptMetaTable() {
 }
 
 void CGTabardModelFrame::RegisterScriptMethods(lua_State* L) {
-    CSimpleFrame::RegisterScriptMethods(L);
+    CGCharacterModelBase::RegisterScriptMethods(L);
     FrameScript_Object::FillScriptMethodTable(L, CGTabardModelFrameMethods, NUM_CGTABARD_MODEL_FRAME_SCRIPT_METHODS);
 }
 
@@ -32,5 +32,5 @@ int32_t CGTabardModelFrame::GetScriptMetaTable() {
 }
 
 CGTabardModelFrame::CGTabardModelFrame(CSimpleFrame* parent)
-    : CSimpleFrame(parent) {
+    : CGCharacterModelBase(parent) {
 }

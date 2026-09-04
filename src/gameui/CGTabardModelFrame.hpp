@@ -1,11 +1,11 @@
 #ifndef GAME_UI_CGTABARD_MODEL_FRAME_HPP
 #define GAME_UI_CGTABARD_MODEL_FRAME_HPP
 
-#include "ui/CSimpleFrame.hpp"
+#include "gameui/CGCharacterModelBase.hpp"
 #include "ui/CSimpleTop.hpp"
 #include "common/DataAllocator.hpp"
 
-class CGTabardModelFrame : public CSimpleFrame {
+class CGTabardModelFrame : public CGCharacterModelBase {
     public:
     // Static variables
     static CDataAllocator s_allocator;

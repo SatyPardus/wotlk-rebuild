@@ -23,7 +23,7 @@ void CGDressUpModelFrame::CreateScriptMetaTable() {
 }
 
 void CGDressUpModelFrame::RegisterScriptMethods(lua_State* L) {
-    CSimpleFrame::RegisterScriptMethods(L);
+    CGCharacterModelBase::RegisterScriptMethods(L);
     FrameScript_Object::FillScriptMethodTable(L, CGDressUpModelFrameMethods, NUM_CGDRESS_UP_MODEL_FRAME_SCRIPT_METHODS);
 }
 
@@ -32,5 +32,5 @@ int32_t CGDressUpModelFrame::GetScriptMetaTable() {
 }
 
 CGDressUpModelFrame::CGDressUpModelFrame(CSimpleFrame* parent)
-    : CSimpleFrame(parent) {
+    : CGCharacterModelBase(parent) {
 }
