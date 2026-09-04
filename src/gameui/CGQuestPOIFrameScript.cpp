@@ -69,7 +69,8 @@ static int32_t Script_GetTooltipIndex(lua_State* L) {
 
 // OFFSET: 0x58EAC0
 static int32_t Script_GetNumTooltips(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 

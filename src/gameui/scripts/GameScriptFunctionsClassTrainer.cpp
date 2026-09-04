@@ -16,7 +16,8 @@ static int32_t Script_CloseTrainer(lua_State* L) {
 
 // OFFSET: 0x593D10
 static int32_t Script_GetNumTrainerServices(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x595090

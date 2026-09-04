@@ -51,7 +51,8 @@ static int32_t Script_GetBidderAuctionItems(lua_State* L) {
 
 // OFFSET: 0x59C1A0
 static int32_t Script_GetNumAuctionItems(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x59D5E0

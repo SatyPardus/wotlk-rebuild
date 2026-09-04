@@ -6,7 +6,8 @@
 
 // OFFSET: 0x5C5CC0
 static int32_t Script_GetNumTalentTabs(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5C6150
@@ -16,7 +17,8 @@ static int32_t Script_GetTalentTabInfo(lua_State* L) {
 
 // OFFSET: 0x5C5D40
 static int32_t Script_GetNumTalents(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5C7800
@@ -46,7 +48,8 @@ static int32_t Script_GetUnspentTalentPoints(lua_State* L) {
 
 // OFFSET: 0x5C5DF0
 static int32_t Script_GetNumTalentGroups(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5C5810

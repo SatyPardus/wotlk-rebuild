@@ -106,7 +106,8 @@ static int32_t Script_RepairAllItems(lua_State* L) {
 
 // OFFSET: 0x5843F0
 static int32_t Script_GetNumBuybackItems(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 void MerchantRegisterScriptFunctions() {

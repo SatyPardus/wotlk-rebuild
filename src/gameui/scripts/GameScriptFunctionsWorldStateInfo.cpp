@@ -6,7 +6,8 @@
 
 // OFFSET: 0x548720
 static int32_t Script_GetNumWorldStateUI(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x548D40

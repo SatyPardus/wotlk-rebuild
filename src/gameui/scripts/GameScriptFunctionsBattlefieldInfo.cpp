@@ -6,7 +6,8 @@
 
 // OFFSET: 0x54BAA0
 static int32_t Script_GetNumBattlefields(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x54D770
@@ -91,7 +92,8 @@ static int32_t Script_RequestBattlefieldScoreData(lua_State* L) {
 
 // OFFSET: 0x549E80
 static int32_t Script_GetNumBattlefieldScores(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x54BE90
@@ -116,7 +118,8 @@ static int32_t Script_LeaveBattlefield(lua_State* L) {
 
 // OFFSET: 0x549F20
 static int32_t Script_GetNumBattlefieldStats(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x54C170
@@ -137,7 +140,8 @@ static int32_t Script_RequestBattlefieldPositions(lua_State* L) {
 
 // OFFSET: 0x54A040
 static int32_t Script_GetNumBattlefieldPositions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x54C2E0
@@ -147,7 +151,8 @@ static int32_t Script_GetBattlefieldPosition(lua_State* L) {
 
 // OFFSET: 0x54A0E0
 static int32_t Script_GetNumBattlefieldFlagPositions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x54DCC0
@@ -157,7 +162,8 @@ static int32_t Script_GetBattlefieldFlagPosition(lua_State* L) {
 
 // OFFSET: 0x54A140
 static int32_t Script_GetNumBattlefieldVehicles(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x54C4D0
@@ -202,7 +208,8 @@ static int32_t Script_CanHearthAndResurrectFromArea(lua_State* L) {
 
 // OFFSET: 0x54C870
 static int32_t Script_GetNumBattlegroundTypes(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x54E010
@@ -217,7 +224,8 @@ static int32_t Script_RequestBattlegroundInstanceInfo(lua_State* L) {
 
 // OFFSET: 0x54A2C0
 static int32_t Script_GetNumArenaOpponents(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x54E160

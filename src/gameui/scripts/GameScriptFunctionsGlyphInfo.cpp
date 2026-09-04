@@ -6,7 +6,8 @@
 
 // OFFSET: 0x5B71E0
 static int32_t Script_GetNumGlyphSockets(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5B7260

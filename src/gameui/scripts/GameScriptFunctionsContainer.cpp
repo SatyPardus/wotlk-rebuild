@@ -33,7 +33,10 @@ static int32_t Script_GetContainerItemLink(lua_State* L) {
 
 // OFFSET: 0x5D7D90
 static int32_t Script_GetContainerItemCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x5D7FF0

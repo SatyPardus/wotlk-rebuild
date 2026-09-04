@@ -91,12 +91,14 @@ static int32_t Script_GetAchievementLink(lua_State* L) {
 
 // OFFSET: 0x5B3CA0
 static int32_t Script_GetNumCompletedAchievements(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5B3DC0
 static int32_t Script_GetNumComparisonCompletedAchievements(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5B1C20
@@ -171,7 +173,8 @@ static int32_t Script_IsTrackedAchievement(lua_State* L) {
 
 // OFFSET: 0x5B2120
 static int32_t Script_GetNumTrackedAchievements(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5B1EC0

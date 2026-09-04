@@ -23,7 +23,10 @@ static int32_t Script_GetActionCount(lua_State* L) {
 
 // OFFSET: 0x5A91C0
 static int32_t Script_GetActionCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x5A9290

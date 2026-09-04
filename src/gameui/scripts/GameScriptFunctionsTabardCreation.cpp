@@ -11,7 +11,8 @@ static int32_t Script_CloseTabardCreation(lua_State* L) {
 
 // OFFSET: 0x598DD0
 static int32_t Script_GetTabardCreationCost(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 void TabardCreationRegisterScriptFunctions() {

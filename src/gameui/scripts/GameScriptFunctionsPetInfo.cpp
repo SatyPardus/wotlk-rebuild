@@ -16,7 +16,10 @@ static int32_t Script_GetPetActionInfo(lua_State* L) {
 
 // OFFSET: 0x5D5280
 static int32_t Script_GetPetActionCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x5D53C0

@@ -6,12 +6,26 @@
 
 // OFFSET: 0x5CD1B0
 static int32_t Script_GetNumSkillLines(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5CDE20
 static int32_t Script_GetSkillLineInfo(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushnil(L);
+    lua_pushnil(L);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnil(L);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushstring(L, "");
+    WHOA_UNIMPLEMENTED(13);
 }
 
 // OFFSET: 0x5CE2C0
@@ -41,7 +55,8 @@ static int32_t Script_RemoveSkillUp(lua_State* L) {
 
 // OFFSET: 0x5CE540
 static int32_t Script_GetAdjustedSkillPoints(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5CE5D0
@@ -66,7 +81,8 @@ static int32_t Script_SetSelectedSkill(lua_State* L) {
 
 // OFFSET: 0x5CD8F0
 static int32_t Script_GetSelectedSkill(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 void SkillInfoRegisterScriptFunctions() {

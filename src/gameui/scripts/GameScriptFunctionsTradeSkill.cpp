@@ -11,7 +11,8 @@ static int32_t Script_CloseTradeSkill(lua_State* L) {
 
 // OFFSET: 0x5DA120
 static int32_t Script_GetNumTradeSkills(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5DB2A0
@@ -31,7 +32,8 @@ static int32_t Script_GetTradeSkillSelectionIndex(lua_State* L) {
 
 // OFFSET: 0x5DA9A0
 static int32_t Script_GetTradeSkillCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5DB550

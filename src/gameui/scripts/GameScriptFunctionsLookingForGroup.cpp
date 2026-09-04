@@ -236,7 +236,8 @@ static int32_t Script_PartyLFGStartBackfill(lua_State* L) {
 
 // OFFSET: 0x558060
 static int32_t Script_GetLFGRandomCooldownExpiration(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x555760
@@ -306,7 +307,8 @@ static int32_t Script_RequestLFDPartyLockInfo(lua_State* L) {
 
 // OFFSET: 0x5553B0
 static int32_t Script_GetNumRandomDungeons(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x557AA0

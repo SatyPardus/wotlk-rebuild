@@ -51,7 +51,8 @@ static int32_t Script_SplitGuildBankItem(lua_State* L) {
 
 // OFFSET: 0x5A44D0
 static int32_t Script_GetNumGuildBankTabs(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5A67F0
@@ -116,7 +117,8 @@ static int32_t Script_QueryGuildBankLog(lua_State* L) {
 
 // OFFSET: 0x5A4520
 static int32_t Script_GetNumGuildBankTransactions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5A6DC0
@@ -126,7 +128,8 @@ static int32_t Script_GetGuildBankTransaction(lua_State* L) {
 
 // OFFSET: 0x5A45B0
 static int32_t Script_GetNumGuildBankMoneyTransactions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5A4E50

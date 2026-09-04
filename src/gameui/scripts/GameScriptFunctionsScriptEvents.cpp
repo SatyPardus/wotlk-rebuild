@@ -318,7 +318,9 @@ static int32_t Script_GetArenaCurrency(lua_State* L) {
 
 // OFFSET: 0x60FD40
 static int32_t Script_UnitRace(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushstring(L, "");
+    WHOA_UNIMPLEMENTED(2);
 }
 
 // OFFSET: 0x60FEC0
@@ -708,7 +710,10 @@ static int32_t Script_GetPowerRegen(lua_State* L) {
 
 // OFFSET: 0x613020
 static int32_t Script_GetRuneCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x613140

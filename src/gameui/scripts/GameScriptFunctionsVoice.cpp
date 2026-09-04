@@ -36,47 +36,57 @@ static int32_t Script_VoiceGetCurrentCaptureDevice(lua_State* L) {
 
 // OFFSET: 0x7DB8D0
 static int32_t Script_GetVoiceStatus(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x7DB030
 static int32_t Script_GetNumVoiceSessions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x7DB0B0
 static int32_t Script_GetVoiceSessionInfo(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(2);
 }
 
 // OFFSET: 0x7DB1F0
 static int32_t Script_GetVoiceCurrentSessionID(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x7DB280
 static int32_t Script_SetActiveVoiceChannelBySessionID(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x7DB370
 static int32_t Script_GetNumVoiceSessionMembersBySessionID(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x7DEEF0
 static int32_t Script_GetVoiceSessionMemberInfoBySessionID(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x7DC910
 static int32_t Script_VoiceIsDisabledByClient(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x7DF0B0
 static int32_t Script_UnitIsTalking(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 void VoiceRegisterScriptFunctions() {

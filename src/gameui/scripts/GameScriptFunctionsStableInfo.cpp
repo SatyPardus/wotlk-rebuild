@@ -26,12 +26,14 @@ static int32_t Script_BuyStableSlot(lua_State* L) {
 
 // OFFSET: 0x5A0F60
 static int32_t Script_GetNumStablePets(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5A0FA0
 static int32_t Script_GetNumStableSlots(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5A1330

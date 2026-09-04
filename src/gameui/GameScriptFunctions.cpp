@@ -1081,9 +1081,9 @@ static int32_t Script_NotWhileDeadError(lua_State* L) {
 // OFFSET: 0x51B8B0
 static int32_t Script_GetRestState(lua_State* L) {
     // TODO
-    lua_pushnil(L);
-    lua_pushnil(L);
-    lua_pushnil(L);
+    lua_pushnumber(L, 1.0);
+    lua_pushstring(L, "normal");
+    lua_pushnumber(L, 1.0);
     return 3;
 }
 
@@ -1315,7 +1315,10 @@ static int32_t Script_GetItemSpell(lua_State* L) {
 
 // OFFSET: 0x510FC0
 static int32_t Script_GetItemCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x522FB0
@@ -1573,7 +1576,8 @@ static int32_t Script_GetMirrorTimerProgress(lua_State* L) {
 
 // OFFSET: 0x5165E0
 static int32_t Script_GetNumTitles(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x51B3B0
@@ -1690,7 +1694,9 @@ static int32_t Script_SummonFriend(lua_State* L) {
 
 // OFFSET: 0x511D30
 static int32_t Script_GetSummonFriendCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(2);
 }
 
 // OFFSET: 0x51D330
@@ -1715,7 +1721,8 @@ static int32_t Script_DestroyTotem(lua_State* L) {
 
 // OFFSET: 0x511DD0
 static int32_t Script_GetNumDeclensionSets(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x511E80

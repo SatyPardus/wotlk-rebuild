@@ -51,7 +51,8 @@ static int32_t Script_GetEquipmentSetItemIDs(lua_State* L) {
 
 // OFFSET: 0x5AF0D0
 static int32_t Script_GetNumEquipmentSets(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5AF120

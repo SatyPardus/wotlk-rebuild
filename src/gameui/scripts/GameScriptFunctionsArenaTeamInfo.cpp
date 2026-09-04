@@ -11,7 +11,8 @@ static int32_t Script_GetArenaTeam(lua_State* L) {
 
 // OFFSET: 0x5A2930
 static int32_t Script_GetNumArenaTeamMembers(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5A2FC0

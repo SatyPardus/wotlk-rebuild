@@ -1,4 +1,6 @@
 #include "gameui/GameScriptFunctions.hpp"
+#include "gameui/CGWorldMap.hpp"
+#include "ui/CSimpleFrame.hpp"
 #include "ui/FrameScript.hpp"
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
@@ -31,7 +33,8 @@ static int32_t Script_SetDungeonMapLevel(lua_State* L) {
 
 // OFFSET: 0x546290
 static int32_t Script_GetNumDungeonMapLevels(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x544C40
@@ -66,7 +69,8 @@ static int32_t Script_GetCurrentMapZone(lua_State* L) {
 
 // OFFSET: 0x544FC0
 static int32_t Script_GetCurrentMapDungeonLevel(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x546C50
@@ -106,7 +110,8 @@ static int32_t Script_GetDeathReleasePosition(lua_State* L) {
 
 // OFFSET: 0x543020
 static int32_t Script_GetNumMapLandmarks(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x545A30
@@ -116,7 +121,8 @@ static int32_t Script_GetMapLandmarkInfo(lua_State* L) {
 
 // OFFSET: 0x543060
 static int32_t Script_GetNumMapOverlays(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x545C80
@@ -126,7 +132,25 @@ static int32_t Script_GetMapOverlayInfo(lua_State* L) {
 
 // OFFSET: 0x545E60
 static int32_t Script_CreateWorldMapArrowFrame(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (lua_type(L, 1) != LUA_TTABLE) {
+        luaL_error(L, "Usage: CreateWorldMapArrowFrame(parent)");
+    }
+
+    lua_rawgeti(L, 1, 0);
+    auto frame = static_cast<CSimpleFrame*>(lua_touserdata(L, -1));
+    lua_settop(L, -2);
+
+    if (!frame) {
+        luaL_error(L, "CreateWorldMapArrowFrame(): Couldn't find 'this' in parent object");
+    }
+
+    if (!frame->IsA(CSimpleFrame::GetObjectType())) {
+        luaL_error(L, "CreateWorldMapArrowFrame(): Wrong object type, expected frame");
+    }
+
+    CGWorldMap::CreateArrowFrame(frame);
+
+    return 0;
 }
 
 // OFFSET: 0x545FF0
@@ -171,7 +195,8 @@ static int32_t Script_ClickLandmark(lua_State* L) {
 
 // OFFSET: 0x608560
 static int32_t Script_GetNumMapDebugObjects(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x8E5250

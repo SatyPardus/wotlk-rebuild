@@ -54,7 +54,8 @@ static int32_t Script_SetFriendNotes(lua_State* L) {
 
 // OFFSET: 0x6B4560
 static int32_t Script_GetNumIgnores(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x6B4620
@@ -89,7 +90,8 @@ static int32_t Script_DelIgnore(lua_State* L) {
 
 // OFFSET: 0x6B45C0
 static int32_t Script_GetNumMutes(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x6B4760
@@ -144,7 +146,8 @@ static int32_t Script_SendWho(lua_State* L) {
 
 // OFFSET: 0x6B33D0
 static int32_t Script_GetNumWhoResults(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x6B4A80

@@ -6,32 +6,53 @@
 
 // OFFSET: 0x53B5C0
 static int32_t Script_GetNumSpellTabs(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x53BE70
 static int32_t Script_GetSpellTabInfo(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushstring(L, "");
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(6);
 }
 
 // OFFSET: 0x5407F0
 static int32_t Script_GetSpellName(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushstring(L, "");
+    WHOA_UNIMPLEMENTED(2);
 }
 
 // OFFSET: 0x5408E0
 static int32_t Script_GetSpellLink(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushstring(L, "");
+    WHOA_UNIMPLEMENTED(2);
 }
 
 // OFFSET: 0x540A30
 static int32_t Script_GetSpellInfo(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushnumber(L, 0.0);
+    lua_pushstring(L, "");
+    lua_pushnumber(L, 0.0);
+    lua_pushnil(L);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(9);
 }
 
 // OFFSET: 0x540D70
 static int32_t Script_GetSpellTexture(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x540DF0
@@ -41,12 +62,17 @@ static int32_t Script_GetSpellCount(lua_State* L) {
 
 // OFFSET: 0x540E80
 static int32_t Script_GetSpellCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x541010
 static int32_t Script_GetSpellAutocast(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnil(L);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(2);
 }
 
 // OFFSET: 0x5410E0
@@ -76,12 +102,14 @@ static int32_t Script_CastSpell(lua_State* L) {
 
 // OFFSET: 0x5412C0
 static int32_t Script_IsSelectedSpell(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x541340
 static int32_t Script_IsPassiveSpell(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x541420
@@ -91,7 +119,8 @@ static int32_t Script_IsAttackSpell(lua_State* L) {
 
 // OFFSET: 0x541500
 static int32_t Script_IsCurrentSpell(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5415D0
@@ -136,12 +165,15 @@ static int32_t Script_UpdateSpells(lua_State* L) {
 
 // OFFSET: 0x53DD30
 static int32_t Script_HasPetSpells(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnil(L);
+    lua_pushstring(L, "");
+    WHOA_UNIMPLEMENTED(2);
 }
 
 // OFFSET: 0x53C0B0
 static int32_t Script_GetNumShapeshiftForms(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x53DE10
@@ -156,7 +188,11 @@ static int32_t Script_CancelShapeshiftForm(lua_State* L) {
 
 // OFFSET: 0x53DE90
 static int32_t Script_GetShapeshiftFormInfo(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushstring(L, "");
+    lua_pushnil(L);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(4);
 }
 
 // OFFSET: 0x53C0F0
@@ -166,7 +202,10 @@ static int32_t Script_CastShapeshiftForm(lua_State* L) {
 
 // OFFSET: 0x53C180
 static int32_t Script_GetShapeshiftFormCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x540310
@@ -181,17 +220,26 @@ static int32_t Script_CastSpellByID(lua_State* L) {
 
 // OFFSET: 0x53C2A0
 static int32_t Script_GetNumCompanions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x53E2C0
 static int32_t Script_GetCompanionInfo(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushstring(L, "");
+    lua_pushnumber(L, 0.0);
+    lua_pushstring(L, "");
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(5);
 }
 
 // OFFSET: 0x53E490
 static int32_t Script_GetCompanionCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x53C310
@@ -211,12 +259,14 @@ static int32_t Script_DismissCompanion(lua_State* L) {
 
 // OFFSET: 0x53B650
 static int32_t Script_GetKnownSlotFromHighestRankSlot(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x53C3A0
 static int32_t Script_IsSpellKnown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x53B6C0

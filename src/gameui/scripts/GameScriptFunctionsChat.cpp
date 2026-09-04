@@ -21,7 +21,8 @@ static int32_t Script_SendSystemMessage(lua_State* L) {
 
 // OFFSET: 0x500760
 static int32_t Script_GetNumLanguages(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x500810
@@ -291,7 +292,8 @@ static int32_t Script_RequestRaidInfo(lua_State* L) {
 
 // OFFSET: 0x4FCA50
 static int32_t Script_GetNumSavedInstances(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x4FF2C0
@@ -321,12 +323,22 @@ static int32_t Script_ComplainChat(lua_State* L) {
 
 // OFFSET: 0x504E10
 static int32_t Script_GetNumDisplayChannels(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x4FF580
 static int32_t Script_GetChannelDisplayInfo(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushstring(L, "");
+    lua_pushnil(L);
+    lua_pushnil(L);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnil(L);
+    lua_pushnumber(L, 0.0);
+    lua_pushnil(L);
+    lua_pushnil(L);
+    WHOA_UNIMPLEMENTED(9);
 }
 
 // OFFSET: 0x4FFA10
@@ -346,7 +358,8 @@ static int32_t Script_GetChannelRosterInfo(lua_State* L) {
 
 // OFFSET: 0x505190
 static int32_t Script_GetNumChannelMembers(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x500AE0

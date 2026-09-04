@@ -11,17 +11,20 @@ static int32_t Script_GetGossipText(lua_State* L) {
 
 // OFFSET: 0x58A920
 static int32_t Script_GetNumGossipOptions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x58A960
 static int32_t Script_GetNumGossipAvailableQuests(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x58A9A0
 static int32_t Script_GetNumGossipActiveQuests(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x58A9E0

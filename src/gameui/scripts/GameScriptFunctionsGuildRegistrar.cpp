@@ -11,7 +11,8 @@ static int32_t Script_CloseGuildRegistrar(lua_State* L) {
 
 // OFFSET: 0x599F40
 static int32_t Script_GetGuildCharterCost(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x59A130

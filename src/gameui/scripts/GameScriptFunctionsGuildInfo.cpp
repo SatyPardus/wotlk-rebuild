@@ -6,7 +6,8 @@
 
 // OFFSET: 0x5CA130
 static int32_t Script_GetNumGuildMembers(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5CA190
@@ -211,7 +212,8 @@ static int32_t Script_QueryGuildEventLog(lua_State* L) {
 
 // OFFSET: 0x5CA350
 static int32_t Script_GetNumGuildEvents(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5CCD90

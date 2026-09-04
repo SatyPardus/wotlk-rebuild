@@ -41,7 +41,8 @@ static int32_t Script_GetSendMailCOD(lua_State* L) {
 
 // OFFSET: 0x571AB0
 static int32_t Script_GetNumStationeries(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x56DF80
@@ -61,7 +62,8 @@ static int32_t Script_GetSelectedStationeryTexture(lua_State* L) {
 
 // OFFSET: 0x56E1E0
 static int32_t Script_GetNumPackages(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x56E210
@@ -86,7 +88,8 @@ static int32_t Script_GetSendMailItemLink(lua_State* L) {
 
 // OFFSET: 0x571B00
 static int32_t Script_GetSendMailPrice(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x570910

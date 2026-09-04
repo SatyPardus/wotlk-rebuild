@@ -7,7 +7,8 @@
 
 // OFFSET: 0x55DC00
 static int32_t Script_GetNumBindings(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x55E8D0
@@ -242,7 +243,8 @@ static int32_t Script_SaveBindings(lua_State* L) {
 
 // OFFSET: 0x55DC60
 static int32_t Script_GetNumModifiedClickActions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x55EA70

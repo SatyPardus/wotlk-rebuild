@@ -41,12 +41,14 @@ static int32_t Script_GetRewardText(lua_State* L) {
 
 // OFFSET: 0x58BDD0
 static int32_t Script_GetNumAvailableQuests(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x58BE00
 static int32_t Script_GetNumActiveQuests(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x58BE30
@@ -141,17 +143,20 @@ static int32_t Script_GetQuestMoneyToGet(lua_State* L) {
 
 // OFFSET: 0x58C190
 static int32_t Script_GetNumQuestRewards(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x58C1F0
 static int32_t Script_GetNumQuestChoices(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x58C250
 static int32_t Script_GetNumQuestItems(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x58D980

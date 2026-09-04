@@ -5,6 +5,8 @@
 
 struct lua_State;
 
+int32_t table_wipe(lua_State*);
+
 int32_t sub_8168D0(lua_State*);
 int32_t sub_816910(lua_State*);
 int32_t strtrim(lua_State*);

@@ -11,7 +11,8 @@ static int32_t Script_SetLootPortrait(lua_State* L) {
 
 // OFFSET: 0x588540
 static int32_t Script_GetNumLootItems(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x588570

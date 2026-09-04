@@ -68,7 +68,10 @@ static int32_t Script_GetInventoryItemQuality(lua_State* L) {
 
 // OFFSET: 0x5E7E60
 static int32_t Script_GetInventoryItemCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x5EA170

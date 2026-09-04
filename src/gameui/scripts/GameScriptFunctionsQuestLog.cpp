@@ -6,7 +6,8 @@
 
 // OFFSET: 0x5DF010
 static int32_t Script_GetNumQuestLogEntries(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5E5CC0
@@ -56,7 +57,8 @@ static int32_t Script_GetQuestLogQuestText(lua_State* L) {
 
 // OFFSET: 0x5E41A0
 static int32_t Script_GetNumQuestLeaderBoards(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5E5F60
@@ -66,7 +68,8 @@ static int32_t Script_GetQuestLogLeaderBoard(lua_State* L) {
 
 // OFFSET: 0x5E4260
 static int32_t Script_GetNumQuestItemDrops(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5E60D0
@@ -91,12 +94,14 @@ static int32_t Script_IsCurrentQuestFailed(lua_State* L) {
 
 // OFFSET: 0x5DF150
 static int32_t Script_GetNumQuestLogRewards(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5DF1D0
 static int32_t Script_GetNumQuestLogChoices(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5E4490
@@ -181,7 +186,8 @@ static int32_t Script_GetQuestGreenRange(lua_State* L) {
 
 // OFFSET: 0x5DF5D0
 static int32_t Script_GetNumQuestWatches(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5DF610
@@ -241,7 +247,10 @@ static int32_t Script_GetQuestLogSpecialItemInfo(lua_State* L) {
 
 // OFFSET: 0x5E53D0
 static int32_t Script_GetQuestLogSpecialItemCooldown(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(3);
 }
 
 // OFFSET: 0x5E54C0
@@ -261,7 +270,8 @@ static int32_t Script_ProcessQuestLogRewardFactions(lua_State* L) {
 
 // OFFSET: 0x5DF910
 static int32_t Script_GetNumQuestLogRewardFactions(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    lua_pushnumber(L, 0.0);
+    WHOA_UNIMPLEMENTED(1);
 }
 
 // OFFSET: 0x5DF940

@@ -10,6 +10,24 @@
 static bool s_luaDecimalConversion = false;
 
 
+// OFFSET: 0x852180
+int32_t table_wipe(lua_State* L) {
+    luaL_checktype(L, 1, LUA_TTABLE);
+    luaL_checkstack(L, 3, "");
+
+    lua_pushnil(L);
+
+    while (lua_next(L, -2)) {
+        lua_settop(L, -2);
+        lua_pushvalue(L, -1);
+        lua_pushnil(L);
+        lua_rawset(L, 1);
+    }
+
+    return 1;
+}
+
+
 luaL_Reg FrameScriptInternal::extra_funcs[31] = {
     { "setglobal", &sub_8168D0 },
     { "getglobal", &sub_816910 },
