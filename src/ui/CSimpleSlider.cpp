@@ -1,6 +1,12 @@
 #include "ui/CSimpleSlider.hpp"
 #include "math/Utils.hpp"
 #include "ui/CSimpleSliderScript.hpp"
+#include "ui/CSimpleTexture.hpp"
+#include "ui/LoadXML.hpp"
+#include "util/StringTo.hpp"
+#include "util/CStatus.hpp"
+#include <common/XML.hpp>
+#include <storm/String.hpp>
 #include "util/Lua.hpp"
 
 CDataAllocator CSimpleSlider::s_allocator(sizeof(CSimpleSlider), 5);
@@ -62,6 +68,95 @@ bool CSimpleSlider::IsA(int32_t type) {
         || type == CSimpleFrame::s_objectType
         || type == CScriptRegion::s_objectType
         || type == CScriptObject::s_objectType;
+}
+
+// OFFSET: 0x96C500
+void CSimpleSlider::LoadXML(XMLNode* node, CStatus* status) {
+    this->CSimpleFrame::LoadXML(node, status);
+
+    int32_t layer = DRAWLAYER_ARTWORK_OVERLAY;
+
+    const char* drawLayerAttr = node->GetAttributeByName("drawLayer");
+
+    if (drawLayerAttr && *drawLayerAttr) {
+        StringToDrawLayer(drawLayerAttr, layer);
+    }
+
+    for (auto child = node->m_child; child; child = child->m_next) {
+        if (SStrCmpI(child->GetName(), "ThumbTexture", STORM_MAX_STR)) {
+            continue;
+        }
+
+        auto texture = LoadXML_Texture(child, this, status);
+
+        if (texture == this->m_thumbTexture) {
+            continue;
+        }
+
+        if (this->m_thumbTexture) {
+            delete this->m_thumbTexture;
+        }
+
+        if (texture) {
+            texture->SetFrame(this, layer, 1);
+            texture->FreePoints();
+        }
+
+        this->m_changed = 1;
+        this->m_thumbTexture = texture;
+    }
+
+    float valueStep = 0.001f;
+
+    const char* valueStepAttr = node->GetAttributeByName("valueStep");
+
+    if (valueStepAttr && *valueStepAttr) {
+        valueStep = SStrToFloat(valueStepAttr);
+    }
+
+    this->SetValueStep(valueStep);
+
+    const char* minValueAttr = node->GetAttributeByName("minValue");
+
+    if (minValueAttr && *minValueAttr) {
+        const char* maxValueAttr = node->GetAttributeByName("maxValue");
+
+        if (maxValueAttr && *maxValueAttr) {
+            this->SetMinMaxValues(SStrToFloat(minValueAttr), SStrToFloat(maxValueAttr));
+
+            const char* defaultValueAttr = node->GetAttributeByName("defaultValue");
+
+            if (defaultValueAttr && *defaultValueAttr) {
+                this->SetValue(SStrToFloat(defaultValueAttr));
+            }
+        }
+    }
+
+    const char* orientationAttr = node->GetAttributeByName("orientation");
+
+    if (orientationAttr && *orientationAttr) {
+        uint32_t orientation;
+
+        if (StringToOrientation(orientationAttr, orientation)) {
+            this->m_orientation = orientation;
+
+            if (this->m_thumbTexture) {
+                this->m_thumbTexture->FreePoints();
+            }
+
+            this->m_changed = 1;
+        } else {
+            const char* name = this->GetName();
+
+            status->Add(
+                STATUS_WARNING,
+                "Frame %s: Unknown orientation %s in element %s",
+                name ? name : "<unnamed>",
+                orientationAttr,
+                node->GetName()
+            );
+        }
+    }
 }
 
 void CSimpleSlider::RunOnMinMaxChangedScript() {

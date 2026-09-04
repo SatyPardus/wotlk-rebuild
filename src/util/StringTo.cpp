@@ -112,6 +112,7 @@ bool StringToBOOL(lua_State* L, int32_t idx, int32_t def) {
     return result;
 }
 
+// OFFSET: 0x814F60
 int32_t StringToDrawLayer(const char* string, int32_t& layer) {
     struct drawlayer {
         int32_t layer;
@@ -161,6 +162,7 @@ int32_t StringToJustify(const char* string, uint32_t& justify) {
     return 0;
 }
 
+// OFFSET: 0x815110
 bool StringToOrientation(const char* string, uint32_t& orientation) {
     if (!SStrCmpI(string, "HORIZONTAL", STORM_MAX_STR)) {
         orientation = 0;

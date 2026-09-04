@@ -4,6 +4,8 @@
 #include "ui/CSimpleFrame.hpp"
 #include "common/DataAllocator.hpp"
 
+class CSimpleTexture;
+
 class CSimpleSlider : public CSimpleFrame {
     public:
         // Static variables
@@ -31,10 +33,13 @@ class CSimpleSlider : public CSimpleFrame {
         float m_range = 0.0f;
         float m_value = 0.0f;
         float m_valueStep = 0.0f;
+        CSimpleTexture* m_thumbTexture = nullptr;
+        uint32_t m_orientation = 0;
         ScriptIx m_onValueChanged;
         ScriptIx m_onMinMaxChanged;
 
         // Virtual member functions
+        virtual void LoadXML(XMLNode* node, CStatus* status);
         virtual ScriptIx* GetScriptByName(const char* name, ScriptData& data);
         virtual bool IsA(int32_t type);
         virtual int32_t GetScriptMetaTable();
