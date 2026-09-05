@@ -14,9 +14,10 @@
 #include "gameui/camera/CGCamera.hpp"
 #include <util/Network.hpp>
 
-WGUID CGUnit_C::s_activeMover;
-CVar* CGUnit_C::s_cvShowFootPrintParticles;
-CVar* CGUnit_C::s_cvPathingDistTolerance;
+WGUID CGUnit_C::s_activeMover = 0;
+CVar* CGUnit_C::s_cvShowFootPrintParticles = nullptr;
+CVar* CGUnit_C::s_cvPathingDistTolerance = nullptr;
+int32_t CGUnit_C::m_trackingType = 0;
 
 CGUnit_C::CGUnit_C() {
 
@@ -385,6 +386,11 @@ void CGUnit_C::InitActiveMover(WGUID guid) {
     //result = bn_CVehiclePassenger_C_OnSetActiveMover(v4);
 
     msg.Destroy();
+}
+
+// OFFSET: 0x715C60
+int32_t CGUnit_C::GetTrackingType() {
+    return CGUnit_C::m_trackingType;
 }
 
 // OFFSET: 0x72D940

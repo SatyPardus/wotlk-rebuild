@@ -19,6 +19,10 @@ class CGGameUI {
         static bool CanPerformAction(int32_t action);
         static void ClearCursor(bool a1, bool a2);
         static int32_t HandleMouseDown(const CMouseEvent& evt);
+        static void OnMouseModeRelative();
+        static void OnMouseModeNormal();
+        static int32_t FilterMouseMotion(CMouseEvent* evt);
+        static int32_t FilterMouseButton(CMouseEvent* evt);
 
     public:
         static CSimpleTop* m_simpleTop;

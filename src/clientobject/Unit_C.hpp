@@ -124,6 +124,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     static WGUID s_activeMover;
     static CVar* s_cvShowFootPrintParticles;
     static CVar* s_cvPathingDistTolerance;
+    static int32_t m_trackingType;
 
     // Member variables
     /* 00D8 */ CMovementShared* m_passenger = nullptr;
@@ -201,6 +202,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     static void ClientInitialize();
     static void Initialize();
     static void InitActiveMover(WGUID guid);
+    static int32_t GetTrackingType();
 
     // Packet handlers
     static int32_t HandleMonsterMovePacket(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg);

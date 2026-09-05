@@ -6,6 +6,7 @@
 
 class CGObject_C;
 class CM2Model;
+class CGInputControl;
 
 struct CAMERA_SMOOTH {
     int32_t startTimeMs = 0;
@@ -14,6 +15,12 @@ struct CAMERA_SMOOTH {
     float startValue = 0.0f;
     float param3 = 0.0f;
     float param4 = 0.0f;
+};
+
+struct CAMERAVIEW { // 0x0C
+    float distance; // +0x00
+    float pitch;    // +0x04
+    float yaw;      // +0x08
 };
 
 enum CAMERA_MOTION {
@@ -44,7 +51,8 @@ class CGCamera : public CSimpleCamera {
 
     /* 00AC */ int32_t m_ignoreFacingRefs = 0;
     /* 00B0 */ int32_t unk_00B0 = 0;
-
+    /* 00B4 */ uint32_t m_viewIndex;
+    /* 00B8 */ CAMERAVIEW m_views[8];
     /* 0118 */ float m_distance;
     /* 011C */ float m_yaw;
     /* 0120 */ float m_pitch;
@@ -121,6 +129,29 @@ class CGCamera : public CSimpleCamera {
     void UpdateVehicleTarget(int32_t a2);
     int32_t CanSmoothTargetFacing(CGObject_C* target);
     int32_t CanSmoothTarget();
+    void IncIgnoreFacing();
+    void DecIgnoreFacing();
+    void ClampPitchToLimits(float delta);
+    void ClampPitchAndNormalize();
+    void UpdateYaw(float delta);
+    void EnableFreeLook();
+    void DisableFreeLook(int32_t a2);
+    void SetModeFreeLook();
+    void SetModeNormal();
+    void UpdateFreeLookFacing(float dx, float dy, float* outPitch);
+    void SmoothFreeLook(CGInputControl* input, int32_t settle);
+    bool CanSmoothYaw(float yawMin, float yawMax);
+    bool ShouldSmoothPitch(float pitchMin, float pitchMax);
+    float GetChaseFacing(CGObject_C* target);
+    bool IsCustomViewSmoothingActive();
+    void CancelSmoothTargetOffset();
+    void CancelSmoothYaw();
+    void CancelSmoothPitch();
+    void UpdateUncontrolledState(bool a2);
+    void UpdateTargetSmoothing(CGObject_C* target, int32_t time);
+
+    // Inside CameraCVars.cpp
+    bool CheckViewSmoothingCVarsChanged(uint32_t viewIndex);
 };
 
 #endif // GAME_UI_CAMERA_CGCAMERA_HPP

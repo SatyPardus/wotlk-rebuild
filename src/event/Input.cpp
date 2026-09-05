@@ -43,7 +43,6 @@ namespace Input {
 
 int32_t Input::s_buttonDown[16];
 uint32_t Input::s_buttonState;
-C2iVector Input::s_currentMouse;
 uint32_t Input::s_mouseHoldButton;
 MOUSEMODE Input::s_mouseMode;
 int32_t Input::s_simulatedRightButtonClick;
@@ -115,7 +114,6 @@ void PostKeyUp(EvtContext* context, int32_t key, int32_t repeat, int32_t time) {
 
 void PostMouseDown(EvtContext* context, MOUSEBUTTON button, int32_t x, int32_t y, int32_t time) {
     Input::s_buttonState |= button;
-    Input::s_currentMouse = C2iVector(x, y);
 
     EVENT_DATA_MOUSE data;
 
@@ -131,13 +129,22 @@ void PostMouseDown(EvtContext* context, MOUSEBUTTON button, int32_t x, int32_t y
     IEvtQueueDispatch(context, EVENT_ID_MOUSEDOWN, &data);
 }
 
+// OFFSET: 0x47FAC0
 void PostMouseModeChanged(EvtContext* context, MOUSEMODE mode) {
-    // TODO
+    EVENT_DATA_MOUSE data = {};
+
+    Input::s_mouseMode = mode;
+
+    data.mode = Input::s_mouseMode;
+    data.button = MOUSE_BUTTON_NONE;
+    data.buttonState = Input::s_buttonState;
+    data.metaKeyState = Input::s_metaKeyState;
+    data.flags = GenerateMouseFlags();
+
+    IEvtQueueDispatch(context, EVENT_ID_MOUSEMODE_CHANGED, &data);
 }
 
 void PostMouseMove(EvtContext* context, int32_t x, int32_t y, int32_t time) {
-    Input::s_currentMouse = C2iVector(x, y);
-
     EVENT_DATA_MOUSE data;
 
     data.mode = Input::s_mouseMode;
@@ -150,6 +157,35 @@ void PostMouseMove(EvtContext* context, int32_t x, int32_t y, int32_t time) {
     ConvertPosition(x, y, &data.x, &data.y);
 
     IEvtQueueDispatch(context, EVENT_ID_MOUSEMOVE, &data);
+}
+
+// OFFSET: 0x47FF10
+void IEvtDispatchMouseEvent(EvtContext* context, MOUSEBUTTON button, int32_t x, int32_t y, uint32_t flags, int32_t time) {
+    Input::s_buttonState &= ~button;
+
+    EVENT_DATA_MOUSE data;
+
+    data.mode = Input::s_mouseMode;
+    data.button = button;
+    data.buttonState = Input::s_buttonState;
+    data.metaKeyState = Input::s_metaKeyState;
+    data.flags = flags | GenerateMouseFlags();
+    data.time = time;
+
+    ConvertPosition(x, y, &data.x, &data.y);
+
+    IEvtQueueDispatch(context, EVENT_ID_MOUSEUP, &data);
+
+    CheckMouseModeState();
+}
+
+// OFFSET: 0x4800F0
+void IEvtDispatchMouseEvents(EvtContext* context, int32_t a2, int32_t a3) {
+    auto time = OsGetAsyncTimeMs();
+    for (uint32_t i = Input::s_buttonState; Input::s_buttonState; i = Input::s_buttonState) {
+        auto v4 = i & (i ^ (i - 1));
+        IEvtDispatchMouseEvent(context, (MOUSEBUTTON)v4, a2, a3, 1, time);
+    }
 }
 
 // OFFSET: 0x47FFB0
@@ -169,24 +205,20 @@ void IEvtDispatchMouseWheel(EvtContext* context, int32_t a2, int32_t x, int32_t 
     IEvtQueueDispatch(context, EVENT_ID_MOUSEWHEEL, &data);
 }
 
-void PostMouseUp(EvtContext* context, MOUSEBUTTON button, int32_t x, int32_t y, uint32_t flags, int32_t time) {
-    Input::s_buttonState &= ~button;
-    Input::s_currentMouse = C2iVector(x, y);
-
+// OFFSET: 0x47FA60
+void IEvtDispatchMouseMoveRelative(EvtContext* context, int32_t x, int32_t y, int32_t time) {
     EVENT_DATA_MOUSE data;
 
     data.mode = Input::s_mouseMode;
-    data.button = button;
+    data.button = MOUSE_BUTTON_NONE;
     data.buttonState = Input::s_buttonState;
     data.metaKeyState = Input::s_metaKeyState;
-    data.flags = flags | GenerateMouseFlags();
+    data.flags = GenerateMouseFlags();
     data.time = time;
+    data.x = static_cast<float>(x);
+    data.y = static_cast<float>(y);
 
-    ConvertPosition(x, y, &data.x, &data.y);
-
-    IEvtQueueDispatch(context, EVENT_ID_MOUSEUP, &data);
-
-    CheckMouseModeState();
+    IEvtQueueDispatch(context, EVENT_ID_MOUSEMOVE_RELATIVE, &data);
 }
 
 void PostSize(EvtContext* context, int32_t w, int32_t h) {
@@ -205,7 +237,7 @@ void ProcessInput(const int32_t param[], OSINPUT id, int32_t* shutdown, EvtConte
 
     switch (id) {
         case OS_INPUT_CAPTURE_CHANGED:
-            // TODO
+            IEvtDispatchMouseEvents(context, param[1], param[2]);
             break;
 
         case OS_INPUT_CHAR:
@@ -295,11 +327,11 @@ void ProcessInput(const int32_t param[], OSINPUT id, int32_t* shutdown, EvtConte
             break;
 
         case OS_INPUT_MOUSE_MOVE_RELATIVE:
-            // TODO
+            IEvtDispatchMouseMoveRelative(context, param[1], param[2], param[3]);
             break;
 
         case OS_INPUT_MOUSE_UP:
-            PostMouseUp(
+            IEvtDispatchMouseEvent(
                 context,
                 static_cast<MOUSEBUTTON>(param[0]),
                 param[1],

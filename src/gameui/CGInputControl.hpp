@@ -5,6 +5,7 @@
 #include "ui/CSimpleTop.hpp"
 
 class CGUnit_C;
+class CVar;
 
 enum CONTROL_BIT : uint32_t {
     CONTROL_TURNORACTION = 0x00000001,                  // bit 0   default: right mouse
@@ -37,10 +38,17 @@ enum CONTROL_BIT : uint32_t {
                                                         // bits 27..31                                    never set, never tested
 };
 
+enum PENDING_DEFAULT_ACTION : uint32_t {
+    PENDING_ACTION_NONE = 0,
+    PENDING_ACTION_LEFT = 1,
+    PENDING_ACTION_RIGHT = 2,
+};
+
 class CGInputControl {
     public:
     // Static variables
     static CGInputControl* s_inputControl;
+    static CVar* s_cvCinematicJoystick;
 
     // Static functions
     static void Initialize();
@@ -48,7 +56,24 @@ class CGInputControl {
 
     // Member variables
     /* 0000 */ uint32_t m_time = 0;
-    /* 0000 */ uint32_t m_flags = 0;
+    /* 0004 */ uint32_t m_flags = 0;
+    /* 0008 */ float m_dragAccumX = 0.0f;
+    /* 000C */ float m_dragAccumY = 0.0f;
+    /* 0010 */ uint32_t m_lastMouseMoveFrame = 0;
+    /* 0014 */ int32_t m_lookStartTime = 0;
+    /* 0018 */ PENDING_DEFAULT_ACTION m_pendingDefaultAction = PENDING_ACTION_NONE;
+    /* 001C */ //TSHashTable_MOUSELOOKBINDING_HASHKEY_STRI m_mouseLookBindings;
+    /* 0044 */ uint32_t m_facingOverrideActive = 0;
+    /* 0048 */ float m_facingOverride = 0.0f;
+    /* 004C */ uint32_t m_vehicleAimValid = 0;
+    /* 0050 */ float m_vehicleAim = 0.0f;
+    /* 0054 */ uint32_t m_freeLookFacingSynced = 0;
+    /* 0058 */ uint32_t m_mouseModeFlags = 3;
+    /* 005C */ uint32_t m_forceCursorOn = 0;
+    /* 0060 */ uint32_t m_joystickMouseFlags = 3;
+    /* 0064 */ float m_joystickLookX = 0.0f;
+    /* 0068 */ float m_joystickLookY = 0.0f;
+    /* 006C */ void* m_wowMouse = 0;
 
     // Virtual member functions
 
@@ -57,10 +82,14 @@ class CGInputControl {
     void UpdatePlayer(int32_t eventTime, bool a3);
     bool SetControlBit(uint32_t controlBit, int32_t eventTime);
     bool UnsetControlBit(uint32_t controlBit, int32_t eventTime, uint32_t a4);
+    bool IsMouseDrag(int32_t time);
+    bool IsIdle();
     bool CanMove(CGUnit_C* unit);
     bool CanTurn(CGUnit_C* unit);
     bool CanControl(CGUnit_C* unit);
     void UpdateMoveStopped();
+    void UpdateMouseMode(int32_t force);
+    void OnMouseMoveRel(CMouseEvent* evt);
 
     void OnTurnToAngleStop();
     void MovePlayer(int32_t eventTime, CGUnit_C* unit);

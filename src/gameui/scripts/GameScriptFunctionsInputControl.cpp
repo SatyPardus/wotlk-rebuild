@@ -7,6 +7,7 @@
 #include <util/StringTo.hpp>
 #include "clientobject/Unit_C.hpp"
 #include "clientobject/ObjectMgrClient.hpp"
+#include <gameui/CGWorldFrame.hpp>
 
 // OFFSET: 0x5FBF80
 static int32_t Script_JumpOrAscendStart(lua_State* L) {
@@ -264,7 +265,21 @@ static int32_t Script_PitchDownStop(lua_State* L) {
 
 // OFFSET: 0x5FC610
 static int32_t Script_TurnOrActionStart(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!CGGameUI::CanPerformAction(0))
+        return 0;
+
+    if ((CGInputControl::s_inputControl->m_flags & 0x3) == 0) {
+        CGInputControl::s_inputControl->m_pendingDefaultAction = PENDING_ACTION_RIGHT;
+        CGWorldFrame::s_currentWorldFrame->SetupDefaultAction();
+    }
+    if (CGInputControl::s_inputControl->SetControlBit(1, CSimpleTop::m_eventTime)) {
+        //m_flags = v0->m_flags;
+        //if ((m_flags & 1) != 0 && (m_flags & 2) != 0)
+        //    CheckToCancelCurrentChannelSpell();
+        CGInputControl::s_inputControl->UpdatePlayer(CSimpleTop::m_eventTime, 1);
+    }
+
+    return 0;
 }
 
 // OFFSET: 0x5FC680
@@ -279,7 +294,21 @@ static int32_t Script_TurnOrActionStop(lua_State* L) {
 
 // OFFSET: 0x5FC6C0
 static int32_t Script_CameraOrSelectOrMoveStart(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!CGGameUI::CanPerformAction(0))
+        return 0;
+
+    if ((CGInputControl::s_inputControl->m_flags & 0x3) == 0) {
+        CGInputControl::s_inputControl->m_pendingDefaultAction = PENDING_ACTION_LEFT;
+        CGWorldFrame::s_currentWorldFrame->SetupDefaultAction();
+    }
+    if (CGInputControl::s_inputControl->SetControlBit(2, CSimpleTop::m_eventTime)) {
+        // m_flags = v0->m_flags;
+        // if ((m_flags & 1) != 0 && (m_flags & 2) != 0)
+        //     CheckToCancelCurrentChannelSpell();
+        CGInputControl::s_inputControl->UpdatePlayer(CSimpleTop::m_eventTime, 1);
+    }
+
+    return 0;
 }
 
 // OFFSET: 0x5FC730

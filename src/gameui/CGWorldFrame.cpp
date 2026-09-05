@@ -27,6 +27,8 @@
 #include "gameui/CGUIBindings.hpp"
 #include <util/Input.hpp>
 #include "gameui/CGGameUI.hpp"
+#include <gx/Coordinate.hpp>
+#include <util/Unimplemented.hpp>
 
 CDataAllocator CGWorldFrame::s_allocator(sizeof(CGWorldFrame), 1);
 
@@ -228,6 +230,37 @@ int32_t CGWorldFrame::OnLayerMouseWheel(const CMouseEvent& evt) {
     return CGUIBindings::s_bindings->ExecKey(evt.metaKeyState, keyString, 0, 1, BINDING_MODE_4) + down;
 }
 
+// OFFSET: 0x4FA570
+void CGWorldFrame::SetupDefaultAction() {
+    WHOA_UNIMPLEMENTED();
+    //NDCToDDC(this->m_top->m_mousePosition.x, this->m_top->m_mousePosition.y, &this->m_defaultActionPointDDC.x, &this->m_defaultActionPointDDC.y);
+    //this->m_defaultActionHitKind = this->HitTestPoint(&this->m_defaultActionPointDDC.x, &this->m_defaultActionPointDDC.y, 0, this->m_defaultActionHit);
+}
+
+// OFFSET: 0x4F5D30
+void CGWorldFrame::OnMouseModeRelative() {
+    this->m_worldFlags |= 2u;
+
+    if (this->m_trackedGuid != 0) {
+        //v4[2] = guid_low;
+        //v4[0] = 0;
+        //v4[1] = 0;
+        //v4[3] = guid_high;
+        //CGGameUI::HandleSpriteTrack(v4);
+        this->m_trackedGuid = 0;
+    }
+}
+
+// OFFSET: 0x4F5D20
+void CGWorldFrame::OnMouseModeNormal() {
+    this->m_worldFlags &= ~2u;
+}
+
+// OFFSET: 0x4F7880
+void CGWorldFrame::PerformDefaultAction(MOUSEBUTTON button) {
+    WHOA_UNIMPLEMENTED();
+}
+
 CSimpleFrame* CGWorldFrame::Create(CSimpleFrame* parent) {
     auto m = ALLOCATOR_GET(CGWorldFrame::s_allocator);
     return m ? (new (m) CGWorldFrame(parent)) : nullptr;
@@ -254,105 +287,6 @@ void CGWorldFrame::RenderWorld(void* param) {
     GxXformSetView(saved_view);
 
     CShaderEffect::UpdateProjMatrix();
-}
-
-// DEBUG: free-fly camera. (Obviously AI made)
-//   hold RMB   look
-//   W/S        forward / back along camera forward
-//   A/D        strafe along camera right
-//   Q/E        down / up along camera up
-//   LSHIFT     x5 speed        LCONTROL  x0.2 speed
-//   R          reset position and orientation
-//
-// Polled once per frame rather than driven from key events, so movement is
-// smooth and multiple keys combine. Delete this whole function and its call in
-// OnWorldUpdate when the real camera lands.
-static void UpdateDebugCamera(CGCamera* cam) {
-    static float s_yaw = 0.0f;
-    static float s_pitch = 0.0f;
-    static C2iVector s_lastMouse(0, 0);
-    static bool s_looking = false;
-    static uint64_t s_lastMs = 0;
-
-    // ---- frame time ----
-    uint64_t now = OsGetAsyncTimeMs();
-    float dt = static_cast<float>(now - s_lastMs) / 1000.0f;
-    s_lastMs = now;
-
-    // first frame, and anything after a breakpoint, must not teleport
-    if (dt <= 0.0f || dt > 0.25f) {
-        dt = 1.0f / 60.0f;
-    }
-
-    if (EventIsKeyDown(KEY_R)) {
-        s_yaw = 0.0f;
-        s_pitch = 0.0f;
-        cam->m_position.Set(0.0f, 0.0f, 0.0f);
-    }
-
-    // ---- look: hold right mouse button ----
-    bool rmb = (Input::s_buttonState & MOUSE_BUTTON_RIGHT) != 0;
-
-    if (rmb) {
-        if (!s_looking) {
-            // first frame of the drag: capture the anchor, do not move
-            s_looking = true;
-            s_lastMouse = Input::s_currentMouse;
-        } else {
-            const float SENSITIVITY = 0.0035f; // radians per pixel
-
-            int32_t dx = Input::s_currentMouse.x - s_lastMouse.x;
-            int32_t dy = Input::s_currentMouse.y - s_lastMouse.y;
-            s_lastMouse = Input::s_currentMouse;
-
-            s_yaw -= static_cast<float>(dx) * SENSITIVITY;
-            s_pitch += static_cast<float>(dy) * SENSITIVITY;
-
-            // clamp just short of straight up/down so the basis never degenerates
-            const float PITCH_LIMIT = 1.5533f; // ~89 degrees
-            if (s_pitch > PITCH_LIMIT) {
-                s_pitch = PITCH_LIMIT;
-            }
-            if (s_pitch < -PITCH_LIMIT) {
-                s_pitch = -PITCH_LIMIT;
-            }
-        }
-    } else {
-        s_looking = false;
-    }
-
-    cam->SetFacing(s_yaw, s_pitch, 0.0f);
-
-    // ---- move ----
-    float speed = 40.0f; // world units per second
-    if (EventIsKeyDown(KEY_LSHIFT)) {
-        speed *= 5.0f;
-    }
-    if (EventIsKeyDown(KEY_LCONTROL)) {
-        speed *= 0.2f;
-    }
-
-    // read the basis AFTER SetFacing so it matches this frame's orientation
-    C3Vector fwd = cam->Forward();
-    C3Vector right = cam->Right();
-    C3Vector up = cam->Up();
-
-    C3Vector move(0.0f, 0.0f, 0.0f);
-    if (EventIsKeyDown(KEY_W)) { move = move + fwd; }
-    if (EventIsKeyDown(KEY_S)) { move = move - fwd; }
-    if (EventIsKeyDown(KEY_D)) { move = move - right; }
-    if (EventIsKeyDown(KEY_A)) { move = move + right; }
-    if (EventIsKeyDown(KEY_E)) { move = move + up; }
-    if (EventIsKeyDown(KEY_Q)) { move = move - up; }
-
-    // normalise so diagonal input is not faster
-    float len2 = move.x * move.x + move.y * move.y + move.z * move.z;
-    if (len2 > 0.0001f) {
-        float scale = speed * dt / sqrtf(len2);
-        cam->m_position.x += move.x * scale;
-        cam->m_position.y += move.y * scale;
-        cam->m_position.z += move.z * scale;
-    }
 }
 
 // OFFSET: 0x4FA5F0

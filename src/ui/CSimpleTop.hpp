@@ -9,6 +9,8 @@
 #include "ui/FrameScript.hpp"
 #include <common/Array.hpp>
 
+class CGWorldFrame;
+
 enum MOVERESIZE_REASON {
     MOVERESIZE_REASON0 = 0,
     MOVERESIZE_REASON1 = 1,
@@ -60,6 +62,7 @@ class CSimpleTop : public CLayoutFrame {
         EVENT_DATA_MOUSE m_mousePosition = {};
         int32_t (*m_mouseButtonCallback)(CMouseEvent*) = nullptr;
         int32_t (*m_mousePositionCallback)(CMouseEvent*) = nullptr;
+        int32_t (*m_mouseMoveCallback)(CMouseEvent*) = nullptr;
         int32_t (*m_displaySizeCallback)(const CSizeEvent&) = nullptr;
 
         // Member functions
@@ -79,6 +82,7 @@ class CSimpleTop : public CLayoutFrame {
         void RegisterForEvent(CSimpleFrame* frame, CSimpleEventType event, int32_t a4, uint32_t priority);
         void RegisterFrame(CSimpleFrame* frame);
         void SetCursor(MipBits* cursorImage);
+        void SetMouseFocus(CSimpleFrame* worldFrame);
         void ShowFrame(CSimpleFrame* frame, int32_t a3);
         int32_t StartMoveOrResizeFrame(const CMouseEvent& start, MOVERESIZE_REASON reason, int32_t resize);
         int32_t StartMoveOrResizeFrame(CSimpleFrame* frame, MOVERESIZE_REASON reason, float startx, float starty, int32_t a6);

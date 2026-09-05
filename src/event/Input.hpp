@@ -11,7 +11,6 @@ class EvtContext;
 namespace Input {
     extern int32_t s_buttonDown[16];
     extern uint32_t s_buttonState;
-    extern C2iVector s_currentMouse;
     extern uint32_t s_mouseHoldButton;
     extern MOUSEMODE s_mouseMode;
     extern int32_t s_simulatedRightButtonClick;

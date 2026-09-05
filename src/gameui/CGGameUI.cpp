@@ -24,6 +24,8 @@
 #include "util/SFile.hpp"
 #include <util/Unimplemented.hpp>
 #include "clientobject/Unit_C.hpp"
+#include "CGInputControl.hpp"
+#include <event/Input.hpp>
 
 
 CSimpleTop* CGGameUI::m_simpleTop = nullptr;
@@ -74,17 +76,19 @@ void CGGameUI::Initialize() {
 
     auto m = SMemAlloc(sizeof(CSimpleTop), __FILE__, __LINE__, 0x0);
     CGGameUI::m_simpleTop = new (m) CSimpleTop();
-    //CGGameUI::m_simpleTop->m_mouseButtonCallback = CGGameUI::FilterMouseButton;
-    //CGGameUI::m_simpleTop->m_mouseMoveCallback = CGGameUI::FilterMouseMotion;
+    CGGameUI::m_simpleTop->m_mouseButtonCallback = &CGGameUI::FilterMouseButton;
+    CGGameUI::m_simpleTop->m_mouseMoveCallback = &CGGameUI::FilterMouseMotion;
     CGGameUI::m_simpleTop->m_displaySizeCallback = &CGGameUI::HandleDisplaySizeChanged;
     //CGGameUI::m_simpleTop->dword1244 = (uint32_t)CGGameUI::HandleFocusChanged;
     //CGGameUI::m_simpleTop->dword124C = 1;
     //CGGameUI::m_simpleTop->dword1254 = (uint32_t)CGGameUI::ShowBlockedFrameFeedback;
 
-    //CursorInitialize();
-    //auto activeInputControl = CGInputControl::GetActive();
-    //STORM_ASSERT(activeInputControl);
-    //CGInputControl::UpdateMouseMode((int)Active, 1);
+    CursorInitialize();
+    auto activeInputControl = CGInputControl::GetActive();
+    STORM_ASSERT(activeInputControl);
+    activeInputControl->m_mouseModeFlags = 3;
+    activeInputControl->m_forceCursorOn = 0;
+    activeInputControl->UpdateMouseMode(1);
     
     FrameScript_Flush();
     LoadScriptFunctions();
@@ -252,4 +256,68 @@ int32_t CGGameUI::HandleMouseDown(const CMouseEvent& evt) {
     }
 
     return 0;
+}
+
+// OFFSET: 0x512D60
+void CGGameUI::OnMouseModeRelative() {
+    if (!CGWorldFrame::s_currentWorldFrame || !CSimpleTop::s_instance)
+        SErrDisplayAppFatal("");
+
+    CGWorldFrame::s_currentWorldFrame->OnMouseModeRelative();
+    CSimpleTop::s_instance->SetMouseFocus(CGWorldFrame::s_currentWorldFrame);
+
+    g_theGxDevicePtr->CursorSetVisible(0);
+
+    EventSetMouseMode(MOUSE_MODE_RELATIVE, 0);
+}
+
+// OFFSET: 0x512DC0
+void CGGameUI::OnMouseModeNormal() {
+    if (!CGWorldFrame::s_currentWorldFrame || !CSimpleTop::s_instance)
+        SErrDisplayAppFatal("");
+
+    CGWorldFrame::s_currentWorldFrame->OnMouseModeNormal();
+    CSimpleTop::s_instance->m_checkFocus = 1;
+
+    if ((CGInputControl::GetActive()->m_mouseModeFlags & 0x1) != 0)
+        g_theGxDevicePtr->CursorSetVisible(1);
+
+    EventSetMouseMode(MOUSE_MODE_NORMAL, 0);
+}
+
+// OFFSET: 0x512CD0
+int32_t CGGameUI::FilterMouseMotion(CMouseEvent* evt) {
+    if (evt->id != 0x400500CB)
+        return 0;
+
+    CGInputControl::GetActive()->OnMouseMoveRel(evt);
+    return 1;
+}
+
+// OFFSET: 0x51FA50
+int32_t CGGameUI::FilterMouseButton(CMouseEvent* evt) {
+    //if (evt->id == 0x400500C8 && evt->button == MOUSE_BUTTON_RIGHT
+    //    && (CGGameUI::m_cursorItem
+    //        || CGGameUI::m_cursorVirtualID
+    //        || CGGameUI::m_cursorMoney
+    //        || CGGameUI::m_cursorSpell
+    //        || CGGameUI::m_cursorPetAction
+    //        || CGGameUI::m_cursorMacro
+    //        || CGGameUI::m_cursorPet
+    //        || CGPlayer_C::IsGiftWrapping())) {
+    //    CGGameUI::ClearCursor(1, 1);
+    //    return 1;
+    //}
+
+    if (evt->mode != MOUSE_MODE_RELATIVE) {
+        return 0;
+    }
+
+    if (evt->id == 0x400500C8) {
+        CGWorldFrame::s_currentWorldFrame->OnLayerMouseDown(*evt, nullptr);
+    } else {
+        CGWorldFrame::s_currentWorldFrame->OnLayerMouseUp(*evt, nullptr);
+    }
+
+    return 1;
 }

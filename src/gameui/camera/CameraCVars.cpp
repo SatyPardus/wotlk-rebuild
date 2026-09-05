@@ -1,6 +1,7 @@
 #include "gameui/camera/CameraCVars.hpp"
 #include "util/Unimplemented.hpp"
 #include <storm/String.hpp>
+#include "gameui/camera/CGCamera.hpp"
 
 CVar* s_cvCameraSavedDistance;
 CVar* s_cvCameraSavedVehicleDistance;
@@ -111,6 +112,8 @@ static const char* s_cameraTerrainTiltDefault[NUM_CAMERA_SMOOTH_STYLES][NUM_CAME
     { { "1.0", "0.0", "0.75" }, { "1.0", "0.0", "1.0" }, { "0.0", "0.0", "-1.0" }, { "0.0", "0.0", "-1.0" }, { "1.0", "0.0", "1.0" }, { "1.0", "0.0", "1.0" }, { "0.0", "0.0", "1.0" }, { "0.0", "0.0", "1.0" }, { "1.0", "0.0", "1.0" }, { "1.0", "0.0", "1.0" } },
     { { "1.0", "0.0", "0.75" }, { "1.0", "0.0", "1.0" }, { "0.0", "0.0", "-1.0" }, { "0.0", "0.0", "-1.0" }, { "1.0", "0.0", "1.0" }, { "1.0", "0.0", "1.0" }, { "0.0", "0.0", "1.0" }, { "0.0", "0.0", "1.0" }, { "1.0", "0.0", "1.0" }, { "1.0", "0.0", "1.0" } }
 };
+
+static const int32_t s_cameraViewComponentIsAngle[NUM_CAMERA_VIEW_COMPONENTS] = { 0, 1, 1 };
 
 static CVar::HANDLER_FUNC s_cameraViewValidator[NUM_CAMERA_VIEW_COMPONENTS] = { &ValidateCameraDistance, &ValidateCameraPitch, &ValidateCameraYaw };
 
@@ -272,4 +275,23 @@ void CameraRegisterCVars() {
     s_cvCameraYawSmoothMax = CVar::Register("cameraYawSmoothMax", nullptr, 16, "0.0", &ValidateCameraYaw, 5, 0, nullptr, 0);
     s_cvCameraSmoothTimeMin = CVar::Register("cameraSmoothTimeMin", nullptr, 16, "0.1", &ValidateCameraTime, 5, 0, nullptr, 0);
     s_cvCameraSmoothTimeMax = CVar::Register("cameraSmoothTimeMax", nullptr, 16, "2.0", &ValidateCameraTime, 5, 0, nullptr, 0);
+}
+
+// OFFSET: 0x5FF8E0
+bool CGCamera::CheckViewSmoothingCVarsChanged(uint32_t viewIndex) {
+    const float* view = &this->m_views[viewIndex].distance;
+
+    for (int32_t component = 0; component < NUM_CAMERA_VIEW_COMPONENTS; component++) {
+        float value = SStrToFloat(s_cameraViewSettingDefault[viewIndex][component]);
+
+        if (s_cameraViewComponentIsAngle[component]) {
+            value = value * 0.017453292f;
+        }
+
+        if (fabs(view[component] - value) >= 0.001f) {
+            return false;
+        }
+    }
+
+    return true;
 }

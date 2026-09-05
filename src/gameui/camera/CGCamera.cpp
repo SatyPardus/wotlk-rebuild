@@ -8,6 +8,8 @@
 #include <tempest/math/CMath.hpp>
 #include <client/FrameTime.hpp>
 #include <gameui/CGInputControl.hpp>
+#include <gx/Coordinate.hpp>
+#include <util/Unimplemented.hpp>
 
 bool CGCamera::s_aboveFlightFloor;
 
@@ -95,10 +97,10 @@ CGCamera::CGCamera()
     this->m_relativeTo.guid_high = 0;
     //this->unk_00AC = 0;
     //this->unk_00B0 = 0;
-    //this->unk_00B4 = s_cvCameraView->m_intValue;
-    //this->m_distance = SStrToFloat((&off_AD1BA8)[3 * this->unk_00B4]);
+    this->m_viewIndex = s_cvCameraView->m_intValue;
+    //this->m_distance = SStrToFloat((&off_AD1BA8)[3 * this->m_viewIndex]);
     this->m_yaw = 0.0;
-    //this->m_pitch = SStrToFloat((&off_AD1BAC)[3 * this->unk_00B4]) * 0.017453292;
+    //this->m_pitch = SStrToFloat((&off_AD1BAC)[3 * this->m_viewIndex]) * 0.017453292;
     this->m_roll = 0.0;
     this->m_height = 0.0;
     //this->unk_012C = 0.0;
@@ -200,7 +202,7 @@ CGCamera::CGCamera()
     //this->m_cameraShakeList.m_linkoffset = 0;
     //this->m_cameraShakeList.m_terminator.m_next = (&this->m_cameraShakeList.m_terminator | 1);
     //this->m_vehicleCamera = 0;
-    //memset(this->unk_00B8, 0, sizeof(this->unk_00B8));
+    memset(this->m_views, 0, sizeof(this->m_views));
     //this->unk_0164 = 0;
     //this->unk_0168 = 0;
     //this->unk_016C = 0;
@@ -418,10 +420,9 @@ void CGCamera::CalcTargetCamera(CGObject_C* target, int32_t time) {
         //groundPitch = unit->GetPitch();
         //
         //this->UpdateMountHeightOrOffset(unit);
-        //
     }
 
-    //this->UpdateUncontrolledState((splineActive && !isFlying) ? 1 : 0);
+    this->UpdateUncontrolledState((splineActive && !isFlying) ? 1 : 0);
 
     C3Vector safePos;
     this->GetSafeWorldPos(safePos, target);
@@ -455,7 +456,7 @@ void CGCamera::CalcTargetCamera(CGObject_C* target, int32_t time) {
         this->UpdateMotion(time);
     }
 
-    //this->UpdateTargetSmoothing(unit, time);
+    this->UpdateTargetSmoothing(target, time);
 
     float yaw;
     float pitch;
@@ -1671,4 +1672,818 @@ int32_t CGCamera::CanSmoothTarget() {
     auto target = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
 
     return this->CanSmoothTargetFacing(target) == 0;
+}
+
+// OFFSET: 0x6019B0
+void CGCamera::IncIgnoreFacing() {
+    int32_t refs = this->m_ignoreFacingRefs;
+
+    this->m_ignoreFacingRefs = refs + 1;
+
+    if (refs) {
+        return;
+    }
+
+    CGObject_C* target = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
+
+    if (!target) {
+        this->UpdateYaw(0.0f);
+        return;
+    }
+
+    //if ((target->m_obj->m_type & TYPEMASK_UNIT) != 0) {
+    //    if (this->m_vehicleCamera) {
+    //        this->UpdateYaw(this->m_vehicleCamera->m_facing);
+    //    } else {
+    //        this->UpdateYaw(target->AsUnit()->dataAA0);
+    //    }
+    //} else {
+        this->UpdateYaw(target->GetFacing());
+    //}
+}
+
+// OFFSET: 0x601A70
+void CGCamera::DecIgnoreFacing() {
+    if (this->m_ignoreFacingRefs-- != 1) {
+        return;
+    }
+
+    CGObject_C* target = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
+
+    if (!target) {
+        this->UpdateYaw(-0.0f);
+        return;
+    }
+
+    if ((target->m_obj->m_type & TYPEMASK_UNIT) == 0) {
+        this->UpdateYaw(-target->GetFacing());
+        return;
+    }
+
+    CGUnit_C* unit = target->AsUnit();
+
+    //if (this->m_vehicleCamera && this->m_vehicleCamera->IsHierarchyChasingFacing()) {
+    //    this->UpdateYaw(-this->sub_6009E0(unit));
+    //    return;
+    //}
+    //
+    //if ((this->m_state & 0x4000) != 0) {
+    //    this->UpdateYaw(-this->unk_01DC);
+    //    return;
+    //}
+    //
+    //if (this->m_vehicleCamera) {
+    //    this->UpdateYaw(-this->sub_6009E0(unit));
+    //} else {
+        this->UpdateYaw(-unit->GetRawFacing());
+    //}
+}
+
+// OFFSET: 0x5FFC20
+void CGCamera::ClampPitchToLimits(float delta) {
+    float target = delta + this->m_smoothPitch.target;
+
+    if (target < MIN_PITCH_ANGLE) {
+        target = MIN_PITCH_ANGLE;
+    } else if (target >= MAX_PITCH_ANGLE) {
+        target = MAX_PITCH_ANGLE;
+    }
+
+    this->m_smoothPitch.target = target;
+
+    float start = delta + this->m_smoothPitch.startValue;
+
+    if (start < MIN_PITCH_ANGLE) {
+        start = MIN_PITCH_ANGLE;
+    } else if (start >= MAX_PITCH_ANGLE) {
+        start = MAX_PITCH_ANGLE;
+    }
+
+    this->m_smoothPitch.startValue = UnwrapAngleToward(target, start, -3.1415927f, 3.1415927f);
+
+    float pitch = this->m_pitch + delta;
+
+    if (pitch < MIN_PITCH_ANGLE) {
+        pitch = MIN_PITCH_ANGLE;
+    } else if (pitch >= MAX_PITCH_ANGLE) {
+        pitch = MAX_PITCH_ANGLE;
+    }
+
+    this->m_pitch = UnwrapAngleToward(target, pitch, -3.1415927f, 3.1415927f);
+}
+
+// OFFSET: 0x5FF530
+void CGCamera::ClampPitchAndNormalize() {
+    float pitch = this->m_pitch;
+
+    if (pitch < MIN_PITCH_ANGLE) {
+        pitch = MIN_PITCH_ANGLE;
+    } else if (pitch >= MAX_PITCH_ANGLE) {
+        pitch = MAX_PITCH_ANGLE;
+    }
+
+    this->m_pitch = pitch;
+
+    this->m_yaw = CMath::normalizeangle0to2pi(this->m_yaw);
+    this->m_yawOffset = CMath::normalizeangle0to2pi(this->m_yawOffset);
+}
+
+// OFFSET: 0x5FE5F0
+void CGCamera::UpdateYaw(float delta) {
+    this->m_smoothYaw.target = CMath::normalizeangle0to2pi(delta + this->m_smoothYaw.target);
+
+    float start = CMath::normalizeangle0to2pi(delta + this->m_smoothYaw.startValue);
+
+    this->m_smoothYaw.startValue = UnwrapAngleToward(this->m_smoothYaw.target, start, -3.1415927f, 3.1415927f);
+
+    float yaw = CMath::normalizeangle0to2pi(this->m_yaw + delta);
+
+    this->m_yaw = UnwrapAngleToward(this->m_smoothYaw.target, yaw, -3.1415927f, 3.1415927f);
+}
+
+// OFFSET: 0x601FF0
+void CGCamera::SetModeFreeLook() {
+    uint32_t state = this->m_state;
+
+    if ((state & 0x1) != 0) {
+        return;
+    }
+
+    this->m_state = state | 0x1;
+
+    this->IncIgnoreFacing();
+
+    int32_t refs = this->unk_00B0;
+
+    this->unk_00B0 = refs + 1;
+
+    if (!refs) {
+        this->ClampPitchToLimits(this->m_groundTilt);
+    }
+
+    this->m_state &= 0xF4FFBFFF;
+    this->m_flags &= ~0x4u;
+
+    this->m_smoothPitch.target = this->m_pitch;
+    this->m_smoothPitch.startTimeMs = 0;
+    this->m_smoothPitch.rate = 0.0f;
+
+    this->m_smoothTargetOffset.target = this->m_targetOffset;
+    this->m_smoothTargetOffset.startTimeMs = 0;
+    this->m_smoothTargetOffset.rate = 0.0f;
+
+    this->m_smoothYaw.target = this->m_yaw;
+    this->m_smoothYaw.startTimeMs = 0;
+    this->m_smoothYaw.rate = 0.0f;
+}
+
+// OFFSET: 0x601F70
+void CGCamera::SetModeNormal() {
+    uint32_t state = this->m_state;
+
+    if ((state & 0x1) == 0 || (this->m_flags & 0x2) != 0) {
+        return;
+    }
+
+    state &= ~0x1u;
+    this->m_state = state;
+
+    //if (this->m_vehicleCamera && (this->m_vehicleCamera->m_flags & 0x10) != 0) {
+    //    this->m_state = state & ~0x4000u;
+    //}
+
+    this->DecIgnoreFacing();
+
+    if (--this->unk_00B0 == 0) {
+        this->ClampPitchToLimits(-this->m_groundTilt);
+    }
+
+    this->m_state &= ~0x4000u;
+}
+
+// OFFSET: 0x6047E0
+void CGCamera::EnableFreeLook() {
+    CGObject_C* target = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
+
+    if (target && (target->m_obj->m_type & TYPEMASK_PLAYER) != 0) {
+        CGPlayer_C* player = static_cast<CGPlayer_C*>(target);
+
+        if ((player->m_unit->UNIT_FIELD_FLAGS & 0x100000) != 0 && (player->m_player->PLAYER_FLAGS & 0x20000) != 0) {
+            return;
+        }
+    }
+
+    this->SetModeFreeLook();
+}
+
+// OFFSET: 0x604850
+void CGCamera::DisableFreeLook(int32_t a2) {
+    this->SetModeNormal();
+
+    if (a2) {
+        this->m_state |= 0x20u;
+    } else {
+        this->m_state &= ~0x20u;
+    }
+
+    this->m_smoothPitch.target = this->m_pitch;
+    this->m_smoothYaw.target = this->m_yaw;
+    this->m_smoothTargetOffset.target = this->m_targetOffset;
+}
+
+// OFFSET: 0x6020B0
+void CGCamera::UpdateFreeLookFacing(float dx, float dy, float* outPitch) {
+    if (outPitch) {
+        *outPitch = 0.0f;
+    }
+
+    if ((this->m_state & 0x8000) != 0) {
+        return;
+    }
+
+    CGObject_C* target = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
+
+    if (target && (target->m_obj->m_type & TYPEMASK_PLAYER) != 0) {
+        CGPlayer_C* player = static_cast<CGPlayer_C*>(target);
+
+        if ((player->m_unit->UNIT_FIELD_FLAGS & 0x100000) != 0 && (player->m_player->PLAYER_FLAGS & 0x20000) != 0) {
+            return;
+        }
+    }
+
+    this->m_state |= 0x40u;
+
+    float pitchSpeed = s_cvCameraPitchMoveSpeed->m_floatValue;
+    float yawSpeed = s_cvCameraYawMoveSpeed->m_floatValue;
+    float pivotDXMax = s_cvCameraPivotDXMax->m_floatValue;
+    float pivotDYMin = s_cvCameraPivotDYMin->m_floatValue;
+
+    DDCToNDC(dx, dy, &dx, &dy);
+
+    float dyaw = yawSpeed * 0.017453292f * (dx * 0.00125f);
+    float dpitch = 0.017453292f * pitchSpeed * (dy * 0.0016666667f);
+
+    float pitchSign = s_cvMouseInvertPitch->m_intValue ? -1.0f : 1.0f;
+    float yawSign = s_cvMouseInvertYaw->m_intValue ? -1.0f : 1.0f;
+
+    if (outPitch) {
+        *outPitch = dpitch * pitchSign;
+        dpitch = 0.0f;
+    }
+
+    int32_t canSmooth = this->CanSmoothTargetFacing(target);
+
+    uint32_t state = this->m_state;
+
+    int32_t usePivot = 0;
+
+    if ((state & 0x8000000) == 0 && fabs(this->m_targetOffset) >= 0.001f) {
+        usePivot = 1;
+    }
+
+    if (canSmooth) {
+        if (fabs(dpitch) > pivotDYMin && fabs(dyaw) < pivotDXMax) {
+            usePivot = 1;
+        }
+
+        if (dpitch > 0.0f) {
+            bool offsetIsZero = fabs(this->m_targetOffset) < 0.00000023841858f;
+
+            if (this->m_targetOffset < 0.0f && dpitch * pitchSign + this->m_targetOffset > 0.0f) {
+                dpitch += this->m_targetOffset;
+                usePivot = 0;
+                this->m_targetOffset = 0.0f;
+                this->m_smoothTargetOffset.target = 0.0f;
+            } else if (offsetIsZero) {
+                usePivot = 0;
+                this->m_targetOffset = 0.0f;
+                this->m_smoothTargetOffset.target = 0.0f;
+            }
+        }
+    }
+
+    int32_t reset = usePivot == 0;
+
+    if (usePivot) {
+        this->m_targetOffset = dpitch * pitchSign + this->m_targetOffset;
+
+        if (this->m_pitch >= 0.0f) {
+            reset = 1;
+        } else {
+            float floorOffset = MIN_PITCH_ANGLE - this->m_pitch;
+
+            if (this->m_targetOffset < floorOffset) {
+                this->m_targetOffset = floorOffset;
+            }
+        }
+
+        if (this->m_targetOffset > 0.0f) {
+            reset = 1;
+        }
+    }
+
+    if (reset) {
+        this->SetDesiredTargetOffset(0.0f, 0.0f, 1.0f, OsGetAsyncTimeMs());
+        this->ClampPitchToLimits(pitchSign * dpitch);
+    } else {
+        this->m_smoothTargetOffset.target = this->m_targetOffset;
+        this->m_smoothTargetOffset.startTimeMs = 0;
+        this->m_smoothTargetOffset.rate = 0.0f;
+        this->m_state = state & 0xF7FFFFFF;
+    }
+
+    this->UpdateYaw(-(yawSign * dyaw));
+
+    this->ClampPitchAndNormalize();
+}
+
+// OFFSET: 0x5FFEB0
+bool CGCamera::ShouldSmoothPitch(float pitchMin, float pitchMax) {
+    CGUnit_C* mover = ClntObjMgrObjectPtr<CGUnit_C*>(this->m_targetGUID, TYPEMASK_UNIT);
+
+    return mover
+        && (this->m_state & 0x1) == 0
+        && s_cvCameraSmoothPitch->m_intValue
+        && (mover->m_passenger->m_flags & 0x2200000) == 0
+        && (pitchMin > this->m_pitch || pitchMax < this->m_pitch);
+}
+
+// OFFSET: 0x602680
+bool CGCamera::CanSmoothYaw(float yawMin, float yawMax) {
+    CGObject_C* target = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
+
+    if (!target) {
+        return false;
+    }
+
+    uint32_t state = this->m_state;
+
+    if ((state & 0x1) != 0 || !s_cvCameraSmoothYaw->m_intValue) {
+        return false;
+    }
+
+    if (this->m_ignoreFacingRefs <= 0) {
+        return yawMin > this->m_yaw || yawMax < this->m_yaw;
+    }
+
+    float facing;
+
+    //if ((target->m_obj->m_type & TYPEMASK_UNIT) != 0) {
+    //    if ((state & 0x100) != 0) {
+    //        facing = CGUnit_C::GetTrackingTurn();
+    //    } else {
+    //        static_cast<CGUnit_C*>(target)->UpdateSmoothFacing(0);
+    //        facing = this->GetChaseFacing(target);
+    //    }
+    //} else {
+        facing = target->GetFacing();
+    //}
+
+    return CMath::fnotequal(this->m_yaw, facing);
+}
+
+// OFFSET: 0x602760
+void CGCamera::SmoothFreeLook(CGInputControl* input, int32_t settle) {
+    if (!input) {
+        return;
+    }
+
+    uint32_t state = this->m_state;
+    uint32_t flags = input->m_flags;
+
+    uint32_t reasons = 0;
+
+    if ((state & 0x1000) != 0) {
+        reasons |= 0x40;
+    }
+
+    if ((flags & 0x300) != 0 || (flags & 0x2000001) != 0) {
+        reasons |= 0x20;
+    }
+
+    if ((flags & 0xC0) != 0 || ((flags & 0x2000001) != 0 && (flags & 0x300) != 0)) {
+        reasons |= 0x10;
+    }
+
+    if ((flags & 0x1030) != 0 || ((flags & 0x1) != 0 && (flags & 0x2) != 0)) {
+        reasons |= 0x08;
+    }
+
+    if ((state & 0x100) != 0) {
+        if (CGUnit_C::GetTrackingType() == 3 && (this->m_flags & 0x1) == 0) {
+            reasons |= 0x08;
+        } else {
+            reasons |= 0x04;
+        }
+    }
+
+    if (settle) {
+        reasons |= 0x02;
+    }
+
+    if ((flags & 0x1030) == 0 && (flags & 0xC0) == 0 && ((flags & 0x2000001) == 0 || (flags & 0x300) == 0) && ((flags & 0x300) == 0 || (flags & 0x2000001) != 0) && (flags & 0x1E00000) == 0) {
+        reasons |= 0x01;
+    }
+
+    this->m_state &= ~0x4000u;
+
+    reasons &= 0x7F;
+
+    if (!reasons || !this->IsCustomViewSmoothingActive()) {
+        return;
+    }
+
+    int32_t now = OsGetAsyncTimeMs();
+
+    uint32_t style;
+
+    if ((reasons & 0x44) != 0) {
+        if (this->unk_02FC == 1) {
+            style = 0;
+        } else if (this->unk_02FC == 2) {
+            style = 3;
+        } else {
+            style = s_cvCameraSmoothTrackingStyle->m_intValue;
+        }
+    } else {
+        style = s_cvCameraSmoothStyle->m_intValue;
+    }
+
+    float delayOffset = 0.0f;
+    float rateScale = 0.0f;
+
+    int32_t bit = 7;
+
+    while (--bit >= 0) {
+        if (((1 << bit) & reasons) != 0 && style < 5) {
+            delayOffset = s_cvCameraSmoothState[style][bit][0]->m_floatValue;
+
+            if (delayOffset < 0.0f) {
+                delayOffset = 0.0f;
+            } else if (delayOffset >= 100.0f) {
+                delayOffset = 99.0f;
+            }
+
+            rateScale = s_cvCameraSmoothState[style][bit][1]->m_floatValue;
+
+            if (rateScale < 0.0f) {
+                rateScale = 0.0f;
+            } else if (rateScale >= 100.0f) {
+                rateScale = 99.0f;
+            }
+
+            break;
+        }
+    }
+
+    float axis[6];
+
+    for (int32_t row = 2; row >= 0; row--) {
+        if (style >= 5) {
+            continue;
+        }
+
+        for (int32_t col = 1; col >= 0; col--) {
+            float value = s_cvCameraSmoothViewData[style][row][col]->m_floatValue;
+
+            axis[2 * row + col] = value;
+
+            if (col == 1) {
+                axis[2 * row + 1] = value * rateScale;
+            } else {
+                axis[2 * row] = value + delayOffset;
+            }
+
+            if (axis[2 * row + col] < 0.0f) {
+                axis[2 * row + col] = 0.0f;
+            }
+
+            if (axis[2 * row + col] >= 100.0f) {
+                axis[2 * row + col] = 99.0f;
+            }
+        }
+    }
+
+    float pitchMin = s_cvCameraPitchSmoothMin->m_floatValue * 0.017453292f;
+    float pitchMax = s_cvCameraPitchSmoothMax->m_floatValue * 0.017453292f;
+    float yawMin = s_cvCameraYawSmoothMin->m_floatValue * 0.017453292f;
+    float yawMax = 0.017453292f * s_cvCameraYawSmoothMax->m_floatValue;
+
+    bool doPitch = this->ShouldSmoothPitch(pitchMin, pitchMax);
+    bool doTarget = this->CanSmoothTarget();
+    bool doYaw = this->CanSmoothYaw(yawMin, yawMax);
+
+    float maxRate = 0.0f;
+
+    if (doPitch) {
+        if (axis[3] == 0.0f) {
+            this->CancelSmoothPitch();
+            doPitch = false;
+        } else {
+            float target = this->m_views[this->m_viewIndex].pitch;
+
+            if (pitchMin > this->m_pitch) {
+                target = pitchMin;
+            }
+
+            if (pitchMax < this->m_pitch) {
+                target = pitchMax;
+            }
+
+            doPitch = this->SetDesiredPitchAngle(target, axis[2], axis[3], now);
+
+            if (doPitch && this->m_smoothPitch.rate >= 0.0f) {
+                maxRate = this->m_smoothPitch.rate;
+            }
+        }
+    }
+
+    if (doTarget) {
+        if (rateScale == 0.0f) {
+            this->CancelSmoothTargetOffset();
+            doTarget = false;
+        } else {
+            doTarget = this->SetDesiredTargetOffset(0.0f, delayOffset, rateScale, now);
+
+            if (doTarget && maxRate <= this->m_smoothTargetOffset.rate) {
+                maxRate = this->m_smoothTargetOffset.rate;
+            }
+        }
+    }
+
+    if (doYaw) {
+        if (axis[5] == 0.0f) {
+            this->CancelSmoothYaw();
+            doYaw = false;
+        } else {
+            float base = this->m_views[this->m_viewIndex].yaw;
+            float target = base;
+
+            if (this->m_ignoreFacingRefs <= 0) {
+                if (yawMin > this->m_yaw) {
+                    target = yawMin;
+                }
+
+                if (yawMax < this->m_yaw) {
+                    target = yawMax;
+                }
+            } else {
+                CGObject_C* obj = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
+
+                //if (obj && (obj->m_obj->m_type & TYPEMASK_UNIT) != 0) {
+                //    if ((this->m_state & 0x100) != 0) {
+                //        target = CMath::normalizeangle0to2pi(CGUnit_C::GetTrackingTurn() + base);
+                //    } else {
+                //        obj->AsUnit()->UpdateSmoothFacing(0);
+                //
+                //        if (input->m_facingOverrideActive) {
+                //            target = CMath::normalizeangle0to2pi(input->m_facingOverride + base);
+                //        } else {
+                //            target = CMath::normalizeangle0to2pi(this->GetChaseFacing(obj) + base);
+                //        }
+                //    }
+                //} else {
+                    target = CMath::normalizeangle0to2pi(obj->GetFacing() + base);
+                //}
+            }
+
+            doYaw = this->SetDesiredYawAngle(target, axis[4], axis[5], now);
+
+            if (doYaw && maxRate <= this->m_smoothYaw.rate) {
+                maxRate = this->m_smoothYaw.rate;
+            }
+        }
+    }
+
+    float duration = maxRate;
+
+    if (duration < s_cvCameraSmoothTimeMin->m_floatValue) {
+        duration = s_cvCameraSmoothTimeMin->m_floatValue;
+    }
+
+    if (duration > s_cvCameraSmoothTimeMax->m_floatValue) {
+        duration = s_cvCameraSmoothTimeMax->m_floatValue;
+    }
+
+    if (doYaw) {
+        this->m_smoothYaw.rate = duration;
+    }
+
+    if (doPitch) {
+        this->m_smoothPitch.rate = duration;
+    }
+
+    if (doTarget) {
+        this->m_smoothTargetOffset.rate = duration;
+    }
+}
+
+// OFFSET: 0x6009E0
+float CGCamera::GetChaseFacing(CGObject_C* target) {
+    //m_vehicleCamera = this->m_vehicleCamera;
+    //if (m_vehicleCamera)
+    //    return *(m_vehicleCamera + 132);
+    //else
+    //    return target->dataAA0;
+    WHOA_UNIMPLEMENTED(0.0f);
+}
+
+// OFFSET: 0x5FFF40
+bool CGCamera::IsCustomViewSmoothingActive() {
+    return true;
+    return (this->m_state & 0x20) == 0 && (s_cvCameraCustomViewSmoothing->m_intValue || this->CheckViewSmoothingCVarsChanged(this->m_viewIndex)) && (this->m_state & 0x8000) == 0;
+}
+
+// OFFSET: 0x5FEF10
+void CGCamera::CancelSmoothTargetOffset() {
+    this->m_state &= ~0x8000000u;
+    this->m_smoothTargetOffset.target = this->m_targetOffset;
+    this->m_smoothTargetOffset.startTimeMs = 0;
+    this->m_smoothTargetOffset.rate = 0.0;
+}
+
+// OFFSET: 0x5FEF40
+void CGCamera::CancelSmoothYaw() {
+    this->m_state &= ~0x1000000u;
+    this->m_smoothYaw.target = this->m_yaw;
+    this->m_smoothYaw.startTimeMs = 0;
+    this->m_smoothYaw.rate = 0.0;
+}
+
+// OFFSET: 0x5FEEE0
+void CGCamera::CancelSmoothPitch() {
+    this->m_state &= ~0x2000000u;
+    this->m_smoothPitch.target = this->m_pitch;
+    this->m_smoothPitch.startTimeMs = 0;
+    this->m_smoothPitch.rate = 0.0;
+}
+
+// OFFSET: 0x602EB0
+void CGCamera::UpdateUncontrolledState(bool a2) {
+    if (a2) {
+        if ((this->m_state & 0x1000) == 0) {
+            this->IncIgnoreFacing();
+            this->m_state = this->m_state & 0xFFFFAFFF | 0x1000;
+        }
+        this->SmoothFreeLook(CGInputControl::GetActive(), 0);
+    }
+    if ((this->m_state & 0x1000) != 0 && !a2) {
+        this->DecIgnoreFacing();
+        this->m_state &= 0xFFFFAFFF;
+        this->SmoothFreeLook(CGInputControl::GetActive(), 0);
+    }
+}
+
+// OFFSET: 0x603D30
+void CGCamera::UpdateTargetSmoothing(CGObject_C* target, int32_t time) {
+    //if (this->HasTargetOffset()) {
+    //    float t = (time - this->unk_0288) * 0.001f / this->unk_028C;
+    //
+    //    if (t < 1.0f) {
+    //        this->m_bobOffset.x = OrganicSmooth(this->unk_0290.x, 0.0f, t);
+    //        this->m_bobOffset.y = OrganicSmooth(this->unk_0290.y, 0.0f, t);
+    //        this->m_bobOffset.z = OrganicSmooth(this->unk_0290.z, 0.0f, t);
+    //    } else {
+    //        this->m_bobOffset.x = 0.0f;
+    //        this->m_bobOffset.y = 0.0f;
+    //        this->m_bobOffset.z = 0.0f;
+    //    }
+    //}
+
+    //if (fabs(this->m_smoothFoV.target - this->m_targetFov) < 0.00000023841858f) {
+    //    this->m_state &= ~0x40000000u;
+    //    this->m_smoothFoV.target = this->m_targetFov;
+    //    this->m_smoothFoV.startTimeMs = 0;
+    //    this->m_smoothFoV.rate = 0.0f;
+    //} else if ((this->m_state & 0x40000000) != 0 && time - this->m_smoothFoV.startTimeMs >= 0) {
+    //    float t = (time - this->m_smoothFoV.startTimeMs) * 0.001f / this->m_smoothFoV.rate;
+    //
+    //    if (t < 1.0f) {
+    //        this->m_targetFov = OrganicSmooth(this->m_smoothFoV.startValue, this->m_smoothFoV.target, t);
+    //    } else {
+    //        this->m_targetFov = this->m_smoothFoV.target;
+    //    }
+    //}
+
+    if (fabs(this->m_smoothDistance.target - this->m_distance) < 0.00000023841858f) {
+        this->m_state &= ~0x4000000u;
+        this->m_smoothDistance.target = this->m_distance;
+        this->m_smoothDistance.startTimeMs = 0;
+        this->m_smoothDistance.rate = 0.0f;
+    } else if ((this->m_state & 0x4000000) != 0 && time - this->m_smoothDistance.startTimeMs >= 0) {
+        float t = (time - this->m_smoothDistance.startTimeMs) * 0.001f / this->m_smoothDistance.rate;
+
+        if (t < 1.0f) {
+            this->m_distance = OrganicSmooth(this->m_smoothDistance.startValue, this->m_smoothDistance.target, t);
+        } else {
+            this->m_distance = this->m_smoothDistance.target;
+        }
+    }
+
+    if (fabs(this->m_smoothHeight.target - this->m_height) < 0.00000023841858f) {
+        this->m_state &= ~0x20000000u;
+        this->m_smoothHeight.target = this->m_height;
+        this->m_smoothHeight.startTimeMs = 0;
+        this->m_smoothHeight.rate = 0.0f;
+    } else if ((this->m_state & 0x20000000) != 0 && time - this->m_smoothHeight.startTimeMs >= 0) {
+        float t = (time - this->m_smoothHeight.startTimeMs) * 0.001f / this->m_smoothHeight.rate;
+
+        if (t < 1.0f) {
+            this->m_height = OrganicSmooth(this->m_smoothHeight.startValue, this->m_smoothHeight.target, t);
+        } else {
+            this->m_height = this->m_smoothHeight.target;
+        }
+    }
+
+    if (fabs(this->m_smoothGroundTilt.target - this->m_groundTilt) < 0.00000023841858f) {
+        this->m_state &= ~0x10000000u;
+        this->m_smoothGroundTilt.target = this->m_groundTilt;
+        this->m_smoothGroundTilt.startTimeMs = 0;
+        this->m_smoothGroundTilt.rate = 0.0f;
+    } else if ((this->m_state & 0x10000000) != 0 && time - this->m_smoothGroundTilt.startTimeMs >= 0) {
+        float t = (time - this->m_smoothGroundTilt.startTimeMs) * 0.001f / this->m_smoothGroundTilt.rate;
+
+        if (t < 1.0f) {
+            this->m_groundTilt = OrganicSmooth(this->m_smoothGroundTilt.startValue, this->m_smoothGroundTilt.target, t);
+        } else {
+            this->m_groundTilt = this->m_smoothGroundTilt.target;
+        }
+    }
+
+    if (fabs(this->m_smoothTargetOffset.target - this->m_targetOffset) < 0.00000023841858f) {
+        uint32_t state = this->m_state;
+
+        if ((state & 0x80000000) == 0) {
+            this->m_smoothTargetOffset.target = this->m_targetOffset;
+            this->m_smoothTargetOffset.startTimeMs = 0;
+            this->m_state = state & 0xF7FFFFFF;
+            this->m_smoothTargetOffset.rate = 0.0f;
+        }
+    } else if ((this->m_state & 0x8000000) != 0 && time - this->m_smoothTargetOffset.startTimeMs >= 0) {
+        float t = (time - this->m_smoothTargetOffset.startTimeMs) * 0.001f / this->m_smoothTargetOffset.rate;
+
+        if (t < 1.0f) {
+            this->m_targetOffset = OrganicSmooth(this->m_smoothTargetOffset.startValue, this->m_smoothTargetOffset.target, t);
+        } else {
+            this->m_targetOffset = this->m_smoothTargetOffset.target;
+        }
+    }
+
+    if (fabs(this->m_smoothPitch.target - this->m_pitch) < 0.00000023841858f) {
+        this->m_state &= ~0x2000000u;
+        this->m_smoothPitch.target = this->m_pitch;
+        this->m_smoothPitch.startTimeMs = 0;
+        this->m_smoothPitch.rate = 0.0f;
+    } else if ((this->m_state & 0x2000000) != 0 && time - this->m_smoothPitch.startTimeMs >= 0) {
+        float t = (time - this->m_smoothPitch.startTimeMs) * 0.001f / this->m_smoothPitch.rate;
+
+        if (t < 1.0f) {
+            this->m_pitch = OrganicSmooth(this->m_smoothPitch.startValue, this->m_smoothPitch.target, t);
+        } else {
+            this->m_pitch = this->m_smoothPitch.target;
+        }
+    }
+
+    uint32_t state = this->m_state;
+
+    if ((state & 0x8) != 0 && (state & 0x1000000) != 0) {
+        this->m_smoothYaw.startTimeMs = time;
+    }
+
+    if ((state & 0x1) == 0 && (state & 0x8) == 0) {
+        if (fabs(this->m_smoothYaw.target - this->m_yaw) < 0.00000023841858f) {
+            this->m_smoothYaw.target = this->m_yaw;
+            this->m_smoothYaw.startTimeMs = 0;
+            this->m_state = state & 0xFEFFFFFF;
+            this->m_smoothYaw.rate = 0.0f;
+        } else if ((state & 0x1000000) != 0 && time - this->m_smoothYaw.startTimeMs >= 0) {
+            float t = (time - this->m_smoothYaw.startTimeMs) * 0.001f / this->m_smoothYaw.rate;
+
+            if (t < 1.0f) {
+                this->m_yaw = OrganicSmooth(this->m_smoothYaw.startValue, this->m_smoothYaw.target, t);
+            } else {
+                this->m_yaw = this->m_smoothYaw.target;
+            }
+        }
+    }
+
+    this->ClampPitchAndNormalize();
+
+    if (fabs(this->m_smoothFlyingHeight.target - this->m_flyingMountHeight) < 0.00000023841858f) {
+        this->m_state &= ~0x400000u;
+        this->m_smoothFlyingHeight.target = this->m_flyingMountHeight;
+        this->m_smoothFlyingHeight.startTimeMs = 0;
+        this->m_smoothFlyingHeight.rate = 0.0f;
+    } else if ((this->m_state & 0x400000) != 0 && time - this->m_smoothFlyingHeight.startTimeMs >= 0) {
+        float t = (time - this->m_smoothFlyingHeight.startTimeMs) * 0.001f / this->m_smoothFlyingHeight.rate;
+
+        if (t < 1.0f) {
+            this->m_flyingMountHeight = OrganicSmooth(this->m_smoothFlyingHeight.startValue, this->m_smoothFlyingHeight.target, t);
+        } else {
+            this->m_flyingMountHeight = this->m_smoothFlyingHeight.target;
+        }
+    }
+
+    //this->CalcTerrainTilt(target, time);
+    //this->PerformTerrainTilt(target, time, 0);
 }

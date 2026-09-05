@@ -150,13 +150,27 @@ static const uint32_t s_thailookup[256] = {
 
 static HWND s_mouseWnd;
 static C2iVector s_mousePos;
+static C2iVector s_centerMousePos;
 
+// OFFSET: 0x869DB0
 void CenterMouse() {
-    // TODO
+    auto hwnd = static_cast<HWND>(OsGuiGetWindow(0));
+    RECT rect;
+    GetWindowRect(hwnd, &rect);
+    s_centerMousePos.x = rect.right / 2;
+    s_centerMousePos.y = rect.bottom / 2;
+    SetPhysicalCursorPos(rect.right / 2, rect.bottom / 2);
 }
 
+// OFFSET: 0x8695B0
 void RestoreMouse() {
-    // TODO
+    auto hwnd = static_cast<HWND>(OsGuiGetWindow(0));
+    POINT point;
+    point.x = s_mousePos.x;
+    point.y = s_mousePos.y;
+    ClientToScreen(hwnd, &point);
+    LogicalToPhysicalPoint(hwnd, &point);
+    SetPhysicalCursorPos(point.x, point.y);
 }
 
 void SaveMouse(HWND window, const POINT& pt) {
@@ -416,7 +430,8 @@ bool ProcessMouseEvent(MOUSEBUTTON button, uint32_t message, HWND hwnd, OSINPUT 
     POINT mousePos;
 
     if (s_osMouseMode == OS_MOUSE_MODE_RELATIVE) {
-        // TODO
+        mousePos.x = s_mousePos.x;
+        mousePos.y = s_mousePos.y;
     } else {
         GetCursorPos(&mousePos);
         ScreenToClient(hwnd, &mousePos);
@@ -577,6 +592,7 @@ int32_t OsInputGet(OSINPUT* id, int32_t* param0, int32_t* param1, int32_t* param
     return 1;
 }
 
+// OFFSET: 0x86A020
 void OsInputSetMouseMode(OS_MOUSE_MODE mode) {
     STORM_VALIDATE_BEGIN;
     STORM_VALIDATE(mode < OS_MOUSE_MODES);
@@ -784,12 +800,23 @@ int32_t OsWindowProc(void* window, uint32_t message, uintptr_t wparam, intptr_t 
     }
 
     case WM_MOUSEMOVE: {
-        // TODO
+        POINT mousePos;
+
+        //if (s_dragging) {
+        //    mousePos.x = lParam;
+        //    mousePos.y = SHIWORD(lParam);
+        //    ClientToScreen(hwnd, &mousePos);
+        //    maybe_OsWindowProc__DispatchMouseMove(v7);
+        //    return 0;
+        //}
 
         if (s_osMouseMode == OS_MOUSE_MODE_RELATIVE) {
-            // TODO
+            GetPhysicalCursorPos(&mousePos);
+            if (mousePos.x != s_centerMousePos.x || mousePos.y != s_centerMousePos.y) {
+                OsQueuePut(OS_INPUT_MOUSE_MOVE_RELATIVE, 0, mousePos.x - s_centerMousePos.x, mousePos.y - s_centerMousePos.y, 0);
+                CenterMouse();
+            }
         } else {
-            POINT mousePos;
             GetCursorPos(&mousePos);
             ScreenToClient(hwnd, &mousePos);
             OsQueuePut(OS_INPUT_MOUSE_MOVE, 0, mousePos.x, mousePos.y, 0);

@@ -8,6 +8,7 @@
 #include "ui/CSimpleRender.hpp"
 #include "ui/CSimpleTexture.hpp"
 #include "ui/CSimpleTitleRegion.hpp"
+#include "gameui/CGWorldFrame.hpp"
 #include "cursor/Cursor.hpp"
 #include <cstring>
 #include <tempest/Math.hpp>
@@ -353,8 +354,15 @@ int32_t CSimpleTop::OnMouseMove(const EVENT_DATA_MOUSE* pMouseData, void* param)
 
 // OFFSET: 0x494730
 int32_t CSimpleTop::OnMouseMoveRelative(const EVENT_DATA_MOUSE* pMouseData, void* param) {
-    // TODO
-    return 0;
+    CSimpleTop* top = static_cast<CSimpleTop*>(param);
+
+    CMouseEvent mouseEvent;
+    mouseEvent = *pMouseData;
+    mouseEvent.id = 0x400500CB;
+
+    CSimpleTop::m_eventTime = pMouseData->time;
+
+    return !top->m_mouseMoveCallback || !top->m_mouseMoveCallback(&mouseEvent);
 }
 
 // OFFSET: 0x4947A0
@@ -722,6 +730,29 @@ void CSimpleTop::SetCursor(MipBits* image) {
         memcpy(cursor, image->mip[0], CURSOR_IMAGE_BYTES);
         g_theGxDevicePtr->CursorUnlock(0, 0);
         g_theGxDevicePtr->CursorSetVisible(1);
+    }
+}
+
+// OFFSET: 0x493FB0
+void CSimpleTop::SetMouseFocus(CSimpleFrame* worldFrame) {
+    auto previousFocus = this->m_mouseFocus;
+    if (worldFrame != this->m_mouseFocus) {
+        this->m_mouseFocus = worldFrame;
+        if (previousFocus)
+            previousFocus->OnLayerCursorExit(0, 0);
+        if (worldFrame)
+            worldFrame->OnLayerCursorEnter(0);
+    }
+
+    if (this->m_mouseCapture && this->m_mouseCapture != worldFrame) {
+        CMouseEvent mouseEvent;
+        mouseEvent = this->m_mousePosition;
+
+        mouseEvent.x = 0.0f;
+        mouseEvent.y = 0.0f;
+        mouseEvent.id = 0x400500C9;
+        this->m_mouseCapture->OnLayerMouseUp(mouseEvent, nullptr);
+        this->m_mouseCapture = nullptr;
     }
 }
 

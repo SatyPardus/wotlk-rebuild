@@ -4,13 +4,19 @@
 #include <clientobject/Unit_C.hpp>
 #include <clientobject/ObjectMgrClient.hpp>
 #include <clientobject/Movement.hpp>
+#include "gameui/CGWorldFrame.hpp"
+#include "gameui/CGGameUI.hpp"
+#include "gameui/camera/CGCamera.hpp"
+#include <gx/Device.hpp>
+#include "console/CVar.hpp"
 
 CGInputControl* CGInputControl::s_inputControl;
+CVar* CGInputControl::s_cvCinematicJoystick;
 
 // OFFSET: 0x5FD2C0
 void CGInputControl::Initialize() {
     //CVar::Register("Joystick", "enable joystick control", 0, "0", bn_JoystickCallback, 5, 0, 0, 0);
-    //bnl_s_cvCinematicJoystick = CVar::Register("CinematicJoystick", "enable cinematic joystick control", 0, "0", 0, 5, 0, 0, 0);
+    s_cvCinematicJoystick = CVar::Register("CinematicJoystick", "enable cinematic joystick control", 0, "0", 0, 5, 0, 0, 0);
     CGInputControl::s_inputControl = new (STORM_ALLOC(sizeof(CGInputControl))) CGInputControl();
     //s_cvEnableWowMouse = CVar::Register("enableWowMouse", "Enable Steelseries World of Warcraft Mouse", 1, "0", bn_WowMouseCVarCallback, 5, 0, 0, 0);
 }
@@ -104,141 +110,200 @@ void CGInputControl::UpdatePlayer(int32_t eventTime, bool a3) {
 
 // OFFSET: 0x5FA170
 bool CGInputControl::SetControlBit(uint32_t controlBit, int32_t eventTime) {
-    if ((controlBit & this->m_flags) != 0)
+    if ((controlBit & this->m_flags) != 0) {
         return false;
+    }
 
-    this->m_flags |= controlBit;
-    //ActiveCamera = CGWorldFrame::GetActiveCamera();
-    //m_flags = this->m_flags;
-    //v22 = (m_flags & 0x1030) == 0 && (m_flags & 0xC0) == 0 && ((m_flags & 0x2000001) == 0 || (m_flags & 0x300) == 0) && ((m_flags & 0x300) == 0 || (m_flags & 0x2000001) != 0) && (m_flags & 0x1E00000) == 0;
-    //v6 = m_flags & 0x6000003;
-    //v21 = this->m_flags & 3;
-    //if ((m_flags & 1) == 0 || (v24 = 1, (m_flags & 2) == 0))
-    //    v24 = 0;
-    //v20 = m_flags & 0x4000002;
-    //v19 = m_flags & 0x2000001;
-    //if ((m_flags & 0x2000001) == 0 || (v23 = 1, (m_flags & 0x300) == 0))
-    //    v23 = 0;
-    //
-    //if (!v6 && (v7 & 0x6000003) != 0) {
-    //    *&this->unk_0008 = 0.0;
-    //    *&this->unk_000C = 0.0;
-    //    this->unk_0014 = a3;
-    //    CGCamera::EnableFreeLook(ActiveCamera);
-    //}
-    //if (!v21 && (this->m_flags & 3) != 0)
-    //    CGGameUI::OnMouseModeRelative();
-    //if (!v24 && (v8 = this->m_flags, (v8 & 1) != 0) && (v8 & 2) != 0) {
-    //    v9 = ClntObjMgrObjectPtr(CGUnit_C::m_activeMover, TYPEMASK_UNIT);
-    //    if (CGInputControl::CanSyncFreeLookFacing(this, v9)) {
-    //        CGCamera::SyncFreeLookFacing(ActiveCamera);
-    //        this->unk_0054 = 1;
-    //    }
-    //} else {
-    //    v10 = this->m_flags;
-    //    if ((v10 & 1) == 0 || (v10 & 2) == 0)
-    //        this->unk_0054 = 0;
-    //}
-    //if ((controlBit & 0x1E00000) != 0)
-    //    CGCamera::UpdateTrackingState(ActiveCamera, this->m_flags & 0x1E00000);
-    //if ((controlBit & 0xA010F0) != 0 || !v24 && (v11 = this->m_flags, (v11 & 1) != 0) && (v11 & 2) != 0 || !v23 && (v12 = this->m_flags, (v12 & 0x2000001) != 0) && (v12 & 0x300) != 0) {
-    //    v13 = this->m_flags;
-    //    v14 = (v13 & 0xA010F0) != 0 || (v13 & 1) != 0 && (v13 & 2) != 0 || (v13 & 0x2000001) != 0 && (v13 & 0x300) != 0;
-    //    CGCamera::UpdateBobbingState(ActiveCamera, v14);
-    //}
-    //if (this->unk_0044 && (controlBit & 0x300) != 0) {
-    //    this->unk_0044 = 0;
-    //    v15 = CGWorldFrame::GetActiveCamera();
-    //    CGCamera::DecIgnoreFacing(v15);
-    //}
-    //if ((controlBit & 0x13F0) != 0 || !v20 && (this->m_flags & 0x4000002) != 0 || !v19 && (this->m_flags & 0x2000001) != 0 || !v23 && (v16 = this->m_flags, (v16 & 0x2000001) != 0) && (v16 & 0x300) != 0) {
-    //    v17 = !v22 && CGInputControl::sub_5F9850(this);
-    //    CGCamera::SmoothFreeLook(ActiveCamera, this, v17);
-    //}
-    //if ((controlBit & 0x30) != 0)
-    //    this->m_flags &= ~0x1000u;
-    //if (!v24) {
-    //    v18 = this->m_flags;
-    //    if ((v18 & 1) != 0 && (v18 & 2) != 0)
-    //        this->m_flags = v18 & 0xFFFFEFFF;
-    //}
-    //if ((controlBit & 3) != 0 && (this->m_flags & 3) != controlBit)
-    //    this->unk_0018 = 0;
-    return 1;
+    CGCamera* camera = CGWorldFrame::GetActiveCamera();
+
+    uint32_t flags = this->m_flags;
+
+    bool wasIdle = (flags & 0x1030) == 0
+        && (flags & 0xC0) == 0
+        && ((flags & 0x2000001) == 0 || (flags & 0x300) == 0)
+        && ((flags & 0x300) == 0 || (flags & 0x2000001) != 0)
+        && (flags & 0x1E00000) == 0;
+
+    uint32_t wasLooking = flags & 0x6000003;
+    uint32_t wasMouseDown = flags & 0x3;
+    bool wasBothButtons = (flags & 0x1) != 0 && (flags & 0x2) != 0;
+    uint32_t wasCameraOrSelect = flags & 0x4000002;
+    uint32_t wasTurnOrAction = flags & 0x2000001;
+    bool wasMouseTurning = (flags & 0x2000001) != 0 && (flags & 0x300) != 0;
+
+    this->m_flags = flags | controlBit;
+
+    if (!wasLooking && (this->m_flags & 0x6000003) != 0) {
+        this->m_dragAccumX = 0.0f;
+        this->m_dragAccumY = 0.0f;
+        this->m_lookStartTime = eventTime;
+
+        camera->EnableFreeLook();
+    }
+
+    if (!wasMouseDown && (this->m_flags & 0x3) != 0) {
+        CGGameUI::OnMouseModeRelative();
+    }
+
+    if (!wasBothButtons && (this->m_flags & 0x1) != 0 && (this->m_flags & 0x2) != 0) {
+        CGUnit_C* mover = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
+
+        //if (this->CanSyncFreeLookFacing(mover)) {
+        //    camera->SyncFreeLookFacing();
+        //    this->m_freeLookFacingSynced = 1;
+        //}
+    } else if ((this->m_flags & 0x1) == 0 || (this->m_flags & 0x2) == 0) {
+        this->m_freeLookFacingSynced = 0;
+    }
+
+    if ((controlBit & 0x1E00000) != 0) {
+        //camera->UpdateTrackingState(this->m_flags & 0x1E00000);
+    }
+
+    if ((controlBit & 0xA010F0) != 0
+        || (!wasBothButtons && (this->m_flags & 0x1) != 0 && (this->m_flags & 0x2) != 0)
+        || (!wasMouseTurning && (this->m_flags & 0x2000001) != 0 && (this->m_flags & 0x300) != 0)) {
+        uint32_t current = this->m_flags;
+
+        int32_t bobbing = (current & 0xA010F0) != 0
+            || ((current & 0x1) != 0 && (current & 0x2) != 0)
+            || ((current & 0x2000001) != 0 && (current & 0x300) != 0);
+
+        //camera->UpdateBobbingState(bobbing);
+    }
+
+    if (this->m_facingOverrideActive && (controlBit & 0x300) != 0) {
+        this->m_facingOverrideActive = 0;
+
+        CGWorldFrame::GetActiveCamera()->DecIgnoreFacing();
+    }
+
+    if ((controlBit & 0x13F0) != 0
+        || (!wasCameraOrSelect && (this->m_flags & 0x4000002) != 0)
+        || (!wasTurnOrAction && (this->m_flags & 0x2000001) != 0)
+        || (!wasMouseTurning && (this->m_flags & 0x2000001) != 0 && (this->m_flags & 0x300) != 0)) {
+        int32_t settle = !wasIdle && this->IsIdle();
+    
+        camera->SmoothFreeLook(this, settle);
+    }
+
+    if ((controlBit & 0x30) != 0) {
+        this->m_flags &= ~0x1000u;
+    }
+
+    if (!wasBothButtons && (this->m_flags & 0x1) != 0 && (this->m_flags & 0x2) != 0) {
+        this->m_flags &= ~0x1000u;
+    }
+
+    if ((controlBit & 0x3) != 0 && (this->m_flags & 0x3) != controlBit) {
+        this->m_pendingDefaultAction = PENDING_ACTION_NONE;
+    }
+
+    return true;
 }
 
 // OFFSET: 0x5FA450
 bool CGInputControl::UnsetControlBit(uint32_t controlBit, int32_t eventTime, uint32_t a4) {
-    if ((controlBit & this->m_flags) == 0)
-        return 0;
+    if ((controlBit & this->m_flags) == 0) {
+        return false;
+    }
 
-    this->m_flags &= ~controlBit;
+    CGCamera* camera = CGWorldFrame::GetActiveCamera();
 
-    //ActiveCamera = CGWorldFrame::GetActiveCamera();
-    //m_flags = this->m_flags;
-    //v8 = m_flags & 0x6000003;
-    //v26 = m_flags & 3;
-    //v27 = (m_flags & 0x1030) == 0 && (m_flags & 0xC0) == 0 && ((m_flags & 0x2000001) == 0 || (m_flags & 0x300) == 0) && ((m_flags & 0x300) == 0 || (m_flags & 0x2000001) != 0) && (m_flags & 0x1E00000) == 0;
-    //if ((m_flags & 1) == 0 || (v28 = 1, (m_flags & 2) == 0))
-    //    v28 = 0;
-    //v24 = m_flags & 0x4000002;
-    //v23 = m_flags & 0x2000001;
-    //if ((m_flags & 0x2000001) == 0 || (v29 = 1, (m_flags & 0x300) == 0))
-    //    v29 = 0;
-    //v9 = a2;
-    //v10 = a2;
-    //v11 = a2;
-    //v12 = m_flags & ~a2;
-    //v13 = this;
-    //v14 = v9 & 0xA010F0;
-    //v15 = v11 & 0x1E00000;
-    //v25 = v10 & 0x13F0;
-    //
-    //if (v8 && (v12 & 0x6000003) == 0) {
-    //    CGCamera::DisableFreeLook(ActiveCamera, a4);
-    //    if (this->unk_0044 && (this->m_flags & 0x300) != 0) {
-    //        CGInputControl::OnTurnToAngleStop(this);
-    //        v13 = this;
-    //    } else {
-    //        v13 = this;
-    //    }
-    //}
-    //if (v26 && (v13->m_flags & 3) == 0) {
-    //    maybe_CGGameUI__OnMouseModeNormal();
-    //    v13 = this;
-    //}
-    //if (v15) {
-    //    CGCamera::UpdateTrackingState(ActiveCamera, v13->m_flags & 0x1E00000);
-    //    v13 = this;
-    //}
-    //if (v14 || v28 && ((v16 = v13->m_flags, (v16 & 1) == 0) || (v16 & 2) == 0) || v29 && ((v17 = v13->m_flags, (v17 & 0x2000001) == 0) || (v17 & 0x300) == 0)) {
-    //    v18 = v13->m_flags;
-    //    v19 = (v18 & 0xA010F0) != 0 || (v18 & 1) != 0 && (v18 & 2) != 0 || (v18 & 0x2000001) != 0 && (v18 & 0x300) != 0;
-    //    CGCamera::UpdateBobbingState(ActiveCamera, v19);
-    //    v13 = this;
-    //}
-    //if (v25 || v24 && (v13->m_flags & 0x4000002) == 0 || v23 && (v13->m_flags & 0x2000001) == 0 || v29 && ((v20 = v13->m_flags, (v20 & 0x2000001) == 0) || (v20 & 0x300) == 0)) {
-    //    v22 = 0;
-    //    if (!v27) {
-    //        v21 = !CGInputControl::sub_5F9850(v13);
-    //        v13 = this;
-    //        if (!v21)
-    //            v22 = 1;
-    //    }
-    //    CGCamera::SmoothFreeLook(ActiveCamera, v13, v22);
-    //    v13 = this;
-    //}
-    //if (v26 && (v13->m_flags & 3) == 0) {
-    //    if (!CGInputControl::sub_5F9600(v13, a3)) {
-    //        if (this->unk_0018 == 1) {
-    //            CGWorldFrame::PerformDefaultAction(CGWorldFrame::s_currentWorldFrame, 1);
-    //        } else if (this->unk_0018 == 2) {
-    //            CGWorldFrame::PerformDefaultAction(CGWorldFrame::s_currentWorldFrame, 4);
-    //        }
-    //    }
-    //    this->unk_0018 = 0;
-    //}
-    return 1;
+    uint32_t flags = this->m_flags;
+
+    bool wasIdle = (flags & 0x1030) == 0
+        && (flags & 0xC0) == 0
+        && ((flags & 0x2000001) == 0 || (flags & 0x300) == 0)
+        && ((flags & 0x300) == 0 || (flags & 0x2000001) != 0)
+        && (flags & 0x1E00000) == 0;
+
+    uint32_t wasLooking = flags & 0x6000003;
+    uint32_t wasMouseDown = flags & 0x3;
+    bool wasBothButtons = (flags & 0x1) != 0 && (flags & 0x2) != 0;
+    uint32_t wasCameraOrSelect = flags & 0x4000002;
+    uint32_t wasTurnOrAction = flags & 0x2000001;
+    bool wasMouseTurning = (flags & 0x2000001) != 0 && (flags & 0x300) != 0;
+
+    uint32_t clearedBobbing = controlBit & 0xA010F0;
+    uint32_t clearedTracking = controlBit & 0x1E00000;
+    uint32_t clearedSmooth = controlBit & 0x13F0;
+
+    this->m_flags = flags & ~controlBit;
+
+    if (wasLooking && (this->m_flags & 0x6000003) == 0) {
+        camera->DisableFreeLook(a4);
+
+        if (this->m_facingOverrideActive && (this->m_flags & 0x300) != 0) {
+            this->OnTurnToAngleStop();
+        }
+    }
+
+    if (wasMouseDown && (this->m_flags & 0x3) == 0) {
+        CGGameUI::OnMouseModeNormal();
+    }
+
+    if (clearedTracking) {
+        //camera->UpdateTrackingState(this->m_flags & 0x1E00000);
+    }
+
+    if (clearedBobbing
+        || (wasBothButtons && ((this->m_flags & 0x1) == 0 || (this->m_flags & 0x2) == 0))
+        || (wasMouseTurning && ((this->m_flags & 0x2000001) == 0 || (this->m_flags & 0x300) == 0))) {
+        uint32_t current = this->m_flags;
+
+        int32_t bobbing = (current & 0xA010F0) != 0
+            || ((current & 0x1) != 0 && (current & 0x2) != 0)
+            || ((current & 0x2000001) != 0 && (current & 0x300) != 0);
+
+        //camera->UpdateBobbingState(bobbing);
+    }
+
+    if (clearedSmooth
+        || (wasCameraOrSelect && (this->m_flags & 0x4000002) == 0)
+        || (wasTurnOrAction && (this->m_flags & 0x2000001) == 0)
+        || (wasMouseTurning && ((this->m_flags & 0x2000001) == 0 || (this->m_flags & 0x300) == 0))) {
+        int32_t settle = 0;
+
+        if (!wasIdle && this->IsIdle()) {
+            settle = 1;
+        }
+        
+        camera->SmoothFreeLook(this, settle);
+    }
+
+    if (wasMouseDown && (this->m_flags & 0x3) == 0) {
+        if (!this->IsMouseDrag(eventTime)) {
+            if (this->m_pendingDefaultAction == PENDING_ACTION_LEFT) {
+                CGWorldFrame::s_currentWorldFrame->PerformDefaultAction(MOUSE_BUTTON_LEFT);
+            } else if (this->m_pendingDefaultAction == PENDING_ACTION_RIGHT) {
+                CGWorldFrame::s_currentWorldFrame->PerformDefaultAction(MOUSE_BUTTON_RIGHT);
+            }
+        }
+
+        this->m_pendingDefaultAction = PENDING_ACTION_NONE;
+    }
+
+    return true;
+}
+
+// OFFSET: 0x5F9600
+bool CGInputControl::IsMouseDrag(int32_t time) {
+    auto v2 = time - this->m_lookStartTime;
+    if ((v2 - 800) >= 0)
+        return 1;
+    if (this->m_dragAccumX >= 8.0 || this->m_dragAccumY >= 8.0)
+        return (v2 - 200) >= 0;
+    return 0;
+}
+
+// OFFSET: 0x5F9850
+bool CGInputControl::IsIdle() {
+    return (m_flags & 0x1030) == 0
+        && (m_flags & 0xC0) == 0
+        && ((m_flags & 0x2000001) == 0 || (m_flags & 0x300) == 0)
+        && ((m_flags & 0x300) == 0 || (m_flags & 0x2000001) != 0)
+        && (m_flags & 0x1E00000) == 0;
 }
 
 // OFFSET: 0x5FAC90
@@ -273,13 +338,102 @@ void CGInputControl::UpdateMoveStopped() {
     this->m_flags &= 0xFFFEEFFF;
 }
 
+// OFFSET: 0x5FA890
+void CGInputControl::UpdateMouseMode(int32_t force) {
+    uint32_t flags = this->m_mouseModeFlags;
+
+    uint32_t want;
+
+    if ((flags & 0x20) != 0) {
+        want = 1;
+    } else if ((flags & 0x40) != 0) {
+        want = 0;
+    } else if (s_cvCinematicJoystick->m_intValue || (flags & 0x10) != 0 || this->m_forceCursorOn) {
+        want = 1;
+    } else {
+        want = flags & 0x6;
+    }
+
+    if (force || want != (flags & 0x1)) {
+        if (want) {
+            this->m_mouseModeFlags = flags | 0x1;
+
+            if ((this->m_flags & 0x3) == 0) {
+                g_theGxDevicePtr->CursorSetVisible(1);
+            }
+        } else {
+            this->m_mouseModeFlags = flags & ~0x1u;
+
+            g_theGxDevicePtr->CursorSetVisible(0);
+        }
+    }
+
+    //this->UpdateJoystickMouseMode();
+}
+
+// OFFSET: 0x5FBA60
+void CGInputControl::OnMouseMoveRel(CMouseEvent* evt) {
+    if (!this->m_flags) {
+        return;
+    }
+
+    //uint32_t frame = g_theGxDevicePtr->m_frameCount;
+
+    float dx = evt->x;
+    float dy = evt->y;
+
+    CGUnit_C* mover = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
+
+    if (mover && (mover->m_obj->m_type & TYPEMASK_PLAYER) != 0 && mover->AsPlayer()->IsCommentatorUberOrInArena()) {
+        //CGCommentator::s_Commentator.ScaleMouseDeltaByFov(&dx, &dy);
+    }
+
+    //this->m_lastMouseMoveFrame = frame;
+
+    this->m_dragAccumX = fabs(dx) + this->m_dragAccumX;
+    this->m_dragAccumY = fabs(dy) + this->m_dragAccumY;
+
+    //bool canSync = this->CanSyncFreeLookFacing(mover);
+
+    bool pitchCamera = true;
+
+    //if (canSync && mover) {
+    //    uint32_t vehicle = mover->dataF00[23];
+    //
+    //    if (vehicle && *reinterpret_cast<uint32_t*>(vehicle + 12) && CVehicle_C_IsSuppressingCameraPitchWhileMouseAiming()) {
+    //        pitchCamera = false;
+    //    }
+    //}
+
+    CGCamera* camera = CGWorldFrame::GetActiveCamera();
+
+    if (pitchCamera) {
+        camera->UpdateFreeLookFacing(dx, dy, nullptr);
+    } else {
+        float vehiclePitch;
+
+        camera->UpdateFreeLookFacing(dx, dy, &vehiclePitch);
+
+        //if (this->CameraCanPitchPlayer()) {
+        //    float base = this->m_vehicleAimValid ? this->m_vehicleAim : mover->GetPitch();
+        //
+        //    this->SetVehicleAim(mover, OsGetAsyncTimeMs(), base - vehiclePitch);
+        //
+        //    this->m_flags &= ~0x80000u;
+        //}
+    }
+
+    //if (canSync) {
+    //    camera->SyncFreeLookFacing();
+    //}
+}
+
 // OFFSET: 0x5F9650
 void CGInputControl::OnTurnToAngleStop() {
-    //if (this->unk_0044) {
-    //    this->unk_0044 = 0;
-    //    ActiveCamera = CGWorldFrame::GetActiveCamera();
-    //    CGCamera::DecIgnoreFacing(ActiveCamera);
-    //}
+    if (this->m_facingOverrideActive) {
+        this->m_facingOverrideActive = 0;
+        CGWorldFrame::GetActiveCamera()->DecIgnoreFacing();
+    }
 }
 
 // OFFSET: 0x5FAE70
