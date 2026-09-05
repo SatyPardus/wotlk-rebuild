@@ -80,6 +80,7 @@ class CMapChunk : public CMapBaseObj {
     void CreateVerticesLocal(CGxVertexPN* buf);
     bool Intersect(int32_t subX, int32_t subY, CRay ray, float* t);
     void Intersect(CiRect* rect, CAaBox* box, World::FacetData* facets);
+    void Intersect(CiRect* rect, CFrustum* frustum, World::FacetData* facets);
 
     CMapChunk();
     static void Initialize();

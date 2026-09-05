@@ -4,6 +4,8 @@
 #include <clientobject/ObjectMgrClient.hpp>
 #include <clientobject/Movement.hpp>
 #include "world/map/CMap.hpp"
+#include "world/map/CFrustum.hpp"
+#include <util/Unimplemented.hpp>
 
 uint32_t s_newZoneID = 0;
 C3Vector s_newPosition;
@@ -65,6 +67,178 @@ int32_t LoadNewWorld(const void* eventData) {
 }
 
 namespace World {
+
+    // OFFSET: 0x78FFA0
+    void CLIPINFO::Set(const C3Vector& ndc) {
+        this->d[0] = ndc.x;
+        this->d[1] = 1.0f - ndc.x;
+        this->d[2] = ndc.y;
+        this->d[3] = 1.0f - ndc.y;
+        this->d[4] = ndc.z;
+        this->d[5] = 1.0f - ndc.z;
+
+        const uint32_t* bits = reinterpret_cast<const uint32_t*>(this->d);
+
+        this->outcode = (bits[0] & 0x80000000) + ((bits[1] >> 1) & 0x40000000) + ((bits[2] >> 2) & 0x20000000) + ((bits[3] >> 3) & 0x10000000) + ((bits[4] >> 4) & 0x08000000) + ((bits[5] >> 5) & 0x04000000);
+    }
+
+    // OFFSET: 0x791380
+    bool NDCClip(C3Vector* verts, uint32_t count, C3Vector*** outVerts, uint32_t* outCount) {
+        static C3Vector* s_clipVertsA[NDCCLIP_MAX];
+        static C3Vector* s_clipVertsB[NDCCLIP_MAX];
+        static C3Vector s_clipVertPool[NDCCLIP_MAX];
+
+        CLIPINFO srcInfo[NDCCLIP_MAX];
+        CLIPINFO genInfo[NDCCLIP_MAX];
+        CLIPINFO* srcInfoPtrs[NDCCLIP_MAX];
+        CLIPINFO* dstInfoPtrs[NDCCLIP_MAX];
+
+        C3Vector* vertCursor = s_clipVertPool;
+        CLIPINFO* infoCursor = genInfo;
+
+        uint32_t allOutside = 0xFFFFFFFF;
+        uint32_t anyOutside = 0;
+
+        if (!count)
+            return false;
+
+        for (uint32_t i = 0; i < count; i++) {
+            srcInfo[i].Set(verts[i]);
+            srcInfoPtrs[i] = &srcInfo[i];
+            allOutside &= srcInfo[i].outcode;
+            anyOutside |= srcInfo[i].outcode;
+            s_clipVertsB[i] = &verts[i];
+        }
+
+        if (allOutside)
+            return false;
+
+        if (!anyOutside) {
+            *outVerts = s_clipVertsB;
+            *outCount = count;
+            return true;
+        }
+
+        CLIPPOLY polyA = { s_clipVertsB, srcInfoPtrs, count };
+        CLIPPOLY polyB = { s_clipVertsA, dstInfoPtrs, 0 };
+
+        CLIPPOLY* cur = &polyA;
+        CLIPPOLY* dst = &polyB;
+
+        uint32_t planeBit = 0x80000000;
+
+        for (uint32_t k = 0; k < 6; k++) {
+            if (planeBit & anyOutside) {
+                uint32_t prev = cur->count - 1;
+                uint32_t prevOut = planeBit & cur->infos[prev]->outcode;
+
+                dst->count = 0;
+
+                for (uint32_t i = 0; i < cur->count; i++) {
+                    uint32_t curOut = planeBit & cur->infos[i]->outcode;
+
+                    if (prevOut != curOut) {
+                        float denom = cur->infos[prev]->d[k] - cur->infos[i]->d[k];
+
+                        if (denom == 0.0f)
+                            denom = 0.000099999997f;
+
+                        float t = cur->infos[prev]->d[k] / denom;
+
+                        C3Vector* pv = cur->verts[prev];
+                        C3Vector* cv = cur->verts[i];
+
+                        vertCursor->x = (cv->x - pv->x) * t + pv->x;
+                        vertCursor->y = (cv->y - pv->y) * t + pv->y;
+                        vertCursor->z = (cv->z - pv->z) * t + pv->z;
+
+                        infoCursor->Set(*vertCursor);
+
+                        dst->verts[dst->count] = vertCursor;
+                        dst->infos[dst->count] = infoCursor;
+                        dst->count++;
+
+                        vertCursor++;
+                        infoCursor++;
+                    }
+
+                    if (!curOut) {
+                        dst->verts[dst->count] = cur->verts[i];
+                        dst->infos[dst->count] = cur->infos[i];
+                        dst->count++;
+                    }
+
+                    prev = i;
+                    prevOut = curOut;
+                }
+
+                if (!dst->count)
+                    return false;
+
+                CLIPPOLY* swap = cur;
+                cur = dst;
+                dst = swap;
+            }
+
+            planeBit >>= 1;
+        }
+
+        *outVerts = cur->verts;
+        *outCount = cur->count;
+
+        return true;
+    }
+
+    // OFFSET: 0x77F330
+    bool GetFacets(CFrustum* frustum, FacetData* facets, uint32_t flags, uint32_t* a4) {
+        return CMap::QueryFacets(frustum, facets, flags, a4);
+    }
+
+    // OFFSET: 0x791640
+    bool NDCXform(CFrustum* frustum, C44Matrix* out, bool includeTranslation) {
+        C3Vector* corners = frustum->corners;
+
+        float ax = corners[3].x - corners[0].x;
+        float ay = corners[3].y - corners[0].y;
+        float az = corners[3].z - corners[0].z;
+
+        float bx = corners[1].x - corners[0].x;
+        float by = corners[1].y - corners[0].y;
+        float bz = corners[1].z - corners[0].z;
+
+        float cx = corners[4].x - corners[0].x;
+        float cy = corners[4].y - corners[0].y;
+        float cz = corners[4].z - corners[0].z;
+
+        *out = C44Matrix();
+
+        out->a0 = ax;
+        out->a1 = ay;
+        out->a2 = az;
+        out->b0 = bx;
+        out->b1 = by;
+        out->b2 = bz;
+        out->c0 = cx;
+        out->c1 = cy;
+        out->c2 = cz;
+
+        if (includeTranslation) {
+            out->d0 = corners[0].x;
+            out->d1 = corners[0].y;
+            out->d2 = corners[0].z;
+        }
+
+        float det = out->Determinant();
+
+        if (fabs(det) < 0.00000023841858f) {
+            *out = C44Matrix();
+            return false;
+        }
+
+        *out = out->Inverse(det);
+
+        return true;
+    }
 
     // OFFSET: 0x406DE0
     bool IsValidPosition(float x, float y, float z, float a4) {
@@ -157,7 +331,7 @@ namespace World {
     }
 
     // OFFSET: 0x782740
-    uint32_t TriDataToFacetData(void* unused, FacetData* facets, uint32_t idLow, uint32_t idHigh) {
+    uint32_t TriDataToFacetData(void* unused, FacetData* facets, WGUID guid) {
         uint32_t before = facets->facets.Count();
 
         for (uint32_t b = 0; b < TriData::nBatches; b++) {
@@ -222,7 +396,7 @@ namespace World {
 
         uint32_t i = before;
         for (; i < count; i++) {
-            facets->facetIds[i] = ((uint64_t)idHigh << 32) | idLow;
+            facets->facetIds[i] = (uint64_t)guid;
         }
 
         return i;
@@ -231,6 +405,11 @@ namespace World {
     // OFFSET: 0x77F8D0
     int32_t GetFlightBoundsLower(const C3Vector& pos, float* height) {
         return CMap::GetFlightBounds(pos, height, 1);
+    }
+
+    // OFFSET: 0x77F310
+    bool Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* distance, uint32_t flags, void* hitInfo) {
+        return CMap::Intersect(start, end, hitPoint, distance, flags, hitInfo);
     }
 
 } // namespace World

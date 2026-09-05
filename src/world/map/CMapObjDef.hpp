@@ -8,6 +8,7 @@
 #include "world/map/Types.hpp"
 #include "storm/Hash.hpp"
 #include "tempest/vector/CImVector.hpp"
+#include "clientobject/WGUID.hpp"
 
 union CMapObjDefGroupStorage {
     CMapObjDefGroup* m_inline[4];
@@ -41,8 +42,7 @@ class CMapObjDef : public CMapBaseObj, public TSHashObject<CMapObjDef, uint32_t>
     uint32_t groupCount;
     //TSGrowableArray unk;
     CImVector argbColor;
-    int32_t unk_148;
-    int32_t unk_14C;
+    WGUID unk_148;
     int16_t doodadSetOverrides[3];
 
     CMapObjDef();

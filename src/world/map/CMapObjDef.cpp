@@ -73,7 +73,6 @@ CMapObjDef::CMapObjDef() {
     this->nameSet = 0;
     this->unk_108 = 0;
     this->unk_148 = 0;
-    this->unk_14C = 0;
     this->unkFlags = 0xFFFF;
 }
 

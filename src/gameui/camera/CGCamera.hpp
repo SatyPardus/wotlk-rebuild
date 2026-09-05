@@ -90,7 +90,7 @@ class CGCamera : public CSimpleCamera {
     /* 02A4 */ uint32_t m_wasFlying = 0;
     /* 02A8 */ CAMERA_SMOOTH m_smoothFlyingHeight;
 
-    /* 02C0 */ float unk_02C0 = 0.0f;
+    /* 02C0 */ float m_collideExtent = 0.0f;
     /* 02C4 */ uint32_t m_vehicleZoomEnabled = 0;
     /* 02C8 */ float m_overrideDistanceMin = 0.0f;
     /* 02CC */ float m_overrideDistanceMax = 0.0f;
@@ -149,6 +149,8 @@ class CGCamera : public CSimpleCamera {
     void CancelSmoothPitch();
     void UpdateUncontrolledState(bool a2);
     void UpdateTargetSmoothing(CGObject_C* target, int32_t time);
+    bool GetCameraDistance(float* distance, C3Vector* from, C3Vector* to, uint32_t flags);
+    uint32_t CollideCameraWithWorld(C3Vector* target, float* distance, float* height, C3Vector* shake, float liquid, float* extent);
 
     // Inside CameraCVars.cpp
     bool CheckViewSmoothingCVarsChanged(uint32_t viewIndex);

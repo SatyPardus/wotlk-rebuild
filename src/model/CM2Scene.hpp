@@ -11,6 +11,7 @@ class CM2Cache;
 class CM2Light;
 class CM2Lighting;
 class CM2Model;
+class CMapBaseObj;
 
 class CM2Scene {
     public:
@@ -37,6 +38,13 @@ class CM2Scene {
     /* 001C */ uint32_t m_flags = 0;
     /* 0020 */ CM2Light* m_lightList = nullptr;
     /* 0024 */ CM2Light** m_lightGrid = nullptr;
+
+    /* 0114 */ CM2Model* m_hitTestList = nullptr;
+
+    /* 012C */ void* m_hitTestResult = nullptr;
+
+    /* 013C */ CMapBaseObj* m_hitTestOwner = nullptr;
+
     /* 0000 */ CM2Model* m_animateList = nullptr;
     /* 0000 */ CM2Model* m_drawList = nullptr;
     /* 0000 */ TSGrowableArray<M2Element> m_elements;

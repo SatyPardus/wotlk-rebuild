@@ -657,6 +657,37 @@ bool CMapObj::GetTris(CAaBox& box, uint32_t a3, uint32_t a4, CMapObjDef* mapObjD
     return result;
 }
 
+// OFFSET: 0x7AF0F0
+bool CMapObj::GetTris(CFrustum* frustum, uint32_t flags, uint32_t a4, CMapObjDef* mapObjDef) {
+    bool result = false;
+
+    uint16_t wmoIgnoreFlags = this->CreateWmoIgnoreFlags(flags);
+
+    CAaBox bounds = CAaBox::Bounding(frustum->corners, 8);
+
+    for (uint32_t i = 0; i < (uint32_t)this->groupInfoCount; i++) {
+        SMOGroupInfo& info = this->groupInfo[i];
+
+        if (bounds.t.x < info.boundingBox.b.x || bounds.t.y < info.boundingBox.b.y || bounds.t.z < info.boundingBox.b.z)
+            continue;
+
+        if (bounds.b.x > info.boundingBox.t.x || bounds.b.y > info.boundingBox.t.y || bounds.b.z > info.boundingBox.t.z)
+            continue;
+
+        if (!this->isGroupLoaded)
+            continue;
+
+        CMapObjGroup* group = this->mapObjGroupArray[i];
+
+        if ((group->unkLoadedFlag & 1) == 0 || group->flags < 0)
+            continue;
+
+        result |= group->GetTris(frustum, flags, wmoIgnoreFlags, a4, mapObjDef);
+    }
+
+    return result;
+}
+
 // OFFSET: 0x7AF280
 bool CMapObj::VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, int useSphereTest) {
     C3Vector d;
@@ -756,6 +787,28 @@ float CMapObj::CalcPortalFarthestDistance(SMOPortal* portal) {
     }
 
     return result;
+}
+
+// OFFSET: 0x7AE920
+bool CMapObj::TestGroupBounds(C3Vector& point, uint32_t groupNum) {
+    return this->isGroupLoaded && (this->mapObjGroupArray[groupNum]->unkLoadedFlag & 1) != 0 && this->groupInfo[groupNum].boundingBox.ContainsPoint(point);
+}
+
+// OFFSET: 0x7AF200
+bool CMapObj::Intersect(C3Vector& start, C3Vector& end, float* distance, uint32_t flags, uint32_t ignoreFlags, uint32_t groupNum, int32_t* hitIndex) {
+    if (!this->isGroupLoaded)
+        return false;
+
+    CMapObjGroup* group = this->mapObjGroupArray[groupNum];
+
+    if ((group->unkLoadedFlag & 1) == 0)
+        return false;
+
+    C3Segment seg;
+    seg.b = start;
+    seg.t = end;
+
+    return group->Intersect(seg, distance, flags, ignoreFlags, hitIndex);
 }
 
 // OFFSET: 0x7AB1E0

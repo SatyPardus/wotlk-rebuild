@@ -24,6 +24,7 @@ struct M2TrackBase;
 struct M2ModelTextureTransform;
 struct M2ModelAttachment;
 class CFacet;
+class CMapBaseObj;
 
 struct CM2ModelCall {
     uint32_t type = -1;
@@ -146,6 +147,12 @@ class CM2Model {
         /* 00B0 */ C44Matrix* m_textureMatrices = nullptr;
         /* 00B4 */ C44Matrix m_worldTransform;
         /* 00F4 */ C44Matrix matrixF4;
+
+        /* 02D4 */ uint32_t m_hitTestMode = 0;
+        /* 02D8 */ CM2Model** m_hitTestPrev = nullptr;
+        /* 02DC */ CM2Model* m_hitTestNext = nullptr;
+        /* 02E0 */ CMapBaseObj* m_hitTestOwner = nullptr;
+        /* 02E4 */ uint32_t m_hitTestGroup = 0;
 
         /* 0000 */ float float198 = 1.0f;
         /* 0000 */ float alpha19C = 1.0f;

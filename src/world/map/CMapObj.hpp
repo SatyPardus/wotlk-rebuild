@@ -90,7 +90,6 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     uint32_t GetGroupFlags(int32_t index);
     SMOGroupInfo* GetGroupInfo(int32_t index);
     bool IsGroupLoaded(int32_t index);
-    uint32_t CreateWmoIgnoreFlags(uint32_t a1);
     char* GetGroupName(int32_t index);
     void RenderGroup(int32_t groupIndex, C44Matrix& matrix, STORM_EXPLICIT_LIST(CFrustum, sceneLink)* frustumList);
     void CreateRefs(CMapObjGroup* mapObjGroup, CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup);
@@ -101,8 +100,11 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     bool TestGroupBounds(C3Vector& start, C3Vector& end, uint32_t groupNum);
     bool GroupBoundingBoxIntersectsSphere(C3Vector& pos, uint32_t groupNum, float radius);
     bool GetTris(CAaBox& box, uint32_t a3, uint32_t a4, CMapObjDef* mapObjDef);
+    bool GetTris(CFrustum* frustum, uint32_t flags, uint32_t a4, CMapObjDef* mapObjDef);
     bool VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, int useSphereTest);
     float CalcPortalFarthestDistance(SMOPortal* portal);
+    bool TestGroupBounds(C3Vector& point, uint32_t groupNum);
+    bool Intersect(C3Vector& start, C3Vector& end, float* distance, uint32_t flags, uint32_t ignoreFlags, uint32_t groupNum, int32_t* hitIndex);
 
     static void Initialize();
     static void PrepareUpdate();
@@ -118,6 +120,7 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     static void SetRenderModeLight();
     static void SetEmissiveColor(CImVector color);
     static void SelectWorldShaders();
+    static uint32_t CreateWmoIgnoreFlags(uint32_t a1);
 };
 
 #endif

@@ -1,5 +1,41 @@
 #include "world/map/CFrustum.hpp"
 
+// OFFSET: 0x601650
+CFrustum::CFrustum() {
+    for (int32_t i = 0; i < 6; i++) {
+        this->planes[i].n.x = 0.0f;
+        this->planes[i].n.y = 0.0f;
+        this->planes[i].n.z = 1.0f;
+        this->planes[i].d = 0.0f;
+    }
+
+    for (int32_t i = 0; i < 8; i++) {
+        this->corners[i].x = 0.0f;
+        this->corners[i].y = 0.0f;
+        this->corners[i].z = 0.0f;
+    }
+
+    this->lookPos.x = 0.0f;
+    this->lookPos.y = 0.0f;
+    this->lookPos.z = 0.0f;
+    this->lookAt.x = 0.0f;
+    this->lookAt.y = 0.0f;
+    this->lookAt.z = 0.0f;
+    this->lookUp.x = 0.0f;
+    this->lookUp.y = 0.0f;
+    this->lookUp.z = 0.0f;
+}
+
+// OFFSET: 0x983FE0
+CFrustum::CFrustum(C3Vector* corners)
+    : CFrustum() {
+    for (int32_t i = 0; i < 8; i++) {
+        this->corners[i] = corners[i];
+    }
+
+    this->CalcPlanesFromCorners();
+}
+
 // OFFSET: 0x9839E0
 WorldCullStatus CFrustum::Cull(CAaBox* box) {
     static constexpr float CULL_EPSILON = -0.019444443f;
@@ -79,4 +115,25 @@ void CFrustum::Transform(C44Matrix& mat) {
     this->CalcPlanesFromCorners();
     this->lookPos = this->lookPos * mat;
     this->lookAt = this->lookAt * mat;
+}
+
+// OFFSET: 0x983AE0
+void CFrustum::Translate(const C3Vector& offset) {
+    for (int32_t i = 0; i < 8; i++) {
+        this->corners[i].x = this->corners[i].x + offset.x;
+        this->corners[i].y = this->corners[i].y + offset.y;
+        this->corners[i].z = this->corners[i].z + offset.z;
+    }
+
+    for (int32_t i = 0; i < 6; i++) {
+        this->planes[i].d = this->planes[i].d - (this->planes[i].n.z * offset.z + this->planes[i].n.y * offset.y + this->planes[i].n.x * offset.x);
+    }
+
+    this->lookPos.x = this->lookPos.x + offset.x;
+    this->lookPos.y = this->lookPos.y + offset.y;
+    this->lookPos.z = this->lookPos.z + offset.z;
+
+    this->lookAt.x = this->lookAt.x + offset.x;
+    this->lookAt.y = this->lookAt.y + offset.y;
+    this->lookAt.z = this->lookAt.z + offset.z;
 }

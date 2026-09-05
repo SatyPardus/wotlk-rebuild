@@ -18,6 +18,12 @@
 #include "world/map/CMapLight.hpp"
 #include <world/World.hpp>
 
+struct MAPOBJ_INTERSECT_CANDIDATE {
+    CMapObjDef* def;
+    CMapObjDefGroup* group;
+    float dist;
+};
+
 class CMap {
     public:
     static char mapPath[STORM_MAX_PATH];
@@ -51,6 +57,7 @@ class CMap {
     static bool dword_CF08F8;
     static uint32_t mapGetFacetsCount;
     static uint32_t s_queryTag;
+    static WGUID s_lastCollisionGUID;
 
     static CGxShader* vertexShader_Terrain[128];
     static CGxShader* pixelShader_Terrain0[3];
@@ -135,17 +142,24 @@ class CMap {
     static void EnableLight(CMapLight* light);
     static void UpdateLight(CMapLight* light);
 
+    static bool Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* distance, uint32_t flags, void* hitInfo);
+    static bool VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint32_t defIgnoreFlags, float* distance, uint16_t* hitIndex, CMapObj** outMapObj, CMapObjDef** outMapObjDef, CMapObjDefGroup** outMapObjDefGroup);
     static bool VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);
     static bool VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk);
+    static void VectorIntersectDoodadDefs(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* list, uint32_t flags);
     static void VectorIntersectSY(CiRect& rect);
     static void VectorIntersectSX(CiRect& rect);
     static void VectorIntersectDY(C3Vector& a1, C3Vector& a2, CiRect& rect);
     static void VectorIntersectDX(C3Vector& a1, C3Vector& a2, CiRect& rect);
+    static void SetHitTestDebug(void* hitInfo, CMapBaseObj* hitObject);
 
     static bool LocateViewerMapObjs(C3Vector& start, C3Vector& end, float dist, CMapObjDef** outDefs, uint32_t* outGroups);
     static void TestQueryAdd(CFacet& facet, CImVector& color, C44Matrix* mat);
     static bool GetFacets(CAaBox* a1, CAaBox* a2, World::FacetData* a3, uint32_t a4, uint32_t* a5);
     static bool GetMapObjFacets(CAaBox* a1, CAaBox* box, World::FacetData* facets, uint32_t flags, uint32_t* statusOut);
+    static bool QueryFacets(CFrustum* frustum, World::FacetData* facets, uint32_t flags, uint32_t* a4);
+    static bool GetChunkFacets(int32_t chunkX, int32_t chunkY, CiRect* subRect, CFrustum* frustum, World::FacetData* facets, uint32_t flags);
+    static bool GetMapObjFacets(CFrustum* frustum, World::FacetData* facets, uint32_t flags, uint32_t* statusOut);
     static CFacet* BuildImpassableFacets(World::FacetData* facets, C3Vector* up, C3Vector* edge, C3Vector* normal, C3Vector* origin);
     static void CreateImpassableFacets(CMapChunk* chunk, CAaBox* box, World::FacetData* facets, uint32_t flags);
     static bool GetChunkFacets(int32_t chunkX, int32_t chunkY, CiRect* subRect, CAaBox* a4, CAaBox* box, World::FacetData* facets, uint32_t flags);

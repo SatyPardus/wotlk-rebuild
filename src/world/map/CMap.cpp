@@ -20,6 +20,7 @@
 #include <tempest/segment/C3Segment.hpp>
 #include <world/World.hpp>
 #include "model/CM2Shared.hpp"
+#include <util/Unimplemented.hpp>
 
 char CMap::mapPath[STORM_MAX_PATH];
 char CMap::mapName[STORM_MAX_PATH];
@@ -62,6 +63,7 @@ CiRect CMap::gbPrevChunkRect;
 bool CMap::dword_CF08F8 = 0;
 uint32_t CMap::mapGetFacetsCount = 0;
 uint32_t CMap::s_queryTag = 0;
+WGUID CMap::s_lastCollisionGUID;
 
 CGxShader* CMap::vertexShader_Terrain[128];
 CGxShader* CMap::pixelShader_Terrain0[3];
@@ -1564,6 +1566,232 @@ void CMap::UpdateLight(CMapLight* light) {
     //}
 }
 
+// OFFSET: 0x7A2070
+static int32_t CompareIntersectCandidates(const void* a, const void* b) {
+    const MAPOBJ_INTERSECT_CANDIDATE* ca = static_cast<const MAPOBJ_INTERSECT_CANDIDATE*>(a);
+    const MAPOBJ_INTERSECT_CANDIDATE* cb = static_cast<const MAPOBJ_INTERSECT_CANDIDATE*>(b);
+
+    if (cb->dist > ca->dist)
+        return -1;
+
+    if (cb->dist < ca->dist)
+        return 1;
+
+    return 0;
+}
+
+// OFFSET: 0x7A3B70
+bool CMap::Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* distance, uint32_t flags, void* hitInfo) {
+    CMap::s_queryTag++;
+
+    bool hit = false;
+    CMapObjDef* hitDef = nullptr;
+    CMapObjDefGroup* hitGroup = nullptr;
+
+    if (flags & 0x40F300FF) {
+        CMapObj* hitObj = nullptr;
+
+        CWorldScene::s_m2Scene->m_hitTestResult = nullptr;
+        CMap::s_lastCollisionGUID = 0;
+
+        if (CMap::VectorIntersect(start, end, flags, MAPOBJ_FLAG_NO_HITTEST, distance, nullptr, &hitObj, &hitDef, &hitGroup)) {
+            if (hitDef) {
+                WGUID guid = hitDef->unk_148;
+
+                if (guid)
+                    CMap::s_lastCollisionGUID = guid;
+            }
+
+            if (hitInfo) {
+                if (CWorldScene::s_m2Scene->m_hitTestResult)
+                    CMap::SetHitTestDebug(hitInfo, CWorldScene::s_m2Scene->m_hitTestOwner);
+                else
+                    CMap::SetHitTestDebug(hitInfo, hitGroup);
+            }
+
+            hit = true;
+        }
+    }
+
+    if (flags & 0x40F3010F) {
+        CWorldScene::s_m2Scene->m_hitTestResult = nullptr;
+
+        if (CMap::VectorIntersectTerrain(start, end, distance, flags, nullptr)) {
+            CMap::s_lastCollisionGUID = 0;
+
+            if (hitInfo && CWorldScene::s_m2Scene->m_hitTestResult)
+                CMap::SetHitTestDebug(hitInfo, CWorldScene::s_m2Scene->m_hitTestOwner);
+
+            hit = true;
+        }
+    }
+
+    if (!hit)
+        return false;
+
+    if (hitPoint) {
+        float t = *distance;
+
+        hitPoint->x = (end->x - start->x) * t + start->x;
+        hitPoint->y = (end->y - start->y) * t + start->y;
+        hitPoint->z = (end->z - start->z) * t + start->z;
+    }
+
+    return true;
+}
+
+// OFFSET: 0x7A30D0
+bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint32_t defIgnoreFlags, float* distance, uint16_t* hitIndex, CMapObj** outMapObj, CMapObjDef** outMapObjDef, CMapObjDefGroup** outMapObjDefGroup) {
+    const uint32_t m2Flags = flags & 0x40F0000F;
+
+    //if (m2Flags)
+    //    CWorldScene::s_m2Scene->BeginHitTest();
+
+    const float dx = end->x - start->x;
+    const float dy = end->y - start->y;
+    const float dz = end->z - start->z;
+    const float segLength = sqrtf(dx * dx + dy * dy + dz * dz);
+
+    CAaBox groupBox;
+    groupBox.b.x = 0.0f;
+    groupBox.b.y = 0.0f;
+    groupBox.b.z = 0.0f;
+    groupBox.t.x = 0.0f;
+    groupBox.t.y = 0.0f;
+    groupBox.t.z = 0.0f;
+
+    MAPOBJ_INTERSECT_CANDIDATE candidates[500];
+    size_t candidateCount = 0;
+
+    for (auto def = CMap::mapObjDefHashtable.Head(); def; def = CMap::mapObjDefHashtable.Next(def)) {
+        if (defIgnoreFlags & def->flags)
+            continue;
+
+        CMapObj* owner = def->owner;
+
+        if (!owner || !owner->isGroupLoaded || !CWorldMath::VectorIntersectAABox2(def->bbox, *start, *end))
+            continue;
+
+        CMapObjDefGroup** groups = def->Groups();
+        uint32_t groupCount = def->GroupCount();
+
+        for (uint32_t i = 0; i < groupCount; i++) {
+            CMapObjDefGroup* group = groups[i];
+
+            if (!owner->IsGroupLoaded(i) || !CWorldMath::VectorIntersectAABox2(group->bbox, *start, *end))
+                continue;
+
+            MAPOBJ_INTERSECT_CANDIDATE* entry = &candidates[candidateCount];
+            entry->def = def;
+            entry->group = group;
+
+            C3Vector localStart = def->invMat.TransformPoint(*start);
+
+            if (owner->TestGroupBounds(localStart, i)) {
+                entry->dist = 0.0f;
+                candidateCount++;
+                continue;
+            }
+
+            owner->GetGroupBounds(&groupBox, i);
+
+            float cx = groupBox.b.x;
+            if (localStart.x >= groupBox.b.x)
+                cx = groupBox.t.x >= localStart.x ? localStart.x : groupBox.t.x;
+
+            float cy = groupBox.b.y;
+            if (localStart.y >= groupBox.b.y)
+                cy = groupBox.t.y >= localStart.y ? localStart.y : groupBox.t.y;
+
+            float cz = groupBox.b.z;
+            if (localStart.z >= groupBox.b.z)
+                cz = groupBox.t.z >= localStart.z ? localStart.z : groupBox.t.z;
+
+            float ox = localStart.x - cx;
+            float oy = localStart.y - cy;
+            float oz = localStart.z - cz;
+
+            entry->dist = sqrtf(ox * ox + oy * oy + oz * oz) / segLength;
+            candidateCount++;
+        }
+    }
+
+    qsort(candidates, candidateCount, sizeof(MAPOBJ_INTERSECT_CANDIDATE), CompareIntersectCandidates);
+
+    uint32_t ignoreFlags = CMapObj::CreateWmoIgnoreFlags(flags);
+    uint32_t entityFlags = flags & 0x40F00000;
+
+    float bestDist = *distance;
+    int32_t bestHitIndex = -1;
+    bool hit = false;
+
+    for (size_t i = 0; i < candidateCount; i++) {
+        CMapObjDef* def = candidates[i].def;
+        CMapObjDefGroup* group = candidates[i].group;
+        CMapObj* owner = def->owner;
+
+        C3Vector localStart = def->invMat.TransformPoint(*start);
+        C3Vector localEnd = def->invMat.TransformPoint(*end);
+
+        if (candidates[i].dist <= bestDist && owner->TestGroupBounds(localStart, localEnd, group->groupNum)) {
+            if (owner->Intersect(localStart, localEnd, &bestDist, flags, ignoreFlags, group->groupNum, &bestHitIndex)) {
+                hit = true;
+
+                if (outMapObj)
+                    *outMapObj = owner;
+
+                if (outMapObjDef)
+                    *outMapObjDef = def;
+
+                if (outMapObjDefGroup)
+                    *outMapObjDefGroup = group;
+            }
+        }
+
+        if (m2Flags)
+            CMap::VectorIntersectDoodadDefs(&group->doodadDefLinkList, flags);
+
+        //if (entityFlags)
+        //    CMap::VectorIntersectEntitys(&group->mapEntityLinkList, flags);
+    }
+
+    if (hit) {
+        *distance = bestDist;
+
+        if (hitIndex)
+            *hitIndex = bestHitIndex;
+    }
+
+    //if (m2Flags) {
+    //    C3Vector m2Start = CWorldScene::camTransportView.TransformPoint(*start);
+    //    C3Vector m2End = CWorldScene::camTransportView.TransformPoint(*end);
+    //
+    //    float t = *distance;
+    //    CMapEntity* entity = CWorldScene::s_m2Scene->EndHitTest(&m2Start.x, &m2End, &t, 0);
+    //
+    //    if (t < *distance) {
+    //        if (entity->type & 0x40) {
+    //            uint64_t guid = (static_cast<uint64_t>(entity->unk_00BC) << 32) | entity->unk_00B8;
+    //
+    //            if (guid)
+    //                CMap::s_lastCollisionGUID = guid;
+    //        }
+    //
+    //        *distance = t;
+    //
+    //        if (hitIndex)
+    //            *hitIndex = 0xFFFF;
+    //
+    //        return true;
+    //    }
+    //}
+
+    if (!hit && hitIndex)
+        *hitIndex = 0xFFFF;
+
+    return hit;
+}
+
 // OFFSET: 0x7A39F0
 bool CMap::VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk) {
     C3Vector s = { 17066.666f - start->y, 17066.666f - start->x, 0.0f };
@@ -1645,8 +1873,8 @@ bool CMap::VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* di
             localOrigin.y = start->y - chunk->topLeftCoords.y;
             localOrigin.z = start->z - chunk->topLeftCoords.z;
 
-            //if (m2Flags)
-            //    CMap::VectorIntersectDoodadDefs(&chunk->doodadDefLinkList, flags);
+            if (m2Flags)
+                CMap::VectorIntersectDoodadDefs(&chunk->doodadDefLinkList, flags);
             //if (flags & 0x40F00000)
             //    CMap::VectorIntersectEntitys(&chunk->TSExplicitList__m_linkoffset_DC, flags);
         }
@@ -1726,6 +1954,65 @@ bool CMap::VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* di
     if (hitChunk)
         *hitChunk = winner;
     return true;
+}
+
+// OFFSET: 0x7A2760
+void CMap::VectorIntersectDoodadDefs(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* list, uint32_t flags) {
+    for (auto link = list->Head(); link; link = list->Next(link)) {
+        CMapDoodadDef* def = static_cast<CMapDoodadDef*>(link->owner);
+
+        if ((flags & 0x1000000) != 0 && def->unk_025)
+            continue;
+
+        if ((def->flags & MAPOBJ_FLAG_NO_HITTEST) != 0 || (def->flags & MAPOBJ_FLAG_PREPARED) == 0)
+            continue;
+
+        if (def->unkCounter == CMap::s_queryTag)
+            continue;
+
+        CM2Model* model = def->model;
+
+        if (!model)
+            continue;
+
+        bool queue = false;
+        uint32_t mode = 0;
+
+        if (def->unk_0B8 | def->unk_0BC) {
+            if (flags & 0x100000) {
+                queue = true;
+                mode = 3;
+            } else if (flags & 0x600000) {
+                queue = true;
+                mode = 0;
+            }
+        } else if (flags & 1) {
+            queue = true;
+            mode = 3;
+        } else if (flags & 0xE) {
+            queue = true;
+            mode = (flags & 8) ? 2 : ((flags >> 24) & 1);
+        }
+
+        if (queue && (model->f_flags & 1) != 0) {
+            if (!model->m_hitTestPrev) {
+                CM2Model** head = &model->m_scene->m_hitTestList;
+
+                model->m_hitTestPrev = head;
+                model->m_hitTestNext = *head;
+                *head = model;
+
+                if (model->m_hitTestNext)
+                    model->m_hitTestNext->m_hitTestPrev = &model->m_hitTestNext;
+            }
+
+            model->m_hitTestMode = mode;
+            model->m_hitTestOwner = def;
+            model->m_hitTestGroup = 0;
+        }
+
+        def->unkCounter = CMap::s_queryTag;
+    }
 }
 
 // OFFSET: 0x7A2180
@@ -1839,6 +2126,11 @@ void CMap::VectorIntersectDX(C3Vector& start, C3Vector& end, CiRect& cells) {
         CMap::scCollideList.m_data[CMap::cCount++] = cells.maxX;
         CMap::scCollideList.m_data[CMap::cCount++] = cells.maxY;
     }
+}
+
+// OFFSET: 0x7A2C60
+void CMap::SetHitTestDebug(void* hitInfo, CMapBaseObj* hitObject) {
+    WHOA_UNIMPLEMENTED();
 }
 
 // OFFSET: 0x7D59B0
@@ -2102,7 +2394,7 @@ bool CMap::GetMapObjFacets(CAaBox* a1, CAaBox* box, World::FacetData* facets, ui
                 // dword_CB7538 = 0;
 
                 mapObj->GetTris(xformed, flags, 0, mapObjDef);
-                World::TriDataToFacetData(nullptr, facets, mapObjDef->unk_148, mapObjDef->unk_14C);
+                World::TriDataToFacetData(nullptr, facets, mapObjDef->unk_148);
 
                 if (statusOut)
                     *statusOut |= World::TriData::statusFlags;
@@ -2134,6 +2426,157 @@ bool CMap::GetMapObjFacets(CAaBox* a1, CAaBox* box, World::FacetData* facets, ui
     }
 
     return true;
+}
+
+// OFFSET: 0x7A5DD0
+bool CMap::QueryFacets(CFrustum* frustum, World::FacetData* facetData, uint32_t flags, uint32_t* a4) {
+    CMap::s_queryTag++;
+
+    facetData->facets.SetCount(0);
+
+    CAaBox bounds = CAaBox::Bounding(frustum->corners, 8);
+
+    CiRect subRect;
+    subRect.minY = (int32_t)floorf(-(bounds.t.x - 17066.666f) * 0.23999999f);
+    subRect.minX = (int32_t)floorf(-(bounds.t.y - 17066.666f) * 0.23999999f);
+    subRect.maxY = (int32_t)floorf(-(bounds.b.x - 17066.666f) * 0.23999999f);
+    subRect.maxX = (int32_t)floorf(-(bounds.b.y - 17066.666f) * 0.23999999f);
+
+    for (int32_t chunkY = subRect.minY >> 3; chunkY <= subRect.maxY >> 3; chunkY++) {
+        for (int32_t chunkX = subRect.minX >> 3; chunkX <= subRect.maxX >> 3; chunkX++) {
+            CMap::GetChunkFacets(chunkX, chunkY, &subRect, frustum, facetData, flags);
+        }
+    }
+
+    CMap::GetMapObjFacets(frustum, facetData, flags, a4);
+
+    return facetData->facets.Count() != 0;
+}
+
+// OFFSET: 0x7A5330
+bool CMap::GetChunkFacets(int32_t chunkX, int32_t chunkY, CiRect* subRect, CFrustum* frustum, World::FacetData* facets, uint32_t flags) {
+    uint32_t startCount = facets->facets.Count();
+
+    CMapArea* area = CMap::areaTable[64 * ((chunkY >> 4) & 0x3F) + ((chunkX >> 4) & 0x3F)];
+
+    if (!area || area->asyncObject)
+        return false;
+
+    CMapChunk* chunk = area->mapChunks[16 * (chunkY & 0xF) + (chunkX & 0xF)];
+
+    if (!chunk)
+        return false;
+
+    CiRect local;
+    local.minY = subRect->minY - chunkY * 8;
+    local.minX = subRect->minX - chunkX * 8;
+    local.maxY = subRect->maxY - chunkY * 8;
+    local.maxX = subRect->maxX - chunkX * 8;
+
+    if (local.minY < 0)
+        local.minY = 0;
+
+    if (local.minX < 0)
+        local.minX = 0;
+
+    if (local.maxY >= 8)
+        local.maxY = 7;
+
+    if (local.maxX >= 8)
+        local.maxX = 7;
+
+    CFrustum localFrustum = *frustum;
+    localFrustum.sceneLink.m_prevlink = nullptr;
+    localFrustum.sceneLink.m_next = nullptr;
+
+    C3Vector offset;
+    offset.x = -chunk->topLeftCoords.x;
+    offset.y = -chunk->topLeftCoords.y;
+    offset.z = -chunk->topLeftCoords.z;
+
+    localFrustum.Translate(offset);
+
+    if (flags & 0x100)
+        chunk->Intersect(&local, &localFrustum, facets);
+
+    if (flags & 0x30000) {
+        bool filterByType = (flags & 0x30000) == 0x10000;
+
+        //for (CChunkLiquid* liquid = chunk->liquidChunkLinkList.Head(); liquid; liquid = chunk->liquidChunkLinkList.Next(liquid)) {
+        //    if (filterByType) {
+        //        LiquidTypeRec* rec = g_liquidTypeDB.GetRecord(liquid->unk_004);
+        //
+        //        if (!(rec->m_flags & 4))
+        //            continue;
+        //    }
+        //
+        //    CMap::GetChunkLiquidFacets(chunk, &localFrustum, &local, liquid, facets);
+        //}
+    }
+
+    if (flags & 0xF) {
+        CAaBox bounds = CAaBox::Bounding(frustum->corners, 8);
+
+        for (auto link = chunk->doodadDefLinkList.Head(); link; link = chunk->doodadDefLinkList.Next(link)) {
+            CMapDoodadDef* def = static_cast<CMapDoodadDef*>(link->owner);
+
+            if ((def->flags & MAPOBJ_FLAG_NO_HITTEST) != 0 || (def->flags & MAPOBJ_FLAG_PREPARED) == 0)
+                continue;
+
+            if (def->unkCounter == CMap::s_queryTag)
+                continue;
+
+            if (!def->model || !bounds.Intersects(&def->bboxDoodadDef))
+                continue;
+
+            def->model->GetCollisionFacets(&bounds, &def->mat, &facets->facets);
+
+            def->unkCounter = CMap::s_queryTag;
+        }
+    }
+
+    return startCount != facets->facets.Count();
+}
+
+// OFFSET: 0x7A4EE0
+bool CMap::GetMapObjFacets(CFrustum* frustum, World::FacetData* facets, uint32_t flags, uint32_t* statusOut) {
+    bool result = false;
+
+    for (auto def = CMap::mapObjDefHashtable.Head(); def; def = CMap::mapObjDefHashtable.Next(def)) {
+        if (def->flags & MAPOBJ_FLAG_NO_HITTEST)
+            continue;
+
+        if (!frustum->Cull(&def->bbox))
+            continue;
+
+        C3Vector localCorners[8];
+
+        for (int32_t i = 0; i < 8; i++)
+            localCorners[i] = def->invMat.TransformPoint(frustum->corners[i]);
+
+        CFrustum localFrustum(localCorners);
+
+        CMapObj* owner = def->owner;
+
+        if (!owner)
+            continue;
+
+        World::TriData::statusFlags = 0;
+        World::TriData::nBatches = 0;
+        World::TriData::faceIndexCursor = 0;
+        World::TriData::indexCursor = 0;
+
+        uint32_t unk = 0;
+
+        result |= owner->GetTris(&localFrustum, flags, unk, def);
+
+        World::TriDataToFacetData(&unk, facets, WGUID());
+
+        if (statusOut)
+            *statusOut |= World::TriData::statusFlags;
+    }
+
+    return result;
 }
 
 // OFFSET: 0x7A4270

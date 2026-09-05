@@ -429,6 +429,39 @@ bool CMapObjGroup::GetTris(CAaBox& box, uint32_t a4, uint16_t faceIgnoreFlags, u
     return v11;
 }
 
+// OFFSET: 0x7CB180
+bool CMapObjGroup::GetTris(CFrustum* frustum, uint32_t flags, uint16_t faceIgnoreFlags, uint32_t a5, CMapObjDef* mapObjDef) {
+    uint32_t startBatches = World::TriData::nBatches;
+
+    if (flags & 0xF0) {
+        int32_t statusFlags = 0;
+
+        BspQuery_Volume<CFrustum> query;
+        query.overflowFlags = &statusFlags;
+        query.faces = this->polyList;
+        query.vertexList = this->vertexList;
+        query.indices = this->indices;
+        query.volume = frustum;
+        query.faceIgnoreFlags = faceIgnoreFlags | BSPQUERY_FACE_TESTED;
+
+        CAaBox bounds = CAaBox::Bounding(frustum->corners, 8);
+
+        CAaBsp_Query_AaBox<BspQuery_Volume<CFrustum>> bsp = {};
+        bsp.aaBsp = &this->CAaBspNodePtr1;
+        bsp.f = &query;
+        bsp.GetFaceIndices(0, bounds, this->CAaBspNodePtr1.aaBox);
+
+        this->GetTrisFromQuery(a5, &query, mapObjDef, statusFlags);
+
+        query.ClearTestFaces();
+    }
+
+    //if (flags & 0x30000)
+    //    this->GetLiquidTris(frustum, flags, triData, mapObjDef);
+
+    return World::TriData::nBatches != startBatches;
+}
+
 // OFFSET: 0x7C7AE0
 void CMapObjGroup::GetTrisFromQuery(uint32_t a2, BspQuery* a3, CMapObjDef* mapObjDef, uint32_t statusFlags) {
     if (CWorld::s_enables & 0x200000) {
@@ -609,6 +642,33 @@ void CMapObjGroup::SetLighting(uint32_t mode) {
     } else {
         GxRsSet(GxRs_Lighting, 0);
     }
+}
+
+// OFFSET: 0x7CB2F0
+bool CMapObjGroup::Intersect(C3Segment& seg, float* dist, uint32_t flags, uint16_t faceIgnoreFlags, int32_t* hitIndex) {
+    bool hit = false;
+
+    BspQuery_Segment query;
+    BuildTriQuery(&query, this->polyList, this->vertexList, this->indices, &seg, dist, faceIgnoreFlags, this->parent->materialList);
+
+    CAaBsp_Query_Segment<BspQuery_Segment> bsp = {};
+    bsp.aaBsp = &this->CAaBspNodePtr1;
+    bsp.f = &query;
+    bsp.GetFaceIndices(0, seg, this->CAaBspNodePtr1.aaBox);
+
+    if (BspQuery::hitFaceSub) {
+        *hitIndex = BspQuery::hitFaces[0];
+        hit = true;
+    }
+
+    //if ((flags & 0x30000) != 0 && (this->flags & 0x1000) != 0 && this->VectorIntersectLiquid(seg, dist, flags, 0, 0)) {
+    //    *hitIndex = 0;
+    //    hit = true;
+    //}
+
+    query.ClearTestFaces();
+
+    return hit;
 }
 
 // OFFSET: 0x7D8570

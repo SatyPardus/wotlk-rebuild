@@ -10,6 +10,8 @@
 #include <gameui/CGInputControl.hpp>
 #include <gx/Coordinate.hpp>
 #include <util/Unimplemented.hpp>
+#include <gx/Transform.hpp>
+#include "world/map/CFrustum.hpp"
 
 bool CGCamera::s_aboveFlightFloor;
 
@@ -60,6 +62,88 @@ void BuildYawRotationMatrix(C33Matrix& matrix, float yaw) {
     C33Matrix rotation(c, 0.0f, -s, 0.0f, 1.0f, 0.0f, s, 0.0f, c);
 
     matrix = rotation * matrix;
+}
+
+// OFFSET: 0x5FF670
+static void CreateFrustum(C44Matrix* projMatrix, C44Matrix* viewMatrix, const C3Vector& sweep, float scale, CFrustum* out) {
+    C3Vector corners[8];
+
+    for (int32_t i = 0; i < 8; i++) {
+        corners[i].x = 0.0f;
+        corners[i].y = 0.0f;
+        corners[i].z = 0.0f;
+    }
+
+    GxuXformCalcFrustumCorners(viewMatrix, projMatrix, corners);
+
+    float centreX = (corners[0].x + corners[1].x + corners[2].x + corners[3].x) * 0.25f;
+    float centreY = (corners[0].y + corners[1].y + corners[2].y + corners[3].y) * 0.25f;
+    float centreZ = (corners[0].z + corners[1].z + corners[2].z + corners[3].z) * 0.25f;
+
+    for (int32_t i = 0; i < 4; i++) {
+        corners[i].x = (corners[i].x - centreX) * scale + centreX;
+        corners[i].y = (corners[i].y - centreY) * scale + centreY;
+        corners[i].z = (corners[i].z - centreZ) * scale + centreZ;
+    }
+
+    for (int32_t i = 0; i < 4; i++) {
+        corners[i + 4].x = corners[i].x + sweep.x;
+        corners[i + 4].y = corners[i].y + sweep.y;
+        corners[i + 4].z = corners[i].z + sweep.z;
+    }
+
+    out->CalcPlanesFromCorners(corners);
+}
+
+// OFFSET: 0x6057B0
+static bool CollideWithWorld(CFrustum* frustum, uint32_t flags, float* maxT) {
+    static World::FacetData s_collideFacets = {};
+
+    if (!flags)
+        return false;
+
+    s_collideFacets.facets.SetCount(0);
+    s_collideFacets.facetIds.SetCount(0);
+
+    uint32_t status;
+    World::GetFacets(frustum, &s_collideFacets, flags, &status);
+
+    if (!s_collideFacets.facets.Count())
+        return false;
+
+    C44Matrix xform;
+
+    if (!World::NDCXform(frustum, &xform, false))
+        return false;
+
+    bool hit = false;
+
+    for (uint32_t i = 0; i < s_collideFacets.facets.Count(); i++) {
+        CFacet* facet = &s_collideFacets.facets[i];
+
+        for (int32_t j = 0; j < 3; j++) {
+            C3Vector local;
+            local.x = facet->v[j].x - frustum->corners[0].x;
+            local.y = facet->v[j].y - frustum->corners[0].y;
+            local.z = facet->v[j].z - frustum->corners[0].z;
+
+            facet->v[j] = xform.TransformPoint(local);
+        }
+
+        C3Vector** clipped;
+        uint32_t clippedCount;
+
+        if (World::NDCClip(facet->v, 3, &clipped, &clippedCount)) {
+            hit = true;
+
+            for (uint32_t j = 0; j < clippedCount; j++) {
+                if (*maxT < clipped[j]->z)
+                    *maxT = clipped[j]->z;
+            }
+        }
+    }
+
+    return hit;
 }
 
 CGCamera::CGCamera()
@@ -578,11 +662,11 @@ void CGCamera::CalcTargetCamera(CGObject_C* target, int32_t time) {
         distance = this->m_distance;
     }
 
-    this->unk_02C0 = 1.0f;
+    this->m_collideExtent = 1.0f;
 
-    //uint32_t collideFlags = this->CollideCameraWithWorld(&safePos, &distance, &height, &shake, liquid, &this->m_collideExtent);
+    uint32_t collideFlags = this->CollideCameraWithWorld(&safePos, &distance, &height, &shake, liquid, &this->m_collideExtent);
 
-    //this->m_state |= collideFlags;
+    this->m_state |= collideFlags;
 
     C3Vector lookAt;
     lookAt.x = safePos.x + shake.x;
@@ -839,7 +923,7 @@ void CGCamera::GetCameraPosition(C3Vector* out, const C3Vector& lookAt, float di
                           : this->m_smoothDistance.target;
 
         if (limit > 0.0f) {
-            float scale = distance * (this->unk_02C0 * this->m_flyingMountHeight) / limit;
+            float scale = distance * (this->m_collideExtent * this->m_flyingMountHeight) / limit;
 
             C3Vector up = this->Up();
 
@@ -876,7 +960,7 @@ bool CGCamera::FinishLoadingTarget(CGObject_C* target) {
     this->m_targetHeightFar = 0.0f;
     this->m_targetHeightSwim = 0.0f;
 
-    auto scale = target->GetScale() /** target->unk_009C*/;
+    auto scale = target->GetScale() * target->unk_009C;
     float maxCameraHeight = 15.0f;
 
     if ((target->m_obj->m_type & TYPEMASK_UNIT) != 0 && model) {
@@ -1071,7 +1155,7 @@ void CGCamera::UpdateTargetHeight(CGObject_C* target, int32_t time) {
     }
     if (target && (target->m_obj->m_type & TYPEMASK_UNIT) != 0 && (target->AsUnit()->m_passenger->m_flags & MOVEMENTFLAG_SWIMMING) != 0) {
         this->SmoothSetHeight(this->m_targetHeightSwim, 0.0f, v3, time);
-    } else if (this->m_smoothDistance.target >= 1.8315002f /*|| CGBarberShop::m_barberShopEnabled*/) {
+    } else if (this->m_smoothDistance.target >= 1.8315002f || CGBarberShop::m_barberShopEnabled) {
         this->SmoothSetHeight(this->m_targetHeightFar, 0.0f, v3, time);
         if (target && (target->m_obj->m_type & TYPEMASK_UNIT) != 0 && target->AsUnit()->GetCanFly()) {
             this->SmoothSetFlyingMountHeight(this->m_mountHeight, 0.0f, v3, time);
@@ -1663,7 +1747,7 @@ int32_t CGCamera::CanSmoothTarget() {
         }
 
         if (this->unk_02FC != 2) {
-            if (!s_cvCameraSmoothTrackingStyle->m_intValue /* || !CGUnit_C::GetTrackingType() */) {
+            if (!s_cvCameraSmoothTrackingStyle->m_intValue || !CGUnit_C::GetTrackingType()) {
                 return 0;
             }
         }
@@ -2486,4 +2570,237 @@ void CGCamera::UpdateTargetSmoothing(CGObject_C* target, int32_t time) {
 
     //this->CalcTerrainTilt(target, time);
     //this->PerformTerrainTilt(target, time, 0);
+}
+
+// OFFSET: 0x6059E0
+bool CGCamera::GetCameraDistance(float* distance, C3Vector* from, C3Vector* to, uint32_t flags) {
+    float travel = *distance - this->m_nearZ;
+
+    if (travel < 0.001f) {
+        *distance = 0.0f;
+        return true;
+    }
+
+    C3Vector dir;
+    dir.x = to->x - from->x;
+    dir.y = to->y - from->y;
+    dir.z = to->z - from->z;
+
+    float lengthSq = dir.x * dir.x + dir.y * dir.y + dir.z * dir.z;
+
+    if (lengthSq < 0.001f)
+        return false;
+
+    float invLength = 1.0f / sqrtf(lengthSq);
+
+    dir.x = dir.x * invLength;
+    dir.y = dir.y * invLength;
+    dir.z = dir.z * invLength;
+
+    C3Vector up;
+    up.x = dir.y * 0.0f - dir.z * 0.0f;
+    up.y = dir.z * 1.0f - dir.x * 0.0f;
+    up.z = dir.x * 0.0f - dir.y * 1.0f;
+
+    if (up.x * up.x + up.y * up.y + up.z * up.z < 0.001f) {
+        up.x = dir.y * 0.0f - dir.z * 1.0f;
+        up.y = dir.z * 0.0f - dir.x * 0.0f;
+        up.z = dir.x * 1.0f - dir.y * 0.0f;
+    }
+
+    float invUp = 1.0f / sqrtf(up.x * up.x + up.y * up.y + up.z * up.z);
+
+    up.x = up.x * invUp;
+    up.y = up.y * invUp;
+    up.z = up.z * invUp;
+
+    C3Vector sweep;
+    sweep.x = dir.x * travel;
+    sweep.y = dir.y * travel;
+    sweep.z = dir.z * travel;
+
+    C44Matrix viewMatrix;
+    C44Matrix projMatrix;
+
+    C3Vector lookAt;
+    lookAt.x = dir.x + from->x;
+    lookAt.y = dir.y + from->y;
+    lookAt.z = dir.z + from->z;
+
+    GxuXformCreateLookAtSgCompat(*from, lookAt, up, viewMatrix);
+    GxuXformCreateProjection_SG(this->FOV(), this->m_aspect, this->m_nearZ, this->m_farZ, projMatrix);
+
+    float t = 0.0f;
+    bool hit = false;
+
+    CFrustum frustum;
+    frustum.sceneLink.m_next = nullptr;
+    frustum.sceneLink.m_prevlink = nullptr;
+
+    CreateFrustum(&projMatrix, &viewMatrix, sweep, 1.0f, &frustum);
+
+    if (CollideWithWorld(&frustum, flags & 0x30000, &t))
+        hit = true;
+
+    CreateFrustum(&projMatrix, &viewMatrix, sweep, 1.75f, &frustum);
+
+    if (CollideWithWorld(&frustum, flags & 0xFFFCFFFF, &t) || hit) {
+        *distance = *distance - t * travel;
+
+        if (*distance < 0.0f)
+            *distance = 0.0f;
+
+        frustum.sceneLink.Unlink();
+
+        return true;
+    }
+
+    frustum.sceneLink.Unlink();
+
+    return false;
+}
+
+// OFFSET: 0x605D60
+uint32_t CGCamera::CollideCameraWithWorld(C3Vector* target, float* distance, float* height, C3Vector* shake, float liquid, float* extent) {
+    *extent = 1.0f;
+
+    uint32_t collideFlags = 0;
+
+    *distance = this->m_distance > this->m_smoothDistance.target ? this->m_distance : this->m_smoothDistance.target;
+    *height = this->m_height > this->m_smoothHeight.target ? this->m_height : this->m_smoothHeight.target;
+
+    if (this->m_state & 0x8) {
+        *distance = this->m_distance;
+        return 0;
+    }
+
+    uint32_t queryFlags = s_cvCameraWaterCollision->m_intValue ? 0x120171 : 0x100171;
+
+    float offset = 0.83333331f;
+    float heightCap = this->m_height;
+
+    if (*height - this->m_nearZ > 0.00000095367432f) {
+        if (queryFlags & 0x30000) {
+            if (this->m_state & 0x100000) {
+                float surface = liquid + 0.22222222f;
+
+                offset = surface;
+
+                if (surface >= this->m_height)
+                    heightCap = surface;
+            } else if (this->m_state & 0x200000) {
+                float submerged = liquid - 0.83333331f;
+
+                heightCap = submerged <= 0.83333331f ? 0.83333331f : submerged;
+            }
+        }
+
+        C3Vector from;
+        from.x = target->x;
+        from.y = target->y;
+        from.z = target->z + offset;
+
+        *height = *height - offset + this->m_flyingMountHeight;
+
+        if (*height <= 0.11111111f)
+            *height = 0.11111111f;
+
+        float wanted = *height;
+
+        C3Vector to;
+        to.x = from.x;
+        to.y = from.y;
+        to.z = from.z + *height;
+
+        C3Vector hitPoint = { 0.0f, 0.0f, 0.0f };
+        float t = 1.0f;
+
+        if (World::Intersect(&from, &to, &hitPoint, &t, queryFlags, nullptr)) {
+            *extent = t;
+            collideFlags = 0x20000;
+            *height = t * *height;
+        }
+
+        if (fabs(wanted - *height) >= 0.00000023841858f) {
+            *height = *height - 0.11111111f;
+
+            if (*height <= 0.11111111f)
+                *height = 0.11111111f;
+        }
+
+        *height = *height + offset - this->m_flyingMountHeight;
+
+        CGUnit_C* unit = ClntObjMgrObjectPtr<CGUnit_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
+
+        if (unit && (unit->m_obj->m_type & 0x8)) {
+            float collisionHeight = unit->movementData.m_collisionHeight;
+            float minHeight = collisionHeight * 0.75f;
+
+            if (unit->m_obj->m_guid == ClntObjMgrGetActivePlayer() && CGBarberShop::m_barberShopEnabled)
+                minHeight = collisionHeight;
+
+            if (minHeight > *height)
+                *height = minHeight;
+        }
+    }
+
+    if (offset > *height)
+        *height = offset;
+
+    if (heightCap < *height)
+        *height = heightCap;
+
+    C3Vector lookAt;
+    lookAt.x = target->x;
+    lookAt.y = target->y;
+    lookAt.z = target->z + *height;
+
+    float wantedDistance = *distance;
+
+    if (wantedDistance - this->m_nearZ > 0.00000095367432f) {
+        C3Vector hitPoint = { 0.0f, 0.0f, 0.0f };
+
+        C3Vector forward = this->Forward();
+
+        C3Vector camPos;
+        camPos.x = lookAt.x - forward.x * *distance;
+        camPos.y = lookAt.y - forward.y * *distance;
+        camPos.z = lookAt.z - forward.z * *distance;
+
+        if (fabs(this->m_flyingMountHeight) >= 0.00000023841858f) {
+            C3Vector up = this->Up();
+
+            camPos.x = up.x * this->m_flyingMountHeight * *extent + camPos.x;
+            camPos.y = up.y * this->m_flyingMountHeight * *extent + camPos.y;
+            camPos.z = up.z * this->m_flyingMountHeight * *extent + camPos.z;
+        }
+
+        float t = 1.0f;
+
+        if (World::Intersect(&lookAt, &camPos, &hitPoint, &t, queryFlags, nullptr)) {
+            collideFlags |= 0x10000;
+            *distance = *distance * t;
+        }
+
+        if (*distance > 0.00000095367432f) {
+            C3Vector safePos;
+
+            this->GetCameraPosition(&safePos, lookAt, *distance, *shake);
+
+            if (this->GetCameraDistance(distance, &safePos, &lookAt, queryFlags))
+                collideFlags |= 0x10000;
+
+            if (CMath::fnotequal(wantedDistance, *distance)) {
+                *distance = *distance - 0.11111111f;
+
+                if (*distance <= 0.0f)
+                    *distance = 0.0f;
+            }
+        }
+    }
+
+    if (this->m_distance < *distance)
+        *distance = this->m_distance;
+
+    return collideFlags;
 }

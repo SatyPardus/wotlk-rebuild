@@ -5,8 +5,12 @@
 #include "world/CWorld.hpp"
 #include <tempest/facet/CFacet.hpp>
 #include <storm/Array.hpp>
+#include "clientobject/WGUID.hpp"
+
+#define NDCCLIP_MAX 32
 
 class CMapObjDef;
+class CFrustum;
 
 extern uint32_t s_newZoneID;
 extern C3Vector s_newPosition;
@@ -16,6 +20,21 @@ extern const char* s_newMapname;
 int32_t LoadNewWorld(const void* eventData);
 
 namespace World {
+
+
+    struct CLIPINFO {
+        float d[6];
+        uint32_t outcode;
+        uint32_t pad;
+
+        void Set(const C3Vector& ndc);
+    };
+
+    struct CLIPPOLY {
+        C3Vector** verts;
+        CLIPINFO** infos;
+        uint32_t count;
+    };
 
     namespace TriData {
         struct Batch {
@@ -51,10 +70,14 @@ namespace World {
 
     bool IsValidPosition(float x, float y, float z, float a4);
 
+    bool NDCXform(CFrustum* frustum, C44Matrix* out, bool includeTranslation);
+    bool NDCClip(C3Vector* verts, uint32_t count, C3Vector*** outVerts, uint32_t* outCount);
+    bool GetFacets(CFrustum* frustum, FacetData* facets, uint32_t flags, uint32_t* a4);
     bool GetFacets(CAaBox* a1, CAaBox* a2, FacetData* a3, uint32_t a4, uint32_t* a5);
     void AddAaBoxFacets(CAaBox* box, FacetData* facets);
-    uint32_t TriDataToFacetData(void* unused, FacetData* facets, uint32_t idLow, uint32_t idHigh);
+    uint32_t TriDataToFacetData(void* unused, FacetData* facets, WGUID guid);
     int32_t GetFlightBoundsLower(const C3Vector& pos, float* height);
+    bool Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* distance, uint32_t flags, void* hitInfo);
 
 }
 

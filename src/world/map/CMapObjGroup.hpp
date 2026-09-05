@@ -15,6 +15,7 @@
 
 class CMapObj;
 class CMapObjDef;
+class CFrustum;
 
 class CMapObjGroup : public CMapBaseObj {
     public:
@@ -111,8 +112,10 @@ class CMapObjGroup : public CMapBaseObj {
     void FixColorVertexAlpha();
     bool GetTris(C3Segment& seg, float* dist, uint32_t a4, uint16_t faceIgnoreFlags, uint32_t a6, CMapObjDef* mapObjDef);
     bool GetTris(CAaBox& box, uint32_t a4, uint16_t faceIgnoreFlags, uint32_t a6, CMapObjDef* mapObjDef);
+    bool GetTris(CFrustum* frustum, uint32_t flags, uint16_t faceIgnoreFlags, uint32_t a5, CMapObjDef* mapObjDef);
     void GetTrisFromQuery(uint32_t a2, BspQuery* a3, CMapObjDef* mapObjDef, uint32_t a5);
     void SetLighting(uint32_t mode);
+    bool Intersect(C3Segment& seg, float* dist, uint32_t flags, uint16_t faceIgnoreFlags, int32_t* hitIndex);
 
     static void AsyncPostloadCallback(void* arg);
     static void Initialize();

@@ -160,6 +160,33 @@ bool BspQuery_Volume<CAaBox>::GetFaceIndicesUsingCache(const CAaBsp& aaBsp, cons
     return true;
 }
 
+// OFFSET: 0x7C7660
+template <>
+void BspQuery_Volume<CFrustum>::operator()(uint16_t faceIndex) {
+    if (this->faces[faceIndex].flags & this->faceIgnoreFlags)
+        return;
+
+    if (BspQuery::testFaceSub >= BSPQUERY_MAX_FACES) {
+        if (this->overflowFlags)
+            *this->overflowFlags |= 1;
+
+        return;
+    }
+
+    BspQuery::testFaces[BspQuery::testFaceSub] = faceIndex;
+    BspQuery::testFaceSub++;
+
+    this->faces[faceIndex].flags |= BSPQUERY_FACE_TESTED;
+
+    if (!QueryCull(this->volume,
+                   this->vertexList[this->indices[3 * faceIndex + 0]],
+                   this->vertexList[this->indices[3 * faceIndex + 1]],
+                   this->vertexList[this->indices[3 * faceIndex + 2]])) {
+        BspQuery::hitFaces[BspQuery::hitFaceSub] = faceIndex;
+        BspQuery::hitFaceSub++;
+    }
+}
+
 template <>
 bool BspQuery_Volume<CFrustum>::GetFaceIndicesUsingCache(const CAaBsp&, const CAaBspNode*) {
     return false;

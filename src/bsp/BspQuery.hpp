@@ -47,7 +47,7 @@ class BspQuery_Volume : public BspQuery {
     void operator()(uint16_t faceIndex);
     bool GetFaceIndicesUsingCache(const CAaBsp& aaBsp, const CAaBspNode* node);
 
-    const T* volume;          // +0x10
+    T* volume;          // +0x10
     uint16_t faceIgnoreFlags; // +0x14
 };
 
