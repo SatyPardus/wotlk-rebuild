@@ -1945,6 +1945,28 @@ void CGCamera::SetModeNormal() {
     this->m_state &= ~0x4000u;
 }
 
+// OFFSET: 0x6023D0
+void CGCamera::SyncFreeLookFacing() {
+    CGUnit_C* target = ClntObjMgrObjectPtr<CGUnit_C*>(this->m_targetGUID, TYPEMASK_UNIT);
+    float yaw = this->m_yaw;
+
+    if (!target || !target->ClampRawAngleToLegalFacingRange(&yaw)) {
+        this->m_state |= 0x4000u;
+        this->m_flags |= 0x4u;
+        this->unk_01DC = this->m_yaw;
+    } else if ((this->m_flags & 0x4) != 0) {
+        this->m_state |= 0x4000u;
+        this->m_smoothYaw.target = yaw;
+        this->m_yaw = yaw;
+        this->unk_01DC = yaw;
+    } else {
+        this->m_state &= ~0x4000u;
+    }
+
+    int32_t time = OsGetAsyncTimeMs();
+    CGInputControl::GetActive()->CameraTurnPlayer(time, this->m_yaw);
+}
+
 // OFFSET: 0x6047E0
 void CGCamera::EnableFreeLook() {
     CGObject_C* target = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);

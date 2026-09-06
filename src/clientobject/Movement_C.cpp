@@ -371,10 +371,10 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         //    CGUnit_C::UpdateObjectEffectMovementStates(this->unit);
         //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_SET_WALK_MODE, v4->m_needAck, 0.0, 0, 0, 0, 255);
         //    break;
-        //case 19u:
-        //    CMovementShared::SetRawFacing(this, v4->m_facing);
-        //    updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, MSG_MOVE_SET_FACING, v4->m_needAck, 0.0, 0, 0, 0, 255);
-        //    break;
+        case MOVEEVENT_SET_FACING:
+            this->SetRawFacing(moveEvent->m_facing);
+            updated = this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_SET_FACING, moveEvent->m_needAck, 0.0, 0, 0, 255);
+            break;
         //case 20u:
         //    updated = CMovement_C::UpdatePitch(this, a2, v4);
         //    break;
@@ -1012,6 +1012,46 @@ void CMovement_C::OnTurnStopLocal(int32_t eventTime) {
     this->UnlinkMoveEventById(&this->m_moveQueue, MOVEEVENT_STOP_TURN_AT_ANGLE);
 }
 
+// OFFSET: 0x6EE3A0
+void CMovement_C::OnSetRawFacingLocal(int32_t eventTime, float facing) {
+    float low;
+    float high;
+
+    //if (this->ComputeLegalRawFacingRange(&low, &high)) {
+    //    WrapFacingToRange(&facing, low, high);
+    //
+    //    if (facing >= low) {
+    //        if (high <= facing) {
+    //            facing = high;
+    //        }
+    //    } else {
+    //        facing = low;
+    //    }
+    //}
+
+    this->AddPlayerMoveEvent(eventTime, MOVEEVENT_SET_FACING, 1, 0, facing, 0.0f, 0);
+}
+
+// OFFSET: 0x6EF3D0
+void CMovement_C::OnTurnToAngleLocal(int32_t eventTime, float facing) {
+    float low;
+    float high;
+
+    //if (this->ComputeLegalRawFacingRange(&low, &high)) {
+    //    WrapFacingToRange(&facing, low, high);
+    //
+    //    if (facing >= low) {
+    //        if (high <= facing) {
+    //            facing = high;
+    //        }
+    //    } else {
+    //        facing = low;
+    //    }
+    //}
+
+    this->AddPlayerMoveEvent(eventTime, MOVEEVENT_SET_FACING, 1, 0, facing, 0.0f, 0);
+}
+
 // OFFSET: 0x6F0CF0
 bool CMovement_C::OnMoveStart(int32_t time, CMovementStatus* update, bool forward) {
     if (!this->UpdateStatus(time, update, forward ? MOVEEVENT_START_FORWARD : MOVEEVENT_START_BACKWARD, 0.0f) || !this->StartMove(forward, 0))
@@ -1093,11 +1133,7 @@ void CMovement_C::AddPlayerMoveEvent(int32_t eventTime, MoveEventId eventId, boo
     moveEvent->m_ackCounter = ackCounter;
     moveEvent->m_moveExtraFlags = flags;
     CMovement_C::EnqueuePlayerMoveEvent(&this->m_moveQueue, moveEvent);
-    if (!this->m_globalUnitLink.IsLinked()) {
-        auto globals = MovementGetGlobals();
-        if (globals)
-            globals->m_movementUnits.LinkToHead(this);
-    }
+    this->AddToMoversList();
 }
 
 // OFFSET: 0x6EC8B0

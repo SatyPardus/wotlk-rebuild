@@ -148,10 +148,10 @@ bool CGInputControl::SetControlBit(uint32_t controlBit, int32_t eventTime) {
     if (!wasBothButtons && (this->m_flags & 0x1) != 0 && (this->m_flags & 0x2) != 0) {
         CGUnit_C* mover = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
 
-        //if (this->CanSyncFreeLookFacing(mover)) {
-        //    camera->SyncFreeLookFacing();
-        //    this->m_freeLookFacingSynced = 1;
-        //}
+        if (this->CanSyncFreeLookFacing(mover)) {
+            camera->SyncFreeLookFacing();
+            this->m_freeLookFacingSynced = 1;
+        }
     } else if ((this->m_flags & 0x1) == 0 || (this->m_flags & 0x2) == 0) {
         this->m_freeLookFacingSynced = 0;
     }
@@ -393,7 +393,7 @@ void CGInputControl::OnMouseMoveRel(CMouseEvent* evt) {
     this->m_dragAccumX = fabs(dx) + this->m_dragAccumX;
     this->m_dragAccumY = fabs(dy) + this->m_dragAccumY;
 
-    //bool canSync = this->CanSyncFreeLookFacing(mover);
+    bool canSync = this->CanSyncFreeLookFacing(mover);
 
     bool pitchCamera = true;
 
@@ -423,9 +423,74 @@ void CGInputControl::OnMouseMoveRel(CMouseEvent* evt) {
         //}
     }
 
-    //if (canSync) {
-    //    camera->SyncFreeLookFacing();
-    //}
+    if (canSync) {
+        camera->SyncFreeLookFacing();
+    }
+}
+
+bool CGInputControl::CanSyncFreeLookFacing(CGUnit_C* unit) {
+    return CGInputControl::CanControl(unit) && (unit->m_unit->UNIT_FIELD_FLAGS & 0x40000) == 0 && !unit->IsVehiclePreventingTurning() && (this->m_flags & 0x2000001) != 0 && unit->GetClientStandState() == 0;
+}
+
+// OFFSET: 0x5FA6B0
+bool CGInputControl::CameraCanTurnPlayer() {
+    CGUnit_C* mover = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
+
+    if (!mover) {
+        return false;
+    }
+
+    CGCamera* camera = CGWorldFrame::GetActiveCamera();
+    bool allowed = false;
+
+    if ((mover->m_obj->m_type & 0x10) != 0 && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
+        allowed = true;
+    } else {
+        if (mover->m_unit->UNIT_FIELD_HEALTH > 0) {
+            CMoveSpline* spline = mover->m_passenger->m_spline;
+
+            if ((!spline || (spline->flags & 0x400) != 0) && (mover->m_unit->UNIT_FIELD_FLAGS & 0x40000) == 0 && !mover->IsAlteredFormTransitionPreventingMovement() && !mover->GetClientStandState() && camera->m_targetGUID == mover->m_obj->m_guid) {
+                allowed = true;
+            }
+        }
+    }
+
+    if (!allowed || (camera->m_state & 0x1) == 0) {
+        return false;
+    }
+
+    return (this->m_flags & (CONTROL_TURNORACTION | CONTROL_VIRTUAL_TURNORACTION)) != 0;
+}
+
+// OFFSET: 0x5FB260
+void CGInputControl::CameraTurnPlayer(int32_t time, float angle) {
+    if (!this->CameraCanTurnPlayer()) {
+        return;
+    }
+
+    CGUnit_C* mover = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
+
+    if (!mover) {
+        return;
+    }
+
+    if ((mover->m_passenger->m_flags2 & MOVEMENTFLAG2_FULL_SPEED_TURNING) != 0) {
+        if (!this->m_facingOverrideActive || this->m_facingOverride != angle) {
+            mover->OnTurnToAngleLocal(time, angle);
+            this->m_facingOverride = angle;
+        }
+
+        if (!this->m_facingOverrideActive) {
+            CGWorldFrame::GetActiveCamera()->IncIgnoreFacing();
+            this->m_flags &= ~CONTROL_TURN_SENT;
+            this->m_facingOverrideActive = 1;
+            return;
+        }
+    } else {
+        mover->OnSetRawFacingLocal(time, angle);
+    }
+
+    this->m_flags &= ~CONTROL_TURN_SENT;
 }
 
 // OFFSET: 0x5F9650
@@ -461,12 +526,11 @@ void CGInputControl::MovePlayer(int32_t eventTime, CGUnit_C* unit) {
         }
     //}
 
-    //if ((a3->ObjectBase.ukn78)(a3)) {
-    //    CGUnit_C::TryChangeStandState(0);
-    //    ActiveCamera = CGWorldFrame::GetActiveCamera();
-    //    if (CGInputControl::CanSyncFreeLookFacing(this, a3))
-    //        CGCamera::SyncFreeLookFacing(ActiveCamera);
-    //}
+    if (unit->GetClientStandState()) {
+        //CGUnit_C::TryChangeStandState(0);
+        if (this->CanSyncFreeLookFacing(unit))
+            CGWorldFrame::GetActiveCamera()->SyncFreeLookFacing();
+    }
 
     //CGPlayer_C* activePlayer = ClntObjMgrGetActivePlayerObj();
     //if (activePlayer)

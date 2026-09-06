@@ -1591,7 +1591,7 @@ bool CMap::Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* 
     if (flags & 0x40F300FF) {
         CMapObj* hitObj = nullptr;
 
-        CWorldScene::s_m2Scene->m_hitTestResult = nullptr;
+        CWorldScene::s_m2Scene->m_lastHit.model = nullptr;
         CMap::s_lastCollisionGUID = 0;
 
         if (CMap::VectorIntersect(start, end, flags, MAPOBJ_FLAG_NO_HITTEST, distance, nullptr, &hitObj, &hitDef, &hitGroup)) {
@@ -1603,8 +1603,8 @@ bool CMap::Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* 
             }
 
             if (hitInfo) {
-                if (CWorldScene::s_m2Scene->m_hitTestResult)
-                    CMap::SetHitTestDebug(hitInfo, CWorldScene::s_m2Scene->m_hitTestOwner);
+                if (CWorldScene::s_m2Scene->m_lastHit.model)
+                    CMap::SetHitTestDebug(hitInfo, CWorldScene::s_m2Scene->m_lastHitOwner);
                 else
                     CMap::SetHitTestDebug(hitInfo, hitGroup);
             }
@@ -1614,13 +1614,13 @@ bool CMap::Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* 
     }
 
     if (flags & 0x40F3010F) {
-        CWorldScene::s_m2Scene->m_hitTestResult = nullptr;
+        CWorldScene::s_m2Scene->m_lastHit.model = nullptr;
 
         if (CMap::VectorIntersectTerrain(start, end, distance, flags, nullptr)) {
             CMap::s_lastCollisionGUID = 0;
 
-            if (hitInfo && CWorldScene::s_m2Scene->m_hitTestResult)
-                CMap::SetHitTestDebug(hitInfo, CWorldScene::s_m2Scene->m_hitTestOwner);
+            if (hitInfo && CWorldScene::s_m2Scene->m_lastHit.model)
+                CMap::SetHitTestDebug(hitInfo, CWorldScene::s_m2Scene->m_lastHitOwner);
 
             hit = true;
         }
@@ -1644,8 +1644,8 @@ bool CMap::Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* 
 bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint32_t defIgnoreFlags, float* distance, uint16_t* hitIndex, CMapObj** outMapObj, CMapObjDef** outMapObjDef, CMapObjDefGroup** outMapObjDefGroup) {
     const uint32_t m2Flags = flags & 0x40F0000F;
 
-    //if (m2Flags)
-    //    CWorldScene::s_m2Scene->BeginHitTest();
+    if (m2Flags)
+        CWorldScene::s_m2Scene->BeginHitTest();
 
     const float dx = end->x - start->x;
     const float dy = end->y - start->y;
@@ -1762,29 +1762,30 @@ bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint3
             *hitIndex = bestHitIndex;
     }
 
-    //if (m2Flags) {
-    //    C3Vector m2Start = CWorldScene::camTransportView.TransformPoint(*start);
-    //    C3Vector m2End = CWorldScene::camTransportView.TransformPoint(*end);
-    //
-    //    float t = *distance;
-    //    CMapEntity* entity = CWorldScene::s_m2Scene->EndHitTest(&m2Start.x, &m2End, &t, 0);
-    //
-    //    if (t < *distance) {
-    //        if (entity->type & 0x40) {
-    //            uint64_t guid = (static_cast<uint64_t>(entity->unk_00BC) << 32) | entity->unk_00B8;
-    //
-    //            if (guid)
-    //                CMap::s_lastCollisionGUID = guid;
-    //        }
-    //
-    //        *distance = t;
-    //
-    //        if (hitIndex)
-    //            *hitIndex = 0xFFFF;
-    //
-    //        return true;
-    //    }
-    //}
+    if (m2Flags) {
+        C3Vector m2Start = CWorldScene::camTransportView.TransformPoint(*start);
+        C3Vector m2End = CWorldScene::camTransportView.TransformPoint(*end);
+    
+        float t = *distance;
+        CMapBaseObj* mapBaseObj = CWorldScene::s_m2Scene->EndHitTest(m2Start, m2End, &t, 0);
+    
+        if (t < *distance) {
+            if (mapBaseObj->type & 0x40) {
+                CMapEntity* entity = reinterpret_cast<CMapEntity*>(mapBaseObj);
+                uint64_t guid = (static_cast<uint64_t>(entity->unk_00BC) << 32) | entity->unk_00B8;
+    
+                if (guid)
+                    CMap::s_lastCollisionGUID = guid;
+            }
+    
+            *distance = t;
+    
+            if (hitIndex)
+                *hitIndex = 0xFFFF;
+    
+            return true;
+        }
+    }
 
     if (!hit && hitIndex)
         *hitIndex = 0xFFFF;
@@ -1823,8 +1824,8 @@ bool CMap::VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distanc
 // OFFSET: 0x7A3570
 bool CMap::VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* distance, uint32_t flags, CMapChunk** hitChunk) {
     const uint32_t m2Flags = flags & 0x40F0000F;
-    //if (m2Flags)
-    //    CM2Scene::BeginHitTest(s_m2Scene);
+    if (m2Flags)
+        CWorldScene::s_m2Scene->BeginHitTest();
 
     const float dx = end->x - start->x;
     const float dy = end->y - start->y;
@@ -1936,15 +1937,13 @@ bool CMap::VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* di
     }
 
     if (m2Flags) {
-        //if (flags & 0x016000AE) {
-        //    C3Vector m2Start;
-        //    C3Vector m2End;
-        //    C44Matrix::TransformPoint(&m2Start, start, (C44Matrix*)&flt_ADF530);
-        //    C44Matrix::TransformPoint(&m2End, end, (C44Matrix*)&flt_ADF530);
-        //    CM2Scene::EndHitTest(s_m2Scene, &m2Start.x, &m2End, &tBest, 0);
-        //} else {
-        //    CM2Scene::EndHitTestCollisionWorld(start, end, &tBest);
-        //}
+        if (flags & 0x016000AE) {
+            C3Vector m2Start = CWorldScene::camTransportView.TransformPoint(*start);
+            C3Vector m2End = CWorldScene::camTransportView.TransformPoint(*end);
+            CWorldScene::s_m2Scene->EndHitTest(m2Start, m2End, &tBest, 0);
+        } else {
+            CWorldScene::s_m2Scene->EndHitTestCollisionWorld(*start, *end, &tBest);
+        }
     }
 
     if (tBest >= *distance)

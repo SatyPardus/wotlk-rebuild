@@ -917,6 +917,32 @@ void CGUnit_C::OnTurnStopLocal(int32_t eventTime) {
     this->movementData.OnTurnStopLocal(eventTime);
 }
 
+// OFFSET: 0x72EA50
+void CGUnit_C::OnSetRawFacingLocal(int32_t eventTime, float facing) {
+    // if (this->m_obj->m_guid == CGUnit_C::s_activeMover && CGUnit_C::m_trackingType != 13 && (CGUnit_C::s_trackingFlags & 1) == 0) {
+    //     this->ClearTrackingTarget(this->m_obj->m_guid, 0, 1);
+    // }
+
+    this->movementData.OnSetRawFacingLocal(eventTime, facing);
+
+    // if (this->GetStandState() == 3 && (this->m_obj->m_type & 0x10) != 0) {
+    //     static_cast<CGPlayer_C*>(this)->ChangeStandState(0);
+    // }
+}
+
+// OFFSET: 0x72D3F0
+void CGUnit_C::OnTurnToAngleLocal(int32_t eventTime, float facing) {
+    // if (this->m_obj->m_guid == CGUnit_C::s_activeMover && CGUnit_C::m_trackingType != 13 && (CGUnit_C::s_trackingFlags & 1) == 0) {
+    //     this->ClearTrackingTarget(this->m_obj->m_guid, 0, 1);
+    // }
+
+    this->movementData.OnTurnToAngleLocal(eventTime, facing);
+
+    // if (this->GetStandState() == 3 && (this->m_obj->m_type & 0x10) != 0) {
+    //     static_cast<CGPlayer_C*>(this)->ChangeStandState(0);
+    // }
+}
+
 // OFFSET: none (inlined)
 void CGUnit_C::OnMovementInitiated() {
     //m_obj = this->ObjectBase.m_obj;
@@ -1403,6 +1429,63 @@ bool CGUnit_C::NoStrafe() {
     return this->movementData.m_flags2 & MOVEMENTFLAG2_NO_STRAFE;
 }
 
+// OFFSET: 0x74B900
+bool CGUnit_C::IsVehiclePreventingTurning() {
+    // guid_high = this->movementData.transportGuid.guid_high;
+    // guid_low = this->movementData.transportGuid.guid_low;
+    // return ((guid_high & 0xF0F00000) == -263192576
+    //     || (guid_high & 0xF0000000) == 0 && guid_high & 0xF07FFFFF | guid_low)
+    //     && (v5 = ClntObjMgrObjectPtr(__PAIR64__(guid_high, guid_low), TYPEMASK_UNIT)) != 0
+    //     && (v6 = v5->dataF00[23]) != 0
+    //     && (VehicleSeatRec = CVehicle_C::GetVehicleSeatRec(v6, BYTE2(this->movementData.m_flags2))) != 0
+    //     && (*(VehicleSeatRec + 4) & 0x400) == 0;
+    return false;
+}
+
+// OFFSET: 0x74BA40
+bool CGUnit_C::IsAlteredFormTransitionPreventingMovement() {
+    if (!this->IsLocalClientControlled())
+        return 0;
+    //dataF60 = this->dataF60;
+    //if (dataF60) {
+    //    v4 = *(dataF60 + 20);
+    //    if (v4) {
+    //        if (v4 != 3)
+    //            return 1;
+    //    }
+    //}
+    //if (dataF60 && (*(dataF60 + 16) & 0x200) != 0)
+    //    return 1;
+    auto v5 = ClntObjMgrObjectPtr<CGUnit_C*>(this->m_unit->UNIT_FIELD_CHARMEDBY, TYPEMASK_UNIT);
+    if (v5) {
+        //v6 = v5->dataF60;
+        //if (!v6 || ((v7 = *(v6 + 20)) == 0 || v7 == 3) && (*(v6 + 16) & 0x200) == 0)
+        //    return CGUnit_C::GetUnitF58Field_14_4F03C0(v5) && (*(v6 + 16) & 8) != 0;
+        //return 1;
+    }
+    if ((this->m_unit->UNIT_FIELD_FLAGS & 0x1000000) == 0 && this->m_obj->m_guid != ClntObjMgrGetActivePlayer()) {
+        return 1;
+    }
+    return 0;
+}
+
+// OFFSET: 0x71C1E0
+bool CGUnit_C::ClampRawAngleToLegalFacingRange(float* yaw) {
+    //if (!CMovement_C::ComputeLegalRawFacingRange(&this->movementData, &v6, &v5))
+    //    return 0;
+    //v2 = a2;
+    //a2 = *a2;
+    //bn_CMovement_C_WrapFacingToRange(&a2, v6, v5);
+    //v3 = v6;
+    //if (*&a2 >= v6) {
+    //    v3 = v5;
+    //    if (v5 >= *&a2)
+    //        return 0;
+    //}
+    //*v2 = v3;
+    return false;
+}
+
 // OFFSET: 0x717A20
 CreatureModelDataRec* CGUnit_C::GetModelData() {
     uint32_t displayId = this->m_displayId;
@@ -1512,6 +1595,11 @@ void CGUnit_C::ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) {
 // OFFSET: 0x6E6FC0
 float CGUnit_C::GetPitch() {
     return this->movementData.m_pitch;
+}
+
+// OFFSET: 0x71A380
+uint8_t CGUnit_C::GetClientStandState() {
+    return LOBYTE(this->m_unit->UNIT_FIELD_BYTES_1);
 }
 
 const char* CGUnit_C::GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut) {

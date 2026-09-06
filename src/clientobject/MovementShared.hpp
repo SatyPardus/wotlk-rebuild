@@ -103,6 +103,7 @@ class CMovementShared : public CPassenger {
     void ConvertCurrentSplineToLoopingSpline(int32_t timePassed);
     float PlotSplineElevation(uint32_t elapsedMs, float z);
     bool PlotUnitSplineMovement(int32_t time, C3Vector* out);
+    void SetRawFacing(float facing);
 };
 
 #endif // CLIENTOBJECT_MOVEMENT_SHARED_HPP

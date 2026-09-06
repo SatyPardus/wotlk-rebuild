@@ -68,6 +68,9 @@ class CWorldScene {
     static C3Vector s_activeWorldView;
     static C3Vector camTarget;
     static C3Vector camVec;
+    static C44Matrix camTransportView;
+    static WGUID camTransportGUID;
+    static CMapEntity* camTargetEntity;
     static C4Plane camPlane;
     static C4Plane camPlaneXY;
     static C44Matrix viewMatrix;
@@ -163,6 +166,7 @@ class CWorldScene {
     static void AddInteriorPortalView(CMapObj* mapObj, SMOPortal* portal, SMOPortalRef* ref, SPortalExt* ext, TSGrowableArray<CPortalView>* a5);
     static void MergeIntoFrustumRect(CPortalView* portalView);
     static void SetupLighting(CM2Lighting* lighting, C3Vector* view);
+    static void SetCameraTarget(CMapEntity* entity, WGUID transportGuid);
 };
 
 #endif // WORLD_C_WORLDSCENE_HPP

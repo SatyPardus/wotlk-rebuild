@@ -20,6 +20,8 @@
 #include <console/DebugScreen.hpp>
 #include "CWorldMath.hpp"
 #include "model/CM2Shared.hpp"
+#include <clientobject/Movement.hpp>
+#include <util/Unimplemented.hpp>
 
 CM2Scene* CWorldScene::s_m2Scene;
 HTEXTURE CWorldScene::s_defaultTexture;
@@ -37,6 +39,9 @@ CSortTable CWorldScene::sortTable;
 C3Vector CWorldScene::s_activeWorldView;
 C3Vector CWorldScene::camTarget;
 C3Vector CWorldScene::camVec;
+C44Matrix CWorldScene::camTransportView;
+WGUID CWorldScene::camTransportGUID;
+CMapEntity* CWorldScene::camTargetEntity;
 C4Plane CWorldScene::camPlane;
 C4Plane CWorldScene::camPlaneXY;
 C44Matrix CWorldScene::viewMatrix;
@@ -2040,4 +2045,21 @@ void CWorldScene::SetupLighting(CM2Lighting* lighting, C3Vector* view) {
         lighting->SetupGxLights(view);
         //dword_D1BEFC = 0;
     }
+}
+
+// OFFSET: 0x780500
+void CWorldScene::SetCameraTarget(CMapEntity* entity, WGUID transportGuid) {
+    CWorldScene::camTargetEntity = entity;
+    if (transportGuid != 0) {
+        C44Matrix transportMatrix;
+        MovementGetTransportMtxX(transportGuid, &transportMatrix);
+        if (CWorldScene::camTransportGUID != 0) {
+            WHOA_UNIMPLEMENTED();
+        } else {
+            CWorldScene::camTransportView = s_m2Scene->m_view;
+        }
+    } else {
+        CWorldScene::camTransportView = s_m2Scene->m_view;
+    }
+    CWorldScene::camTransportGUID = camTransportGUID;
 }

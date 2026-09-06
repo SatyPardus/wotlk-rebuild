@@ -79,6 +79,8 @@ class CGCamera : public CSimpleCamera {
     /* 01D0 */ float unk_01D0 = 0.0f;
     /* 01D4 */ float m_targetFacing = 0.0f;
 
+    /* 01DC */ float unk_01DC = 0.0f;
+
     /* 01E0 */ CAMERA_SMOOTH m_smoothDistance;
     /* 01F8 */ CAMERA_SMOOTH m_smoothGroundTilt;
     /* 0210 */ CAMERA_SMOOTH m_smoothHeight;
@@ -138,6 +140,7 @@ class CGCamera : public CSimpleCamera {
     void DisableFreeLook(int32_t a2);
     void SetModeFreeLook();
     void SetModeNormal();
+    void SyncFreeLookFacing();
     void UpdateFreeLookFacing(float dx, float dy, float* outPitch);
     void SmoothFreeLook(CGInputControl* input, int32_t settle);
     bool CanSmoothYaw(float yawMin, float yawMax);

@@ -317,8 +317,7 @@ void CGWorldFrame::OnWorldUpdate() {
     }
 
     if (cameraTargetObj && cameraTargetObj->m_worldObject) {
-        //v13 = (cameraTargetObj->ObjectBase.GetTransportGUID)(cameraTargetObj, v39);
-        //World::SetCameraTarget(m_worldObject, v13);
+        CWorldScene::SetCameraTarget(cameraTargetObj->m_worldObject, cameraTargetObj->GetTransportGUID());
     }
 
     //bn_CVehiclePassenger_C_UpdateAll(FrameTime::s_curTimeMs);

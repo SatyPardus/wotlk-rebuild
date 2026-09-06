@@ -305,6 +305,11 @@ float CGObject_C::GetScale() {
     return this->m_obj->m_scale;
 }
 
+// OFFSET: 0x4D5F10
+WGUID CGObject_C::GetTransportGUID() {
+    return 0;
+}
+
 // OFFSET: 0x4899F0
 bool CGObject_C::GetModelFileName(const char** fileName) {
     *fileName = nullptr;

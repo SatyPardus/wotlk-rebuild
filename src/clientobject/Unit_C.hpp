@@ -179,11 +179,16 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     void OnPitchStopLocal(int32_t eventTime);
     void OnTurnStartLocal(int32_t eventTime, bool left);
     void OnTurnStopLocal(int32_t eventTime);
+    void OnSetRawFacingLocal(int32_t eventTime, float facing);
+    void OnTurnToAngleLocal(int32_t eventTime, float facing);
 
     void OnMovementInitiated();
     void OnMonsterMove(CDataStore* msg, NETMESSAGE msgId, WGUID transportGuid, uint8_t transportFlags, bool a6);
     C3Vector* ComputeTransportRelativeMovement(WGUID guid, C3Vector* position, C3Vector* points, uint32_t* count);
     bool NoStrafe();
+    bool IsVehiclePreventingTurning();
+    bool IsAlteredFormTransitionPreventingMovement();
+    bool ClampRawAngleToLegalFacingRange(float* yaw);
 
     CreatureModelDataRec* GetModelData();
 
@@ -194,6 +199,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 36 */ void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) override;
 
     virtual float GetPitch();
+    /* 78 */ virtual uint8_t GetClientStandState();
 
     // Static functions
     static const char* GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut = nullptr);

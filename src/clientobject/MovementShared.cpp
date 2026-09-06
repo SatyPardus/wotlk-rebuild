@@ -1290,3 +1290,17 @@ bool CMovementShared::PlotUnitSplineMovement(int32_t time, C3Vector* out) {
 
     return 1;
 }
+
+// OFFSET: 0x989B70
+void CMovementShared::SetRawFacing(float facing) {
+    if (std::fabs(facing - this->m_facing) >= 0.00000095367432f) {
+        bool anchored = (this->m_flags & 0x1000) == 0;
+        this->m_facing = facing;
+
+        if (anchored) {
+            this->UpdateAnchors(0);
+        }
+    }
+
+    this->m_flags &= ~0x30u;
+}

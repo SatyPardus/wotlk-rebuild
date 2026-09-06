@@ -93,6 +93,8 @@ class CMovement_C : public CMovementShared {
     void OnPitchStopLocal(int32_t eventTime);
     void OnTurnStartLocal(int32_t eventTime, bool left);
     void OnTurnStopLocal(int32_t eventTime);
+    void OnSetRawFacingLocal(int32_t eventTime, float facing);
+    void OnTurnToAngleLocal(int32_t eventTime, float facing);
 
     bool OnMoveStart(int32_t time, CMovementStatus* update, bool forward);
     bool OnMoveStop(int32_t time, CMovementStatus* update);

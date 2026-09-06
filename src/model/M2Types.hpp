@@ -59,4 +59,11 @@ struct M2Element {
     uint32_t pixelPermute;
 };
 
+struct M2HitRec {
+    CM2Model* model;
+    float tNear;
+    float tFar;
+    uint32_t priority;
+};
+
 #endif

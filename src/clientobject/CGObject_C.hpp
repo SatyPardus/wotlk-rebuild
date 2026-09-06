@@ -71,6 +71,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     /* 13 */ virtual float GetFacing();
     /* 14 */ virtual float GetRawFacing();
     /* 15 */ virtual float GetScale();
+    /* 16 */ virtual WGUID GetTransportGUID();
     /* 24 */ virtual bool GetModelFileName(const char** fileName);
     /* 31 */ virtual float GetTrueScale();
     /* 32 */ virtual void ModelLoaded(CM2Model* model);

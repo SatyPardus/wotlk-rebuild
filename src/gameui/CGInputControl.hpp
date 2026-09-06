@@ -90,6 +90,9 @@ class CGInputControl {
     void UpdateMoveStopped();
     void UpdateMouseMode(int32_t force);
     void OnMouseMoveRel(CMouseEvent* evt);
+    bool CanSyncFreeLookFacing(CGUnit_C* unit);
+    bool CameraCanTurnPlayer();
+    void CameraTurnPlayer(int32_t time, float angle);
 
     void OnTurnToAngleStop();
     void MovePlayer(int32_t eventTime, CGUnit_C* unit);
