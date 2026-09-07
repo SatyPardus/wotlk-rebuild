@@ -201,27 +201,27 @@ int32_t CGxDevice::AdapterInfer(uint16_t& deviceID) {
     }
 
     if (d3d->GetDeviceCaps(0, D3DDEVTYPE_HAL, &d3dcaps) == D3D_OK) {
-        if ((d3dcaps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) != 0 && d3dcaps.MaxSimultaneousTextures > 2 && d3dcaps.PixelShaderVersion >= 0x200) {
+        auto hwTL = (d3dcaps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) != 0;
+        auto psVersion = d3dcaps.PixelShaderVersion & 0xFFFF;
+
+        if (hwTL && d3dcaps.MaxSimultaneousTextures > 2 && psVersion >= 0x200) {
             deviceID = 3;
-            result = 1;
-        } else if ((d3dcaps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT) != 0) {
-            if (d3dcaps.MaxSimultaneousTextures > 2 && d3dcaps.PixelShaderVersion >= 0x101) {
-                deviceID = 2;
-                result = 1;
-            } else if (d3dcaps.MaxSimultaneousTextures >= 2) {
-                deviceID = 1;
-                result = 1;
-            }
+        } else if (hwTL && d3dcaps.MaxSimultaneousTextures > 2 && psVersion >= 0x101) {
+            deviceID = 2;
+        } else if (hwTL && d3dcaps.MaxSimultaneousTextures >= 2) {
+            deviceID = 1;
         } else {
             deviceID = 0;
-            result = 1;
         }
+
+        result = 1;
     }
 
     CGxDeviceD3d::IUnloadD3dLib(d3dLib, d3d);
     Log("CGxDevice::DeviceAdapterInfer(): RET: %d, DID: %x", result, deviceID);
     return result;
 }
+
 
 // TODO: replace this invented name
 int32_t FindDisplayDevice(PDISPLAY_DEVICE device, uint32_t flag) {

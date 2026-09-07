@@ -171,7 +171,7 @@ void ConsoleDetectSaveHardware(Hardware& hardware, bool& hwChanged) {
     auto message       = messageRecord ? messageRecord->m_message : fallbackMessage;
 
     OsGuiMessageBox(OsGuiGetWindow(2), 0, message, title);
-
+    
     exit(0);
 }
 
@@ -183,6 +183,7 @@ void SetVideoIdx(Hardware& hardware) {
         if (hardware.videoDevice.vendorID == videoHw->m_vendorID &&
             hardware.videoDevice.deviceID == videoHw->m_deviceID) {
             hardware.videoID = videoHw->m_ID;
+            return;
         }
         index++;
     }

@@ -64,34 +64,29 @@ T* WowClientDB<T>::GetRecord(int32_t id) {
 template <class T>
 void WowClientDB<T>::Load(const char* filename, int32_t linenumber) {
     if (this->m_loaded) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "%s already loaded! Aborting to prevent memory leak!", T::GetFilename());
+        SErrDisplayAppFatal(0x85100079, "%s already loaded! Aborting to prevent memory leak!", T::GetFilename());
         return;
     }
 
     SFile* f;
     if (!SFile::OpenEx(nullptr, T::GetFilename(), 0x20000, &f)) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "Unable to open %s", T::GetFilename());
+        SErrDisplayAppFatal(0x85100079, "Unable to open %s", T::GetFilename());
         return;
     }
 
     uint32_t signature;
     if (!SFile::Read(f, &signature, sizeof(signature), nullptr, nullptr, nullptr)) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "Unable to read signature from %s", T::GetFilename());
+        SErrDisplayAppFatal(0x85100079, "Unable to read signature from %s", T::GetFilename());
         return;
     }
 
     if (signature != 'CBDW') {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "Invalid signature 0x%x from %s", signature, T::GetFilename());
+        SErrDisplayAppFatal(0x85100079, "Invalid signature 0x%x from %s", signature, T::GetFilename());
         return;
     }
 
     if (!SFile::Read(f, &this->m_numRecords, sizeof(this->m_numRecords), nullptr, nullptr, nullptr)) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "Unable to read record count from %s", T::GetFilename());
+        SErrDisplayAppFatal(0x85100079, "Unable to read record count from %s", T::GetFilename());
         return;
     }
 
@@ -102,34 +97,29 @@ void WowClientDB<T>::Load(const char* filename, int32_t linenumber) {
 
     uint32_t columnCount;
     if (!SFile::Read(f, &columnCount, sizeof(columnCount), nullptr, nullptr, nullptr)) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "Unable to read column count from %s", T::GetFilename());
+        SErrDisplayAppFatal(0x85100079, "Unable to read column count from %s", T::GetFilename());
         return;
     }
 
     if (columnCount != T::GetNumColumns()) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "%s has wrong number of columns (found %i, expected %i)", T::GetFilename(), columnCount, T::GetNumColumns());
+        SErrDisplayAppFatal(0x85100079, "%s has wrong number of columns (found %i, expected %i)", T::GetFilename(), columnCount, T::GetNumColumns());
         return;
     }
 
     uint32_t rowSize;
     if (!SFile::Read(f, &rowSize, sizeof(rowSize), nullptr, nullptr, nullptr)) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "Unable to read row size from %s", T::GetFilename());
+        SErrDisplayAppFatal(0x85100079, "Unable to read row size from %s", T::GetFilename());
         return;
     }
 
     if (rowSize != T::GetRowSize()) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "%s has wrong row size (found %i, expected %i)", T::GetFilename(), rowSize, T::GetRowSize());
+        SErrDisplayAppFatal(0x85100079, "%s has wrong row size (found %i, expected %i)", T::GetFilename(), rowSize, T::GetRowSize());
         return;
     }
 
     uint32_t stringSize;
     if (!SFile::Read(f, &stringSize, sizeof(stringSize), nullptr, nullptr, nullptr)) {
-        // TODO
-        // SErrDisplayAppFatalCustom(0x85100079, "Unable to read string size from %s", T::GetFilename());
+        SErrDisplayAppFatal(0x85100079, "Unable to read string size from %s", T::GetFilename());
         return;
     }
 
