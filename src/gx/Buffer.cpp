@@ -362,3 +362,8 @@ void GxPrimLockVertexPtrs(uint32_t vertexCount, const C3Vector* pos, uint32_t po
 void GxPrimUnlockVertexPtrs() {
     Buffer::s_lockVertexCount = 0;
 }
+
+// OFFSET: 0x681230
+uint32_t GxVertexSize(EGxVertexBufferFormat format) {
+    return Buffer::s_vertexBufDesc[format].size;
+}
