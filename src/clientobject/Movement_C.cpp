@@ -8,6 +8,8 @@
 #include "clientobject/CClientMoveUpdate.hpp"
 #include "gameui/CGInputControl.hpp"
 #include <util/Unimplemented.hpp>
+#include "clientobject/ObjectMgrClient.hpp"
+#include <util/Math.hpp>
 
 STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link) CMovement_C::s_playerMoveEventFreeList;
 World::FacetData CMovement_C::s_moveFacets;
@@ -118,8 +120,8 @@ void CMovement_C::SetUpdateInfo(int32_t time, CClientMoveUpdate* update, uint32_
         m_spline = this->m_spline;
         m_spline->spline.m_splineMode = (m_spline->flags & 0x42000) != 0;
     } else {
-        //if (this->m_spline && (this->m_spline->flags & 0x800) != 0)
-        //    CGUnit_C::OnCollideFallLand(this->unit, 0, 1);
+        if (this->m_spline && (this->m_spline->flags & 0x800) != 0)
+            this->m_unit->OnCollideFallLand(0, 1);
         this->RemoveSpline();
     }
     int32_t outDelta;
@@ -267,9 +269,9 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         if (moveEvent->unk_0050) {
             if ((moveEvent->m_moveFlags & MOVEMENTFLAG_SPLINE_ENABLED) == 0) {
                 if (this->m_spline && (this->m_spline->flags & SPLINE_FLAG_PARABOLIC) != 0) {
-                    //this->m_unit->OnCollideFallLand(0, 1);
+                    this->m_unit->OnCollideFallLand(0, 1);
                 }
-                //this->sub_98B730();
+                this->RemoveSpline();
             }
             if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0 && (moveEvent->m_moveFlags & MOVEMENTFLAG_FALLING) == 0) {
                 this->StopFalling();
@@ -580,8 +582,8 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             this->UpdateHeartbeatTimerA(time);
         if (moveEvent->m_eventId != 44) {
             this->m_unit->unk_0A30 |= 0x20000000u;
-            if (moveEvent->unk_0050 && this->HeartBeat(moveEvent) && wasFalling) {
-                //CGUnit_C::OnCollideFallLand(this->unit, v45, IsFalling);
+            if (moveEvent->unk_0050 && this->HeartBeat(moveEvent) && stoppedFalling) {
+                this->m_unit->OnCollideFallLand(flags, wasFalling);
             }
             this->m_unit->unk_0A30 &= ~0x20000000u;
         }
@@ -595,7 +597,25 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
 
 // OFFSET: 0x6EA9B0
 bool CMovement_C::HeartBeat(CPlayerMoveEvent* moveEvent) {
-    WHOA_UNIMPLEMENTED(false);
+    if (!this->UpdateTransportStatus(moveEvent->m_transportGuid, moveEvent->m_seat))
+        return false;
+
+    this->m_flags ^= (this->m_flags ^ moveEvent->m_moveFlags) & 0x77FFFDFF;
+    this->m_position = moveEvent->m_position;
+    this->m_facing = moveEvent->m_facing;
+    this->m_pitch = moveEvent->m_pitch;
+    if ((this->m_flags & 0x1000) != 0) {
+        this->m_fallTimeMs = moveEvent->m_fallTime;
+        this->m_fallStartZ = this->CalcFallStartElevation(moveEvent->m_fallTime);
+    }
+    this->UpdateAnchors(0);
+    this->CalcCurrentSpeed(0);
+    return true;
+}
+
+// OFFSET: 0x6EA1D0
+bool CMovement_C::UpdateTransportStatus(WGUID transportGuid, uint8_t seat) {
+    WHOA_UNIMPLEMENTED(true);
 }
 
 // OFFSET: 0x6EAC40
@@ -758,14 +778,14 @@ bool CMovement_C::GetCurrentHoverHeight(float* height, bool* a3, uint32_t* a4) {
 // OFFSET: 0x6EAE70
 void CMovement_C::OnSplineStop(uint32_t time) {
     this->m_spline->flags |= SPLINE_FLAG_NO_SPLINE;
-    //if ((this->m_spline->flags & 0x800) != 0)
-    //    this->m_unit->OnCollideFallLand(0, 1);
+    if ((this->m_spline->flags & 0x800) != 0)
+        this->m_unit->OnCollideFallLand(0, 1);
     if ((this->m_spline->flags & 0xA00) != 0)
         this->StopFalling();
     this->ToggleMovementFlag2_0x80(0);
     if (this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover) {
-    //    if (this->m_spline && (this->m_spline->flags & 0x800) != 0)
-    //        this->m_unit->OnCollideFallLand(0, 1);
+        if (this->m_spline && (this->m_spline->flags & 0x800) != 0)
+            this->m_unit->OnCollideFallLand(0, 1);
         this->RemoveSpline();
         if (this->TryStartFalling() && !this->m_globalUnitLink.IsLinked()) {
             auto globals = MovementGetGlobals();
@@ -837,7 +857,7 @@ bool CMovement_C::UpdateStatus(int32_t time, CMovementStatus* status, MoveEventI
 
     if ((status->m_moveFlags & MOVEMENTFLAG_SPLINE_ENABLED) == 0) {
         if (this->m_spline && (this->m_spline->flags & 0x400) != 0) {
-            // this->m_unit->OnCollideFallLand(0, 1);
+             this->m_unit->OnCollideFallLand(0, 1);
         }
         this->RemoveSpline();
     }
@@ -941,7 +961,7 @@ bool CMovement_C::UpdateStatusInternal(int32_t time, CMovementStatus* status, in
     } else {
         this->CalcDirection(0);
         if (wasFalling) {
-            // this->m_unit->OnCollideFallLand(prevFlags, fellWithSpeed);
+             this->m_unit->OnCollideFallLand(prevFlags, fellWithSpeed);
         }
     }
 
@@ -1281,6 +1301,8 @@ int32_t CMovement_C::CollideRequestMove(int32_t a2, int32_t a3, C3Vector* a4) {
         int32_t wasFalling = this->IsFalling();
         WGUID savedTransport = this->m_transportGuid;
         float savedSpeed = this->m_currentSpeed;
+        uint32_t prevFlags = this->m_flags;
+        uint32_t prevFlags2 = this->m_flags2;
 
         int32_t step;
         if (this->CanCollideWhileFlying()) {
@@ -1298,9 +1320,9 @@ int32_t CMovement_C::CollideRequestMove(int32_t a2, int32_t a3, C3Vector* a4) {
         consumed += step;
 
         bool transportChanged = savedTransport != this->m_transportGuid;
-        //this->CallMoveEventHandlers(a2 + consumed, a3 - consumed, this->m_flags, this->m_flags2, wasFalling, transportChanged);
+        this->CallMoveEventHandlers(a2 + consumed, a3 - consumed, prevFlags, prevFlags2, wasFalling, transportChanged);
 
-        if (transportChanged || ((this->m_flags & MOVEMENTFLAG_FALLING) == 0 && (this->m_flags & MOVEMENTFLAG_FALLING) != 0)) {
+        if (transportChanged || ((this->m_flags & MOVEMENTFLAG_FALLING) == 0 && (prevFlags & MOVEMENTFLAG_FALLING) != 0)) {
             uint32_t unspent = remaining - step;
             if (this->m_anchorElapsedMs >= unspent)
                 this->m_anchorElapsedMs -= unspent;
@@ -1328,6 +1350,70 @@ int32_t CMovement_C::CollideRequestMove(int32_t a2, int32_t a3, C3Vector* a4) {
     this->GetPosition(&newPosition, &this->m_position);
 
     return consumed;
+}
+
+// OFFSET: 0x6EB0B0
+void CMovement_C::CallMoveEventHandlers(uint32_t time, int32_t timeRemaining, uint32_t prevFlags, uint32_t prevFlags2, int32_t wasFalling, int32_t transportChanged) {
+    CMoveSpline* spline = this->m_spline;
+
+    if (timeRemaining || !spline || (spline->flags & 0x400) != 0 || (this->m_flags & 3) == 0 || (spline->flags & 0x100) == 0) {
+        spline = this->m_spline;
+
+        if (spline && (spline->flags & 0x400) != 0) {
+            this->SnapToSpline(&spline->m_finalDestination, 0);
+            this->OnSplineStop(time);
+        }
+    } else {
+        this->ForceStopMove(1);
+        this->SnapToSpline(&this->m_spline->m_finalDestination, 0);
+
+        spline = this->m_spline;
+        uint32_t faceFlags = spline->flags;
+
+        if ((faceFlags & 0x20000) != 0) {
+            this->m_facing = spline->face.facing;
+        } else if ((faceFlags & 0x10000) != 0) {
+            CGObject_C* target = ClntObjMgrObjectPtr<CGObject_C*>(spline->face.guid, TYPEMASK_OBJECT);
+
+            if (target) {
+                C3Vector targetPos;
+                target->GetPosition(targetPos);
+                this->SetFacing(CalculateFacingTo(&this->GetPassengerPosition(), &targetPos));
+            }
+        } else if ((faceFlags & 0x8000) != 0) {
+            this->m_facing = CalculateFacingTo(&this->m_position, &spline->face.spot);
+        }
+
+        spline = this->m_spline;
+        uint32_t fellWithSpeed = spline->flags & 0x800;
+        uint32_t landFlags = spline->flags & 0xA00;
+
+        this->OnSplineStop(time);
+
+        if (landFlags) {
+            this->m_unit->OnCollideFallLand(prevFlags, fellWithSpeed);
+        } else {
+            this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_STOP, 0, 0.0f, 0, 0, 255);
+        }
+    }
+
+    if ((this->m_flags & MOVEMENTFLAG_FALLING) != 0 || (prevFlags & MOVEMENTFLAG_FALLING) == 0 || !this->m_unit->OnCollideFallLandNotify(time, prevFlags, prevFlags2, wasFalling)) {
+        if (transportChanged && this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && (!this->m_spline || (this->m_spline->flags & 0x400) != 0)) {
+            this->m_unit->SendMovementUpdate(time, CMSG_MOVE_CHNG_TRANSPORT, 0.0f, 0, 0, 255);
+        } else if (((prevFlags ^ this->m_flags) & 0xF) != 0 && this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && (!this->m_spline || (this->m_spline->flags & 0x400) != 0)) {
+            //this->m_unit->SendMovementUpdate(time, this->GetMoveEventMsgId(prevFlags, wasFalling), 0.0f, 0, 0, 255);
+        }
+    }
+
+    int32_t result = this->m_flags;
+
+    if (((this->m_flags & MOVEMENTFLAG_FALLING) != 0 && (prevFlags & MOVEMENTFLAG_FALLING) == 0) || ((this->m_flags & MOVEMENTFLAG_FALLING_FAR) != 0 && (prevFlags & MOVEMENTFLAG_FALLING_FAR) == 0)) {
+        //this->m_unit->OnCollideFalling();
+    }
+
+    if ((this->m_flags & 0x200000) == 0 && (prevFlags & 0x200000) != 0 && this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && (!this->m_spline || (this->m_spline->flags & 0x400) != 0)) {
+        this->m_unit->ProcessLocalMoveEvent(time, MSG_MOVE_JUMP, 1, 0.0f, 0, 0, 255);
+    }
 }
 
 // OFFSET: 0x6E97D0

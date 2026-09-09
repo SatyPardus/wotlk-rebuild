@@ -65,8 +65,8 @@ void CGWorldFrame::UpdateObject(CGObject_C* obj, int a3) {
     obj->ShouldRender(a3, &v18, &v17);
     if (v18 || v17)
         a2a = false;
-    //obj->PreAnimate(this);
-    if (!obj->Animate(0.0f /*this->unk_0B14*/))
+    obj->PreAnimate(this);
+    if (!obj->Animate(this->m_elapsedSec))
         return;
 
     //if ((a2->m_obj->OBJECT_FIELD_TYPE & (TYPEMASK_CORPSE | TYPEMASK_GAMEOBJECT | TYPEMASK_UNIT)) != 0 && a2a && (a2->m_modelFlags & 0x100000) == 0) {
@@ -347,6 +347,8 @@ void CGWorldFrame::OnWorldUpdate() {
     C3Vector position = camPos;
 
     CWorld::Update(&camPos, &camTarget, &position);
+
+    CGUnit_C::UpdateAllSmoothFacing();
 }
 
 void CGWorldFrame::OnWorldRender() {

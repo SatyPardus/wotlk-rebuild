@@ -1194,16 +1194,13 @@ void CGCamera::UpdateTargetFacing(CGObject_C* target, float* yaw, float* pitch, 
     float facing;
 
     if (target->m_obj->m_type & TYPEMASK_UNIT) {
-        // CGUnit_C::sub_735F60(target, 0);
+        target->AsUnit()->UpdateSmoothFacing(nullptr);
 
         // if (this->m_vehicleCamera) {
         //     facing = this->m_vehicleCamera->m_facing;
         // } else {
-        //     facing = target->dataA34[27];
+        facing = target->AsUnit()->m_targetFacing;
         // }
-        //###TESTING
-        facing = target->GetFacing();
-        //######
 
         // if (target->m_obj->OBJECT_FIELD_GUID != CGUnit_C::m_activeMover && !this->m_vehicleCamera) {
         //     facing = this->SmoothTargetFacing(facing, moved);
@@ -2134,16 +2131,16 @@ bool CGCamera::CanSmoothYaw(float yawMin, float yawMax) {
 
     float facing;
 
-    //if ((target->m_obj->m_type & TYPEMASK_UNIT) != 0) {
-    //    if ((state & 0x100) != 0) {
-    //        facing = CGUnit_C::GetTrackingTurn();
-    //    } else {
-    //        static_cast<CGUnit_C*>(target)->UpdateSmoothFacing(0);
-    //        facing = this->GetChaseFacing(target);
-    //    }
-    //} else {
+    if ((target->m_obj->m_type & TYPEMASK_UNIT) != 0) {
+        if ((state & 0x100) != 0) {
+            facing = CGUnit_C::GetTrackingTurn();
+        } else {
+            target->AsUnit()->UpdateSmoothFacing(0);
+            facing = this->GetChaseFacing(target->AsUnit());
+        }
+    } else {
         facing = target->GetFacing();
-    //}
+    }
 
     return CMath::fnotequal(this->m_yaw, facing);
 }
@@ -2336,21 +2333,21 @@ void CGCamera::SmoothFreeLook(CGInputControl* input, int32_t settle) {
             } else {
                 CGObject_C* obj = ClntObjMgrObjectPtr<CGObject_C*>(this->m_targetGUID, TYPEMASK_OBJECT);
 
-                //if (obj && (obj->m_obj->m_type & TYPEMASK_UNIT) != 0) {
-                //    if ((this->m_state & 0x100) != 0) {
-                //        target = CMath::normalizeangle0to2pi(CGUnit_C::GetTrackingTurn() + base);
-                //    } else {
-                //        obj->AsUnit()->UpdateSmoothFacing(0);
-                //
-                //        if (input->m_facingOverrideActive) {
-                //            target = CMath::normalizeangle0to2pi(input->m_facingOverride + base);
-                //        } else {
-                //            target = CMath::normalizeangle0to2pi(this->GetChaseFacing(obj) + base);
-                //        }
-                //    }
-                //} else {
+                if (obj && (obj->m_obj->m_type & TYPEMASK_UNIT) != 0) {
+                    if ((this->m_state & 0x100) != 0) {
+                        target = CMath::normalizeangle0to2pi(CGUnit_C::GetTrackingTurn() + base);
+                    } else {
+                        obj->AsUnit()->UpdateSmoothFacing(0);
+                
+                        if (input->m_facingOverrideActive) {
+                            target = CMath::normalizeangle0to2pi(input->m_facingOverride + base);
+                        } else {
+                            target = CMath::normalizeangle0to2pi(this->GetChaseFacing(obj->AsUnit()) + base);
+                        }
+                    }
+                } else {
                     target = CMath::normalizeangle0to2pi(obj->GetFacing() + base);
-                //}
+                }
             }
 
             doYaw = this->SetDesiredYawAngle(target, axis[4], axis[5], now);
@@ -2385,13 +2382,11 @@ void CGCamera::SmoothFreeLook(CGInputControl* input, int32_t settle) {
 }
 
 // OFFSET: 0x6009E0
-float CGCamera::GetChaseFacing(CGObject_C* target) {
+float CGCamera::GetChaseFacing(CGUnit_C* target) {
     //m_vehicleCamera = this->m_vehicleCamera;
     //if (m_vehicleCamera)
     //    return *(m_vehicleCamera + 132);
-    //else
-    //    return target->dataAA0;
-    WHOA_UNIMPLEMENTED(0.0f);
+    return target->m_targetFacing;
 }
 
 // OFFSET: 0x5FFF40

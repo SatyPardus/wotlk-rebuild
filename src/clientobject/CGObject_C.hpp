@@ -11,6 +11,7 @@
 
 class CGUnit_C;
 class CGPlayer_C;
+class CGWorldFrame;
 
 struct CGObjectData {
     WGUID m_guid;
@@ -41,6 +42,7 @@ class CGObject {
 class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID> {
     public:
     // Member variables
+    /* 0x0038 */ TSLink<CGObject_C> m_link;
     /* 0x0098 */ float m_scale = 1.0f;
     /* 0x009C */ float unk_009C = 1.0f;
     /* 0x00AC */ float m_height = 1.0f;
@@ -75,6 +77,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     /* 24 */ virtual bool GetModelFileName(const char** fileName);
     /* 31 */ virtual float GetTrueScale();
     /* 32 */ virtual void ModelLoaded(CM2Model* model);
+    /* 34 */ virtual void PreAnimate(CGWorldFrame* worldFrame);
     /* 35 */ virtual bool Animate(float a2);
     /* 36 */ virtual void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out);
     /* 37 */ virtual float GetRenderFacing();

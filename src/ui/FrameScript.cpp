@@ -211,6 +211,31 @@ void FrameScript_Execute(int32_t function, FrameScript_Object* objectThis, int32
     int32_t v20 = 1 - argCount + lua_gettop(L);
     int32_t v19 = argCount;
 
+    // TEMPORARY DIAGNOSTIC - remove once the nil-arg bug is found
+    {
+        static int32_t s_calls = 0;
+        static int32_t s_bad = 0;
+        static int32_t s_trend = 0;
+        s_calls++;
+        if (argCount > 0) {
+            int32_t ty = lua_type(L, v20);
+            int32_t room = lua_checkstack(L, argCount + 2);
+            if ((ty == LUA_TNONE || ty == LUA_TNIL || !room) && s_bad < 20) {
+                s_bad++;
+                OsOutputDebugString(
+                    "DIAG BAD #%d: call=%d argCount=%d gettop=%d v20=%d type=%d room=%d\n",
+                    s_bad, s_calls, argCount, lua_gettop(L), v20, ty, room
+                );
+            } else if (s_calls - s_trend >= 2000 && s_bad == 0) {
+                s_trend = s_calls;
+                OsOutputDebugString(
+                    "DIAG trend: call=%d argCount=%d gettop=%d v20=%d type=%d room=%d\n",
+                    s_calls, argCount, lua_gettop(L), v20, ty, room
+                );
+            }
+        }
+    }
+
     lua_checkstack(L, argCount + 2);
 
     if (objectThis) {
@@ -788,10 +813,27 @@ int32_t FrameScript_HandleError(lua_State* L) {
 
     // TODO
     // Remove temporary console debug logging
+    char location[256];
+    location[0] = 0;
+
+    lua_Debug ar;
+
+    // lua already prefixes its own "chunk:line: " when the erroring frame is a lua
+    // frame, so only add a prefix for C frames, where it has nothing to report
+    if (lua_getstack(L, 1, &ar) && lua_getinfo(L, "Sln", &ar) && ar.currentline <= 0) {
+        SStrPrintf(
+            location,
+            sizeof(location),
+            "[%s %s]: ",
+            ar.what ? ar.what : "?",
+            ar.name ? ar.name : "?"
+        );
+    }
+
+    OsOutputDebugString("Error: %s%s\n", location, v1);
+
     if (v2 && objName) {
-        OsOutputDebugString("Error: %s%s\n", objName, v2 + 1);
-    } else {
-        OsOutputDebugString("Error: %s\n", v1);
+        OsOutputDebugString("       object: %s%s\n", objName, v2 + 1);
     }
 
     if (v2 && objName) {

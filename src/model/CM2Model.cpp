@@ -592,7 +592,7 @@ void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& diffuse, const C
                 boneLocalMatrix.Scale(modelBone.scaleTrack.currentValue);
             }
 
-            if ((boneFlags & 0x80000000) != 0 && modelBone.m_proceduralTransform) {
+            if ((boneFlags & 0x80) != 0 && modelBone.m_proceduralTransform) {
                 boneLocalMatrix *= *modelBone.m_proceduralTransform;
             }
 
@@ -2169,7 +2169,11 @@ int32_t CM2Model::InitializeLoaded() {
             }
 
             case 4: {
-                // TODO
+                this->SetBoneFlags(
+                    modelCall->setBoneFlags.boneId,
+                    modelCall->setBoneFlags.set,
+                    modelCall->setBoneFlags.mask
+                );
                 break;
             }
 
@@ -2201,7 +2205,9 @@ int32_t CM2Model::InitializeLoaded() {
             }
 
             case 9: {
-                // TODO
+                this->SetBoneProceduralTransform(
+                    modelCall->setBoneProceduralTransform.boneId,
+                    reinterpret_cast<const C44Matrix*>(modelCall->setBoneProceduralTransform.mat));
                 break;
             }
 
@@ -2517,7 +2523,7 @@ LABEL_20:
     }
 
 LABEL_29:
-    this->Sub826E60(&a4, &v32);
+    this->PickFlippityFlopVariation(&a4, &v32);
     v16 = v32;
 
 LABEL_30:
@@ -2623,6 +2629,21 @@ bool CM2Model::HasSequence(uint32_t sequenceId) {
     return CM2Model::HasSequence(this->m_shared->m_data, sequenceId);
 }
 
+// OFFSET: 0x8264B0
+bool CM2Model::HasKeyBone(uint32_t boneId) {
+    if ((this->f_flags & 1) == 0) {
+        if (this->m_shared->asyncObject)
+            AsyncFileReadWait(this->m_shared->asyncObject);
+        m_shared = this->m_shared;
+        if (m_shared->asyncObject)
+            AsyncFileReadWait(m_shared->asyncObject);
+        if ((this->m_flags & 0x20) != 0)
+            this->InitializeLoaded();
+    }
+    auto m_data = this->m_shared->m_data;
+    return m_data->bones.count && (boneId == -1 || boneId < m_data->boneIndicesById.count && m_data->boneIndicesById[boneId] != 0xFFFF);
+}
+
 // OFFSET: 0x8267E0
 uint32_t CM2Model::GetBoneSequenceId(uint32_t boneId) {
     if ((this->f_flags & 1) == 0) {
@@ -2659,6 +2680,87 @@ void CM2Model::SetLoadedCallback(void (*loadedCallback)(CM2Model*, void*), void*
     this->m_loadedArg = loadedArg;
 
     this->UpdateLoaded();
+}
+
+// OFFSET: 0x8265E0
+void CM2Model::SetBoneFlags(uint32_t boneId, uint32_t set, uint32_t mask) {
+    if (!this->m_loaded) {
+        auto m = SMemAlloc(sizeof(CM2ModelCall), __FILE__, __LINE__, 0x0);
+        auto modelCall = new (m) CM2ModelCall();
+
+        if (modelCall) {
+            modelCall->type = 4;
+            modelCall->modelCallNext = nullptr;
+            modelCall->time = this->m_scene->m_time;
+            modelCall->setBoneFlags.boneId = boneId;
+            modelCall->setBoneFlags.set = set;
+            modelCall->setBoneFlags.mask = mask;
+
+            *this->m_modelCallTail = modelCall;
+            this->m_modelCallTail = &modelCall->modelCallNext;
+        }
+
+        return;
+    }
+
+    M2Data* data = this->m_shared->m_data;
+    uint16_t boneIndex;
+
+    if (boneId == 0xFFFFFFFF) {
+        boneIndex = 0;
+    } else if (boneId < data->boneIndicesById.Count()) {
+        boneIndex = data->boneIndicesById[boneId];
+    } else {
+        boneIndex = 0xFFFF;
+    }
+
+    if (boneIndex < data->bones.Count()) {
+        uint16_t flags = static_cast<uint16_t>(this->m_bones[boneIndex].m_flags);
+        this->m_bones[boneIndex].m_flags =
+            (static_cast<uint16_t>(set) & static_cast<uint16_t>(mask)) | (flags & static_cast<uint16_t>(~mask));
+    }
+}
+
+// OFFSET: 0x8272F0
+void CM2Model::SetBoneProceduralTransform(uint32_t boneId, const C44Matrix* mat) {
+    if (!this->m_loaded) {
+        auto m = SMemAlloc(sizeof(CM2ModelCall), __FILE__, __LINE__, 0x0);
+        auto modelCall = new (m) CM2ModelCall();
+
+        if (modelCall) {
+            modelCall->type = 9;
+            modelCall->modelCallNext = nullptr;
+            modelCall->time = this->m_scene->m_time;
+            modelCall->setBoneProceduralTransform.boneId = boneId;
+            memcpy(&modelCall->setBoneProceduralTransform.mat, mat, sizeof(C44Matrix));
+
+            *this->m_modelCallTail = modelCall;
+            this->m_modelCallTail = &modelCall->modelCallNext;
+        }
+
+        return;
+    }
+
+    M2Data* data = this->m_shared->m_data;
+    uint16_t boneIndex;
+
+    if (boneId == 0xFFFFFFFF) {
+        boneIndex = 0;
+    } else if (boneId < data->boneIndicesById.Count()) {
+        boneIndex = data->boneIndicesById[boneId];
+    } else {
+        boneIndex = 0xFFFF;
+    }
+
+    if (boneIndex < data->bones.Count()) {
+        M2ModelBone& bone = this->m_bones[boneIndex];
+
+        if (!bone.m_proceduralTransform) {
+            bone.m_proceduralTransform = static_cast<C44Matrix*>(SMemAlignedAlloc(sizeof(C44Matrix), __FILE__, __LINE__));
+        }
+
+        *bone.m_proceduralTransform = *mat;
+    }
 }
 
 void CM2Model::SetPrimaryBoneSequence(uint16_t sequenceIndex, uint16_t boneIndex, M2SequenceFallback fallback, uint32_t time, float a6, int32_t a7) {
@@ -2715,17 +2817,17 @@ void CM2Model::SetSecondaryBoneSequence(uint16_t a2, uint16_t boneIndex, M2Seque
     // TODO
 }
 
+// OFFSET: 0x826B00
 void CM2Model::SetupBoneSequence(uint16_t sequenceIndex, M2SequenceFallback fallback, uint32_t a4, float a5, M2ModelBoneSeq* boneSequence) {
     auto& sequence = this->m_shared->m_data->sequences[sequenceIndex];
 
     int32_t v9 = rand();
-    uint32_t v10 = (sequence.replay.l + (sequence.replay.h - sequence.replay.l) * v9 / 0x8000 == 0)
-        + sequence.replay.l + (sequence.replay.h - sequence.replay.l) * v9 / 0x8000;
+    int32_t v10 = (sequence.replay.l + (sequence.replay.h - sequence.replay.l) * v9 / 0x8000 == 0) + sequence.replay.l + (sequence.replay.h - sequence.replay.l) * v9 / 0x8000;
     int32_t v11 = v10 * sequence.duration;
 
     double v12;
     double v13;
-    long double v15;
+    double v15;
 
     if (fallback.uint2 == 1 || fallback.uint2 == 3) {
         v12 = -a5;
@@ -2744,12 +2846,12 @@ void CM2Model::SetupBoneSequence(uint16_t sequenceIndex, M2SequenceFallback fall
         v12 = 0.0;
     }
 
-    if (abs(v12) > 0.0000099999997) {
+    if (fabs(v12) > 0.0000099999997) {
         v13 = 1.0 / v12;
     }
 
-    v15 = abs(v13);
-    uint32_t v16 = this->m_scene->m_time - floor((double)a4 * v15);
+    v15 = fabs(v13);
+    int32_t v16 = this->m_scene->m_time - static_cast<int32_t>((double)static_cast<int32_t>(a4) * v15);
 
     if ((~(this->m_scene->m_flags >> 2) & 0x1) != 0) {
         v16++;
@@ -2759,7 +2861,7 @@ void CM2Model::SetupBoneSequence(uint16_t sequenceIndex, M2SequenceFallback fall
     boneSequence->m_startTime = v16;
     boneSequence->m_repeatCount = v10;
     boneSequence->m_finished = 0;
-    boneSequence->m_endTime = v16 + floor(v15 * (double)(unsigned int)v11);
+    boneSequence->m_endTime = v16 + static_cast<int32_t>(v15 * (double)static_cast<uint32_t>(v11));
     boneSequence->m_startOffset = v18;
     boneSequence->m_speed = v12;
     boneSequence->m_invSpeed = v13;
@@ -2875,8 +2977,39 @@ int32_t CM2Model::Sub8269C0(uint32_t boneId, uint16_t boneIndex) {
     return 1;
 }
 
-void CM2Model::Sub826E60(uint32_t* a2, uint32_t* a3) {
-    // TODO
+// OFFSET: 0x826E60
+void CM2Model::PickFlippityFlopVariation(uint32_t* variation, uint32_t* sequenceIndex) {
+    *variation = 0;
+
+    uint32_t ordinal = 0;
+    uint32_t roll = rand();
+    uint16_t index = *sequenceIndex;
+
+    if (index == 0xFFFF) {
+        return;
+    }
+
+    auto& sequences = this->m_shared->m_data->sequences;
+
+    while (true) {
+        auto& sequence = sequences[index];
+        uint32_t frequency = sequence.frequency;
+
+        if (roll < frequency) {
+            break;
+        }
+
+        index = sequence.variationNext;
+        roll -= frequency;
+        ordinal++;
+
+        if (index == 0xFFFF) {
+            return;
+        }
+    }
+
+    *sequenceIndex = index;
+    *variation = ordinal;
 }
 
 // OFFSET: 0x824510

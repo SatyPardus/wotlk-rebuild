@@ -49,6 +49,22 @@ struct CM2ModelCall {
             int32_t visible;
         } setGeometryVisible;
 
+        // type 2 -- SetGeosetVisibilityRange (0x82C95A)
+        struct {
+            uint32_t start;
+            uint32_t end;
+            int32_t visible;
+        } setGeosetVisibilityRange;
+
+        // type 3 -- OptimizeVisibleGeometry (0x82C9B9) -- no payload
+        
+        // type 4 -- SetBoneFlags (0x8265E0)
+        struct {
+            uint32_t boneId;
+            uint32_t set;
+            uint32_t mask;
+        } setBoneFlags;
+
         // type 5 -- SetBoneSequence (0x832AFB)
         struct {
             uint32_t boneId;
@@ -59,6 +75,60 @@ struct CM2ModelCall {
             int32_t a7;
             int32_t a8;
         } setBoneSequence;
+
+        // type 6 -- UnsetBoneSequence (0x832895)
+        struct {
+            uint32_t boneId;
+            int32_t a3;
+            int32_t a4;
+        } unsetBoneSequence;
+
+        // type 7 -- SetBoneSequenceTime (0x826F20)
+        struct {
+            uint32_t boneId;
+            uint32_t time;
+        } setBoneSequenceTime;
+
+        // type 8 -- SetKeyBoneSequenceSpeed (0x827050)
+        struct {
+            uint32_t boneId;
+            float speed;
+        } setKeyBoneSequenceSpeed;
+
+        // type 9 -- SetBoneProceduralTransform (0x8272F0)
+        struct {
+            uint32_t boneId;
+            float mat[16];
+        } setBoneProceduralTransform;
+
+        // type 10 -- AllocOrGetGeosetEntry (0x824154)
+        struct {
+            uint32_t a2;
+            uint32_t a3;
+        } allocOrGetGeosetEntry;
+
+        // type 11 -- ReplaceParticleColor (0x8254D0)
+        struct {
+            uint32_t a2;
+            uint32_t a3;
+            uint32_t a4;
+            uint32_t a5;
+        } replaceParticleColor;
+
+        // type 12 -- SetEmittersEnabled (0x827A76)
+        struct {
+            int32_t enabled;
+        } setEmittersEnabled;
+
+        // type 13 -- SetRibbonsEnabled (0x8242AA)
+        struct {
+            int32_t enabled;
+        } setRibbonsEnabled;
+
+        // type 14 -- LoadSequence (0x8271DD)
+        struct {
+            uint32_t sequenceId;
+        } loadSequence;
     };
 };
 
@@ -243,10 +313,13 @@ class CM2Model {
         void SetBoneSequence(uint32_t boneId, uint32_t sequenceId, uint32_t a4, uint32_t time, float a6, int32_t a7, int32_t a8);
         void SetBoneSequenceDeferred(uint16_t a2, M2Data* data, uint16_t boneIndex, uint32_t time, float a6, M2SequenceFallback fallback, int32_t a8, int32_t a9, int32_t a10);
         bool HasSequence(uint32_t sequenceId);
+        bool HasKeyBone(uint32_t boneId);
         uint32_t GetBoneSequenceId(uint32_t boneId);
         void SetIndices();
         void SetLightingCallback(void (*lightingCallback)(CM2Model*, CM2Lighting*, void*), void* lightingArg);
         void SetLoadedCallback(void (*loadedCallback)(CM2Model*, void*), void* loadedArg);
+        void SetBoneFlags(uint32_t boneId, uint32_t set, uint32_t mask);
+        void SetBoneProceduralTransform(uint32_t boneId, const C44Matrix* mat);
         void SetPrimaryBoneSequence(uint16_t sequenceIndex, uint16_t boneIndex, M2SequenceFallback fallback, uint32_t time, float a6, int32_t a7);
         void SetSecondaryBoneSequence(uint16_t a2, uint16_t boneIndex, M2SequenceFallback fallback, uint32_t time, float a6);
         void SetupBoneSequence(uint16_t sequenceIndex, M2SequenceFallback fallback, uint32_t a4, float a5, M2ModelBoneSeq* boneSequence);
@@ -255,7 +328,7 @@ class CM2Model {
         void SetWorldTransform(const C3Vector& position, float orientation, float scale);
         void SequenceFallbackById(M2SequenceFallback& fallback, uint32_t sequenceId);
         int32_t Sub8269C0(uint32_t boneId, uint16_t boneIndex);
-        void Sub826E60(uint32_t* a2, uint32_t* a3);
+        void PickFlippityFlopVariation(uint32_t* a2, uint32_t* a3);
         void UnlinkFromCallbackList();
         void UnsetBoneSequence(uint32_t boneId, int32_t a3, int32_t a4);
         void UpdateLoaded();

@@ -379,8 +379,8 @@ bool CreateObject(CDataStore* msg, uint32_t time) {
     }
     
     InitObject(newObject, objCreate, time);
-    //
-    //ClntObjMgrGetCurrent()->m_visibleObjects.LinkToTail(newObject);
+    
+    g_tlsBlock.pObjMgr->m_visibleObjects.LinkToTail(newObject);
 
     OsOutputDebugString("Received CreateObject %d -> %d %d\n", typeID, guid.guid_low, guid.guid_high);
 
@@ -869,6 +869,15 @@ CMovementGlobals* ClntObjMgrGetMovementGlobals() {
     if (g_tlsBlock.pObjMgr)
         return g_tlsBlock.pObjMgr->m_movementGlobals;
     return nullptr;
+}
+
+// OFFSET: 0x4D4B30
+bool ClntObjMgrEnumVisibleObjects(bool (*func)(WGUID guid, void* param), void* param) {
+    for (CGObject_C* i = g_tlsBlock.pObjMgr->m_visibleObjects.Head(); i; i = g_tlsBlock.pObjMgr->m_visibleObjects.Next(i)) {
+        if (!func(i->m_key.m_guid, param))
+            return false;
+    }
+    return true;
 }
 
 // OFFSET: 0x4D4BB0

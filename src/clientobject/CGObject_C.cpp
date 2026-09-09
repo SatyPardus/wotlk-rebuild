@@ -4,7 +4,9 @@
 #include <model/CM2Scene.hpp>
 #include <world/map/CMap.hpp>
 #include <gameui/CGWorldFrame.hpp>
+#include <gameui/CGGameUI.hpp>
 #include "model/CM2Shared.hpp"
+#include <client/FrameTime.hpp>
 
 CGObject_C::CGObject_C() {
     
@@ -334,6 +336,38 @@ void CGObject_C::ModelLoaded(CM2Model* model) {
     //        CEffect::UpdateAttachment(ukn_00A8);
     //        ukn_00A8 = v4;
     //    } while (v4);
+    //}
+}
+
+// OFFSET: 0x743EC0
+void CGObject_C::PreAnimate(CGWorldFrame* worldFrame) {
+    //if (CGGameUI::m_lockedTarget == *&this->m_obj->m_guid) {
+    //    WGUID activePlayerGUID = ClntObjMgrGetActivePlayer();
+    //    if (this->m_obj->m_guid != activePlayerGUID) {
+    //        if (s_cvObjectSelectionCircle->m_intValue) {
+    //            worldFrame->m_trackedEffectGuidA = this->m_obj->m_guid;
+    //        }
+    //    }
+    //}
+    //if (maybe_CGPetInfo__GetTarget() == this->m_obj->m_guid) {
+    //    WGUID activePlayerGUID = ClntObjMgrGetActivePlayer();
+    //    if (this->m_obj->m_guid != activePlayerGUID) {
+    //        if (s_cvObjectSelectionCircle->m_intValue) {
+    //            worldFrame->m_trackedEffectGuidB = this->m_obj->m_guid;
+    //        }
+    //    }
+    //}
+    //this->ApplyAlpha(FrameTime::s_curTimeMs);
+    //if (this->ukn_00A0 && FrameTime::s_curTimeMs > this->ukn_00A0) {
+    //    auto v20 = (FrameTime::s_curTimeMs - this->ukn_00A0);
+    //    if (v20 >= 2000) {
+    //        this->m_scale = this->m_obj->m_scale;
+    //        this->ukn_00A0 = 0;
+    //        this->ukn26();
+    //    } else {
+    //        this->m_scale = (this->GetScale() - this->ukn_00A4) * (-cos(v20 * 0.00050000002 * 3.1415927) * 0.5 + 0.5) + this->ukn_00A4;
+    //        this->ukn25();
+    //    }
     //}
 }
 

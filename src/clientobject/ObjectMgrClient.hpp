@@ -22,7 +22,7 @@ class ObjectMgr {
     // TSList unk_80;
     // TSList unk_8C;
     // TSList unk_98;
-    // TSList unk_A4;
+    STORM_EXPLICIT_LIST(CGObject_C, m_link) m_visibleObjects;
     // TSList unk_B0;
     // DWORD unk_BC;
     WGUID playerGuid;
@@ -53,6 +53,7 @@ int32_t ClntObjMgrGetMapID();
 CGObject_C* ClntObjMgrAllocObject(OBJECT_TYPE_ID typeId, WGUID guid);
 void ClntObjMgrSetMovementGlobals(CMovementGlobals* globals);
 CMovementGlobals* ClntObjMgrGetMovementGlobals();
+bool ClntObjMgrEnumVisibleObjects(bool (*func)(WGUID guid, void* param), void* param);
 
 template <typename T>
 T GetObjectPtr(TSHashTable<CGObject_C, WGUID>* table, WGUID guid);

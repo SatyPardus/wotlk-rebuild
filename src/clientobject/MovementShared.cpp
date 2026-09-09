@@ -1327,3 +1327,25 @@ void CMovementShared::SetRawFacing(float facing) {
 
     this->m_flags &= ~0x30u;
 }
+
+// OFFSET: 0x98C480
+void CMovementShared::SetFacing(float facing) {
+    float transportFacing = 0.0f;
+    //if (this->m_transportGuid != 0)
+    //    transportFacing = MovementGetTransportFacing(this->m_transportGuid);
+
+    float normalizedFacing = CMath::normalizeangle0to2pi(facing - transportFacing);
+    if (fabs(normalizedFacing - this->m_facing) >= 0.00000095367432f) {
+        this->m_facing = normalizedFacing;
+        if ((this->m_flags & 0x1000) == 0)
+            this->UpdateAnchors(0);
+    } 
+    this->m_flags &= 0xFFFFFFCF;
+}
+
+// OFFSET: 0x6E6EA0
+C3Vector CMovementShared::GetPassengerPosition() {
+    C3Vector pos;
+    this->GetPosition(&pos, &this->m_position);
+    return pos;
+}

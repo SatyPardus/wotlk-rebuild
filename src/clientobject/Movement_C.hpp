@@ -69,6 +69,7 @@ class CMovement_C : public CMovementShared {
     void ExecuteMovement(uint32_t time, uint32_t prevTime);
     int32_t UpdatePlayerMovement(int32_t time);
     bool HeartBeat(CPlayerMoveEvent* moveEvent);
+    bool UpdateTransportStatus(WGUID transportGuid, uint8_t seat);
     void ApplyMovement(uint32_t a2, uint32_t a3);
     bool PlotUnitSplineMovement(int32_t time, uint32_t elapsed, C3Vector* out);
     void AddToMoversList();
@@ -113,6 +114,7 @@ class CMovement_C : public CMovementShared {
     int32_t HandlePendingActions();
     int32_t RequestMove(int32_t a2, int32_t a3, C3Vector* a4);
     int32_t CollideRequestMove(int32_t a2, int32_t a3, C3Vector* a4);
+    void CallMoveEventHandlers(uint32_t time, int32_t timeRemaining, uint32_t prevFlags, uint32_t prevFlags2, int32_t wasFalling, int32_t transportChanged);
     int32_t UpdateTimeSkew(int32_t gameDelta, int32_t localDelta);
     void SetInterpolation(int32_t time);
     bool Interpolate(int32_t now, int32_t time, C3Vector* pos, float* facing, float* pitch);

@@ -126,6 +126,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     static CVar* s_cvShowFootPrintParticles;
     static CVar* s_cvPathingDistTolerance;
     static int32_t m_trackingType;
+    static float m_trackingFacing;
 
     // Member variables
     /* 00D8 */ CMovementShared* m_passenger = nullptr;
@@ -139,6 +140,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 0978 */
     /* 097C */ UnitBloodLevelsRec* m_bloodlevels = nullptr;
 
+    /* 098C */ CM2Model* data98C = nullptr;
+
     /* 09D4 */ uint32_t m_displayId = 0;
 
     /* 09F8 */ uint32_t unk_09F8 = 0;
@@ -146,6 +149,15 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 0A30 */ uint32_t unk_0A30 = 0;
 
     /* 0A38 */ uint32_t m_animationState = 0;
+
+    /* 0A94 */ float m_renderFacing = 0.0f;
+    /* 0A98 */ float m_facingVelocity = 0.0f;
+    /* 0A9C */ float m_facingBlend = 0.0f;
+    /* 0AA0 */ float m_targetFacing = 0.0f;
+
+    /* 0AA8 */ float m_turnDelta[4];
+    /* 0AB8 */ float m_scriptedFacing;
+    /* 0ABC */ int32_t m_lastTurnTimeMs = 0;
 
     /* 0B4C */ CCharacterComponent* m_characterComponent = nullptr;
 
@@ -172,6 +184,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     float GetMaxCameraHeight();
     bool GetCanFly();
     bool IsClientControlled();
+    bool IsRunning();
     bool IsLocalClientControlled();
     bool IsAllowedToSendMessage(NETMESSAGE msgId);
     void ToggleMovementFlag2_0x40(uint8_t flag);
@@ -198,14 +211,19 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     void OnTurnStopLocal(int32_t eventTime);
     void OnSetRawFacingLocal(int32_t eventTime, float facing);
     void OnTurnToAngleLocal(int32_t eventTime, float facing);
+    void OnCollideFallLand(uint32_t prevFlags, int32_t fellWithSpeed);
+    bool OnCollideFallLandNotify(uint32_t time, uint32_t prevFlags, uint32_t prevFlags2, int32_t wasFalling);
 
     void OnMovementInitiated();
     void OnMonsterMove(CDataStore* msg, NETMESSAGE msgId, WGUID transportGuid, uint8_t transportFlags, bool a6);
     C3Vector* ComputeTransportRelativeMovement(WGUID guid, C3Vector* position, C3Vector* points, uint32_t* count);
     bool NoStrafe();
     bool IsVehiclePreventingTurning();
+    bool HasVehicleTransport();
     bool IsAlteredFormTransitionPreventingMovement();
     bool ClampRawAngleToLegalFacingRange(float* yaw);
+    void SmoothFacingAngle(float target);
+    void UpdateSmoothFacing(float* facingOffset);
 
     CreatureModelDataRec* GetModelData();
 
@@ -227,15 +245,18 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool ChooseStandStateAnim(uint32_t a2, ANIMATION_ID* animId);
     bool ChooseEmoteAnim(uint32_t a2, ANIMATION_ID* animId);
     void ChooseDefaultAnim(ANIMATION_ID* animId, bool a3);
+    void PlayFallLandAnimation(uint32_t prevFlags, int32_t fellWithSpeed);
 
     // Virtual functions
     /* 11 */ void GetPosition(C3Vector& pos) override;
     /* 13 */ float GetFacing() override;
     /* 24 */ bool GetModelFileName(const char** fileName) override;
+    /* 32 */ void ModelLoaded(CM2Model* model) override;
+    /* 34 */ void PreAnimate(CGWorldFrame* worldFrame) override;
     /* 36 */ void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) override;
-
-    virtual float GetPitch();
+    /* 37 */ float GetRenderFacing() override;
     /* 78 */ virtual uint8_t GetClientStandState();
+    /* 83 */ virtual float GetPitch();
 
     // Static functions
     static const char* GetDisplayRaceNameFromRecord(ChrRacesRec* record, uint8_t sexIn, uint8_t* sexOut = nullptr);
@@ -245,6 +266,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     static void Initialize();
     static void InitActiveMover(WGUID guid);
     static int32_t GetTrackingType();
+    static float GetTrackingTurn();
+    static void UpdateAllSmoothFacing();
 
     // Packet handlers
     static int32_t HandleMonsterMovePacket(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg);

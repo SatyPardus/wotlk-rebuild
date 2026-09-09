@@ -11,9 +11,6 @@ class CHashKeyGUID {
     CHashKeyGUID(WGUID guid);
     bool operator==(WGUID guid) const;
     bool operator==(const CHashKeyGUID& key) const;
-
-    private:
-    // Private member variables
     WGUID m_guid;
 };
 

@@ -5,6 +5,7 @@
 #include <clientobject/WGUID.hpp>
 
 class CGObject_C;
+class CGUnit_C;
 class CM2Model;
 class CGInputControl;
 
@@ -145,7 +146,7 @@ class CGCamera : public CSimpleCamera {
     void SmoothFreeLook(CGInputControl* input, int32_t settle);
     bool CanSmoothYaw(float yawMin, float yawMax);
     bool ShouldSmoothPitch(float pitchMin, float pitchMax);
-    float GetChaseFacing(CGObject_C* target);
+    float GetChaseFacing(CGUnit_C* target);
     bool IsCustomViewSmoothingActive();
     void CancelSmoothTargetOffset();
     void CancelSmoothYaw();

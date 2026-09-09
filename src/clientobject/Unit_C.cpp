@@ -13,11 +13,14 @@
 #include <gameui/CGWorldFrame.hpp>
 #include "gameui/camera/CGCamera.hpp"
 #include <util/Network.hpp>
+#include <client/FrameTime.hpp>
+#include <tempest/Math.hpp>
 
 WGUID CGUnit_C::s_activeMover = 0;
 CVar* CGUnit_C::s_cvShowFootPrintParticles = nullptr;
 CVar* CGUnit_C::s_cvPathingDistTolerance = nullptr;
 int32_t CGUnit_C::m_trackingType = 0;
+float CGUnit_C::m_trackingFacing = 0.0f;
 
 CGUnit_C::CGUnit_C() {
 
@@ -89,9 +92,8 @@ CGUnit_C::CGUnit_C(CClientObjCreate& objCreate, uint32_t time)
     //this->dataA44[10] = 0;
     //*&this->dataA44[4] = 3.4028235e38;
     //this->dataA44[13] = 0;
-    //m_facing = this->movementData.m_facing;
     //this->dataA44[14] = 0;
-    //*&this->dataA44[20] = m_facing;
+    this->m_renderFacing = this->movementData.m_facing;
     //this->dataA44[15] = 0;
     //this->dataA44[16] = 0;
     //*&this->dataA44[21] = 0.0;
@@ -190,14 +192,13 @@ void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdat
     //    if (v12)
     //        this->data8D0[8] = *(v12 + 40);
     //}
-    //v40 = (this->ObjectBase.GetRawFacing)(this);
-    //*&this->data9E0[48] = CMath::normalizeangle0to2pi_(v40);
+    this->m_targetFacing = CMath::normalizeangle0to2pi(this->GetRawFacing());
     //*&this->data9E0[49] = 0.0;
     //this->data9E0[50] = 0;
     //this->data9E0[51] = 0;
     //this->data9E0[52] = 0;
     //this->data9E0[53] = 0;
-    //(this->ObjectBase.Animate)(this, 0.0);
+    this->Animate(0.0f);
     //m_unit = this->m_unit;
     //if (m_unit->UNIT_FIELD_HEALTH > 0) {
     //    if (m_unit->UNIT_FIELD_MOUNTDISPLAYID > 0)
@@ -457,6 +458,30 @@ int32_t CGUnit_C::GetTrackingType() {
     return CGUnit_C::m_trackingType;
 }
 
+// OFFSET: 0x715CF0
+float CGUnit_C::GetTrackingTurn() {
+    return CGUnit_C::m_trackingFacing;
+}
+
+// OFFSET: 0x7395C0
+bool UpdateAllSmoothFacingCallback(WGUID guid, void* param) {
+    CGCamera* camera = reinterpret_cast<CGCamera*>(param);
+    CGObject_C* obj = ClntObjMgrObjectPtr<CGObject_C*>(guid, TYPEMASK_OBJECT);
+    if (obj) {
+        if ((obj->m_obj->m_type & TYPEMASK_UNIT) != 0 && obj->m_obj->m_guid != camera->m_targetGUID && !obj->AsUnit()->HasVehicleTransport()) {
+            obj->AsUnit()->UpdateSmoothFacing(nullptr);
+        }
+    }
+    return true;
+}
+
+// OFFSET: 0x739630
+void CGUnit_C::UpdateAllSmoothFacing() {
+    auto camera = CGWorldFrame::GetActiveCamera();
+    if (camera)
+        ClntObjMgrEnumVisibleObjects(UpdateAllSmoothFacingCallback, camera);
+}
+
 // OFFSET: 0x72D940
 void CGUnit_C::RefreshDataPointers() {
     uint32_t displayId = this->m_displayId;
@@ -569,6 +594,11 @@ bool CGUnit_C::IsClientControlled() {
             return 0;
         return (this->m_unit->UNIT_FIELD_FLAGS & 1) == 0;
     }
+}
+
+// OFFSET: 0x716FA0
+bool CGUnit_C::IsRunning() {
+    return this->movementData.m_walkSpeed + this->movementData.m_walkSpeed >= this->movementData.GetBaseSpeed(0);
 }
 
 // OFFSET: 0x714AC0
@@ -1110,6 +1140,44 @@ void CGUnit_C::OnTurnToAngleLocal(int32_t eventTime, float facing) {
     // }
 }
 
+// OFFSET: 0x73D3D0
+void CGUnit_C::OnCollideFallLand(uint32_t prevFlags, int32_t fellWithSpeed) {
+    this->PlayFallLandAnimation(prevFlags, fellWithSpeed);
+
+    if (!this->IsClientControlled()) {
+        return;
+    }
+
+    //if (this->movementData.IsSplineFlyer_IsNotFlyingFeatherFalling()) {
+    //    return;
+    //}
+    //
+    //float distanceFallen = this->movementData.GetDistanceFallen();
+    //
+    //if (distanceFallen >= 70.0f || (distanceFallen > 13.0f && !this->Ukn74())) {
+    //    if ((this->m_obj->m_type & TYPEMASK_PLAYER) == 0 || ((this->m_player->PLAYER_FLAGS & 0x4000) == 0 && static_cast<int32_t>(this->m_unit->UNIT_FIELD_HEALTH) > 0)) {
+    //        this->PlayUnitSound(13, 1);
+    //    }
+    //
+    //    this->HandleEnvironmentDamage(2, 0, 0, 0);
+    //}
+}
+
+// OFFSET: 0x73D4A0
+bool CGUnit_C::OnCollideFallLandNotify(uint32_t time, uint32_t prevFlags, uint32_t prevFlags2, int32_t wasFalling) {
+    this->OnCollideFallLand(prevFlags, wasFalling);
+    //v6 = 0;
+    //if ((SLOBYTE(this->unk_0A30) < 0 || CMovementShared::GetDistanceFallen(&this->movementData) > 0.027777778) && CGUnit_C::SendMovementUpdate(this, a2, MSG_MOVE_FALL_LAND, 0.0, 0, 0i64, 255))
+    //    v6 = 1;
+    //unk_0A30 = this->unk_0A30;
+    //if ((unk_0A30 & 0x100000) != 0) {
+    //    this->unk_0A30 = unk_0A30 & 0xFFEFFFFF;
+    //    CGPlayer_C::HandleRepopRequest(this, 1);
+    //}
+    //return v6;
+    return false;
+}
+
 // OFFSET: none (inlined)
 void CGUnit_C::OnMovementInitiated() {
     //m_obj = this->ObjectBase.m_obj;
@@ -1609,6 +1677,13 @@ bool CGUnit_C::IsVehiclePreventingTurning() {
     return false;
 }
 
+// OFFSET: 0x74B8B0
+bool CGUnit_C::HasVehicleTransport() {
+    //guid_high = this->movementData.transportGuid.guid_high;
+    //return (guid_high & 0xF0F00000) == 0xF0500000 || (guid_high & 0xF0000000) == 0 && guid_high & 0xF07FFFFF | this->movementData.transportGuid.guid_low;
+    return false;
+}
+
 // OFFSET: 0x74BA40
 bool CGUnit_C::IsAlteredFormTransitionPreventingMovement() {
     if (!this->IsLocalClientControlled())
@@ -1653,6 +1728,254 @@ bool CGUnit_C::ClampRawAngleToLegalFacingRange(float* yaw) {
     return false;
 }
 
+// OFFSET: 0x719660
+void CGUnit_C::SmoothFacingAngle(float target) {
+    float ref = this->m_targetFacing;
+
+    if (ref + 3.1415927f >= this->m_renderFacing) {
+        if (ref - 3.1415927f > this->m_renderFacing)
+            ref -= 6.2831855f;
+    } else {
+        ref += 6.2831855f;
+    }
+
+    if (this->m_renderFacing + 1.5704823f >= ref) {
+        if (this->m_renderFacing - 1.5704823f > ref)
+            this->m_renderFacing = ref + 1.5704823f;
+    } else {
+        this->m_renderFacing = ref - 1.5704823f;
+    }
+
+    this->m_renderFacing = CMath::normalizeAnglePi(this->m_renderFacing);
+
+    float goal = target;
+
+    if (target + 3.1415927f >= this->m_renderFacing) {
+        if (target - 3.1415927f > this->m_renderFacing)
+            goal = target - 6.2831855f;
+    } else {
+        goal = target + 6.2831855f;
+    }
+
+    float elapsed = CGWorldFrame::s_currentWorldFrame->m_elapsedSec;
+    float x = elapsed * 20.0f;
+    float damping = 1.0f / (x + x * x * x * 0.235f + x * x * 0.47999999f + 1.0f);
+
+    float offset = this->m_renderFacing - goal;
+    float step = elapsed * (offset * 20.0f + this->m_facingVelocity);
+
+    this->m_renderFacing = (offset + step) * damping + goal;
+    this->m_facingVelocity = damping * (this->m_facingVelocity - 20.0f * step);
+    this->m_renderFacing = goal * (1.0f - this->m_facingBlend) + this->m_renderFacing * this->m_facingBlend;
+}
+
+// OFFSET: 0x735F60
+void CGUnit_C::UpdateSmoothFacing(float* facingOffset) {
+    float facing = this->movementData.m_facing;
+    float target = facing;
+
+    if (this->m_obj->m_guid == CGUnit_C::s_activeMover) {
+        this->m_targetFacing = facing;
+        //this->m_facingUnkAA4 = 0.0f;
+
+        if ((this->movementData.m_flags & 0x30) != 0 || CGInputControl::GetActive()->CameraCanTurnPlayer()) {
+            this->m_animationState |= 1;
+        } else {
+            this->m_animationState &= ~1u;
+            this->m_lastTurnTimeMs = OsGetAsyncTimeMs();
+        }
+
+        if ((this->movementData.m_flags & 0x30) != 0 /* || CGInputControl::GetActive()->Sub5FA420() */) {
+            this->m_animationState |= 2;
+        } else {
+            this->m_animationState &= ~2u;
+        }
+
+        //uint32_t vehicle = this->m_vehicle;
+        //
+        //if (vehicle && vehicle->unk_000C) {
+        //    float propagated = facingOffset
+        //                           ? this->m_targetFacing + *facingOffset
+        //                           : this->GetSmoothFacing();
+        //    this->PropagateToPassengers(propagated);
+        //}
+
+        return;
+    }
+
+    bool emoteBlocksFacing = false;
+    uint32_t emoteState = this->m_unit->UNIT_NPC_EMOTESTATE;
+
+    if (emoteState) {
+        EmotesRec* emote = g_emotesDB.GetRecord(emoteState);
+        if (emote && (emote->m_emoteFlags & 0x2000) == 0) {
+            emoteBlocksFacing = true;
+        }
+    }
+
+    if ((this->m_passenger->m_flags & 0xF) == 0) {
+        if (this->GetClientStandState() || emoteBlocksFacing) {
+            goto applyFacing;
+        }
+
+        uint32_t unitFlags = this->m_unit->UNIT_FIELD_FLAGS;
+
+        if ((unitFlags & 0x40000) != 0 || (this->m_unit->UNIT_FIELD_FLAGS_2 & 0x8000) != 0) {
+            goto applyFacing;
+        }
+
+        if ((this->unk_0A30 & 1) != 0) {
+            facing = this->m_scriptedFacing;
+            target = this->m_scriptedFacing;
+        } else {
+            // if ((unitFlags & 0x1000000) != 0
+            //    || (this->m_obj->m_type & 0x10) != 0
+            //    || !this->Sub722640()
+            //    || (this->HasVehicleTransport()
+            //        && (v17 = ClntObjMgrObjectPtr<CGUnit_C*>(this->GetTransportGUID(), TYPEMASK_UNIT)) != nullptr
+            //        && (seatRec = v17->GetVehicleSeatRec(BYTE2(this->movementData.m_flags2))) != nullptr
+            //        && (seatRec->flags & 0x400) == 0)) {
+            //    goto applyFacing;
+            //}
+            //
+            // WGUID faceTarget;
+            // if (this->GetVehicleRecPtr() && (this->m_vehicle->targetGuid)) {
+            //    faceTarget = this->m_vehicle->targetGuid;
+            //} else {
+            //    if (this->m_unit->UNIT_CHANNEL_SPELL && (this->unk_0A30 & 0x8000) != 0 && !this->IsClientControlled())
+            //        faceTarget = this->m_unit->UNIT_FIELD_CHANNEL_OBJECT;
+            //    else
+            //        faceTarget = this->m_unit->UNIT_FIELD_TARGET;
+            //
+            //    if (!faceTarget)
+            //        faceTarget = this->GetComboPointTarget();
+            //}
+            //
+            // if (!faceTarget) {
+            //    if (CGGameUI::m_interactTarget != this->m_obj->m_guid)
+            //        goto applyFacing;
+            //    faceTarget = ClntObjMgrGetActivePlayer();
+            //    if (!faceTarget)
+            //        goto applyFacing;
+            //}
+            //
+            // CGUnit_C* other = ClntObjMgrObjectPtr<CGUnit_C*>(faceTarget, TYPEMASK_UNIT);
+            // if (!other)
+            //    goto applyFacing;
+            //
+            // C3Vector otherPos;
+            // other->GetPosition(otherPos);
+            // float toTarget = CalculateFacingTo(this->GetPosition(), &otherPos);
+            //
+            // if (facingOffset) {
+            //    facing = CMath::normalizeangle0to2pi(toTarget - *facingOffset);
+            //} else if (!this->HasVehicleTransport()) {
+            //    facing = this->GetTransportGUID()
+            //        ? CMath::normalizeangle0to2pi(toTarget - MovementGetTransportFacing(this->GetTransportGUID()))
+            //        : CMath::normalizeangle0to2pi(toTarget);
+            //} else {
+            //    CGUnit_C* carrier = ClntObjMgrObjectPtr<CGUnit_C*>(this->GetTransportGUID(), TYPEMASK_UNIT);
+            //    facing = carrier
+            //        ? CMath::normalizeangle0to2pi(toTarget - carrier->GetSmoothFacing())
+            //        : CMath::normalizeangle0to2pi(target);
+            //}
+            // target = facing;
+        }
+    }
+
+applyFacing:
+    float eased;
+
+    CreatureMovementInfoRec* movementInfo = nullptr;
+    // uint32_t movementId = this->m_creatureCacheEntry ? this->m_creatureCacheEntry->MovementId : 0;
+    // movementInfo = g_CreatureMovementInfoDB.GetRecord(movementId);
+
+    if (movementInfo && movementInfo->m_smoothFacingChaseRate > 0.0000099999997f) {
+        if (facing + 3.1415927f >= this->m_targetFacing) {
+            if (facing - 3.1415927f > this->m_targetFacing)
+                target = facing - 6.2831855f;
+        } else {
+            target = facing + 6.2831855f;
+        }
+
+        //this->Sub7160B0(&this->m_targetFacing, &target, movementInfo->m_smoothFacingChaseRate, CGWorldFrame::s_currentWorldFrame->m_elapsedSec);
+        eased = CMath::normalizeangle0to2pi(this->m_targetFacing);
+    } else if ((this->m_unit->UNIT_FIELD_FLAGS & 8) != 0 && (this->m_obj->m_type & 0x10) == 0) {
+        if (facing + 3.1415927f >= this->m_targetFacing) {
+            if (facing - 3.1415927f > this->m_targetFacing)
+                target = facing - 6.2831855f;
+        } else {
+            target = facing + 6.2831855f;
+        }
+
+        float rate = 20.0f;
+        // rate = this->IsInCombat() ? 30.0f : 20.0f;
+
+        //this->Sub7160B0(&this->m_targetFacing, &target, rate, CGWorldFrame::s_currentWorldFrame->m_elapsedSec);
+        eased = CMath::normalizeangle0to2pi(this->m_targetFacing);
+    } else {
+        float delta = facing - this->m_targetFacing;
+
+        if (delta > 3.1415927f) {
+            delta -= 6.2831855f;
+        } else if (delta < -3.1415927f) {
+            delta += 6.2831855f;
+        }
+
+        if (fabsf(delta) <= 0.0099999998f) {
+            this->m_turnDelta[0] = 0.0f;
+            this->m_targetFacing = facing;
+
+            //uint32_t vehicle = this->m_vehicle;
+            //if (vehicle && vehicle->unk_000C) {
+            //    float propagated = facingOffset
+            //                           ? facing + *facingOffset
+            //                           : this->GetSmoothFacing();
+            //    this->PropagateToPassengers(propagated);
+            //}
+            return;
+        }
+
+        float step = delta;
+
+        if ((delta >= 0.0f) != (this->m_turnDelta[0] >= 0.0f)) {
+            this->m_turnDelta[0] = 0.0f;
+        }
+        
+        if (this->m_turnDelta[0] == 0.0f) {
+            this->m_turnDelta[0] = delta;
+            this->m_turnDelta[1] = delta;
+            this->m_turnDelta[2] = delta;
+            this->m_turnDelta[3] = delta;
+        } else {
+            memmove(&this->m_turnDelta[1], &this->m_turnDelta[0], 3 * sizeof(float));
+            this->m_turnDelta[0] = delta;
+        
+            float average = (this->m_turnDelta[0] + this->m_turnDelta[1] + this->m_turnDelta[2] + this->m_turnDelta[3]) * 0.25f;
+        
+            if (step <= 0.0f) {
+                if (average >= step)
+                    step = average;
+            } else if (average <= step) {
+                step = average;
+            }
+        }
+
+        eased = CMath::normalizeangle0to2pi(step * 0.5f + this->m_targetFacing);
+    }
+
+    //uint32_t vehicle = this->m_vehicle;
+    this->m_targetFacing = eased;
+
+    //if (vehicle && vehicle->unk_000C) {
+    //    if (facingOffset) {
+    //        this->PropagateToPassengers(this->m_targetFacing + *facingOffset);
+    //    } else {
+    //        this->PropagateToPassengers(this->GetSmoothFacing());
+    //    }
+    //}
+}
+
 // OFFSET: 0x717A20
 CreatureModelDataRec* CGUnit_C::GetModelData() {
     uint32_t displayId = this->m_displayId;
@@ -1694,6 +2017,328 @@ bool CGUnit_C::GetModelFileName(const char** fileName) {
 
     *fileName = creatureModelData->m_modelName;
     return creatureModelData->m_modelName;
+}
+
+// OFFSET: 0x73E840
+void CGUnit_C::ModelLoaded(CM2Model* model) {
+    CGObject_C::ModelLoaded(model);
+
+    if (this->GetTransportGUID()) {
+        C44Matrix transform;
+        MovementGetTransportMtxX(this->GetTransportGUID(), &transform);
+
+        if (model->m_loaded) {
+            // C44Matrix::Copy(&model->unk_0134, &transform);
+            // model->ChangeFrameOfReference(&model->unk_0134);
+        }
+    }
+
+    if (model == this->m_worldModel) {
+        this->m_animationState &= 0xFFFFFE7F;
+
+        if (model->HasKeyBone(4)) {
+            this->m_animationState |= 0x80;
+        }
+
+        if (model->HasKeyBone(6)) {
+            this->m_animationState |= 0x100;
+        }
+
+        if ((this->m_animationState & 0x80) != 0) {
+            this->m_torsoKeyBone = 4;
+        } else {
+            this->m_torsoKeyBone = (this->m_animationState & 0x100) != 0 ? 6 : -1;
+        }
+
+        // this->UpdateInteractIconAttach();
+    } else if (model == this->data98C /*&& !model->HasAttachment(0)*/) {
+        // SysMsgPrintf_0(2, 16, "MOUNTDISPLAYIDNOMOUNTATTACHMENT|%d", this->data9C0);
+    }
+
+    if ((this->m_modelFlags & 0x40000) != 0) {
+        this->UpdateBaseAnimation(1, -1);
+
+        ANIMATION_ID torsoAnim = this->GetCurrentTorsoAnimId();
+        AnimationDataRec* row = g_animationDataDB.GetRecord(torsoAnim);
+
+        if (row && row->m_behaviorID == 127) {
+            //uint8_t saved = BYTE2(this->ukn_00C8);
+            //this->ukn_00C4 = 0;
+            //LOBYTE(this->ukn_00C8) = saved;
+        }
+
+        // this->UpdateObjectEffectAnimationStates();
+    }
+
+    if (model == this->GetObjectModel()) {
+        // this->InitWheels();
+    }
+
+    // if (this->m_vehiclePassenger && this->m_vehiclePassenger->m_seatState == 3) {
+    //     CGUnit_C* carrier = ClntObjMgrObjectPtr<CGUnit_C*>(this->GetTransportGUID(), TYPEMASK_UNIT);
+    //     if (carrier) {
+    //         if (carrier->m_vehicle && carrier->m_vehicle->unk_000C)
+    //             carrier->m_vehicle->UpdateLargestPassengerBoundsRadius();
+    //         carrier->UpdateWorldObject();
+    //     }
+    // }
+
+    // if (this->dataA44[18]) {
+    //     if (this->HasAuraBySpellId(this->dataA44[18])) {
+    //         SpellRec spell;
+    //         if (ClientDb::GetLocalizedRow(&g_spellDB, this->dataA44[18], &spell)) {
+    //             auto visual = GetSpellVisual(&spell);
+    //             if (visual) {
+    //                 auto kit = ClientDB::GetRow(&g_spellVisualKitDB, visual->kitId);
+    //                 if (kit)
+    //                     this->PlaySpellVisualKit(PlaySpellVisualKitData(&spell, kit, 2));
+    //             }
+    //         }
+    //     }
+    //     this->dataA44[18] = 0;
+    // }
+
+    // if (model == this->GetObjectModel()) {
+    //     if (this->m_vehicle && this->m_vehicle->unk_000C && this->m_vehicle->ShouldMirrorAnimations())
+    //         this->m_vehicle->StartMirroringAnimsToPassengers();
+    //     if (this->m_vehiclePassenger && this->m_vehiclePassenger->OverridesModelAnimation())
+    //         CAnimKitManager::MirrorToModel(this->m_vehiclePassenger);
+    // }
+}
+
+// OFFSET: 0x73DAB0
+void CGUnit_C::PreAnimate(CGWorldFrame* worldFrame) {
+    uint32_t time = FrameTime::s_curTimeMs;
+
+    //if (this->m_vehiclePassenger) {
+    //    this->m_vehiclePassenger->CheckForVehicleTransitionAnimTimeout(time);
+    //}
+
+    //if (static_cast<int32_t>(time - this->data9BC) >= 0) {
+    //    this->UpdateBreathState(time);
+    //}
+
+    //if (CGGameUI::m_lockedTarget == this->m_obj->m_guid) {
+    //    CGUnit_C* player = ClntObjMgrObjectPtr<CGUnit_C*>(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER);
+    //
+    //    if (player && ((player->movementData.m_flags2 & 2) != 0 || player->dataA20) && player->CanAttack(this)) {
+    //        uint32_t toggledAt = dword_CA12C0;
+    //        this->unk_0A30 |= 0x10;
+    //
+    //        if (static_cast<int32_t>(time - toggledAt - 500) >= 0) {
+    //            dword_CA12BC = (dword_CA12BC == 0);
+    //            toggledAt = time;
+    //            dword_CA12C0 = time;
+    //        }
+    //
+    //        float phase = (toggledAt - time + 500) * 0.0020000001f;
+    //        if (dword_CA12BC) {
+    //            phase = 1.0f - phase;
+    //        }
+    //
+    //        reinterpret_cast<uint8_t*>(&dword_ADAA98)[1] = static_cast<uint8_t>(phase * 128.0f);
+    //        PlayerNameTriggerColorUpdate(this->m_nameDesc);
+    //    } else if ((this->unk_0A30 & 0x10) != 0) {
+    //        this->unk_0A30 &= 0xFFFFFFEF;
+    //        PlayerNameTriggerColorUpdate(this->m_nameDesc);
+    //    }
+    //} else if ((this->unk_0A30 & 0x10) != 0) {
+    //    this->unk_0A30 &= 0xFFFFFFEF;
+    //    PlayerNameTriggerColorUpdate(this->m_nameDesc);
+    //}
+
+    //PLAYERNAMEDESC_UpdateVisibility(this->m_nameDesc);
+    //this->Sub720DB0(time);
+
+    //if (this->m_fadeDelayMs && static_cast<int32_t>(time - this->m_fadeStartMs - this->m_fadeDelayMs) >= 0) {
+    //    uint32_t fadeArg = this->m_fadeArg;
+    //    float alpha = this->GetFadeAlpha(fadeArg);
+    //    this->DoFade(alpha, fadeArg);
+    //    this->m_fadeDelayMs = 0;
+    //}
+
+    CGObject_C::PreAnimate(worldFrame);
+
+    //while (this->data9F0) {
+    //    CMissile* missile = this->data9F0;
+    //    if (static_cast<int32_t>(time - missile->m_expireTime) < 0) {
+    //        break;
+    //    }
+    //    missile->DeleteSelf();
+    //}
+
+    //for (CMissile* missile = this->data9F0; missile; missile = missile->m_next) {
+    //    float t = (missile->m_fadeEndTime - time) * 0.00050000002f;
+    //    float weight;
+    //
+    //    if (t >= 0.0f) {
+    //        weight = (t <= 1.0f) ? t * (t * t) : 1.0f;
+    //    } else {
+    //        weight = 0.0f;
+    //    }
+    //
+    //    if (missile->m_model) {
+    //        missile->m_model->m_fadeWeight = weight;
+    //    }
+    //}
+
+    //this->UpdateProceduralBoneAnimation();
+    //this->CreateRipple(0);
+
+    uint32_t vehicleSeatFlags = 0; //this->m_vehicle ? this->m_vehicle->unk_000C : 0;
+    uint32_t mirrorFlag = 0;
+    bool vehicleOverridesFacing = false;
+
+    if (vehicleSeatFlags) {
+        uint32_t seatFlags = *reinterpret_cast<uint32_t*>(vehicleSeatFlags + 4);
+        mirrorFlag = seatFlags & 0x200;
+        if ((seatFlags & 0x200) != 0 || (seatFlags & 0x1000) != 0) {
+            vehicleOverridesFacing = true;
+        }
+    }
+
+    uint32_t passengerFlags = this->m_passenger->m_flags;
+    uint32_t seatState = 0; //this->m_vehiclePassenger ? this->m_vehiclePassenger->m_seatState : 0;
+
+    if (static_cast<int32_t>(this->m_unit->UNIT_FIELD_HEALTH) <= 0 /*|| (this->m_vehiclePassenger && (seatState == 2 || seatState == 5))*/ || (passengerFlags & 0x2200000) != 0 || vehicleOverridesFacing || (this->m_animationState & 0x180) == 0) {
+        this->m_renderFacing = this->m_targetFacing;
+        this->m_facingVelocity = 0.0f;
+        this->m_facingBlend = 0.0f;
+    } else if ((passengerFlags & 0xC) != 0) {
+        float offset = ((this->movementData.m_flags & 3) != 0) ? 0.78539819f : 1.5707964f;
+
+        uint32_t dir = this->movementData.m_flags & 6;
+        if (dir == 6 || dir == 0) {
+            offset = -offset;
+        }
+
+        this->m_facingBlend = 1.0f;
+
+        float delta = CMath::normalizeAnglePi(offset + this->m_targetFacing - this->m_renderFacing);
+        this->SmoothFacingAngle(CMath::normalizeAnglePi(delta + this->m_renderFacing));
+    } else if ((passengerFlags & 0x1003) == 0) {
+        if (this->m_facingBlend < 1.0f) {
+            this->m_facingBlend = worldFrame->m_elapsedSec * 2.5f + this->m_facingBlend;
+        }
+    } else if (this->m_facingBlend <= 0.0f) {
+        this->m_renderFacing = this->m_targetFacing;
+        this->m_facingVelocity = 0.0f;
+    } else {
+        this->m_facingBlend -= worldFrame->m_elapsedSec * 2.5f;
+        if (this->m_facingBlend > 1.0f) {
+            this->m_facingBlend = 1.0f;
+        }
+        this->SmoothFacingAngle(this->m_targetFacing);
+    }
+
+    float lag = CMath::normalizeAnglePi(this->m_targetFacing - this->m_renderFacing);
+    float absLag = fabsf(lag);
+    float torsoTwist = 0.0f;
+    float headTwist = 0.0f;
+
+    if (absLag < 0.001f) {
+        this->m_worldModel->SetBoneFlags(4, 0, 128);
+        this->m_worldModel->SetBoneFlags(6, 0, 128);
+        //this->RotateWheels();
+        this->m_animationState &= 0xFFFFE7FF;
+    } else {
+        if (absLag > 1.5707964f) {
+            torsoTwist = copysignf(absLag - 1.5707964f, lag);
+            headTwist = torsoTwist;
+        }
+
+        if ((this->m_passenger->m_flags & 0xC) == 0 && (this->m_animationState & 1) == 0) {
+            int32_t sinceTurn = OsGetAsyncTimeMs() - this->m_lastTurnTimeMs;
+            float step = sinceTurn * 0.001f * this->movementData.m_turnRate * 8.0f;
+
+            if (absLag < step) {
+                step = absLag;
+            }
+
+            headTwist = copysignf(step, lag) + torsoTwist;
+        }
+
+        this->m_renderFacing = CMath::normalizeAnglePi(headTwist + this->m_renderFacing);
+
+        float residual = CMath::normalizeAnglePi(this->m_targetFacing - this->m_renderFacing);
+        float absResidual = fabsf(residual);
+
+        if (absResidual >= 0.0000099999997f) {
+            if (!this->data98C && (this->m_animationState & 0x80) != 0) {
+                float headAngle = absResidual;
+
+                if (this->m_obj->m_guid != CGUnit_C::s_activeMover || CGUnit_C::m_trackingType == 13) {
+                    headAngle *= 0.5f;
+                }
+
+                if (headAngle > 0.78539819f) {
+                    headAngle = 0.78539819f;
+                }
+
+                this->m_worldModel->SetBoneFlags(4, 128, 128);
+                this->m_worldModel->SetBoneProceduralTransform(4, &C44Matrix::Rotation(copysignf(headAngle, residual), C3Vector(0.0f, 0.0f, 1.0f), true));
+
+                absResidual -= headAngle;
+            }
+
+            if ((this->m_animationState & 0x100) != 0) {
+                if (absResidual >= 0.78539819f) {
+                    absResidual = 0.78539819f;
+                }
+
+                this->m_worldModel->SetBoneFlags(6, 128, 128);
+                this->m_worldModel->SetBoneProceduralTransform(6, &C44Matrix::Rotation(copysignf(absResidual, residual), C3Vector(0.0f, 0.0f, 1.0f), true));
+            }
+        } else {
+            this->m_worldModel->SetBoneFlags(4, 0, 128);
+            this->m_worldModel->SetBoneFlags(6, 0, 128);
+        }
+
+        if (mirrorFlag) {
+            this->m_worldModel->SetBoneFlags(4, 128, 128);
+            this->m_worldModel->SetBoneProceduralTransform(4, &C44Matrix::Rotation(-this->GetPitch(), C3Vector(0.0f, 1.0f, 0.0f), true));
+        }
+
+        //this->RotateWheels();
+        this->m_animationState &= 0xFFFFE7FF;
+    }
+
+    if ((this->movementData.m_flags & 0x2E0100F) == 0) {
+        if ((this->m_obj->m_guid != ClntObjMgrGetActivePlayer() || !this->AsPlayer()->m_playerMirrorFlag) && !this->GetClientStandState()) {
+            if (headTwist > 0.0000099999997f) {
+                this->m_animationState |= 0x800;
+            } else if (headTwist < -0.0000099999997f) {
+                this->m_animationState |= 0x1000;
+            }
+
+            uint32_t current = this->GetObjectModel()->GetBoneSequenceId(-1);
+            uint32_t passengerFlags = this->m_passenger->m_flags;
+            uint32_t wanted;
+
+            if ((passengerFlags & 0x10) != 0 || (this->m_animationState & 0x800) != 0) {
+                wanted = 11;
+            } else if ((passengerFlags & 0x20) != 0 || (this->m_animationState & 0x1000) != 0) {
+                wanted = 12;
+            } else if (current != 11 && current != 12) {
+                wanted = current;
+            } else {
+                wanted = 0;
+            }
+
+            if (current != wanted) {
+                //this->ShouldPlayTurnInPlaceAnim();
+                this->UpdateBaseAnimation(0, -1);
+            }
+        }
+    }
+
+    CM2Model* model = this->m_worldModel;
+    if (model) {
+        uint32_t bit = ((this->m_unit->UNIT_FIELD_FLAGS_2 >> 1) & 1) << 14;
+        model->f_flags ^= (model->f_flags ^ bit) & 0x4000;
+    }
+
+    //this->UpdateDelayedSpellVisualKits();
 }
 
 // OFFSET: 0x730F30
@@ -1757,6 +2402,11 @@ void CGUnit_C::ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) {
     //        v13->f_flags = v19 & 0xFFFEFFFF | (v16 << 16);
     //    *out = 0;
     }
+}
+
+// OFFSET: 0x7156A0
+float CGUnit_C::GetRenderFacing() {
+    return this->movementData.GetFacing(this->m_renderFacing);
 }
 
 // OFFSET: 0x6E6FC0

@@ -47,7 +47,7 @@ void CGUnit_C::PlayBaseAnimation(ANIMATION_ID animId, uint8_t flags) {
     this->m_pendingAnimId = ANIM_NONE;
 
     //####TESTING
-    this->m_worldModel->SetBoneSequence(-1, animId, 0, 0, 1.0f, 1, 1);
+    this->m_worldModel->SetBoneSequence(-1, animId, -1, 0, 1.0f, 1, 1);
     WHOA_UNIMPLEMENTED();
 }
 
@@ -240,4 +240,47 @@ void CGUnit_C::ChooseDefaultAnim(ANIMATION_ID* animId, bool a3) {
             *animId = currentTorsoAnim;
         }
     }
+}
+
+// OFFSET: 0x73D2B0
+void CGUnit_C::PlayFallLandAnimation(uint32_t prevFlags, int32_t fellWithSpeed) {
+    uint32_t animationState = this->m_animationState;
+    uint32_t wasLanding = animationState & 0x1000000;
+
+    this->m_animationState = animationState & 0xFEFFFFFF;
+
+    // auto vehicle = this->m_vehicle;
+    // if (vehicle && vehicle->unk_000C && vehicle->Sub7571C0())
+    //     return;
+
+    // auto vehiclePassenger = this->m_vehiclePassenger;
+    // if (vehiclePassenger && (vehiclePassenger->m_seatState == 4 || vehiclePassenger->m_seatState == 5))
+    //     return;
+
+    if ((this->m_animationState & 0x4000000) != 0) {
+        this->PlayBaseAnimation(ANIM_DEATH_END, 0);
+        return;
+    }
+
+    if (fellWithSpeed || (prevFlags & 0x2000) != 0 || wasLanding) {
+        if ((this->m_passenger->m_flags & 0x2200000) == 0) {
+            uint32_t moveFlags = this->movementData.m_flags;
+
+            if ((moveFlags & 0xF) == 0) {
+                //this->PlayUnitSound(12, 1);
+                this->PlayBaseAnimation(ANIM_JUMP_END, 0);
+                return;
+            }
+
+            if ((moveFlags & 2) == 0 && (moveFlags & 0x100) == 0 && !this->IsRunning()) {
+                //this->PlayUnitSound(12, 1);
+                this->PlayBaseAnimation(ANIM_JUMP_LAND_RUN, 0);
+                return;
+            }
+        }
+    } else if (((prevFlags ^ this->m_passenger->m_flags) & 0x40F) == 0) {
+        return;
+    }
+
+    this->UpdateBaseAnimation(0, -1);
 }

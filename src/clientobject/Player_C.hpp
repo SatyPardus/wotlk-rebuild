@@ -259,6 +259,9 @@ class CGPlayer {
 
 class CGPlayer_C : public CGUnit_C, public CGPlayer {
     public:
+
+    /* 18E0 */ uint32_t m_playerMirrorFlag = 0;
+
     CGPlayer_C();
     CGPlayer_C(CClientObjCreate& objCreate, uint32_t time);
     void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);

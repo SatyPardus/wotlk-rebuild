@@ -105,6 +105,8 @@ class CMovementShared : public CPassenger {
     float PlotSplineElevation(uint32_t elapsedMs, float z);
     bool PlotUnitSplineMovement(int32_t time, C3Vector* out);
     void SetRawFacing(float facing);
+    void SetFacing(float facing);
+    C3Vector GetPassengerPosition();
 };
 
 #endif // CLIENTOBJECT_MOVEMENT_SHARED_HPP
