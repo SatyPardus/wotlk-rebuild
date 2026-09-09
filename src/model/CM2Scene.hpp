@@ -12,9 +12,12 @@ class CM2Light;
 class CM2Lighting;
 class CM2Model;
 class CMapBaseObj;
+class CParticleEmitter2;
 
 typedef void (*M2ProjectTextureCallback)(const CAaBox&, const CImVector&, int32_t, void*, int32_t);
 typedef int32_t (*M2ProjectPositionCallback)(const C3Vector&, float&, void*);
+
+int32_t GxBlendToM2Blend(int32_t gxBlend);
 
 class CM2Scene {
     public:
@@ -30,6 +33,7 @@ class CM2Scene {
     static int32_t SortOpaqueRibbons(M2Element* elementA, M2Element* elementB);
     static int32_t SortTransparent(uint32_t a, uint32_t b, const void* userArg);
     static int32_t SortHitNear(uint32_t a, uint32_t b, const void* userArg);
+    static int32_t SortAdditiveParticles(uint32_t a, uint32_t b, const void* userArg);
 
     // Member variables
     /* 0000 */ int32_t m_refCount = 1;
@@ -71,7 +75,9 @@ class CM2Scene {
         : m_cache(cache), m_passMask(0xFFFFFFFF)
         {};
     void AdvanceTime(uint32_t a2);
-    void Animate(const C3Vector& cameraPos);
+    bool Animate(const C3Vector& cameraPos);
+    void SortAdditiveParticleElements(int32_t pass);
+    void QueueParticleElement(CParticleEmitter2* emitter, CM2Model* model, float depth, float alpha, int32_t aboveWater, uint32_t* elementIndex, uint32_t* particleCount);
     CM2Model* CreateModel(const char* file, uint32_t a3);
     void Draw(M2PASS pass);
     void SelectLights(CM2Lighting* lighting);

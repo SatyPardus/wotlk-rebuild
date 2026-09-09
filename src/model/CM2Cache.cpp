@@ -8,6 +8,7 @@
 #include <bc/Memory.hpp>
 #include <storm/String.hpp>
 #include <tempest/Box.hpp>
+#include "model/CParticleEmitter2.hpp"
 
 CM2Cache CM2Cache::s_cache;
 
@@ -157,6 +158,7 @@ int32_t CM2Cache::Initialize(uint32_t flags) {
 
     // TODO
 
+    CParticleEmitter2::Init();
     this->m_initialized = 1;
 
     return 1;

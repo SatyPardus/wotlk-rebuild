@@ -355,6 +355,10 @@ int32_t M2Init(uint8_t* base, uint32_t size, const M2Data& data, M2Particle& par
         return 0;
     }
 
+    if (!M2Init<C3Vector>(base, size, data, particle.spline)) {
+        return 0;
+    }
+
     if (!M2Init<uint8_t>(base, size, data, particle.visibilityTrack)) {
         return 0;
     }

@@ -14,6 +14,9 @@
 #include "model/M2Internal.hpp"
 #include <db/StaticDb.hpp>
 #include <tempest/facet/CFacet.hpp>
+#include "model/CM2SequenceLoad.hpp"
+#include "model/CParticleEmitter2.hpp"
+#include "model/CRibbonEmitter.hpp"
 
 uint32_t CM2Model::s_loadingSequence = 0xFFFFFFFF;
 uint8_t* CM2Model::s_sequenceBase;
@@ -21,6 +24,12 @@ uint32_t CM2Model::s_sequenceBaseSize;
 uint32_t CM2Model::s_skinProfileBoneCountMax[] = { 256, 64, 53, 21 };
 TSGrowableArray<C3Vector> CM2Model::s_collisionPositions;
 TSGrowableArray<uint32_t> CM2Model::s_collisionCodes;
+
+static const C44Matrix s_particleBasis(
+    0.0f, 1.0f, 0.0f, 0.0f,
+    -1.0f, 0.0f, 0.0f, 0.0f,
+    0.0f, 0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f);
 
 CM2Model* CM2Model::AllocModel(uint32_t* heapId) {
     uint32_t memHandle;
@@ -37,42 +46,49 @@ CM2Model* CM2Model::AllocModel(uint32_t* heapId) {
     return nullptr;
 }
 
-bool CM2Model::HasSequence(M2Data* data, uint32_t a2) {
-    if (data->sequenceIdxHashById.Count() == 0) {
-        for (int32_t i = 0; i < data->sequences.Count(); i++) {
-            auto& sequence = data->sequences[i];
+// OFFSET: 0x825E00
+bool CM2Model::HasSequence(M2Data* data, uint32_t sequenceId) {
+    uint16_t index = 0xFFFF;
 
-            if (sequence.id == a2) {
-                return i < data->sequences.Count();
+    uint32_t hashCount = data->sequenceIdxHashById.Count();
+
+    if (hashCount == 0) {
+        for (uint32_t i = 0; i < data->sequences.Count(); i++) {
+            if (data->sequences[i].id == sequenceId) {
+                index = i;
+                break;
             }
         }
+    } else {
+        uint32_t slot = sequenceId % hashCount;
+        uint16_t probe = data->sequenceIdxHashById[slot];
 
-        return data->sequences.Count() > 0xFFFF;
-    }
+        if (probe != 0xFFFF) {
+            if (data->sequences[probe].id == sequenceId) {
+                index = probe;
+            } else {
+                int32_t step = 1;
 
-    uint32_t v8 = a2 % data->sequenceIdxHashById.Count();
-    uint16_t v5 = data->sequenceIdxHashById[v8];
-    if (v5 == 0xFFFF) {
-        return data->sequences.Count() > 0xFFFF;
-    }
-    if (data->sequences[v5].id == a2) {
-        return v5 < data->sequences.Count();
-    }
+                while (true) {
+                    slot = (slot + step * step) % hashCount;
+                    probe = data->sequenceIdxHashById[slot];
 
-    int32_t v10 = 1;
-    while (1) {
-        v8 = (v8 + v10 * v10) % data->sequenceIdxHashById.Count();
-        v5 = data->sequenceIdxHashById[v8];
-        if (v5 == 0xFFFF) {
-            return data->sequences.Count() > 0xFFFF;
+                    if (probe == 0xFFFF) {
+                        break;
+                    }
+
+                    step++;
+
+                    if (data->sequences[probe].id == sequenceId) {
+                        index = probe;
+                        break;
+                    }
+                }
+            }
         }
-
-        ++v10;
-
-        if (data->sequences[v5].id == a2) {
-            return v5 < data->sequences.Count();
-        }
     }
+
+    return index < data->sequences.Count();
 }
 
 // OFFSET: 0x8260C0
@@ -157,12 +173,12 @@ CM2Model::~CM2Model() {
     //unk_006C = this->unk_006C;
     //if (unk_006C)
     //    *(unk_006C + 104) = this->unk_0068;
-    //unk_02C8 = this->unk_02C8;
-    //if (unk_02C8)
-    //    *unk_02C8 = this->unk_02CC;
-    //unk_02CC = this->unk_02CC;
-    //if (unk_02CC)
-    //    *(unk_02CC + 712) = this->unk_02C8;
+    if (this->m_particlePrev) {
+        *this->m_particlePrev = this->m_particleNext;
+    }
+    if (this->m_particleNext) {
+        this->m_particleNext->m_particlePrev = this->m_particlePrev;
+    }
     //unk_02D8 = this->unk_02D8;
     //if (unk_02D8)
     //    *unk_02D8 = this->unk_02DC;
@@ -220,58 +236,57 @@ CM2Model::~CM2Model() {
 
 // OFFSET: 0x830DC0
 void CM2Model::Animate() {
-    if (this->m_frameStamp == this->m_scene->m_frameStamp)
+    if (this->m_frameStamp == this->m_scene->m_frameStamp) {
         return;
+    }
 
     if (this->m_attachParent) {
         this->m_attachParent->Animate();
     } else {
-        C3Vector oneVector = C3Vector(1.0f, 1.0f, 1.0f);
-        C3Vector zeroVector = C3Vector(0.0f, 0.0f, 0.0f);
+        C3Vector diffuse = { 1.0f, 1.0f, 1.0f };
+        C3Vector emissive = { 0.0f, 0.0f, 0.0f };
+
         if ((this->f_flags & 0x1000) != 0) {
-            this->AnimateMTSimple(&this->m_scene->m_view, oneVector, zeroVector, 1.0f, 1.0f);
+            this->AnimateMTSimple(&this->m_scene->m_view, diffuse, emissive, 1.0f, 1.0f);
         } else {
-            this->AnimateMT(&this->m_scene->m_view, oneVector, zeroVector, 1.0f, 1.0f);
+            this->AnimateMT(&this->m_scene->m_view, diffuse, emissive, 1.0f, 1.0f);
         }
     }
 
-    if (this->m_frameStamp == this->m_scene->m_frameStamp)
+    if (this->m_frameStamp == this->m_scene->m_frameStamp) {
         return;
+    }
 
-    if (!this->m_attachParent || (this->f_flags & 1) == 0) {
-        if (this->m_attachParent) {
-            this->matrixF4 = this->m_attachParent->matrixF4;
+    if (this->m_attachParent && (this->f_flags & 0x1) != 0) {
+        C44Matrix matrix;
+        C44Matrix* parentMatrix = &this->m_attachParent->matrixF4;
+
+        if ((this->m_attachParent->f_flags & 0x1) != 0 && this->m_attachParent->m_frameStamp == this->m_scene->m_frameStamp && this->m_attachmentIndex != 0xFFFF) {
+            auto& attachment = this->m_attachParent->m_shared->m_data->attachments[this->m_attachmentIndex];
+
+            matrix = this->m_attachParent->m_boneMatrices[attachment.boneIndex];
+            matrix.Translate(attachment.position);
+
+            parentMatrix = &matrix;
+        }
+
+        CM2Model* parent = this->m_attachParent;
+
+        if ((this->f_flags & 0x1000) != 0) {
+            this->AnimateMTSimple(parentMatrix, parent->m_currentDiffuse, parent->m_currentEmissive, parent->float198, parent->alpha19C);
         } else {
-            this->matrixF4 = this->m_worldTransform * this->m_scene->m_view;
+            this->AnimateMT(parentMatrix, parent->m_currentDiffuse, parent->m_currentEmissive, parent->float198, parent->alpha19C);
         }
-    } else {
-        const C44Matrix* p_matrix_00F4 = &this->m_attachParent->matrixF4;
 
-        C44Matrix mat;
-        if ((this->m_attachParent->f_flags & 1) != 0 && this->m_attachParent->m_frameStamp == this->m_scene->m_frameStamp) {
-            if (this->m_attachmentIndex != 0xFFFF) {
-                auto& att = this->m_attachParent->m_shared->m_data->attachments[this->m_attachmentIndex];
-                mat = this->m_attachParent->m_boneMatrices[att.boneIndex];
-                mat.Translate(att.position);
-                p_matrix_00F4 = &mat;
-            }
+        if (this->m_frameStamp == this->m_scene->m_frameStamp) {
+            return;
         }
-        //v10 = this->m_attachParent;
-        //c3 = v10->unk_0170.c3;
-        //c2_low = SLODWORD(v10->unk_0170.c2);
-        //p_d3 = &v10->unk_0170.d3;
-        //p_d0 = &v10->unk_0170.d0;
-        //if ((this->f_flags & 0x1000) != 0)
-        //    this->AnimateMTSimple(&p_matrix_00F4, p_d0, p_d3, c2_low, c3);
-        //else
-        //    this->AnimateMT(&p_matrix_00F4, p_d0, *&p_d3, *&c2_low, c3);
-        //if (this->m_frameStamp != this->m_scene->m_frameStamp) {
-        //    if (this->m_attachParent) {
-        //        this->matrixF4 = this->m_attachParent->matrixF4;
-        //    } else {
-        //        this->matrixF4 = this->m_worldTransform * this->m_scene->m_view;
-        //    }
-        //}
+    }
+
+    if (this->m_attachParent) {
+        this->matrixF4 = this->m_attachParent->matrixF4;
+    } else {
+        this->matrixF4 = this->m_worldTransform * this->m_scene->m_view;
     }
 }
 
@@ -293,96 +308,192 @@ void CM2Model::AnimateCamerasST() {
 }
 
 // OFFSET: 0x82F0F0
-void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vector& a4, float a5, float a6) {
-    if (!this->m_loaded || this->m_frameStamp == this->m_scene->m_frameStamp) {
+void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& diffuse, const C3Vector& emissive, float alphaScale, float emissiveScale) {
+    if ((this->f_flags & 0x1) == 0 || this->m_frameStamp == this->m_scene->m_frameStamp) {
         return;
     }
 
-    // TODO
+    M2Data* data = this->m_shared->m_data;
 
-    for (int32_t i = 0; i < this->m_shared->m_data->loops.Count(); i++) {
-        auto loopLength = this->m_shared->m_data->loops[i].length;
+    if (this->m_attachParent) {
+        bool inheritedFlag8 = (this->m_attachParent->f_flags & 0x8) != 0 && (this->f_flags & 0x80000000) != 0;
+        this->f_flags ^= (this->f_flags ^ (inheritedFlag8 ? 0x8 : 0x0)) & 0x8;
+
+        bool inheritedFlag10000 = (this->m_attachParent->f_flags & 0x10000) != 0 && (this->f_flags & 0x20000) != 0;
+        this->f_flags ^= (this->f_flags ^ (inheritedFlag10000 ? 0x10000 : 0x0)) & 0x10000;
+
+        //this->float174 = this->m_attachParent->float174;
+    }
+
+    //if (data->flags & 0x4) {
+    //    this->float198 = this->float178;
+    //    this->alpha19C = this->float17C * this->float178;
+    //    this->m_currentDiffuse = this->vector180;
+    //    this->m_currentEmissive = this->vector18C;
+    //} else {
+    //    this->m_currentDiffuse.x = diffuse.x * this->vector180.x;
+    //    this->m_currentDiffuse.y = diffuse.y * this->vector180.y;
+    //    this->m_currentDiffuse.z = diffuse.z * this->vector180.z;
+    //    this->m_currentEmissive = this->vector18C;
+    //
+    //    if ((this->f_flags & 0x100000) != 0) {
+    //        this->float198 = this->float178;
+    //    } else {
+    //        this->float198 = alphaScale * this->float178;
+    //    }
+    //
+    //    this->alpha19C = this->float17C * emissiveScale * this->float178;
+    //
+    //    if ((this->f_flags & 0x80000) == 0) {
+    //        this->m_currentEmissive.x += emissive.x;
+    //        this->m_currentEmissive.y += emissive.y;
+    //        this->m_currentEmissive.z += emissive.z;
+    //    }
+    //}
+
+    for (uint32_t i = 0; i < data->loops.Count(); i++) {
+        uint32_t loopLength = data->loops[i].length;
         this->m_loops[i] = loopLength ? (this->m_scene->m_time - this->m_loopOrigin) % loopLength : 0;
     }
 
     this->matrixF4 = this->m_worldTransform * *view;
 
-    this->float88 = !this->m_attachParent || this->m_attachParent->m_flags & 0x1
-        ? this->matrixF4.d2 * this->matrixF4.d2 + this->matrixF4.d1 * this->matrixF4.d1 + this->matrixF4.d0 * this->matrixF4.d0
-        : this->m_attachParent->float88;
-
-    C44Matrix v237;
-    C44Matrix v224;
-    C3Vector v236;
-
-    // TODO
+    if (!this->m_attachParent || (this->m_attachParent->m_flags & 0x1) != 0) {
+        this->float88 = this->matrixF4.d2 * this->matrixF4.d2 + this->matrixF4.d1 * this->matrixF4.d1 + this->matrixF4.d0 * this->matrixF4.d0;
+    } else {
+        this->float88 = this->m_attachParent->float88;
+    }
 
     uint32_t elapsedTime = 0;
+
     if (this->m_lastAnimTime && this->m_scene->m_time) {
         elapsedTime = this->m_scene->m_time - this->m_lastAnimTime;
         this->m_lastAnimTime = this->m_scene->m_time;
     }
 
-    for (int32_t i = 0; i < this->m_shared->m_data->bones.Count(); i++) {
-        auto& bone = this->m_shared->m_data->bones[i];
+    for (uint32_t i = 0; i < data->bones.Count(); i++) {
+        auto& bone = data->bones[i];
         auto& modelBone = this->m_bones[i];
 
-        if (modelBone.sequence.uint8 == 0xFFFF) {
-            if (bone.parentIndex >= this->m_shared->m_data->bones.Count()) {
-                if (i != 0) {
-                    modelBone.sequence.uint0 = this->m_bones[0].sequence.uint0;
-                    modelBone.sequence.uint4 = this->m_bones[0].sequence.uint4;
-                    modelBone.sequence.uint6 = this->m_bones[0].sequence.uint6;
-                }
-            } else {
-                modelBone.sequence.uint0 = this->m_bones[bone.parentIndex].sequence.uint0;
-                modelBone.sequence.uint4 = this->m_bones[bone.parentIndex].sequence.uint4;
-                modelBone.sequence.uint6 = this->m_bones[bone.parentIndex].sequence.uint6;
+        if (modelBone.sequence.m_sequenceIndex == 0xFFFF) {
+            if (bone.parentIndex < data->bones.Count()) {
+                auto& parentBone = this->m_bones[bone.parentIndex];
+                modelBone.sequence.m_currentTime = parentBone.sequence.m_currentTime;
+                modelBone.sequence.m_animIndex = parentBone.sequence.m_animIndex;
+                modelBone.sequence.m_sourceBoneIndex = parentBone.sequence.m_sourceBoneIndex;
+            } else if (i != 0) {
+                modelBone.sequence.m_currentTime = this->m_bones[0].sequence.m_currentTime;
+                modelBone.sequence.m_animIndex = this->m_bones[0].sequence.m_animIndex;
+                modelBone.sequence.m_sourceBoneIndex = this->m_bones[0].sequence.m_sourceBoneIndex;
             }
         } else {
             if (this->m_lastAnimTime) {
-                modelBone.sequence.uintC += elapsedTime;
-                modelBone.sequence.uint10 += elapsedTime;
+                modelBone.sequence.m_startTime += elapsedTime;
+                modelBone.sequence.m_endTime += elapsedTime;
             }
 
-            auto v45 = this->m_scene->m_time;
-            auto& v46 = this->m_shared->m_data->sequences[modelBone.sequence.uint8];
-            uint32_t v47 = 0;
+            auto& sequence = data->sequences[modelBone.sequence.m_sequenceIndex];
+            int32_t sampleTime = this->m_scene->m_time;
+            int32_t currentTime = 0;
+            bool clamped = false;
 
-            if (v46.flags & 0x1) {
-                if (modelBone.sequence.uint10 - v45 <= 0) {
-                    auto v234 = modelBone.sequence.uint10 - modelBone.sequence.uintC;
-                    auto v235 = CMath::fuint(v234 * modelBone.sequence.float14);
-                    v47 = modelBone.sequence.uint1C + v235;
-                    v47 = std::min(v47, v46.duration);
-                } else {
-                    if (modelBone.sequence.uintC - v45 > 0) {
-                        v45 = modelBone.sequence.uintC;
-                    }
-
-                    if (v46.duration) {
-                        auto v234 = v45 - modelBone.sequence.uintC;
-                        auto v235 = CMath::fuint(v234 * modelBone.sequence.float14);
-                        v47 = (modelBone.sequence.uint1C + v235) % v46.duration;
-                    }
-                }
-            } else {
-                if (v46.duration) {
-                    auto v234 = v45 - modelBone.sequence.uintC;
-                    auto v235 = CMath::fuint(v234 * modelBone.sequence.float14);
-                    v47 = (modelBone.sequence.uint1C + v235) % v46.duration;
+            if (sequence.flags & 0x1) {
+                if (static_cast<int32_t>(modelBone.sequence.m_endTime - sampleTime) <= 0) {
+                    int32_t span = modelBone.sequence.m_endTime - modelBone.sequence.m_startTime;
+                    currentTime = modelBone.sequence.m_startOffset + CMath::fuint(span * modelBone.sequence.m_speed);
+                    currentTime = currentTime >= 0 ? std::min(currentTime, static_cast<int32_t>(sequence.duration)) : 0;
+                    clamped = true;
+                } else if (static_cast<int32_t>(modelBone.sequence.m_startTime - sampleTime) > 0) {
+                    sampleTime = modelBone.sequence.m_startTime;
                 }
             }
 
-            modelBone.sequence.uint0 = v47;
-            modelBone.sequence.uint4 = modelBone.sequence.uint8;
-            modelBone.sequence.uint6 = i;
+            if (!clamped && sequence.duration) {
+                int32_t span = sampleTime - modelBone.sequence.m_startTime;
+                currentTime = (modelBone.sequence.m_startOffset + CMath::fuint(span * modelBone.sequence.m_speed)) % sequence.duration;
+            }
+
+            modelBone.sequence.m_currentTime = currentTime;
+            modelBone.sequence.m_animIndex = modelBone.sequence.m_sequenceIndex;
+            modelBone.sequence.m_sourceBoneIndex = i;
         }
 
-        // TODO
+        if (modelBone.secondarySequence.m_sequenceIndex == 0xFFFF) {
+            if (bone.parentIndex < data->bones.Count()) {
+                auto& parentBone = this->m_bones[bone.parentIndex];
+                modelBone.secondarySequence.m_currentTime = parentBone.secondarySequence.m_currentTime;
+                modelBone.secondarySequence.m_animIndex = parentBone.secondarySequence.m_animIndex;
+            } else if (i != 0) {
+                modelBone.secondarySequence.m_currentTime = this->m_bones[0].secondarySequence.m_currentTime;
+                modelBone.secondarySequence.m_animIndex = this->m_bones[0].secondarySequence.m_animIndex;
+            } else {
+                modelBone.secondarySequence.m_currentTime = modelBone.sequence.m_currentTime;
+                modelBone.secondarySequence.m_animIndex = modelBone.sequence.m_animIndex;
+            }
+        } else {
+            if (this->m_lastAnimTime) {
+                modelBone.secondarySequence.m_startTime += elapsedTime;
+                modelBone.secondarySequence.m_endTime += elapsedTime;
+            }
 
-        uint32_t boneFlags = bone.flags | modelBone.flags;
+            auto& sequence = data->sequences[modelBone.secondarySequence.m_sequenceIndex];
+            int32_t sampleTime = this->m_scene->m_time;
+            int32_t currentTime = 0;
+            bool clamped = false;
 
+            if (sequence.flags & 0x1) {
+                if (static_cast<int32_t>(modelBone.secondarySequence.m_endTime - sampleTime) <= 0) {
+                    int32_t span = modelBone.secondarySequence.m_endTime - modelBone.secondarySequence.m_startTime;
+                    currentTime = modelBone.secondarySequence.m_startOffset + CMath::fuint(span * modelBone.secondarySequence.m_speed);
+                    currentTime = currentTime >= 0 ? std::min(currentTime, static_cast<int32_t>(sequence.duration)) : 0;
+                    clamped = true;
+                } else if (static_cast<int32_t>(modelBone.secondarySequence.m_startTime - sampleTime) > 0) {
+                    sampleTime = modelBone.secondarySequence.m_startTime;
+                }
+            }
+
+            if (!clamped && sequence.duration) {
+                int32_t span = sampleTime - modelBone.secondarySequence.m_startTime;
+                currentTime = (modelBone.secondarySequence.m_startOffset + CMath::fuint(span * modelBone.secondarySequence.m_speed)) % sequence.duration;
+            }
+
+            modelBone.secondarySequence.m_currentTime = currentTime;
+            modelBone.secondarySequence.m_animIndex = modelBone.secondarySequence.m_sequenceIndex;
+
+            if (static_cast<int32_t>(this->m_scene->m_time - modelBone.m_blendEndTime) >= 0) {
+                modelBone.secondarySequence.m_sequenceIndex = 0xFFFF;
+            }
+        }
+
+        if (modelBone.sequence.m_sequenceIndex == 0xFFFF && modelBone.secondarySequence.m_sequenceIndex == 0xFFFF) {
+            if (bone.parentIndex < data->bones.Count()) {
+                modelBone.m_blendFactor = this->m_bones[bone.parentIndex].m_blendFactor;
+            } else if (i != 0) {
+                modelBone.m_blendFactor = this->m_bones[0].m_blendFactor;
+            } else {
+                modelBone.m_blendFactor = 0.0f;
+            }
+        } else {
+            int32_t remaining = modelBone.m_blendEndTime - this->m_scene->m_time;
+            bool sameSample = modelBone.sequence.m_currentTime == modelBone.secondarySequence.m_currentTime && modelBone.sequence.m_animIndex == modelBone.secondarySequence.m_animIndex;
+
+            if (remaining <= 0 || sameSample) {
+                modelBone.m_blendFactor = 0.0f;
+            } else {
+                float t = remaining * modelBone.m_invBlendDuration;
+
+                if (t < 0.0f) {
+                    modelBone.m_blendFactor = 0.0f * modelBone.m_blendWeightMax;
+                } else if (t > 1.0f) {
+                    modelBone.m_blendFactor = 1.0f * modelBone.m_blendWeightMax;
+                } else {
+                    modelBone.m_blendFactor = t * ((3.0f - (t + t)) * t) * modelBone.m_blendWeightMax;
+                }
+            }
+        }
+
+        uint32_t boneFlags = bone.flags | modelBone.m_flags;
+        C44Matrix billboardParent;
         C44Matrix* boneParentMatrix;
 
         if (bone.parentIndex == 0xFFFF) {
@@ -390,75 +501,117 @@ void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vect
         } else {
             boneParentMatrix = &this->m_boneMatrices[bone.parentIndex];
 
-            if (boneFlags & (0x1 | 0x2 | 0x4)) {
-                // TODO
+            if (boneFlags & 0x7) {
+                billboardParent = this->m_boneMatrices[bone.parentIndex];
+                boneParentMatrix = &billboardParent;
+
+                C3Vector pivot = billboardParent.TransformPoint(bone.pivot);
+
+                if ((boneFlags & 0x6) == 0x2) {
+                    C3Vector rowA = { billboardParent.a0, billboardParent.a1, billboardParent.a2 };
+                    C3Vector rowB = { billboardParent.b0, billboardParent.b1, billboardParent.b2 };
+                    C3Vector rowC = { billboardParent.c0, billboardParent.c1, billboardParent.c2 };
+                    rowA.Normalize();
+                    rowB.Normalize();
+                    rowC.Normalize();
+
+                    float lenA = sqrt(this->matrixF4.a2 * this->matrixF4.a2 + this->matrixF4.a1 * this->matrixF4.a1 + this->matrixF4.a0 * this->matrixF4.a0);
+                    billboardParent.a0 = rowA.x * lenA;
+                    billboardParent.a1 = rowA.y * lenA;
+                    billboardParent.a2 = rowA.z * lenA;
+
+                    float lenB = sqrt(this->matrixF4.b2 * this->matrixF4.b2 + this->matrixF4.b1 * this->matrixF4.b1 + this->matrixF4.b0 * this->matrixF4.b0);
+                    billboardParent.b0 = rowB.x * lenB;
+                    billboardParent.b1 = rowB.y * lenB;
+                    billboardParent.b2 = rowB.z * lenB;
+
+                    float lenC = sqrt(this->matrixF4.c2 * this->matrixF4.c2 + this->matrixF4.c1 * this->matrixF4.c1 + this->matrixF4.c0 * this->matrixF4.c0);
+                    billboardParent.c0 = rowC.x * lenC;
+                    billboardParent.c1 = rowC.y * lenC;
+                    billboardParent.c2 = rowC.z * lenC;
+                } else if ((boneFlags & 0x6) == 0x4) {
+                    float refA = this->matrixF4.a2 * this->matrixF4.a2 + this->matrixF4.a1 * this->matrixF4.a1 + this->matrixF4.a0 * this->matrixF4.a0;
+                    float scaleA = refA <= 0.0000099999997f ? 1.0f : sqrt((billboardParent.a0 * billboardParent.a0 + billboardParent.a2 * billboardParent.a2 + billboardParent.a1 * billboardParent.a1) / refA);
+                    billboardParent.a0 = this->matrixF4.a0 * scaleA;
+                    billboardParent.a1 = this->matrixF4.a1 * scaleA;
+                    billboardParent.a2 = this->matrixF4.a2 * scaleA;
+
+                    float refB = this->matrixF4.b2 * this->matrixF4.b2 + this->matrixF4.b1 * this->matrixF4.b1 + this->matrixF4.b0 * this->matrixF4.b0;
+                    float scaleB = refB <= 0.0000099999997f ? 1.0f : sqrt((billboardParent.b2 * billboardParent.b2 + billboardParent.b1 * billboardParent.b1 + billboardParent.b0 * billboardParent.b0) / refB);
+                    billboardParent.b0 = this->matrixF4.b0 * scaleB;
+                    billboardParent.b1 = this->matrixF4.b1 * scaleB;
+                    billboardParent.b2 = this->matrixF4.b2 * scaleB;
+
+                    float refC = this->matrixF4.c2 * this->matrixF4.c2 + this->matrixF4.c1 * this->matrixF4.c1 + this->matrixF4.c0 * this->matrixF4.c0;
+                    float scaleC = refC <= 0.0000099999997f ? 1.0f : sqrt((billboardParent.c2 * billboardParent.c2 + billboardParent.c1 * billboardParent.c1 + billboardParent.c0 * billboardParent.c0) / refC);
+                    billboardParent.c0 = this->matrixF4.c0 * scaleC;
+                    billboardParent.c1 = this->matrixF4.c1 * scaleC;
+                    billboardParent.c2 = this->matrixF4.c2 * scaleC;
+                } else if ((boneFlags & 0x6) == 0x6) {
+                    billboardParent.a0 = this->matrixF4.a0;
+                    billboardParent.a1 = this->matrixF4.a1;
+                    billboardParent.a2 = this->matrixF4.a2;
+                    billboardParent.b0 = this->matrixF4.b0;
+                    billboardParent.b1 = this->matrixF4.b1;
+                    billboardParent.b2 = this->matrixF4.b2;
+                    billboardParent.c0 = this->matrixF4.c0;
+                    billboardParent.c1 = this->matrixF4.c1;
+                    billboardParent.c2 = this->matrixF4.c2;
+                }
+
+                if (boneFlags & 0x1) {
+                    billboardParent.d0 = this->matrixF4.d0;
+                    billboardParent.d1 = this->matrixF4.d1;
+                    billboardParent.d2 = this->matrixF4.d2;
+                } else {
+                    billboardParent.d0 = pivot.x - (bone.pivot.x * billboardParent.a0 + bone.pivot.y * billboardParent.b0 + bone.pivot.z * billboardParent.c0);
+                    billboardParent.d1 = pivot.y - (bone.pivot.x * billboardParent.a1 + bone.pivot.y * billboardParent.b1 + bone.pivot.z * billboardParent.c1);
+                    billboardParent.d2 = pivot.z - (bone.pivot.x * billboardParent.a2 + bone.pivot.y * billboardParent.b2 + bone.pivot.z * billboardParent.c2);
+                }
             }
         }
 
-        if (boneFlags & (0x80 | 0x200)) {
-            C44Matrix boneLocalMatrix;
+        C44Matrix boneLocalMatrix;
 
+        if (boneFlags & 0x280) {
             if (bone.rotationTrack.sequenceTimes.Count()) {
-                auto& rotationTrack = bone.rotationTrack;
-
-                if (
-                    rotationTrack.sequenceTimes.Count() > 1
-                    || (rotationTrack.sequenceTimes.Count() == 1 && rotationTrack.sequenceTimes[0].times.Count() > this->uint90)
-                ) {
+                if (bone.rotationTrack.sequenceTimes.Count() > 1 || (bone.rotationTrack.sequenceTimes.Count() == 1 && bone.rotationTrack.sequenceTimes[0].times.Count() > this->uint90)) {
                     C4Quaternion defaultValue = { 0.0f, 0.0f, 0.0f, 1.0f };
-                    M2AnimateTrack<M2CompQuat, C4Quaternion>(this, &modelBone, rotationTrack, modelBone.rotationTrack, defaultValue);
+                    M2AnimateTrack<M2CompQuat, C4Quaternion>(this, &modelBone, bone.rotationTrack, modelBone.rotationTrack, defaultValue);
                 }
 
                 boneLocalMatrix = C44Matrix(modelBone.rotationTrack.currentValue);
-            } else {
-                // TODO
             }
 
             if (bone.scaleTrack.sequenceTimes.Count()) {
-                auto& scaleTrack = bone.scaleTrack;
-
-                if (
-                    scaleTrack.sequenceTimes.Count() > 1
-                    || (scaleTrack.sequenceTimes.Count() == 1 && scaleTrack.sequenceTimes[0].times.Count() > this->uint90)
-                ) {
+                if (bone.scaleTrack.sequenceTimes.Count() > 1 || (bone.scaleTrack.sequenceTimes.Count() == 1 && bone.scaleTrack.sequenceTimes[0].times.Count() > this->uint90)) {
                     C3Vector defaultValue = { 1.0f, 1.0f, 1.0f };
-                    M2AnimateTrack<C3Vector, C3Vector>(this, &modelBone, scaleTrack, modelBone.scaleTrack, defaultValue);
+                    M2AnimateTrack<C3Vector, C3Vector>(this, &modelBone, bone.scaleTrack, modelBone.scaleTrack, defaultValue);
                 }
 
                 boneLocalMatrix.Scale(modelBone.scaleTrack.currentValue);
             }
 
-            // TODO
-            // conditional involving bone flags and a matrix member of M2ModelBone
+            if ((boneFlags & 0x80000000) != 0 && modelBone.m_proceduralTransform) {
+                boneLocalMatrix *= *modelBone.m_proceduralTransform;
+            }
 
-            C3Vector translation;
+            C3Vector translation = bone.pivot;
 
             if (bone.translationTrack.sequenceTimes.Count()) {
-                auto& translationTrack = bone.translationTrack;
-
-                if (
-                    translationTrack.sequenceTimes.Count() > 1
-                    || (translationTrack.sequenceTimes.Count() == 1 && translationTrack.sequenceTimes[0].times.Count() > this->uint90)
-                ) {
+                if (bone.translationTrack.sequenceTimes.Count() > 1 || (bone.translationTrack.sequenceTimes.Count() == 1 && bone.translationTrack.sequenceTimes[0].times.Count() > this->uint90)) {
                     C3Vector defaultValue = { 0.0f, 0.0f, 0.0f };
-                    M2AnimateTrack<C3Vector, C3Vector>(this, &modelBone, translationTrack, modelBone.translationTrack, defaultValue);
+                    M2AnimateTrack<C3Vector, C3Vector>(this, &modelBone, bone.translationTrack, modelBone.translationTrack, defaultValue);
                 }
 
                 translation = modelBone.translationTrack.currentValue + bone.pivot;
-            } else {
-                translation = bone.pivot;
             }
 
             boneLocalMatrix.d0 += translation.x;
             boneLocalMatrix.d1 += translation.y;
             boneLocalMatrix.d2 += translation.z;
 
-            C3Vector negPivot = {
-                -bone.pivot.x,
-                -bone.pivot.y,
-                -bone.pivot.z
-            };
-
+            C3Vector negPivot = { -bone.pivot.x, -bone.pivot.y, -bone.pivot.z };
             boneLocalMatrix.Translate(negPivot);
 
             this->m_boneMatrices[i] = boneLocalMatrix * *boneParentMatrix;
@@ -466,219 +619,242 @@ void CM2Model::AnimateMT(const C44Matrix* view, const C3Vector& a3, const C3Vect
             this->m_boneMatrices[i] = *boneParentMatrix;
         }
 
-        if (boneFlags & (0x8 | 0x10 | 0x20 | 0x40)) {
-            // TODO
-        }
+        if (boneFlags & 0x78) {
+            C44Matrix& boneMatrix = this->m_boneMatrices[i];
 
-        // TODO
+            C3Vector basisLengths;
+            basisLengths.x = sqrt(boneMatrix.a0 * boneMatrix.a0 + boneMatrix.a1 * boneMatrix.a1 + boneMatrix.a2 * boneMatrix.a2);
+            basisLengths.y = sqrt(boneMatrix.b2 * boneMatrix.b2 + boneMatrix.b1 * boneMatrix.b1 + boneMatrix.b0 * boneMatrix.b0);
+            basisLengths.z = sqrt(boneMatrix.c2 * boneMatrix.c2 + boneMatrix.c1 * boneMatrix.c1 + boneMatrix.c0 * boneMatrix.c0);
+
+            C3Vector pivot = boneMatrix.TransformPoint(bone.pivot);
+
+            if ((boneFlags & 0x78) == 0x8) {
+                if (boneFlags & 0x280) {
+                    C3Vector rowA = { boneLocalMatrix.a1, boneLocalMatrix.a2, -boneLocalMatrix.a0 };
+                    C3Vector rowB = { boneLocalMatrix.b1, boneLocalMatrix.b2, -boneLocalMatrix.b0 };
+                    C3Vector rowC = { boneLocalMatrix.c1, boneLocalMatrix.c2, -boneLocalMatrix.c0 };
+                    rowA.Normalize();
+                    rowB.Normalize();
+                    rowC.Normalize();
+
+                    boneMatrix.a0 = rowA.x;
+                    boneMatrix.a1 = rowA.y;
+                    boneMatrix.a2 = rowA.z;
+                    boneMatrix.b0 = rowB.x;
+                    boneMatrix.b1 = rowB.y;
+                    boneMatrix.b2 = rowB.z;
+                    boneMatrix.c0 = rowC.x;
+                    boneMatrix.c1 = rowC.y;
+                    boneMatrix.c2 = rowC.z;
+                } else {
+                    boneMatrix.a0 = 0.0f;
+                    boneMatrix.a1 = 0.0f;
+                    boneMatrix.a2 = -1.0f;
+                    boneMatrix.b0 = 1.0f;
+                    boneMatrix.b1 = 0.0f;
+                    boneMatrix.b2 = 0.0f;
+                    boneMatrix.c0 = 0.0f;
+                    boneMatrix.c1 = 1.0f;
+                    boneMatrix.c2 = 0.0f;
+                }
+            } else if ((boneFlags & 0x78) == 0x10) {
+                C3Vector rowA = { boneMatrix.a0, boneMatrix.a1, boneMatrix.a2 };
+                rowA.Normalize();
+                boneMatrix.a0 = rowA.x;
+                boneMatrix.a1 = rowA.y;
+                boneMatrix.a2 = rowA.z;
+
+                C3Vector rowB = { boneMatrix.a1, -boneMatrix.a0, 0.0f };
+                rowB.Normalize();
+                boneMatrix.b0 = rowB.x;
+                boneMatrix.b1 = rowB.y;
+                boneMatrix.b2 = rowB.z;
+
+                boneMatrix.c0 = boneMatrix.a2 * boneMatrix.b1 - boneMatrix.b2 * boneMatrix.a1;
+                boneMatrix.c1 = boneMatrix.a0 * boneMatrix.b2 - boneMatrix.b0 * boneMatrix.a2;
+                boneMatrix.c2 = boneMatrix.b0 * boneMatrix.a1 - boneMatrix.a0 * boneMatrix.b1;
+            } else if ((boneFlags & 0x78) == 0x20) {
+                C3Vector rowB = { boneMatrix.b0, boneMatrix.b1, boneMatrix.b2 };
+                rowB.Normalize();
+                boneMatrix.b0 = rowB.x;
+                boneMatrix.b1 = rowB.y;
+                boneMatrix.b2 = rowB.z;
+
+                C3Vector rowA = { -boneMatrix.b1, boneMatrix.b0, 0.0f };
+                rowA.Normalize();
+                boneMatrix.a0 = rowA.x;
+                boneMatrix.a1 = rowA.y;
+                boneMatrix.a2 = rowA.z;
+
+                boneMatrix.c0 = boneMatrix.a2 * boneMatrix.b1 - boneMatrix.b2 * boneMatrix.a1;
+                boneMatrix.c1 = boneMatrix.a0 * boneMatrix.b2 - boneMatrix.b0 * boneMatrix.a2;
+                boneMatrix.c2 = boneMatrix.b0 * boneMatrix.a1 - boneMatrix.a0 * boneMatrix.b1;
+            } else if ((boneFlags & 0x78) == 0x40) {
+                C3Vector rowC = { boneMatrix.c0, boneMatrix.c1, boneMatrix.c2 };
+                rowC.Normalize();
+                boneMatrix.c0 = rowC.x;
+                boneMatrix.c1 = rowC.y;
+                boneMatrix.c2 = rowC.z;
+
+                C3Vector rowB = { boneMatrix.c1, -boneMatrix.c0, 0.0f };
+                rowB.Normalize();
+                boneMatrix.b0 = rowB.x;
+                boneMatrix.b1 = rowB.y;
+                boneMatrix.b2 = rowB.z;
+
+                boneMatrix.a0 = boneMatrix.c1 * boneMatrix.b2 - boneMatrix.c2 * boneMatrix.b1;
+                boneMatrix.a1 = boneMatrix.b0 * boneMatrix.c2 - boneMatrix.b2 * boneMatrix.c0;
+                boneMatrix.a2 = boneMatrix.b1 * boneMatrix.c0 - boneMatrix.b0 * boneMatrix.c1;
+            }
+
+            boneMatrix.Scale(basisLengths);
+
+            boneMatrix.d0 = pivot.x - (boneMatrix.a0 * bone.pivot.x + boneMatrix.b0 * bone.pivot.y + boneMatrix.c0 * bone.pivot.z);
+            boneMatrix.d1 = pivot.y - (boneMatrix.a1 * bone.pivot.x + boneMatrix.b1 * bone.pivot.y + boneMatrix.c1 * bone.pivot.z);
+            boneMatrix.d2 = pivot.z - (boneMatrix.a2 * bone.pivot.x + boneMatrix.b2 * bone.pivot.y + boneMatrix.c2 * bone.pivot.z);
+            boneMatrix.a3 = 0.0f;
+            boneMatrix.b3 = 0.0f;
+            boneMatrix.c3 = 0.0f;
+            boneMatrix.d3 = 1.0f;
+        }
     }
 
-    for (int32_t i = 0; i < this->m_shared->m_data->colors.Count(); i++) {
-        auto& color = this->m_shared->m_data->colors[i];
+    for (uint32_t i = 0; i < data->colors.Count(); i++) {
+        auto& color = data->colors[i];
         auto& modelColor = this->m_colors[i];
 
-        auto& colorTrack = color.colorTrack;
-        if (
-            colorTrack.sequenceTimes.Count() > 1
-            || (colorTrack.sequenceTimes.Count() == 1 && colorTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (color.colorTrack.sequenceTimes.Count() > 1 || (color.colorTrack.sequenceTimes.Count() == 1 && color.colorTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             C3Vector defaultValue = { 0.0f, 0.0f, 0.0f };
-            M2AnimateTrack<C3Vector, C3Vector>(
-                this,
-                this->m_bones,
-                color.colorTrack,
-                modelColor.colorTrack,
-                defaultValue
-            );
+            M2AnimateTrack<C3Vector, C3Vector>(this, this->m_bones, color.colorTrack, modelColor.colorTrack, defaultValue);
         }
 
-        auto& alphaTrack = color.alphaTrack;
-        if (
-            alphaTrack.sequenceTimes.Count() > 1
-            || (alphaTrack.sequenceTimes.Count() == 1 && alphaTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (color.alphaTrack.sequenceTimes.Count() > 1 || (color.alphaTrack.sequenceTimes.Count() == 1 && color.alphaTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             float defaultValue = 1.0f;
-            M2AnimateTrack<fixed16, float>(
-                this,
-                this->m_bones,
-                color.alphaTrack,
-                modelColor.alphaTrack,
-                defaultValue
-            );
+            M2AnimateTrack<fixed16, float>(this, this->m_bones, color.alphaTrack, modelColor.alphaTrack, defaultValue);
         }
     }
 
-    for (int32_t i = 0; i < this->m_shared->m_data->textureWeights.Count(); i++) {
-        auto& textureWeight = this->m_shared->m_data->textureWeights[i];
+    for (uint32_t i = 0; i < data->textureWeights.Count(); i++) {
+        auto& textureWeight = data->textureWeights[i];
         auto& modelTextureWeight = this->m_textureWeights[i];
 
-        auto& weightTrack = textureWeight.weightTrack;
-        if (
-            weightTrack.sequenceTimes.Count() > 1
-            || (weightTrack.sequenceTimes.Count() == 1 && weightTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (textureWeight.weightTrack.sequenceTimes.Count() > 1 || (textureWeight.weightTrack.sequenceTimes.Count() == 1 && textureWeight.weightTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             float defaultValue = 1.0f;
-            M2AnimateTrack<fixed16, float>(
-                this,
-                this->m_bones,
-                textureWeight.weightTrack,
-                modelTextureWeight.weightTrack,
-                defaultValue
-            );
+            M2AnimateTrack<fixed16, float>(this, this->m_bones, textureWeight.weightTrack, modelTextureWeight.weightTrack, defaultValue);
         }
     }
 
-    if (this->m_shared->m_data->textureTransforms.Count()) {
+    if (data->textureTransforms.Count()) {
         this->AnimateTextureTransformsMT();
     }
 
-    for (int32_t i = 0; i < this->m_shared->m_data->lights.Count(); i++) {
-        auto& light = this->m_shared->m_data->lights[i];
+    for (uint32_t i = 0; i < data->lights.Count(); i++) {
+        auto& light = data->lights[i];
         auto& modelLight = this->m_lights[i];
 
-        if (modelLight.uint64) {
+        if (modelLight.uint64 && light.visibilityTrack.sequenceTimes.Count()) {
             uint8_t defaultValue = 1;
-            M2AnimateTrack<uint8_t, uint8_t>(
-                this,
-                &this->m_bones[light.boneIndex],
-                light.visibilityTrack,
-                modelLight.visibilityTrack,
-                defaultValue
-            );
+            M2AnimateTrack<uint8_t, uint8_t>(this, &this->m_bones[light.boneIndex], light.visibilityTrack, modelLight.visibilityTrack, defaultValue);
         }
 
         if ((modelLight.uint64 == 0 || modelLight.visibilityTrack.currentValue == 0) && this->uint90) {
             continue;
         }
 
-        auto& ambientIntensityTrack = light.ambientIntensityTrack;
-        if (
-            ambientIntensityTrack.sequenceTimes.Count() > 1
-            || (ambientIntensityTrack.sequenceTimes.Count() == 1 && ambientIntensityTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (light.ambientIntensityTrack.sequenceTimes.Count() > 1 || (light.ambientIntensityTrack.sequenceTimes.Count() == 1 && light.ambientIntensityTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             float defaultValue = 0.0f;
-            M2AnimateTrack<float, float>(
-                this,
-                &this->m_bones[light.boneIndex],
-                light.ambientIntensityTrack,
-                modelLight.ambientIntensityTrack,
-                defaultValue
-            );
+            M2AnimateTrack<float, float>(this, &this->m_bones[light.boneIndex], light.ambientIntensityTrack, modelLight.ambientIntensityTrack, defaultValue);
         }
 
-        auto& ambientColorTrack = light.ambientColorTrack;
-        if (
-            ambientColorTrack.sequenceTimes.Count() > 1
-            || (ambientColorTrack.sequenceTimes.Count() == 1 && ambientColorTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (light.ambientColorTrack.sequenceTimes.Count() > 1 || (light.ambientColorTrack.sequenceTimes.Count() == 1 && light.ambientColorTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             C3Vector defaultValue = { 0.0f, 0.0f, 0.0f };
-            M2AnimateTrack<C3Vector, C3Vector>(
-                this,
-                &this->m_bones[light.boneIndex],
-                light.ambientColorTrack,
-                modelLight.ambientColorTrack,
-                defaultValue
-            );
+            M2AnimateTrack<C3Vector, C3Vector>(this, &this->m_bones[light.boneIndex], light.ambientColorTrack, modelLight.ambientColorTrack, defaultValue);
 
             float mul = modelLight.ambientIntensityTrack.currentValue * this->float198;
-
             modelLight.light.m_ambColor.x = modelLight.ambientColorTrack.currentValue.x * mul;
             modelLight.light.m_ambColor.y = modelLight.ambientColorTrack.currentValue.y * mul;
             modelLight.light.m_ambColor.z = modelLight.ambientColorTrack.currentValue.z * mul;
         }
 
-        auto& diffuseIntensityTrack = light.diffuseIntensityTrack;
-        if (
-            diffuseIntensityTrack.sequenceTimes.Count() > 1
-            || (diffuseIntensityTrack.sequenceTimes.Count() == 1 && diffuseIntensityTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (light.diffuseIntensityTrack.sequenceTimes.Count() > 1 || (light.diffuseIntensityTrack.sequenceTimes.Count() == 1 && light.diffuseIntensityTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             float defaultValue = 0.0f;
-            M2AnimateTrack<float, float>(
-                this,
-                &this->m_bones[light.boneIndex],
-                light.diffuseIntensityTrack,
-                modelLight.diffuseIntensityTrack,
-                defaultValue
-            );
+            M2AnimateTrack<float, float>(this, &this->m_bones[light.boneIndex], light.diffuseIntensityTrack, modelLight.diffuseIntensityTrack, defaultValue);
         }
 
-        auto& diffuseColorTrack = light.diffuseColorTrack;
-        if (
-            diffuseColorTrack.sequenceTimes.Count() > 1
-            || (diffuseColorTrack.sequenceTimes.Count() == 1 && diffuseColorTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (light.diffuseColorTrack.sequenceTimes.Count() > 1 || (light.diffuseColorTrack.sequenceTimes.Count() == 1 && light.diffuseColorTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             C3Vector defaultValue = { 0.0f, 0.0f, 0.0f };
-            M2AnimateTrack<C3Vector, C3Vector>(
-                this,
-                &this->m_bones[light.boneIndex],
-                light.diffuseColorTrack,
-                modelLight.diffuseColorTrack,
-                defaultValue
-            );
+            M2AnimateTrack<C3Vector, C3Vector>(this, &this->m_bones[light.boneIndex], light.diffuseColorTrack, modelLight.diffuseColorTrack, defaultValue);
 
             float mul = modelLight.diffuseIntensityTrack.currentValue * this->float198;
-
-            modelLight.light.m_dirColor.x = modelLight.ambientColorTrack.currentValue.x * mul;
-            modelLight.light.m_dirColor.y = modelLight.ambientColorTrack.currentValue.y * mul;
-            modelLight.light.m_dirColor.z = modelLight.ambientColorTrack.currentValue.z * mul;
+            modelLight.light.m_dirColor.x = modelLight.diffuseColorTrack.currentValue.x * mul;
+            modelLight.light.m_dirColor.y = modelLight.diffuseColorTrack.currentValue.y * mul;
+            modelLight.light.m_dirColor.z = modelLight.diffuseColorTrack.currentValue.z * mul;
         }
     }
 
-    for (int32_t i = 0; i < this->m_shared->m_data->cameras.Count(); i++) {
-        auto& camera = this->m_shared->m_data->cameras[i];
+    for (uint32_t i = 0; i < data->cameras.Count(); i++) {
+        auto& camera = data->cameras[i];
         auto& modelCamera = this->m_cameras[i];
 
-        auto& positionTrack = camera.positionTrack;
-        if (
-            positionTrack.sequenceTimes.Count() > 1
-            || (positionTrack.sequenceTimes.Count() == 1 && positionTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (camera.positionTrack.sequenceTimes.Count() > 1 || (camera.positionTrack.sequenceTimes.Count() == 1 && camera.positionTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             C3Vector defaultValue = { 0.0f, 0.0f, 0.0f };
-            M2AnimateSplineTrack<M2SplineKey<C3Vector>, C3Vector>(
-                this,
-                this->m_bones,
-                camera.positionTrack,
-                modelCamera.positionTrack,
-                defaultValue
-            );
+            M2AnimateSplineTrack<M2SplineKey<C3Vector>, C3Vector>(this, this->m_bones, camera.positionTrack, modelCamera.positionTrack, defaultValue);
         }
 
-        auto& targetTrack = camera.targetTrack;
-        if (
-            targetTrack.sequenceTimes.Count() > 1
-            || (targetTrack.sequenceTimes.Count() == 1 && targetTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (camera.targetTrack.sequenceTimes.Count() > 1 || (camera.targetTrack.sequenceTimes.Count() == 1 && camera.targetTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             C3Vector defaultValue = { 0.0f, 0.0f, 0.0f };
-            M2AnimateSplineTrack<M2SplineKey<C3Vector>, C3Vector>(
-                this,
-                this->m_bones,
-                camera.targetTrack,
-                modelCamera.targetTrack,
-                defaultValue
-            );
+            M2AnimateSplineTrack<M2SplineKey<C3Vector>, C3Vector>(this, this->m_bones, camera.targetTrack, modelCamera.targetTrack, defaultValue);
         }
 
-        auto& rollTrack = camera.rollTrack;
-        if (
-            rollTrack.sequenceTimes.Count() > 1
-            || (rollTrack.sequenceTimes.Count() == 1 && rollTrack.sequenceTimes[0].times.Count() > this->uint90)
-        ) {
+        if (camera.rollTrack.sequenceTimes.Count() > 1 || (camera.rollTrack.sequenceTimes.Count() == 1 && camera.rollTrack.sequenceTimes[0].times.Count() > this->uint90)) {
             float defaultValue = 0.0f;
-            M2AnimateSplineTrack<M2SplineKey<float>, float>(
-                this,
-                this->m_bones,
-                camera.rollTrack,
-                modelCamera.rollTrack,
-                defaultValue
-            );
+            M2AnimateSplineTrack<M2SplineKey<float>, float>(this, this->m_bones, camera.rollTrack, modelCamera.rollTrack, defaultValue);
         }
     }
 
-    this->f_flags &= ~0x400u;
-    //if (v194->particles.count)
-    //    bn_CM2Model_AnimateParticlesMT(this);
+    //for (uint32_t i = 0; i < data->ribbons.Count(); i++) {
+    //    auto& ribbon = data->ribbons[i];
+    //    auto& modelRibbon = this->m_ribbons[i];
+    //
+    //    if (ribbon.visibilityTrack.sequenceTimes.Count() > 1 || (ribbon.visibilityTrack.sequenceTimes.Count() == 1 && ribbon.visibilityTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+    //        uint8_t defaultValue = 1;
+    //        M2AnimateTrack<uint8_t, uint8_t>(this, &this->m_bones[ribbon.boneIndex], ribbon.visibilityTrack, modelRibbon.visibilityTrack, defaultValue);
+    //    }
+    //
+    //    if (ribbon.colorTrack.sequenceTimes.Count() > 1 || (ribbon.colorTrack.sequenceTimes.Count() == 1 && ribbon.colorTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+    //        C3Vector defaultValue = { 0.0f, 0.0f, 0.0f };
+    //        M2AnimateTrack<C3Vector, C3Vector>(this, &this->m_bones[ribbon.boneIndex], ribbon.colorTrack, modelRibbon.colorTrack, defaultValue);
+    //    }
+    //
+    //    if (ribbon.alphaTrack.sequenceTimes.Count() > 1 || (ribbon.alphaTrack.sequenceTimes.Count() == 1 && ribbon.alphaTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+    //        float defaultValue = 1.0f;
+    //        M2AnimateTrack<fixed16, float>(this, &this->m_bones[ribbon.boneIndex], ribbon.alphaTrack, modelRibbon.alphaTrack, defaultValue);
+    //    }
+    //
+    //    if (ribbon.heightAboveTrack.sequenceTimes.Count() > 1 || (ribbon.heightAboveTrack.sequenceTimes.Count() == 1 && ribbon.heightAboveTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+    //        float defaultValue = 0.0f;
+    //        M2AnimateTrack<float, float>(this, &this->m_bones[ribbon.boneIndex], ribbon.heightAboveTrack, modelRibbon.heightAboveTrack, defaultValue);
+    //    }
+    //
+    //    if (ribbon.heightBelowTrack.sequenceTimes.Count() > 1 || (ribbon.heightBelowTrack.sequenceTimes.Count() == 1 && ribbon.heightBelowTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+    //        float defaultValue = 0.0f;
+    //        M2AnimateTrack<float, float>(this, &this->m_bones[ribbon.boneIndex], ribbon.heightBelowTrack, modelRibbon.heightBelowTrack, defaultValue);
+    //    }
+    //
+    //    if (ribbon.textureSlotTrack.sequenceTimes.Count() > 1 || (ribbon.textureSlotTrack.sequenceTimes.Count() == 1 && ribbon.textureSlotTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+    //        uint16_t defaultValue = 0;
+    //        M2AnimateTrack<uint16_t, uint16_t>(this, &this->m_bones[ribbon.boneIndex], ribbon.textureSlotTrack, modelRibbon.textureSlotTrack, defaultValue);
+    //    }
+    //}
 
-    if (/*this->m_attachments ||*/ this->m_attachList) {
+    this->f_flags &= ~0x400u;
+
+    if (data->particles.Count()) {
+        this->AnimateParticlesMT();
+    }
+
+    if (this->m_attachments || this->m_attachList) {
         this->AnimateAttachmentsMT();
     }
 
@@ -689,22 +865,48 @@ void CM2Model::AnimateMTSimple(const C44Matrix* view, const C3Vector& a3, const 
     // TODO
 }
 
+// OFFSET: 0x82E550
 void CM2Model::AnimateAttachmentsMT() {
-    // TODO: Proper implementation
+    M2Data* data = this->m_shared->m_data;
+
+    for (uint32_t i = 0; i < data->attachments.Count(); i++) {
+        auto& attachment = data->attachments[i];
+
+        if (attachment.visibilityTrack.sequenceTimes.Count() > 1 || (attachment.visibilityTrack.sequenceTimes.Count() == 1 && attachment.visibilityTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            uint8_t defaultValue = 1;
+            M2AnimateTrack<uint8_t, uint8_t>(this, &this->m_bones[attachment.boneIndex], attachment.visibilityTrack, this->m_attachments[i].visibilityTrack, defaultValue);
+        }
+    }
 
     for (auto child = this->m_attachList; child; child = child->m_attachNext) {
-        child->m_flag80 = 1;
-        child->m_flag8 = 1;
-
         if (child->m_attachmentIndex == 0xFFFF) {
-            child->AnimateMT(&this->m_boneMatrices[0], this->m_currentDiffuse, this->m_currentEmissive, 1.0f, 1.0f);
+            if (!child->m_flag40000) {
+                continue;
+            }
+
+            C44Matrix matrix = this->m_boneMatrices[0];
+
+            if (child->m_flag1000) {
+                child->AnimateMTSimple(&matrix, this->m_currentDiffuse, this->m_currentEmissive, this->float198, this->alpha19C);
+            } else {
+                child->AnimateMT(&matrix, this->m_currentDiffuse, this->m_currentEmissive, this->float198, this->alpha19C);
+            }
         } else {
-            auto data = &this->m_shared->m_data->attachments[child->m_attachmentIndex];
-            C44Matrix matrix = this->m_boneMatrices[data->boneIndex];
-            matrix.Translate(data->position);
-            child->AnimateMT(&matrix, this->m_currentDiffuse, this->m_currentEmissive, 1.0f, 1.0f);
+            if (!this->m_attachments[child->m_attachmentIndex].visibilityTrack.currentValue) {
+                continue;
+            }
+
+            auto& attachment = this->m_shared->m_data->attachments[child->m_attachmentIndex];
+
+            C44Matrix matrix = this->m_boneMatrices[attachment.boneIndex];
+            matrix.Translate(attachment.position);
+
+            if (child->m_flag1000) {
+                child->AnimateMTSimple(&matrix, this->m_currentDiffuse, this->m_currentEmissive, this->float198, this->alpha19C);
+            } else {
+                child->AnimateMT(&matrix, this->m_currentDiffuse, this->m_currentEmissive, this->float198, this->alpha19C);
+            }
         }
-        
     }
 }
 
@@ -773,7 +975,61 @@ void CM2Model::AnimateST() {
         this->AnimateCamerasST();
     }
 
-    // TODO
+    uint32_t time = this->m_scene->m_time;
+    float dt = (time - this->m_lastEmitterTime) * 0.001f;
+    this->m_lastEmitterTime = time;
+    //v44 = m_data->ribbons.count == 0;
+    //v58 = v26;
+    //v63 = 0;
+    //if (!v44) {
+    //    v62 = 0;
+    //    v61 = 0;
+    //    do {
+    //        v27 = v61 + m_data->ribbons.offset;
+    //        v28 = *(this->unk_02BC + 4 * v63);
+    //        v29 = v62 + this->m_ribbons;
+    //        v30 = *(v27 + 40);
+    //        v55 = v27;
+    //        v59 = v29;
+    //        v64 = v28;
+    //        if (v30 > 1 || v30 == 1 && **(v27 + 44) > this->unk_0090) {
+    //            CRibbonEmitter::SetColor(v28, *(v29 + 8), *(v29 + 12), *(v29 + 16));
+    //            v28 = v64;
+    //        }
+    //        v48 = *(v29 + 28) * this->unk_0170.c2;
+    //        CRibbonEmitter::SetAlpha(v28, v48);
+    //        v31 = *(v27 + 80);
+    //        if (v31 > 1 || v31 == 1 && **(v27 + 84) > this->unk_0090)
+    //            CRibbonEmitter::SetAbove(v64, *(v29 + 40));
+    //        v32 = *(v27 + 100);
+    //        if (v32 > 1 || v32 == 1 && **(v27 + 104) > this->unk_0090)
+    //            CRibbonEmitter::SetBelow(v64, *(v29 + 52));
+    //        v33 = *(v27 + 136);
+    //        if (v33 > 1 || v33 == 1 && **(v27 + 140) > this->unk_0090)
+    //            CRibbonEmitter::SetTexSlot(v64, *(v29 + 64));
+    //        qmemcpy(&v50, &this->m_boneMatrices[*(v27 + 4)], sizeof(v50));
+    //        C44Matrix::Translate(&v50, (v55 + 8));
+    //        C44Matrix::operator*=(&v50, &this->m_scene->m_viewInv);
+    //        v34 = v59;
+    //        v35 = v64;
+    //        CRibbonEmitter::SetDataEnabled(v64, *(v59 + 76) != 0);
+    //        if ((this->f_flags & 0x8000) != 0) {
+    //            a1 = this->unk_0170.a1;
+    //            v57.x = 0.0;
+    //            v57.y = 0.0;
+    //            v57.z = 0.0;
+    //            CRibbonEmitter::SetPos(v35, &v50, &v57.x, LODWORD(a1));
+    //            CRibbonEmitter::Update(v35, v58, *(v34 + 76) == 0);
+    //        }
+    //        v61 += 176;
+    //        v62 += 80;
+    //        v17 = ++v63 < v60->ribbons.count;
+    //        m_data = v60;
+    //    } while (v17);
+    //}
+    for (uint32_t i = 0; i < this->m_shared->m_data->particles.Count(); i++) {
+        this->AnimateParticleST(dt, i);
+    }
 
     if (this->m_flag8) {
         this->m_drawPrev = &this->m_scene->m_drawList;
@@ -785,7 +1041,15 @@ void CM2Model::AnimateST() {
         }
     }
 
-    // TODO
+    if ((this->f_flags & 0x400) != 0 && (this->f_flags & 0x10000) != 0) {
+        this->m_particlePrev = &this->m_scene->m_particleList;
+        this->m_particleNext = this->m_scene->m_particleList;
+        this->m_scene->m_particleList = this;
+
+        if (this->m_particleNext) {
+            this->m_particleNext->m_particlePrev = &this->m_particleNext;
+        }
+    }
 
     for (auto child = this->m_attachList; child; child = child->m_attachNext) {
         // TODO: v43
@@ -831,6 +1095,189 @@ void CM2Model::AnimateTextureTransformsMT() {
             C3Vector defaultValue;
             M2AnimateTrack<C3Vector, C3Vector>(this, this->m_bones, src->translationTrack, dst->translation, defaultValue);
             mtx->Translate(dst->translation.currentValue);
+        }
+    }
+}
+
+// OFFSET: 0x82D2F0
+void CM2Model::AnimateParticlesMT() {
+    auto data = this->m_shared->m_data;
+
+    for (uint32_t i = 0; i < data->particles.Count(); i++) {
+        auto& particle = data->particles[i];
+        auto& modelParticle = this->m_particles[i];
+        auto emitter = this->m_particleEmitters[i];
+
+        if (particle.visibilityTrack.sequenceTimes.Count() > 1 || (particle.visibilityTrack.sequenceTimes.Count() == 1 && particle.visibilityTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            uint8_t defaultValue = 1;
+            M2AnimateTrack<uint8_t, uint8_t>(this, &this->m_bones[particle.boneIndex], particle.visibilityTrack, modelParticle.visibilityTrack, defaultValue);
+        }
+
+        modelParticle.m_emitting = modelParticle.visibilityTrack.currentValue && (emitter->m_flags & 0x2);
+        modelParticle.m_active = modelParticle.m_emitting || emitter->HasLiveParticles();
+
+        if (modelParticle.m_active) {
+            this->f_flags |= 0x400;
+        }
+
+        if (!modelParticle.visibilityTrack.currentValue && this->uint90) {
+            continue;
+        }
+
+        if (particle.speedTrack.sequenceTimes.Count() > 1 || (particle.speedTrack.sequenceTimes.Count() == 1 && particle.speedTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.speedTrack, modelParticle.speedTrack, defaultValue);
+        }
+
+        if (particle.variationTrack.sequenceTimes.Count() > 1 || (particle.variationTrack.sequenceTimes.Count() == 1 && particle.variationTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.variationTrack, modelParticle.variationTrack, defaultValue);
+        }
+
+        if (particle.latitudeTrack.sequenceTimes.Count() > 1 || (particle.latitudeTrack.sequenceTimes.Count() == 1 && particle.latitudeTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.latitudeTrack, modelParticle.latitudeTrack, defaultValue);
+        }
+
+        if (particle.longitudeTrack.sequenceTimes.Count() > 1 || (particle.longitudeTrack.sequenceTimes.Count() == 1 && particle.longitudeTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.longitudeTrack, modelParticle.longitudeTrack, defaultValue);
+        }
+
+        if (particle.gravityTrack.sequenceTimes.Count() > 1 || (particle.gravityTrack.sequenceTimes.Count() == 1 && particle.gravityTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.gravityTrack, modelParticle.gravityTrack, defaultValue);
+        }
+
+        if (particle.lifeTrack.sequenceTimes.Count() > 1 || (particle.lifeTrack.sequenceTimes.Count() == 1 && particle.lifeTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.lifeTrack, modelParticle.lifeTrack, defaultValue);
+        }
+
+        if (particle.emissionRateTrack.sequenceTimes.Count() > 1 || (particle.emissionRateTrack.sequenceTimes.Count() == 1 && particle.emissionRateTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.emissionRateTrack, modelParticle.emissionRateTrack, defaultValue);
+        }
+
+        if (particle.widthTrack.sequenceTimes.Count() > 1 || (particle.widthTrack.sequenceTimes.Count() == 1 && particle.widthTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.widthTrack, modelParticle.widthTrack, defaultValue);
+        }
+
+        if (particle.lengthTrack.sequenceTimes.Count() > 1 || (particle.lengthTrack.sequenceTimes.Count() == 1 && particle.lengthTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.lengthTrack, modelParticle.lengthTrack, defaultValue);
+        }
+
+        if (particle.zsourceTrack.sequenceTimes.Count() > 1 || (particle.zsourceTrack.sequenceTimes.Count() == 1 && particle.zsourceTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            float defaultValue = 0.0f;
+            M2AnimateTrack<float, float>(this, &this->m_bones[particle.boneIndex], particle.zsourceTrack, modelParticle.zsourceTrack, defaultValue);
+        }
+    }
+}
+
+// OFFSET: 0x8309C0
+void CM2Model::AnimateParticleST(float dt, uint32_t index) {
+    if ((this->f_flags & 0x1) == 0) {
+        return;
+    }
+
+    auto& particle = this->m_shared->m_data->particles[index];
+    auto& modelParticle = this->m_particles[index];
+    auto emitter = this->m_particleEmitters[index];
+
+    if ((particle.flags & 0x8000) == 0) {
+        if (modelParticle.m_emitting) {
+            emitter->m_flags |= 0x1;
+        } else {
+            emitter->m_flags &= ~0x1u;
+        }
+    } else if (modelParticle.visibilityTrack.currentValue && modelParticle.emissionRateTrack.currentValue > 0.0f) {
+        if (!modelParticle.m_burstFired) {
+            emitter->m_flags |= 0x40;
+        }
+
+        modelParticle.m_burstFired = 1;
+    } else {
+        modelParticle.m_burstFired = 0;
+    }
+
+    float rate = 0.0f;
+
+    if (modelParticle.m_emitting) {
+        rate = modelParticle.emissionRateTrack.currentValue;
+    }
+
+    emitter->SetEmissionRate(rate);
+
+    if (modelParticle.visibilityTrack.currentValue || !this->uint90) {
+        if (particle.speedTrack.sequenceTimes.Count() > 1 || (particle.speedTrack.sequenceTimes.Count() == 1 && particle.speedTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->m_speed = modelParticle.speedTrack.currentValue;
+        }
+
+        if (particle.variationTrack.sequenceTimes.Count() > 1 || (particle.variationTrack.sequenceTimes.Count() == 1 && particle.variationTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->m_variation = modelParticle.variationTrack.currentValue;
+        }
+
+        if (particle.latitudeTrack.sequenceTimes.Count() > 1 || (particle.latitudeTrack.sequenceTimes.Count() == 1 && particle.latitudeTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->SetLatitude(modelParticle.latitudeTrack.currentValue);
+        }
+
+        if (particle.longitudeTrack.sequenceTimes.Count() > 1 || (particle.longitudeTrack.sequenceTimes.Count() == 1 && particle.longitudeTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->SetLongitude(modelParticle.longitudeTrack.currentValue);
+        }
+
+        if (particle.gravityTrack.sequenceTimes.Count() > 1 || (particle.gravityTrack.sequenceTimes.Count() == 1 && particle.gravityTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->m_gravity = modelParticle.gravityTrack.currentValue;
+        }
+
+        if (particle.lifeTrack.sequenceTimes.Count() > 1 || (particle.lifeTrack.sequenceTimes.Count() == 1 && particle.lifeTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->m_life = modelParticle.lifeTrack.currentValue;
+        }
+
+        if (particle.widthTrack.sequenceTimes.Count() > 1 || (particle.widthTrack.sequenceTimes.Count() == 1 && particle.widthTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->SetWidth(modelParticle.widthTrack.currentValue);
+        }
+
+        if (particle.lengthTrack.sequenceTimes.Count() > 1 || (particle.lengthTrack.sequenceTimes.Count() == 1 && particle.lengthTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->SetHeight(modelParticle.lengthTrack.currentValue);
+        }
+
+        if (particle.zsourceTrack.sequenceTimes.Count() > 1 || (particle.zsourceTrack.sequenceTimes.Count() == 1 && particle.zsourceTrack.sequenceTimes[0].times.Count() > this->uint90)) {
+            emitter->SetZsource(modelParticle.zsourceTrack.currentValue);
+        }
+
+        float alpha = this->float198;
+
+        if (alpha < 0.0f) {
+            alpha = 0.0f;
+        } else if (alpha >= 1.0f) {
+            alpha = 1.0f;
+        }
+
+        emitter->m_alphaScale = alpha;
+    }
+
+    if (modelParticle.m_active) {
+        C44Matrix xform = this->m_boneMatrices[particle.boneIndex];
+        xform.Translate(particle.position);
+        xform *= this->m_scene->m_viewInv;
+        xform = s_particleBasis * xform;
+
+        C3Vector vec = { this->m_scene->m_viewInv.d0, this->m_scene->m_viewInv.d1, this->m_scene->m_viewInv.d2 };
+
+        emitter->Update(dt, &xform, &vec, &this->matrix174);
+
+        uint32_t modelCount = emitter->GetNumParticleModels();
+
+        for (uint32_t i = 0; i < modelCount; i++) {
+            uint32_t modelIndex = i;
+            CM2Model* particleModel = emitter->GetParticleModelInternal(&modelIndex);
+
+            particleModel->AnimateMT(&this->m_scene->m_view, this->m_currentDiffuse, this->m_currentEmissive, this->float198, this->alpha19C);
+            particleModel->AnimateST();
+
+            particleModel->uint2A8 = this->uint2A8;
         }
     }
 }
@@ -1067,8 +1514,8 @@ void CM2Model::FindKey(M2ModelBoneSeq* sequence, const M2TrackBase& track, uint3
         return;
     }
 
-    uint32_t v6 = sequence->uint0;
-    uint32_t v7 = sequence->uint4;
+    uint32_t v6 = sequence->m_currentTime;
+    uint32_t v7 = sequence->m_animIndex;
 
     if (track.loopIndex == 0xFFFF) {
         if (v7 >= track.sequenceTimes.Count()) {
@@ -1254,6 +1701,20 @@ int32_t CM2Model::InitializeLoaded() {
         return 1;
     }
 
+    uint32_t emitterBytes = 0;
+
+    for (uint32_t i = 0; i < this->m_shared->m_data->particles.Count(); i++) {
+        uint8_t emitterType = this->m_shared->m_data->particles[i].emitterType;
+
+        if (emitterType == 1) {
+            emitterBytes += sizeof(CPlaneParticleEmitter);
+        } else if (emitterType == 2) {
+            emitterBytes += sizeof(CSphereParticleEmitter);
+        } else if (emitterType == 3) {
+            emitterBytes += sizeof(CSplineParticleEmitter);
+        }
+    }
+
     uint32_t dataSize
         = (sizeof(uint32_t) * this->m_shared->m_skinData->skinSections.Count())
         + (sizeof(HTEXTURE) * this->m_shared->m_data->textures.Count())
@@ -1265,12 +1726,18 @@ int32_t CM2Model::InitializeLoaded() {
         + (sizeof(C44Matrix) * this->m_shared->m_data->textureTransforms.Count())
         + (sizeof(M2ModelAttachment) * this->m_shared->m_data->attachments.Count())
         + (sizeof(M2ModelLight) * this->m_shared->m_data->lights.Count())
-        + (sizeof(M2ModelCamera) * this->m_shared->m_data->cameras.Count());
+        + (sizeof(M2ModelCamera) * this->m_shared->m_data->cameras.Count())
+        + (sizeof(M2ModelRibbon) * this->m_shared->m_data->ribbons.Count())
+        + (sizeof(CRibbonEmitter*) * this->m_shared->m_data->ribbons.Count())
+        + (sizeof(M2ModelParticle) * this->m_shared->m_data->particles.Count())
+        + (sizeof(CParticleEmitter2*) * this->m_shared->m_data->particles.Count());
 
     // TODO
     // allocate space for particles and ribbons
 
-    char* data = static_cast<char*>(SMemAlloc(dataSize, __FILE__, __LINE__, 0));
+    uint32_t dataRibbonSize = dataSize + (sizeof(CRibbonEmitter) * this->m_shared->m_data->ribbons.Count());
+    char* data = static_cast<char*>(SMemAlloc(dataRibbonSize + emitterBytes, __FILE__, __LINE__, 0));
+    char* emitterCursor = data + dataRibbonSize;
 
     if (this->m_shared->m_data->bones.Count()) {
         this->m_bones = reinterpret_cast<M2ModelBone*>(&data[0]);
@@ -1281,7 +1748,7 @@ int32_t CM2Model::InitializeLoaded() {
         }
 
         for (int32_t i = 0; i < this->m_shared->m_data->bones.Count(); i++) {
-            this->m_bones[i].flags = this->m_shared->m_data->bones[i].flags;
+            this->m_bones[i].m_flags = this->m_shared->m_data->bones[i].flags;
         }
 
         this->m_boneMatrices = static_cast<C44Matrix*>(SMemAlignedAlloc(sizeof(C44Matrix) * this->m_shared->m_data->bones.Count(), __FILE__, __LINE__));
@@ -1364,35 +1831,18 @@ int32_t CM2Model::InitializeLoaded() {
             return 0;
     }
 
-    //if (m_data->attachments.count) {
-    //    v59 = v172;
-    //    this->m_attachments = v172;
-    //    v60 = m_data->attachments.count;
-    //    v172 = &v59[12 * v60];
-    //    v61 = 0;
-    //    if (v60) {
-    //        v62 = 0;
-    //        do {
-    //            v63 = v62 + this->m_attachments;
-    //            if (v63) {
-    //                *v63 = 0;
-    //                *(v63 + 4) = 0;
-    //                *(v63 + 8) = 0;
-    //            }
-    //            ++v61;
-    //            v62 += 12;
-    //        } while (v61 < m_data->attachments.count);
-    //    }
-    //    v64 = 0;
-    //    if (m_data->attachments.count) {
-    //        v65 = 0;
-    //        do {
-    //            *(v65 + this->m_attachments + 8) = 1;
-    //            ++v64;
-    //            v65 += 12;
-    //        } while (v64 < m_data->attachments.count);
-    //    }
-    //}
+    if (this->m_shared->m_data->attachments.Count()) {
+        this->m_attachments = reinterpret_cast<M2ModelAttachment*>(&data[0]);
+        data += (sizeof(M2ModelAttachment) * this->m_shared->m_data->attachments.Count());
+
+        for (int32_t i = 0; i < this->m_shared->m_data->attachments.Count(); i++) {
+            new (&this->m_attachments[i]) M2ModelAttachment();
+        }
+
+        for (int32_t i = 0; i < this->m_shared->m_data->attachments.Count(); i++) {
+            this->m_attachments[i].visibilityTrack.currentValue = 1;
+        }
+    }
 
     if (this->m_shared->m_data->lights.Count()) {
         this->m_lights = reinterpret_cast<M2ModelLight*>(&data[0]);
@@ -1436,7 +1886,252 @@ int32_t CM2Model::InitializeLoaded() {
         }
     }
 
-    // TODO
+    if (this->m_shared->m_data->particles.Count()) {
+        this->m_particles = reinterpret_cast<M2ModelParticle*>(data);
+        data += sizeof(M2ModelParticle) * this->m_shared->m_data->particles.Count();
+
+        for (uint32_t i = 0; i < this->m_shared->m_data->particles.Count(); i++) {
+            new (&this->m_particles[i]) M2ModelParticle();
+        }
+
+        this->m_particleEmitters = reinterpret_cast<CParticleEmitter2**>(data);
+        data += sizeof(CParticleEmitter2*) * this->m_shared->m_data->particles.Count();
+
+        memset(this->m_particleEmitters, 0, sizeof(CParticleEmitter2*) * this->m_shared->m_data->particles.Count());
+
+        CParticleMaterial material;
+        material.blend = 0;
+        material.flags = 0;
+
+        for (uint32_t i = 0; i < this->m_shared->m_data->particles.Count(); i++) {
+            auto& particle = this->m_shared->m_data->particles[i];
+            auto& modelParticle = this->m_particles[i];
+
+            CParticleEmitter2* emitter = nullptr;
+
+            if (particle.emitterType == 1) {
+                emitter = new (emitterCursor) CPlaneParticleEmitter();
+                emitterCursor += sizeof(CPlaneParticleEmitter);
+            } else if (particle.emitterType == 2) {
+                emitter = new (emitterCursor) CSphereParticleEmitter();
+                emitterCursor += sizeof(CSphereParticleEmitter);
+            } else if (particle.emitterType == 3) {
+                emitter = new (emitterCursor) CSplineParticleEmitter();
+                emitterCursor += sizeof(CSplineParticleEmitter);
+            }
+
+            this->m_particleEmitters[i] = emitter;
+
+            emitter->m_flags &= ~0x1u;
+
+            if (particle.emissionRateTrack.sequenceKeys[0].keys.Count()) {
+                emitter->SetEmissionRate(particle.emissionRateTrack.sequenceKeys[0].keys[0]);
+            }
+
+            emitter->m_emissionRateVariation = particle.emissionRateVariation;
+
+            if (particle.speedTrack.sequenceKeys[0].keys.Count()) {
+                emitter->m_speed = particle.speedTrack.sequenceKeys[0].keys[0];
+            }
+
+            if (particle.variationTrack.sequenceKeys[0].keys.Count()) {
+                emitter->m_variation = particle.variationTrack.sequenceKeys[0].keys[0];
+            }
+
+            if (particle.latitudeTrack.sequenceKeys[0].keys.Count()) {
+                emitter->SetLatitude(particle.latitudeTrack.sequenceKeys[0].keys[0]);
+            }
+
+            if (particle.longitudeTrack.sequenceKeys[0].keys.Count()) {
+                emitter->SetLongitude(particle.longitudeTrack.sequenceKeys[0].keys[0]);
+            }
+
+            if (particle.gravityTrack.sequenceKeys[0].keys.Count()) {
+                emitter->m_gravity = particle.gravityTrack.sequenceKeys[0].keys[0];
+            }
+
+            if (particle.lifeTrack.sequenceKeys[0].keys.Count()) {
+                emitter->m_life = particle.lifeTrack.sequenceKeys[0].keys[0];
+            }
+
+            emitter->m_lifeVariation = particle.lifeVariation;
+
+            if (particle.widthTrack.sequenceKeys[0].keys.Count()) {
+                emitter->SetWidth(particle.widthTrack.sequenceKeys[0].keys[0]);
+            }
+
+            if (particle.lengthTrack.sequenceKeys[0].keys.Count()) {
+                emitter->SetHeight(particle.lengthTrack.sequenceKeys[0].keys[0]);
+            }
+
+            if (particle.zsourceTrack.sequenceKeys[0].keys.Count()) {
+                emitter->SetZsource(particle.zsourceTrack.sequenceKeys[0].keys[0]);
+            }
+
+            if (particle.flags & 0x10) {
+                emitter->m_flags |= 0x200;
+            } else {
+                emitter->m_flags &= ~0x200u;
+            }
+
+            if (particle.flags & 0x40) {
+                emitter->m_flags |= 0x800;
+            }
+
+            if (particle.flags & 0x20) {
+                emitter->m_flags |= 0x400;
+            }
+
+            if (particle.flags & 0x800) {
+                emitter->m_flags |= 0x2000;
+            }
+
+            if (particle.flags & 0x1000) {
+                emitter->m_flags |= 0x4000;
+            }
+
+            if (particle.emitterType == 2) {
+                if (particle.flags & 0x80000000) {
+                    emitter->m_flags |= 0x1000;
+                }
+
+                if (particle.flags & 0x100) {
+                    emitter->m_flags |= 0x8000;
+                }
+            }
+
+            if (particle.flags & 0x200) {
+                emitter->m_flags |= 0x10000;
+            }
+
+            if (particle.flags & 0x2000) {
+                emitter->m_flags |= 0x40000;
+            }
+
+            if (particle.flags & 0x4000) {
+                emitter->m_flags |= 0x80000;
+            }
+
+            if (particle.flags & 0x8000) {
+                emitter->m_flags &= ~0x1u;
+            }
+
+            if (particle.flags & 0x80000) {
+                emitter->m_flags |= 0x800000;
+            }
+
+            emitter->SetParticleStyle(particle.flags & 0x20000, particle.flags & 0x40000, particle.tailLength, particle.flags & 0x400);
+
+            material.flags |= 0x7;
+            material.blend = 0;
+
+            if (particle.blendMode == 0) {
+                material.blend = 0;
+                material.flags |= 0x4;
+            } else if (particle.blendMode == 1) {
+                material.blend = 1;
+                material.flags |= 0x4;
+            } else if (particle.blendMode == 2) {
+                material.blend = 2;
+                material.flags &= ~0x4u;
+            } else if (particle.blendMode == 3) {
+                material.blend = 10;
+                material.flags &= ~0x4u;
+            } else if (particle.blendMode == 4) {
+                material.blend = 3;
+                material.flags &= ~0x4u;
+            } else if (particle.blendMode == 5) {
+                material.blend = 4;
+                material.flags &= ~0x4u;
+            } else if (particle.blendMode == 6) {
+                material.blend = 5;
+                material.flags &= ~0x4u;
+            }
+
+            material.flags ^= (material.flags ^ ~particle.flags) & 0x1;
+            material.flags ^= (material.flags ^ ~(particle.flags >> 2)) & 0x2;
+
+            if (particle.flags & 0x2) {
+                emitter->m_flags |= 0x20;
+            }
+
+            if (particle.flags & 0x4) {
+                emitter->m_flags |= 0x200000;
+            }
+
+            emitter->SetTextureDimensions(particle.rows, particle.cols);
+
+            if (particle.flags & 0x10000) {
+                emitter->SetChooseRandomTexture(1);
+            }
+
+            emitter->SetMaterial(&material, this->m_shared->textures[particle.textureIndex]);
+
+            emitter->m_colorTrack = &particle.colorTrack;
+            emitter->m_alphaTrack = &particle.alphaTrack;
+            emitter->m_scaleTrack = &particle.scaleTrack;
+            emitter->m_scaleVariationX = particle.scaleVariation.x;
+            emitter->m_scaleVariationY = particle.scaleVariation.y;
+            emitter->m_headCellTrack = &particle.headCellTrack;
+            emitter->m_tailCellTrack = &particle.tailCellTrack;
+
+            if (this->model30 && (this->model30->m_particleEmitters[i]->m_flags & 0x10)) {
+                CImVector replacement0 = {};
+                CImVector replacement1 = {};
+                CImVector replacement2 = {};
+
+                this->model30->m_particleEmitters[i]->GetReplacementColors(&replacement0, &replacement1, &replacement2);
+                emitter->SetParticleColors(&replacement0, &replacement1, &replacement2);
+            }
+
+            emitter->m_twinkleFPS = particle.twinkleFPS;
+            emitter->m_twinkleOnOff = particle.twinkleOnOff;
+            emitter->SetTwinkleScale(particle.twinkleScale);
+            emitter->m_ivelScale = particle.ivelScale;
+
+            emitter->m_tumbleBaseX = particle.tumble.b.x;
+            emitter->m_tumbleSpanX = particle.tumble.t.x - particle.tumble.b.x;
+            emitter->m_tumbleBaseY = particle.tumble.b.y;
+            emitter->m_tumbleSpanY = particle.tumble.t.y - particle.tumble.b.y;
+            emitter->m_tumbleBaseZ = particle.tumble.b.z;
+            emitter->m_tumbleSpanZ = particle.tumble.t.z - particle.tumble.b.z;
+
+            emitter->m_drag = particle.drag;
+            emitter->m_initialSpin = particle.initialSpin;
+            emitter->m_initialSpinVariation = particle.initialSpinVariation;
+            emitter->m_spinVariation = particle.spinVariation;
+            emitter->m_spin = particle.spin;
+
+            emitter->m_windVectorX = particle.windVector.x;
+            emitter->m_windVectorY = particle.windVector.y;
+            emitter->m_windVectorZ = particle.windVector.z;
+            emitter->m_windTime = particle.windTime;
+
+            emitter->SetFollowParams(particle.followSpeed1, particle.followScale1, particle.followSpeed2, particle.followScale2);
+
+            emitter->m_priorityPlane = particle.priorityPlane;
+
+            if (particle.emitterType == 3) {
+                static_cast<CSplineParticleEmitter*>(emitter)->SetSpline(particle.spline.Data(), particle.spline.Count());
+            }
+
+            char* geometryMdl = particle.geometryMdl.Data();
+
+            if (geometryMdl && geometryMdl[0]) {
+                emitter->SetModel(this->m_scene, geometryMdl);
+            }
+
+            char* recursionMdl = particle.recursionMdl.Data();
+
+            if (recursionMdl && recursionMdl[0]) {
+                emitter->CreateChildEmittersFromModel(this->m_scene, recursionMdl);
+            }
+
+            emitter->DetermineIfSimple();
+
+            modelParticle.visibilityTrack.currentValue = 1;
+        }
+    }
 
     this->m_loaded = 1;
 
@@ -1833,14 +2528,14 @@ LABEL_30:
             auto& modelBone = this->m_bones[boneIndex];
 
             if (a8) {
-                modelBone.uint90 = sequenceId;
-                modelBone.uint94 = a4;
+                modelBone.m_sequenceId = sequenceId;
+                modelBone.m_variationIndex = a4;
 
                 this->SetPrimaryBoneSequence(v16, boneIndex, fallback, time, a6, a7);
-                modelBone.sequence.uintB = v33;
+                modelBone.sequence.m_pickRandomVariation = v33;
             } else {
                 this->SetSecondaryBoneSequence(v16, boneIndex, fallback, time, a6);
-                modelBone.secondarySequence.uintB = v33;
+                modelBone.secondarySequence.m_pickRandomVariation = v33;
             }
         }
     } else {
@@ -1848,8 +2543,106 @@ LABEL_30:
     }
 }
 
-void CM2Model::SetBoneSequenceDeferred(uint16_t a2, M2Data* data, uint16_t boneIndex, uint32_t time, float a6, M2SequenceFallback fallback, int32_t a8, int32_t a9, int32_t a10) {
-    // TODO
+// OFFSET: 0x831C30
+void CM2Model::SetBoneSequenceDeferred(uint16_t sequenceIndex, M2Data* data, uint16_t boneIndex, uint32_t time, float speed, M2SequenceFallback fallback, int32_t blend, int32_t primary, int32_t pickRandomVariation) {
+    CM2SequencePlayback* playback = nullptr;
+
+    if (data->sequences[sequenceIndex].flags & 0x10) {
+        uint16_t id = sequenceIndex;
+
+        while (true) {
+            CM2SequenceLoad* load = this->m_shared->m_sequenceLoads.Head();
+
+            while (load && load->m_sequenceIndex != id) {
+                load = this->m_shared->m_sequenceLoads.Next(load);
+            }
+
+            if (load) {
+                for (CM2SequencePlayback* p = load->m_playbacks.Head(); p; p = load->m_playbacks.Next(p)) {
+                    if (p->m_model == this) {
+                        playback = p;
+                        break;
+                    }
+                }
+
+                if (!playback) {
+                    playback = load->m_playbacks.NewNode(STORM_LIST_TAIL, 0, 0);
+                    playback->m_model = this;
+                }
+
+                break;
+            }
+
+            id = data->sequences[id].aliasNext;
+
+            if (id == sequenceIndex) {
+                return;
+            }
+        }
+    } else {
+        //CM2SequenceLoad* load = this->m_shared->LoadLowPrioritySequence(sequenceIndex);
+        //
+        //if (!load) {
+        //    return;
+        //}
+        //
+        //playback = load->m_playbacks.NewNode(STORM_LIST_TAIL, 0, 0);
+        //playback->m_model = this;
+    }
+
+    playback->m_speed = speed;
+    playback->m_boneIndex = boneIndex;
+    playback->m_time = time;
+    playback->m_fallback = fallback;
+    playback->m_flags = 0;
+
+    if (blend) {
+        playback->m_flags = 1;
+    }
+
+    if (primary) {
+        playback->m_flags |= 2;
+    }
+
+    if (pickRandomVariation) {
+        playback->m_flags |= 4;
+    }
+}
+
+// OFFSET: 0x825EE0
+bool CM2Model::HasSequence(uint32_t sequenceId) {
+    if ((this->f_flags & 1) == 0) {
+        if (this->m_shared->asyncObject)
+            AsyncFileReadWait(this->m_shared->asyncObject);
+        m_shared = this->m_shared;
+        if (m_shared->asyncObject)
+            AsyncFileReadWait(m_shared->asyncObject);
+        if ((this->m_flags & 0x20) != 0)
+            this->InitializeLoaded();
+    }
+    return CM2Model::HasSequence(this->m_shared->m_data, sequenceId);
+}
+
+// OFFSET: 0x8267E0
+uint32_t CM2Model::GetBoneSequenceId(uint32_t boneId) {
+    if ((this->f_flags & 1) == 0) {
+        if (this->m_shared->asyncObject)
+            AsyncFileReadWait(this->m_shared->asyncObject);
+        if (this->m_shared->asyncObject)
+            AsyncFileReadWait(this->m_shared->asyncObject);
+        if ((this->m_flags & 0x20) != 0)
+            this->InitializeLoaded();
+    }
+    uint32_t v5 = 0xFFFFFFFF;
+    if (boneId == 0xFFFFFFFF) {
+        v5 = 0;
+    } else if (boneId < this->m_shared->m_data->boneIndicesById.count) {
+        v5 = this->m_shared->m_data->boneIndicesById[boneId];
+    }
+    if (v5 < this->m_shared->m_data->bones.count)
+        return this->m_bones[v5].m_sequenceId;
+
+    return 0;
 }
 
 void CM2Model::SetIndices() {
@@ -1873,35 +2666,35 @@ void CM2Model::SetPrimaryBoneSequence(uint16_t sequenceIndex, uint16_t boneIndex
     auto& sequence = this->m_shared->m_data->sequences[sequenceIndex];
 
     if (a7) {
-        if (!modelBone.sequence.uintA || sequenceIndex != modelBone.sequence.uint8) {
+        if (!modelBone.sequence.m_finished || sequenceIndex != modelBone.sequence.m_sequenceIndex) {
             double v10;
             double v11;
             double v12;
 
-            if (modelBone.secondarySequence.uint8 == 0xFFFF
-                || ((v10 = (double)(modelBone.uint9C - this->m_scene->m_time) * modelBone.floatA0, v10 >= 0.0) ? (v10 <= 1.0 ? (v11 = v10 * ((3.0 - (v10 + v10)) * v10)) : (v11 = 1.0)) : (v11 = 0.0), v11 * modelBone.floatA4 <= 0.5)
+            if (modelBone.secondarySequence.m_sequenceIndex == 0xFFFF
+                || ((v10 = (double)(modelBone.m_blendEndTime - this->m_scene->m_time) * modelBone.m_invBlendDuration, v10 >= 0.0) ? (v10 <= 1.0 ? (v11 = v10 * ((3.0 - (v10 + v10)) * v10)) : (v11 = 1.0)) : (v11 = 0.0), v11 * modelBone.m_blendWeightMax <= 0.5)
             ) {
                 memcpy(&modelBone.secondarySequence, &modelBone.sequence, sizeof(modelBone.secondarySequence));
 
-                modelBone.uint9C = this->m_scene->m_time + sequence.blendtime;
+                modelBone.m_blendEndTime = this->m_scene->m_time + sequence.blendtime;
                 if (sequence.blendtime) {
                     v12 = 1.0 / (double)sequence.blendtime;
                 } else {
                     v12 = 1.0;
                 }
-                modelBone.floatA0 = v12;
-                modelBone.floatA4 = 1.0f;
+                modelBone.m_invBlendDuration = v12;
+                modelBone.m_blendWeightMax = 1.0f;
             }
         }
     } else {
-        modelBone.secondarySequence.uint8 = -1;
+        modelBone.secondarySequence.m_sequenceIndex = -1;
     }
 
     this->SetupBoneSequence(sequenceIndex, fallback, time, a6, &modelBone.sequence);
 
-    int32_t v13 = modelBone.sequence.uint10;
-    if (modelBone.sequence.uintC == v13 || ((sequence.flags & 0x1) != 0 && (v13 -= this->m_scene->m_time, v13 <= 0))) {
-        modelBone.sequence.uintA = 1;
+    int32_t v13 = modelBone.sequence.m_endTime;
+    if (modelBone.sequence.m_startTime == v13 || ((sequence.flags & 0x1) != 0 && (v13 -= this->m_scene->m_time, v13 <= 0))) {
+        modelBone.sequence.m_finished = 1;
     }
 
     // TODO
@@ -1962,14 +2755,14 @@ void CM2Model::SetupBoneSequence(uint16_t sequenceIndex, M2SequenceFallback fall
         v16++;
     }
 
-    boneSequence->uint8 = sequenceIndex;
-    boneSequence->uintC = v16;
-    boneSequence->uint20 = v10;
-    boneSequence->uintA = 0;
-    boneSequence->uint10 = v16 + floor(v15 * (double)(unsigned int)v11);
-    boneSequence->uint1C = v18;
-    boneSequence->float14 = v12;
-    boneSequence->float18 = v13;
+    boneSequence->m_sequenceIndex = sequenceIndex;
+    boneSequence->m_startTime = v16;
+    boneSequence->m_repeatCount = v10;
+    boneSequence->m_finished = 0;
+    boneSequence->m_endTime = v16 + floor(v15 * (double)(unsigned int)v11);
+    boneSequence->m_startOffset = v18;
+    boneSequence->m_speed = v12;
+    boneSequence->m_invSpeed = v13;
 }
 
 void CM2Model::SetupLighting() {

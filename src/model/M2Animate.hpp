@@ -5,18 +5,13 @@
 #include "model/M2Data.hpp"
 #include "model/M2Model.hpp"
 
-struct M2SequenceFallback {
-    uint16_t uint0;
-    uint16_t uint2;
-};
-
 template<class T1, class T2>
 void M2SetValue(const T1& sourceValue, T2& destValue) {
     destValue = sourceValue;
 }
 
 template<>
-void M2SetValue(const M2CompQuat& sourceValue, C4Quaternion& destValue) {
+inline void M2SetValue(const M2CompQuat& sourceValue, C4Quaternion& destValue) {
     destValue.x = (sourceValue.auCompQ[0] & 0xFFFF) * 0.000030518044f - 1.0f;
     destValue.y = (sourceValue.auCompQ[0] >> 16)    * 0.000030518044f - 1.0f;
     destValue.z = (sourceValue.auCompQ[1] & 0xFFFF) * 0.000030518044f - 1.0f;
@@ -24,29 +19,29 @@ void M2SetValue(const M2CompQuat& sourceValue, C4Quaternion& destValue) {
 }
 
 template<>
-void M2SetValue(const fixed16& sourceValue, float& destValue) {
+inline void M2SetValue(const fixed16& sourceValue, float& destValue) {
     destValue = static_cast<float>(sourceValue);
 }
 
-void M2InterpolateLinear(const C3Vector& startValue, const C3Vector& endValue, float ratio, C3Vector& value) {
+inline void M2InterpolateLinear(const C3Vector& startValue, const C3Vector& endValue, float ratio, C3Vector& value) {
     value.x = startValue.x + (ratio * (endValue.x - startValue.x));
     value.y = startValue.y + (ratio * (endValue.y - startValue.y));
     value.z = startValue.z + (ratio * (endValue.z - startValue.z));
 }
 
-void M2InterpolateLinear(float startValue, float endValue, float ratio, float& value) {
+inline void M2InterpolateLinear(float startValue, float endValue, float ratio, float& value) {
     value = startValue + (ratio * (endValue - startValue));
 }
 
-void M2InterpolateLinear(fixed16 startValue, fixed16 endValue, float ratio, float& value) {
+inline void M2InterpolateLinear(fixed16 startValue, fixed16 endValue, float ratio, float& value) {
     value = static_cast<float>(startValue) + (ratio * (static_cast<float>(endValue) - static_cast<float>(startValue)));
 }
 
-void M2InterpolateLinear(uint8_t startValue, uint8_t endValue, float ratio, uint8_t& value) {
+inline void M2InterpolateLinear(uint8_t startValue, uint8_t endValue, float ratio, uint8_t& value) {
     value = startValue + (ratio * (endValue - startValue));
 }
 
-void M2InterpolateLinear(const M2CompQuat& startValue, const M2CompQuat& endValue, float ratio, C4Quaternion& value) {
+inline void M2InterpolateLinear(const M2CompQuat& startValue, const M2CompQuat& endValue, float ratio, C4Quaternion& value) {
     C4Quaternion quat1;
     C4Quaternion quat2;
     M2SetValue(startValue, quat1);
@@ -55,25 +50,42 @@ void M2InterpolateLinear(const M2CompQuat& startValue, const M2CompQuat& endValu
     value = C4Quaternion::Nlerp(ratio, quat1, quat2);
 }
 
-void M2InterpolateCubicBezier(const M2SplineKey<C3Vector>& startKey, const M2SplineKey<C3Vector>& endKey, float ratio, C3Vector& value) {
+inline void M2BlendValue(const C3Vector& blendValue, float blendFactor, C3Vector& value) {
+    value.x = value.x + ((blendValue.x - value.x) * blendFactor);
+    value.y = value.y + ((blendValue.y - value.y) * blendFactor);
+    value.z = value.z + ((blendValue.z - value.z) * blendFactor);
+}
+
+inline void M2BlendValue(float blendValue, float blendFactor, float& value) {
+    value = value + ((blendValue - value) * blendFactor);
+}
+
+inline void M2BlendValue(const C4Quaternion& blendValue, float blendFactor, C4Quaternion& value) {
+    value = C4Quaternion::Slerp(blendFactor, value, blendValue);
+}
+
+inline void M2BlendValue(uint8_t blendValue, float blendFactor, uint8_t& value) {
+}
+
+inline void M2InterpolateCubicBezier(const M2SplineKey<C3Vector>& startKey, const M2SplineKey<C3Vector>& endKey, float ratio, C3Vector& value) {
     // TODO
 }
 
-void M2InterpolateCubicBezier(const M2SplineKey<float>& startKey, const M2SplineKey<float>& endKey, float ratio, float& value) {
+inline void M2InterpolateCubicBezier(const M2SplineKey<float>& startKey, const M2SplineKey<float>& endKey, float ratio, float& value) {
     // TODO
 }
 
-void M2InterpolateCubicHermite(const M2SplineKey<C3Vector>& startKey, const M2SplineKey<C3Vector>& endKey, float ratio, C3Vector& value) {
+inline void M2InterpolateCubicHermite(const M2SplineKey<C3Vector>& startKey, const M2SplineKey<C3Vector>& endKey, float ratio, C3Vector& value) {
     // TODO
 }
 
-void M2InterpolateCubicHermite(const M2SplineKey<float>& startKey, const M2SplineKey<float>& endKey, float ratio, float& value) {
+inline void M2InterpolateCubicHermite(const M2SplineKey<float>& startKey, const M2SplineKey<float>& endKey, float ratio, float& value) {
     // TODO
 }
 
 template<class T1, class T2>
 void M2AnimateSplineTrack(CM2Model* model, M2ModelBone* modelBone, const M2Track<T1>& track, M2ModelTrack<T2>& modelTrack, const T2& defaultValue) {
-    auto seqIndex = modelBone->sequence.uint4 < track.sequenceKeys.Count() ? modelBone->sequence.uint4 : 0;
+    auto seqIndex = modelBone->sequence.m_animIndex < track.sequenceKeys.Count() ? modelBone->sequence.m_animIndex : 0;
     auto& seqKeys = track.sequenceKeys[seqIndex];
 
     if (seqKeys.keys.Count()) {
@@ -117,7 +129,7 @@ void M2AnimateSplineTrack(CM2Model* model, M2ModelBone* modelBone, const M2Track
 
 template<class T1, class T2>
 void M2AnimateTrack(CM2Model* model, M2ModelBone* modelBone, const M2Track<T1>& track, M2ModelTrack<T2>& modelTrack, const T2& defaultValue) {
-    auto seqIndex = modelBone->sequence.uint4 < track.sequenceKeys.Count() ? modelBone->sequence.uint4 : 0;
+    auto seqIndex = modelBone->sequence.m_animIndex < track.sequenceKeys.Count() ? modelBone->sequence.m_animIndex : 0;
     auto& seqKeys = track.sequenceKeys[seqIndex];
 
     if (seqKeys.keys.Count()) {
@@ -143,8 +155,26 @@ void M2AnimateTrack(CM2Model* model, M2ModelBone* modelBone, const M2Track<T1>& 
         }
     }
 
-    // TODO
-    // - blend with secondary active sequence
+    if (modelBone->m_blendFactor != 0.0f && track.loopIndex == 0xFFFF) {
+        auto blendSeqIndex = modelBone->secondarySequence.m_animIndex < track.sequenceKeys.Count() ? modelBone->secondarySequence.m_animIndex : 0;
+        auto& blendSeqKeys = track.sequenceKeys[blendSeqIndex];
+
+        T2 blendValue = defaultValue;
+
+        if (blendSeqKeys.keys.Count()) {
+            uint32_t nextKey;
+            float ratio;
+
+            model->FindKey(&modelBone->secondarySequence, track, modelTrack.secondaryKey, nextKey, ratio);
+
+            auto& startValue = blendSeqKeys.keys[modelTrack.secondaryKey];
+            auto& endValue = blendSeqKeys.keys[nextKey];
+
+            M2InterpolateLinear(startValue, endValue, ratio, blendValue);
+        }
+
+        M2BlendValue(blendValue, modelBone->m_blendFactor, modelTrack.currentValue);
+    }
 }
 
 #endif

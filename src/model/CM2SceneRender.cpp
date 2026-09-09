@@ -9,6 +9,7 @@
 #include "model/CM2Shared.hpp"
 #include "model/M2Types.hpp"
 #include <tempest/Math.hpp>
+#include "model/CParticleEmitter2.hpp"
 
 C44Matrix CM2SceneRender::s_identity;
 
@@ -66,6 +67,44 @@ int32_t CM2SceneRender::s_shadedList[M2BLEND_COUNT] = {
     0,  // M2BLEND_MOD
     0   // M2BLEND_MOD_2X
 };
+
+// OFFSET: 0x81F330
+CM2SceneRender::CM2SceneRender(CM2Scene* scene)
+    : m_scene(scene)
+    , m_cache(scene->m_cache) {
+    this->matrix0 = C44Matrix();
+
+    this->m_data = nullptr;
+    this->m_curElement = nullptr;
+    this->m_prevElement = nullptr;
+    this->m_curType = -1u;
+    this->m_prevType = -1u;
+    this->m_curModel = nullptr;
+    this->m_prevModel = nullptr;
+    this->m_curShared = nullptr;
+    this->m_prevShared = nullptr;
+    this->m_curLighting = nullptr;
+    this->m_prevLighting = nullptr;
+    this->m_curShaded = 0;
+    this->m_prevShaded = 0;
+    this->m_curFogMode = -1u;
+    this->m_prevFogMode = -1u;
+    this->m_curBatch = nullptr;
+    this->m_prevBatch = nullptr;
+    this->m_curSkinSection = nullptr;
+    this->m_prevSkinSection = nullptr;
+    this->m_curMaterial = nullptr;
+    this->m_prevMaterial = nullptr;
+    //this->m_defaultMaterial.flags = 0;
+    //this->m_defaultMaterial.blendMode = 0;
+
+    this->m_particleEffect = CShaderEffectManager::GetEffect("Particle");
+    this->m_particleUnlitEffect = CShaderEffectManager::GetEffect("Particle_Unlit");
+    //this->m_projModModEffect = CShaderEffectManager::GetEffect("Projected_ModMod");
+    //this->m_projModModUnlitEffect = CShaderEffectManager::GetEffect("Projected_ModMod_Unlit");
+    //this->m_projModAddEffect = CShaderEffectManager::GetEffect("Projected_ModAdd");
+    //this->m_projModAddUnlitEffect = CShaderEffectManager::GetEffect("Projected_ModAdd_Unlit");
+}
 
 void CM2SceneRender::Draw(M2PASS pass, M2Element* elements, uint32_t* indices, uint32_t count) {
     if (!count) {
@@ -267,8 +306,62 @@ void CM2SceneRender::DrawCallback() {
     // TODO
 }
 
+// OFFSET: 0x81F620
+void CM2SceneRender::SetupBillboardView(const C3Vector& position) {
+    C44Matrix view = this->m_scene->m_view;
+    view.Translate(position);
+
+    GxXformSetView(view);
+    GxXformSet(GxXform_World, CM2SceneRender::s_identity);
+}
+
+// OFFSET: 0x8214E0
 int32_t CM2SceneRender::DrawParticle(uint32_t a2, M2Element* elements, uint32_t* a4, uint32_t a5) {
-    // TODO
+    CParticleEmitter2* emitter = this->m_curElement->emitter;
+
+    M2Material material;
+    material.flags = (emitter->m_materialFlags & 0x1) != 0 ? 4 : 5;
+
+    if ((emitter->m_materialFlags & 0x2) == 0) {
+        material.flags |= 0x2;
+    }
+
+    if ((emitter->m_materialFlags & 0x4) == 0) {
+        material.flags |= 0x10;
+    }
+
+    material.blendMode = GxBlendToM2Blend(emitter->m_materialBlend);
+
+    this->m_curMaterial = &material;
+    this->m_prevMaterial = nullptr;
+
+    if ((this->m_cache->m_flags & 0x80) != 0) {
+        // return this->DrawBatchedParticle(a2, elements, a4, a5);
+        return 0;
+    }
+
+    CGxTex* texture = TextureGetGxTex(emitter->m_texture, 0, nullptr);
+
+    if (!texture) {
+        return 0;
+    }
+
+    CShaderEffect* effect = (emitter->m_materialFlags & 0x1) != 0 ? this->m_particleEffect : this->m_particleUnlitEffect;
+
+    GxRsSet(GxRs_Texture0, texture);
+    GxRsSet(GxRs_Texture1, static_cast<CGxTex*>(nullptr));
+
+    effect->SetCurrent();
+
+    this->SetupLighting();
+    this->SetupMaterial();
+    this->SetupBillboardView(*this->m_scene->m_viewInv.Row3AsVec3());
+
+    emitter->Render(&this->m_curModel->matrix174, nullptr, 1);
+
+    GxXformSetView(CM2SceneRender::s_identity);
+    GxXformSet(GxXform_World, CM2SceneRender::s_identity);
+
     return 0;
 }
 

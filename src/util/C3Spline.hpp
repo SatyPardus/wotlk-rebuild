@@ -30,6 +30,7 @@ class C3Spline {
     void SetPoints(C3Vector* points, uint32_t count);
     void GetPoints(C3Vector* out, uint32_t count);
     void Pos(float t, C3Vector* points, uint32_t pointCount);
+    void Vel(float t, C3Vector* out, uint32_t mode);
     void Frame(float t, C44Matrix* out, uint32_t a4);
     C3Vector* GetVectorAtIndex(uint32_t index);
     C3Vector* Point(uint32_t segment, float t, const C44Matrix& basis, C3Vector* out);

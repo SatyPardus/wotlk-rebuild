@@ -5,6 +5,7 @@
 
 class CM2Model;
 class CShaderEffect;
+class CParticleEmitter2;
 
 enum M2BLEND {
     M2BLEND_OPAQUE = 0x0,
@@ -43,20 +44,32 @@ enum M2PASS {
     M2PASS_COUNT = 3
 };
 
+struct M2SequenceFallback {
+    uint16_t uint0;
+    uint16_t uint2;
+};
+
 struct M2Element {
-    int32_t type;
-    CM2Model* model;
-    uint32_t flags;
-    float alpha;
-    float float10;
-    float float14;
-    int32_t index;
-    int32_t priorityPlane;
-    M2Batch* batch;
-    M2SkinSection* skinSection;
-    CShaderEffect* effect;
-    uint32_t vertexPermute;
-    uint32_t pixelPermute;
+    /* 0x00 */ int32_t type;
+    /* 0x04 */ CM2Model* model;
+    /* 0x08 */ uint32_t flags;
+    /* 0x0C */ float alpha;
+    /* 0x10 */ float float10;
+    /* 0x14 */ float float14;
+    /* 0x18 */ union {
+        int32_t index;
+        CParticleEmitter2* emitter;
+    };
+    /* 0x1C */ uint32_t doodadRunLength;
+    /* 0x20 */ int32_t doodadKey;
+    /* 0x24 */ int32_t priorityPlane;
+    /* 0x28 */ M2Batch* batch;
+    /* 0x2C */ M2SkinSection* skinSection;
+    /* 0x30 */ CShaderEffect* effect;
+    /* 0x34 */ uint32_t vertexPermute;
+    /* 0x38 */ uint32_t pixelPermute;
+    /* 0x3C */ uint32_t uint3C;
+    /* 0x40 */ uint32_t additiveGroup;
 };
 
 struct M2HitRec {

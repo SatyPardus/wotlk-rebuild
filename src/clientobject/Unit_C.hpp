@@ -6,6 +6,7 @@
 #include "db/Db.hpp"
 #include <componentcore/CCharacterComponent.hpp>
 #include "clientobject/Movement_C.hpp"
+#include "clientobject/AnimationTypes.hpp"
 
 class ChrRacesRec;
 class ChrClassesRec;
@@ -140,9 +141,24 @@ class CGUnit_C : public CGObject_C, public CGUnit {
 
     /* 09D4 */ uint32_t m_displayId = 0;
 
+    /* 09F8 */ uint32_t unk_09F8 = 0;
+
     /* 0A30 */ uint32_t unk_0A30 = 0;
 
+    /* 0A38 */ uint32_t m_animationState = 0;
+
     /* 0B4C */ CCharacterComponent* m_characterComponent = nullptr;
+
+    /* 0B70 */ float float0B70 = 0.0f;
+    /* 0B74 */ float float0B74 = 0.0f;
+    /* 0B78 */ float float0B78 = 0.0f;
+    /* 0B7C */ uint32_t m_mountAnimBehaviorId = ANIM_MOUNT;
+    /* 0B80 */ uint32_t m_animTier = 0;
+    /* 0B84 */ uint32_t m_torsoKeyBone = -1;
+    /* 0B88 */ ANIMATION_ID m_meleeAttackAnimId = ANIM_NONE;
+    /* 0B8C */ ANIMATION_ID m_pendingAnimId = ANIM_NONE;
+    /* 0B90 */ ANIMATION_ID m_awaitingEndAnimId = ANIM_NONE;
+    /* 0B94 */ uint32_t unk_0B94 = 0;
 
     CGUnit_C();
     CGUnit_C(CClientObjCreate& objCreate, uint32_t time);
@@ -166,6 +182,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
 
     bool OnMoveEvent(NETMESSAGE msgId, int32_t time, CDataStore* msg); 
     void OnMoveUpdate(int32_t time, bool a3, bool a4);
+    void MoveEventHappened(NETMESSAGE msgId);
 
     bool OnTurnStart(int32_t eventTime, CMovementStatus* update, bool left);
 
@@ -191,6 +208,25 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool ClampRawAngleToLegalFacingRange(float* yaw);
 
     CreatureModelDataRec* GetModelData();
+
+    // Animation functions
+    void UpdateBaseAnimation(uint8_t a2, uint32_t a3);
+    void PlayBaseAnimation(ANIMATION_ID animId, uint8_t flags);
+    ANIMATION_ID ChooseAnimation(uint32_t a2, uint8_t a3, bool* a4);
+    ANIMATION_ID GetCurrentTorsoAnimId();
+    bool Uses_A30_Flag_0x40000000(uint32_t a2, ANIMATION_ID* animId);
+    bool ChooseDeathAnim(uint32_t a2, ANIMATION_ID* animId, uint8_t flags);
+    bool ChooseSubmergeAnim(uint32_t a2, ANIMATION_ID* animId);
+    bool ChooseFallAnim(ANIMATION_ID* animId);
+    bool ChooseMovementAnim(uint32_t a2, ANIMATION_ID* animId);
+    bool ChooseLootAnim(uint32_t a2, ANIMATION_ID* animId);
+    bool ChooseSpellVisualKitAnim(uint32_t a2, ANIMATION_ID* animId, uint8_t flags);
+    bool ChooseCombatAnim(uint32_t a2, ANIMATION_ID* animId, uint8_t flags);
+    bool ChooseShuffleAnim(uint32_t a2, ANIMATION_ID* animId);
+    bool ChooseRangedLoadAnim(uint32_t a2, ANIMATION_ID* animId);
+    bool ChooseStandStateAnim(uint32_t a2, ANIMATION_ID* animId);
+    bool ChooseEmoteAnim(uint32_t a2, ANIMATION_ID* animId);
+    void ChooseDefaultAnim(ANIMATION_ID* animId, bool a3);
 
     // Virtual functions
     /* 11 */ void GetPosition(C3Vector& pos) override;

@@ -580,8 +580,9 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             this->UpdateHeartbeatTimerA(time);
         if (moveEvent->m_eventId != 44) {
             this->m_unit->unk_0A30 |= 0x20000000u;
-        //    if (v4->unk_0050 && CMovement_C::HeartBeat(this, v4) && v46)
-        //        CGUnit_C::OnCollideFallLand(this->unit, v45, IsFalling);
+            if (moveEvent->unk_0050 && this->HeartBeat(moveEvent) && wasFalling) {
+                //CGUnit_C::OnCollideFallLand(this->unit, v45, IsFalling);
+            }
             this->m_unit->unk_0A30 &= ~0x20000000u;
         }
         this->SetInterpolation(time);
@@ -590,6 +591,11 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         s_playerMoveEventFreeList.LinkToTail(moveEvent);
     }
     return this->m_moveQueue.Head() || (this->m_flags & MOVEMASK_ANIMATING) != 0;
+}
+
+// OFFSET: 0x6EA9B0
+bool CMovement_C::HeartBeat(CPlayerMoveEvent* moveEvent) {
+    WHOA_UNIMPLEMENTED(false);
 }
 
 // OFFSET: 0x6EAC40

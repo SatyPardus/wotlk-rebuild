@@ -49,4 +49,6 @@ void GxPrimLockVertexPtrs(uint32_t vertexCount, const C3Vector* pos, uint32_t po
 
 void GxPrimUnlockVertexPtrs();
 
+uint32_t GxVertexSize(EGxVertexBufferFormat format);
+
 #endif

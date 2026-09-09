@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <storm/String.hpp>
 #include <tempest/Box.hpp>
+#include "model/CM2SequenceLoad.hpp"
 
 class CAsyncObject;
 class CGxBuf;
@@ -44,6 +45,7 @@ class CM2Shared {
         /* 000C */ CAsyncObject* asyncObject = nullptr;
         /* 0010 */ CM2Model* m_callbackList = nullptr;
         /* 0014 */ CM2Model** m_callbackListTail = &this->m_callbackList;
+        /* 0018 */ STORM_EXPLICIT_LIST(CM2SequenceLoad, m_link) m_sequenceLoads;
         /* 0000 */ CM2Shared* m_previous;
         /* 0000 */ CM2Shared* m_next;
         /* 003C */ char m_filePath[STORM_MAX_PATH];

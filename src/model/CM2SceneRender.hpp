@@ -50,17 +50,17 @@ class CM2SceneRender {
         M2SkinSection* m_prevSkinSection = nullptr;
         M2Material* m_curMaterial = nullptr;
         M2Material* m_prevMaterial = nullptr;
+        CShaderEffect* m_particleEffect;
+        CShaderEffect* m_particleUnlitEffect;
 
         // Member functions
-        CM2SceneRender(CM2Scene* scene)
-            : m_scene(scene)
-            , m_cache(scene->m_cache)
-            {};
+        CM2SceneRender(CM2Scene* scene);
         void Draw(M2PASS pass, M2Element* elements, uint32_t* a4, uint32_t a5);
         void DrawBatch();
         void DrawBatchDoodad(M2Element* elements, uint32_t* a3);
         void DrawBatchProj();
         void DrawCallback();
+        void SetupBillboardView(const C3Vector& position);
         int32_t DrawParticle(uint32_t a2, M2Element* elements, uint32_t* a4, uint32_t a5);
         void DrawRibbon();
         void SetBatchVertices(int32_t a2);

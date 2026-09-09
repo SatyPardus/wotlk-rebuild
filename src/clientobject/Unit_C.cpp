@@ -61,10 +61,74 @@ CGUnit_C::CGUnit_C(CClientObjCreate& objCreate, uint32_t time)
     //this->data9CC = 0;
     //this->data9D0 = 0;
     this->m_displayId = 0;
-
-    //this->dataA34[67] = 0;
-    //this->dataA34[68] = 0;
-    //this->dataA34[69] = 0;
+    //*&this->data9D8 = 0.0;
+    //*&this->data9DC = 0.0;
+    //*&this->data9E0 = 1.0;
+    //this->data9E8 = 0;
+    //this->data9EC = 0;
+    //this->data9F0 = 0;
+    //LOBYTE(this->data9F4) = 0;
+    //this->data9F8 = 0;
+    //this->dataA1C = 0;
+    //this->dataA20 = 0;
+    //this->dataA24 = 0;
+    //this->dataA28 = 0;
+    //this->dataA2C = 0;
+    this->m_animationState = 0x70;
+    //this->dataA3C = -1;
+    //this->dataA40 = -1;
+    //*this->dataA44 = 0.27777779;
+    //*&this->dataA44[1] = 0.27777779;
+    //this->dataA44[5] = 0;
+    //LOBYTE(this->dataA44[6]) = 0;
+    //*&this->dataA44[2] = 1.0;
+    //this->dataA44[7] = 0;
+    //this->dataA44[8] = 0;
+    //*&this->dataA44[3] = -10.0;
+    //this->dataA44[9] = 0;
+    //this->dataA44[10] = 0;
+    //*&this->dataA44[4] = 3.4028235e38;
+    //this->dataA44[13] = 0;
+    //m_facing = this->movementData.m_facing;
+    //this->dataA44[14] = 0;
+    //*&this->dataA44[20] = m_facing;
+    //this->dataA44[15] = 0;
+    //this->dataA44[16] = 0;
+    //*&this->dataA44[21] = 0.0;
+    //this->dataA44[17] = 0;
+    //this->dataA44[18] = 0;
+    //*&this->dataA44[22] = 1.0;
+    //this->dataA44[19] = 0;
+    //this->dataAA4[7] = 0;
+    //this->dataAA4[8] = 0;
+    //this->dataAA4[9] = 0;
+    //SSyncObject::SSyncObject(&this->dataAA4[10]);
+    //this->dataAA4[11] = 0;
+    //this->dataAA4[12] = 0;
+    //*&this->dataAA4[14] = 0.0;
+    //*&this->dataAA4[15] = 0.0;
+    //*&this->dataAA4[19] = 0.0;
+    //*&this->dataAA4[20] = 0.0;
+    //*&this->dataAA4[21] = 0.0;
+    //this->dataAA4[22] = 0;
+    //this->dataAA4[23] = 0;
+    //this->dataAA4[24] = 0;
+    //this->dataAA4[25] = 0;
+    //*&this->dataAA4[26] = 0.0;
+    //this->dataAA4[27] = 0;
+    //this->dataAA4[28] = 0;
+    //LOBYTE(this->dataAA4[31]) = -1;
+    //this->dataAA4[32] = 0;
+    //this->dataAA4[33] = 0;
+    //this->dataAA4[34] = 0;
+    //this->dataAA4[35] = 0;
+    //this->dataAA4[36] = 0;
+    //*&this->dataB3C = 1.0;
+    //m_unit = this->m_unit;
+    //this->dataAA4[37] = 0;
+    //this->modelB40 = 0;
+    //this->modelB44 = 0;
+    //this->dataB48 = 0;
     this->m_characterComponent = nullptr;
     //this->dataB50[2] = LOBYTE(m_unit->UNIT_FIELD_BYTES_2);
     //this->dataB50[3] = LOBYTE(m_unit->UNIT_FIELD_BYTES_2);
@@ -476,10 +540,9 @@ bool CGUnit_C::sub_71C500() {
 
 // OFFSET: 0x718080
 float CGUnit_C::GetMaxCameraHeight() {
-    //ukn3 = this->movementData.ukn3;
-    //if ((this->m_obj->m_type & TYPEMASK_PLAYER) != 0 || ukn3 <= 2.0277777)
-    //    return ukn3 - 0.16666667;
-    //else
+    if ((this->m_obj->m_type & TYPEMASK_PLAYER) != 0 || this->movementData.m_collisionHeight <= 2.0277777)
+        return this->movementData.m_collisionHeight - 0.16666667;
+    else
         return 2.0277777 - 0.16666667;
 }
 
@@ -637,7 +700,7 @@ bool CGUnit_C::ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAc
         }
     }
 
-    // this->sub_73ED10(opcode);
+    this->MoveEventHappened(msgId);
     return result;
 }
 
@@ -829,8 +892,8 @@ bool CGUnit_C::BuildMovementUpdate(int32_t time, NETMESSAGE msgId, CDataStore* m
      }
 
      if (changed) {
-         // this->MoveEventHappened(msgId);
-         // this->sub_73AC30(0, -1);
+         this->MoveEventHappened(msgId);
+         this->UpdateBaseAnimation(0, -1);
      }
 
      return 1;
@@ -838,15 +901,119 @@ bool CGUnit_C::BuildMovementUpdate(int32_t time, NETMESSAGE msgId, CDataStore* m
 
 // OFFSET: 0x73AB20
 void CGUnit_C::OnMoveUpdate(int32_t time, bool a3, bool a4) {
-    //v5 = this->objectclass1[23];
-    //if (v5 && *(v5 + 12))
-    //    CVehicle_C::UpdateWorldMatrix(v5);
+    //m_vehicle = this->m_vehicle;
+    //if (m_vehicle && *(m_vehicle + 12))
+    //    CVehicle_C::UpdateWorldMatrix(m_vehicle);
     this->UpdateWorldObject(0);
     //m_worldObject = this->ObjectBase.m_worldObject;
     //if (!m_worldObject || !World::QueryGroundType(m_worldObject, &this->dataA34[3]))
     //    this->dataA34[3] = -1;
     //CGUnit_C::UpdateFlightStatus(this, a2);
     //CGUnit_C::UpdateSwimmingStatus(&this->ObjectBase, a2, a3);
+}
+
+// OFFSET: 0x73ED10
+void CGUnit_C::MoveEventHappened(NETMESSAGE msgId) {
+    switch (msgId) {
+    case MSG_MOVE_START_FORWARD:
+    case MSG_MOVE_START_BACKWARD:
+    case MSG_MOVE_START_STRAFE_LEFT:
+    case MSG_MOVE_START_STRAFE_RIGHT:
+    case MSG_MOVE_START_SWIM:
+    case MSG_MOVE_START_SWIM_CHEAT:
+    case MSG_MOVE_START_ASCEND:
+    case MSG_MOVE_START_DESCEND:
+        //this->CancelRangedMode();
+        this->UpdateBaseAnimation(0, -1);
+        return;
+
+    case MSG_MOVE_STOP:
+    case MSG_MOVE_STOP_STRAFE:
+    case MSG_MOVE_START_TURN_LEFT:
+    case MSG_MOVE_START_TURN_RIGHT:
+    case MSG_MOVE_STOP_TURN:
+    case MSG_MOVE_STOP_SWIM:
+    case MSG_MOVE_STOP_SWIM_CHEAT:
+    case MSG_MOVE_STOP_ASCEND:
+    case MSG_MOVE_TELEPORT:
+    case MSG_MOVE_TELEPORT_ACK:
+    case MSG_MOVE_TOGGLE_COLLISION_CHEAT:
+    case MSG_MOVE_UPDATE_CAN_FLY:
+    case MSG_MOVE_ROOT:
+    case SMSG_SPLINE_MOVE_ROOT:
+    case CMSG_FORCE_MOVE_ROOT_ACK:
+    case CMSG_MOVE_GRAVITY_DISABLE_ACK:
+    case CMSG_MOVE_GRAVITY_ENABLE_ACK:
+    case SMSG_SPLINE_MOVE_GRAVITY_DISABLE:
+    case SMSG_SPLINE_MOVE_GRAVITY_ENABLE:
+        this->UpdateBaseAnimation(0, -1);
+        return;
+
+    case MSG_MOVE_SET_RUN_MODE:
+    case MSG_MOVE_SET_WALK_MODE:
+    case CMSG_FORCE_RUN_SPEED_CHANGE_ACK:
+    case CMSG_FORCE_RUN_BACK_SPEED_CHANGE_ACK:
+    case CMSG_FORCE_SWIM_SPEED_CHANGE_ACK:
+    case CMSG_FORCE_SWIM_BACK_SPEED_CHANGE_ACK:
+    case CMSG_FORCE_WALK_SPEED_CHANGE_ACK:
+    case CMSG_FORCE_FLIGHT_SPEED_CHANGE_ACK:
+    case CMSG_FORCE_FLIGHT_BACK_SPEED_CHANGE_ACK:
+        if ((this->m_passenger->m_flags & 0xC0100F) != 0) {
+            this->UpdateBaseAnimation(0, -1);
+        }
+        return;
+
+    case MSG_MOVE_JUMP:
+        //this->CancelRangedMode();
+        //this->PlayUnitSound(11, 1);
+        //
+        //if (!this->GetVehicleRecPtr() || !this->m_vehicle->Sub7571C0()) {
+            this->PlayBaseAnimation(ANIM_JUMP_START, 0);
+        //}
+        return;
+
+    case CMSG_MOVE_KNOCK_BACK_ACK:
+        //if (!this->GetVehicleRecPtr() || !this->m_vehicle->Sub7571C0()) {
+            this->PlayBaseAnimation(ANIM_FALL, 0);
+        //}
+        return;
+
+    case CMSG_MOVE_SET_CAN_FLY_ACK:
+        if ((this->movementData.m_flags & 0x1000000) == 0) {
+            this->m_animationState &= ~0x800000u;
+        }
+        return;
+
+    case CMSG_MOVE_SET_FLY:
+        //if ((this->movementData.m_flags & 0x2000000) != 0) {
+        //    this->Sub715810();
+        //
+        //    if (this->GetCurrentTorsoAnimId() == 40 || this->GetMountBoneSequenceId() == 40) {
+        //        this->UpdateBaseAnimation(0, -1);
+        //        return;
+        //    }
+        //
+        //    this->PlayUnitSound(11, 1);
+        //
+        //    if (!this->GetVehicleRecPtr() || !this->m_vehicle->Sub7571C0()) {
+        //        this->PlayBaseAnimation(ANIM_JUMP_START, 0);
+        //    }
+        //
+        //    this->m_animationState |= 0x800000u;
+        //} else {
+        //    this->PlayUnitSound(12, 1);
+        //
+        //    if (!this->GetVehicleRecPtr() || !this->m_vehicle->Sub7571C0()) {
+        //        this->PlayBaseAnimation(ANIM_JUMP_LAND_RUN, 0);
+        //    }
+        //
+        //    this->m_animationState &= ~0x800000u;
+        //}
+        return;
+
+    default:
+        return;
+    }
 }
 
 // OFFSET: 0x718890
@@ -999,7 +1166,7 @@ void CGUnit_C::OnMonsterMove(CDataStore* msg, NETMESSAGE msgId, WGUID transportG
 
         if (dx * dx + dy * dy + dz * dz < tolerance * tolerance) {
             // this->movementData.sub_6F11B0(moveTicks, &dest, 0, 1);
-            // this->sub_73AC30(0, -1);
+            this->UpdateBaseAnimation(0, -1);
             return;
         }
     } else if (type == 2) {
@@ -1260,7 +1427,7 @@ void CGUnit_C::OnMonsterMove(CDataStore* msg, NETMESSAGE msgId, WGUID transportG
     //     this->data980 = nullptr;
     // }
 
-    // this->sub_73AC30(0, -1);
+    this->UpdateBaseAnimation(0, -1);
 }
 
 // OFFSET: 0x7180C0

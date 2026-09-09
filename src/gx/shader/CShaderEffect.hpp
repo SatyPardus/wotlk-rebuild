@@ -56,6 +56,8 @@ class CShaderEffect : public TSHashObject<CShaderEffect, HASHKEY_STRI> {
         static void SetTexMtx_Identity(uint32_t a1);
         static void SetTexMtx_SphereMap(uint32_t a1);
         static void UpdateProjMatrix(void);
+        static void SetDefaultShaders(uint32_t value);
+        static void UpdateWorldViewMatrix();
 
         // Member variables
         /* 0018 */ uint32_t m_fixedFuncOpCount;

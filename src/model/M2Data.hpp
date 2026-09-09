@@ -393,6 +393,8 @@ struct M2Data {
     M2Array<M2Ribbon> ribbons;
     M2Array<M2Particle> particles;
     M2Array<uint16_t> textureCombinerCombos;
+
+    bool HasSequence(uint32_t sequenceId);
 };
 
 // .skin files

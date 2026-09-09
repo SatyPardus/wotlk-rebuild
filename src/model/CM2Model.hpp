@@ -25,6 +25,10 @@ struct M2ModelTextureTransform;
 struct M2ModelAttachment;
 class CFacet;
 class CMapBaseObj;
+class M2ModelRibbon;
+class M2ModelParticle;
+class CParticleEmitter2;
+class CRibbonEmitter;
 
 struct CM2ModelCall {
     uint32_t type = -1;
@@ -148,6 +152,17 @@ class CM2Model {
         /* 00B4 */ C44Matrix m_worldTransform;
         /* 00F4 */ C44Matrix matrixF4;
 
+        /* 0174 */ C44Matrix matrix174;
+
+        /* 02A8 */ uint32_t uint2A8 = 0;
+
+        /* 02B8 */ M2ModelRibbon* m_ribbons = nullptr;
+        /* 02BC */ CRibbonEmitter** m_ribbonEmitters = nullptr;
+        /* 02C0 */ M2ModelParticle* m_particles = nullptr;
+        /* 02C4 */ CParticleEmitter2** m_particleEmitters = nullptr;
+        /* 02C8 */ CM2Model** m_particlePrev = nullptr;
+        /* 02CC */ CM2Model* m_particleNext = nullptr;
+
         /* 02D4 */ uint32_t m_hitTestMode = 0;
         /* 02D8 */ CM2Model** m_hitTestPrev = nullptr;
         /* 02DC */ CM2Model* m_hitTestNext = nullptr;
@@ -201,6 +216,8 @@ class CM2Model {
         void AnimateAttachmentsMT();
         void AnimateST();
         void AnimateTextureTransformsMT();
+        void AnimateParticlesMT();
+        void AnimateParticleST(float dt, uint32_t index);
         void AttachToScene(CM2Scene* scene);
         uint16_t AttachToParent(CM2Model* parent, uint32_t attachmentId, const C3Vector* a4, int32_t a5);
         void CancelDeferredSequences(uint32_t boneIndex, bool a3);
@@ -225,6 +242,8 @@ class CM2Model {
         void SetAnimating(int32_t animating);
         void SetBoneSequence(uint32_t boneId, uint32_t sequenceId, uint32_t a4, uint32_t time, float a6, int32_t a7, int32_t a8);
         void SetBoneSequenceDeferred(uint16_t a2, M2Data* data, uint16_t boneIndex, uint32_t time, float a6, M2SequenceFallback fallback, int32_t a8, int32_t a9, int32_t a10);
+        bool HasSequence(uint32_t sequenceId);
+        uint32_t GetBoneSequenceId(uint32_t boneId);
         void SetIndices();
         void SetLightingCallback(void (*lightingCallback)(CM2Model*, CM2Lighting*, void*), void* lightingArg);
         void SetLoadedCallback(void (*loadedCallback)(CM2Model*, void*), void* loadedArg);

@@ -171,6 +171,22 @@ void C3Spline::Pos(float t, C3Vector* out, uint32_t pointCount) {
     }
 }
 
+// OFFSET: 0x4C3920
+void C3Spline::Vel(float t, C3Vector* out, uint32_t mode) {
+    auto clamped = 0.0f;
+    if (t >= 0.0f) {
+        clamped = t;
+        if (t >= 1.0)
+            clamped = 1.0;
+    }
+    if (mode) {
+        if (mode == 1)
+            this->IVelArclength(clamped, out);
+    } else {
+        this->IVelParametric(clamped, out);
+    }
+}
+
 // OFFSET: 0x4C3980
 void C3Spline::Frame(float t, C44Matrix* out, uint32_t a4) {
     auto v4 = 0.0f;

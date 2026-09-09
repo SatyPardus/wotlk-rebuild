@@ -269,6 +269,43 @@ void CShaderEffect::SetTexMtx_Identity(uint32_t a1) {
     }
 }
 
+// OFFSET: 0x873160
+void CShaderEffect::SetDefaultShaders(uint32_t value) {
+    if (!CShaderEffect::s_enableShaders) {
+        return;
+    }
+
+    uint32_t shadow = CShaderEffect::s_shadowValue;
+
+    if (shadow > 2) {
+        shadow = 2;
+    }
+
+    if (value > 2) {
+        value = 2;
+    }
+
+    uint32_t permute = value + (3 * shadow);
+    uint32_t vertexPermute = CShaderEffect::s_lightEnabled + (2 * (CShaderEffect::s_localLightCount + (5 * permute)));
+
+    CShaderEffect::SetShaders(vertexPermute, CShaderEffect::SelectShadowShader());
+}
+
+// OFFSET: 0x872B00
+void CShaderEffect::UpdateWorldViewMatrix() {
+    if (!CShaderEffect::s_enableShaders) {
+        return;
+    }
+
+    C44Matrix view = g_theGxDevicePtr->m_xforms[GxXform_View].m_mtx[g_theGxDevicePtr->m_xforms[GxXform_View].m_level];
+    C44Matrix world = g_theGxDevicePtr->m_xforms[GxXform_World].m_mtx[g_theGxDevicePtr->m_xforms[GxXform_World].m_level];
+
+    C44Matrix worldView = world * view;
+    worldView = worldView.Transpose();
+
+    GxShaderConstantsSet(GxSh_Vertex, 31, reinterpret_cast<const C4Vector*>(&worldView), 4);
+}
+
 // OFFSET: 0x873620
 void CShaderEffect::SetTexMtx(C44Matrix& mat, uint32_t a2) {
     if (CShaderEffect::s_enableShaders) {

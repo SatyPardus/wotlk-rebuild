@@ -46,6 +46,7 @@ class CMovementShared : public CPassenger {
     bool IsOnFlyingSpline();
     bool IsOnFallingSpline();
     bool IsSplineFlyer_FlyingSwimming();
+    bool IsSplineFlyer_NotHovering();
     bool IsFallingSwimmingFlying();
     bool IsGravityDisabled();
     bool CanCollideWhileFlying();

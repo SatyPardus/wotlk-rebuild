@@ -14,8 +14,13 @@
 #include <common/ObjectAlloc.hpp>
 #include <common/processor/Processor.hpp>
 #include <tempest/Intersect.hpp>
+#include <util/Unimplemented.hpp>
+#include "model/CParticleEmitter2.hpp"
+#include <util/Byte.hpp>
 
 uint32_t CM2Scene::s_optFlags = 0xFFFFFFFF;
+
+static const int32_t s_m2BlendToGxBlend[7] = { 2, 2, 2, 10, 3, 4, 5 };
 
 void CM2Scene::AnimateThread(void* arg) {
     // TODO
@@ -383,10 +388,11 @@ void CM2Scene::AdvanceTime(uint32_t a2) {
 }
 
 // OFFSET: 0x821A20
-void CM2Scene::Animate(const C3Vector& cameraPos) {
+bool CM2Scene::Animate(const C3Vector& cameraPos) {
     this->m_frameStamp++;
 
     uint32_t optFlags = this->m_cache->m_flags & 0xE000;
+
     if (CM2Scene::s_optFlags != optFlags) {
         CM2Scene::s_optFlags = optFlags;
     }
@@ -397,29 +403,24 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
     this->m_viewInv = this->m_view.Inverse(this->m_view.Determinant());
 
     if (this->m_cache->m_flags & 0x4) {
-        // In multithreaded mode, iteration over the animate list is interleaved:
-        // - the current thread animates entries 0, 2, 4, ...
-        // - the newly created thread animates entries 1, 3, 5, ...
-
         this->m_cache->BeginThread(CM2Scene::AnimateThread, this);
 
         CM2Model* nextModel;
+
         for (auto model = this->m_animateList; model; model = nextModel->m_animateNext) {
             if (!model->m_attachParent) {
+                C3Vector zero = { 0.0f, 0.0f, 0.0f };
+                C3Vector one = { 1.0f, 1.0f, 1.0f };
+
                 if (model->m_flag1000) {
-                    C3Vector v222 = { 0.0f, 0.0f, 0.0f };
-                    C3Vector v218 = { 1.0f, 1.0f, 1.0f };
-
-                    model->AnimateMTSimple(&this->m_view, v218, v222, 1.0f, 1.0f);
+                    model->AnimateMTSimple(&this->m_view, one, zero, 1.0f, 1.0f);
                 } else {
-                    C3Vector v220 = { 0.0f, 0.0f, 0.0f };
-                    C3Vector v221 = { 1.0f, 1.0f, 1.0f };
-
-                    model->AnimateMT(&this->m_view, v221, v220, 1.0f, 1.0f);
+                    model->AnimateMT(&this->m_view, one, zero, 1.0f, 1.0f);
                 }
             }
 
             nextModel = model->m_animateNext;
+
             if (!nextModel) {
                 break;
             }
@@ -429,16 +430,13 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
     } else {
         for (auto model = this->m_animateList; model; model = model->m_animateNext) {
             if (!model->m_attachParent) {
-                if (model->m_flag1000 != 0) {
-                    C3Vector v222 = { 0.0f, 0.0f, 0.0f };
-                    C3Vector v218 = { 1.0f, 1.0f, 1.0f };
+                C3Vector zero = { 0.0f, 0.0f, 0.0f };
+                C3Vector one = { 1.0f, 1.0f, 1.0f };
 
-                    model->AnimateMTSimple(&this->m_view, v218, v222, 1.0f, 1.0f);
+                if (model->m_flag1000) {
+                    model->AnimateMTSimple(&this->m_view, one, zero, 1.0f, 1.0f);
                 } else {
-                    C3Vector v220 = { 0.0f, 0.0f, 0.0f };
-                    C3Vector v221 = { 1.0f, 1.0f, 1.0f };
-
-                    model->AnimateMT(&this->m_view, v221, v220, 1.0f, 1.0f);
+                    model->AnimateMT(&this->m_view, one, zero, 1.0f, 1.0f);
                 }
             }
         }
@@ -451,8 +449,6 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
     }
 
     while (this->m_animateList) {
-        // TODO
-        // - this is clearing out the animate list; why? something must reattach things to it...
         auto model = this->m_animateList;
         this->m_animateList = model->m_animateNext;
         model->m_animatePrev = nullptr;
@@ -462,12 +458,14 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
     }
 
     this->m_doodadElements.SetCount(0);
+
     for (int32_t i = 0; i < M2PASS_COUNT; i++) {
         this->m_passElements[i].SetCount(0);
     }
 
     this->m_elements.SetCount(0);
-    int32_t elementIndex = 0;
+
+    uint32_t elementIndex = 0;
 
     while (this->m_drawList) {
         auto model = this->m_drawList;
@@ -482,47 +480,59 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
             continue;
         }
 
-        auto v19 = model->m_currentLighting;
+        auto lighting = model->m_currentLighting;
         auto data = model->m_shared->m_data;
-        auto v21 = v19->m_flags & 0x20;
-        auto v22 = v19->m_flags & 0x40;
 
-        if (v21 && v22) {
-            // TODO
-            // - liquid plane stuff
+        int32_t aboveWater = lighting->m_flags & 0x20;
+        int32_t belowWater = lighting->m_flags & 0x40;
+
+        if (aboveWater && belowWater) {
+            C3Vector center;
+            center.x = (data->bounds.extent.b.x + data->bounds.extent.t.x) * 0.5f;
+            center.y = (data->bounds.extent.t.y + data->bounds.extent.b.y) * 0.5f;
+            center.z = 0.5f * (data->bounds.extent.t.z + data->bounds.extent.b.z);
+
+            float scale = sqrt((model->matrixF4.a2 * model->matrixF4.a2) + (model->matrixF4.a1 * model->matrixF4.a1) + (model->matrixF4.a0 * model->matrixF4.a0));
+            float radius = scale * data->bounds.radius;
+
+            C3Vector world = center * model->matrixF4;
+            float distance = (lighting->m_liquidPlane.n.y * world.y) + (lighting->m_liquidPlane.n.z * world.z) + (world.x * lighting->m_liquidPlane.n.x) + lighting->m_liquidPlane.d;
+
+            aboveWater = -radius <= distance;
+            belowWater = radius >= distance;
+
+            if ((this->m_cache->m_flags & 0x2) == 0 && aboveWater && belowWater) {
+                int32_t submerged = this->m_liquidTypeId != 0;
+                aboveWater = this->m_liquidTypeId == 0;
+                belowWater = submerged;
+            }
         }
 
         auto skinProfile = model->m_shared->m_skinData;
-        auto v17 = (this->m_cache->m_flags & 0x1) == 0;
+        int32_t optGeo = model->ptr2D0 != nullptr;
 
-        int32_t v229;
-        if (v17 || (model->m_flags & 0x1) != 0 || (v17 = (model->m_flag40) == 0, v229 = 1, v17)) {
-            v229 = 0;
+        int32_t allowShadowPass;
+
+        if ((this->m_cache->m_flags & 0x1) == 0 || (model->m_flags & 0x1) != 0 || !model->m_flag40) {
+            allowShadowPass = 0;
+        } else {
+            allowShadowPass = 1;
         }
 
         uint32_t batchCount;
-        if (model->ptr2D0) {
-            // TODO
-            // batchCount = (model->ptr2D0 + 4);
 
-            assert(false);
+        if (optGeo) {
+            WHOA_UNIMPLEMENTED(0);
         } else {
             batchCount = skinProfile->batches.Count();
         }
 
-        for (int32_t batchIndex = 0; batchIndex < batchCount; batchIndex++) {
+        for (uint32_t batchIndex = 0; batchIndex < batchCount; batchIndex++) {
             M2Batch* batch;
             M2SkinSection* skinSection;
-            CShaderEffect* effect;
-            int32_t v221;
-            int32_t v222;
 
-            if (model->ptr2D0) {
-                // TODO
-                // batch = &model->m_optGeo->batches[batchIndex];
-                // skinSection = model->m_optGeo->skinSections[batch->skinSectionIndex];
-
-                assert(false);
+            if (optGeo) {
+                WHOA_UNIMPLEMENTED(0);
             } else {
                 batch = &skinProfile->batches[batchIndex];
                 skinSection = &model->m_shared->m_skinSections[batch->skinSectionIndex];
@@ -539,13 +549,11 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
             float alpha = model->alpha19C;
 
             if (batch->colorIndex < data->colors.Count()) {
-                auto& color = model->m_colors[batch->colorIndex];
-                alpha *= color.alphaTrack.currentValue;
+                alpha = alpha * model->m_colors[batch->colorIndex].alphaTrack.currentValue;
             }
 
             if (batch->textureCount) {
-                auto& textureWeight = model->m_textureWeights[data->textureWeightCombos[batch->textureWeightComboIndex]];
-                alpha *= textureWeight.weightTrack.currentValue;
+                alpha = alpha * model->m_textureWeights[data->textureWeightCombos[batch->textureWeightComboIndex]].weightTrack.currentValue;
             }
 
             if (alpha < 0.000099999997f) {
@@ -554,24 +562,28 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
 
             M2Material* material = &data->materials[batch->materialIndex];
 
-            auto v17 = (batch->flags & 0x4) == 0;
-            if (v17 || (v17 = this->m_projectTextureCallback == 0, v222 = 1, v17)) {
-                v222 = 0;
+            int32_t projected;
+
+            if ((batch->flags & 0x4) == 0 || this->m_projectTextureCallback == nullptr) {
+                projected = 0;
+            } else {
+                projected = 1;
             }
 
-            M2Material* layerMaterial = batch->materialLayer
-                ? &data->materials[batch->materialIndex - batch->materialLayer]
-                : &data->materials[batch->materialIndex];
+            M2Material* layerMaterial = batch->materialLayer ? &data->materials[batch->materialIndex - batch->materialLayer] : &data->materials[batch->materialIndex];
 
-            if (layerMaterial->blendMode > 1 || (v221 = 0, alpha < 0.99998999f)) {
-                v221 = 1;
+            int32_t transparent;
+
+            if (layerMaterial->blendMode > 1 || alpha < 0.99998999f) {
+                transparent = 1;
+            } else {
+                transparent = 0;
             }
 
-            if (model->ptr2D0) {
-                // TODO
-                // effect = model->m_optGeo->effects[batchIndex];
+            CShaderEffect* effect;
 
-                assert(false);
+            if (optGeo) {
+                WHOA_UNIMPLEMENTED(0);
             } else {
                 effect = model->m_shared->m_batchShaders[batchIndex];
             }
@@ -582,21 +594,26 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
 
             auto element = this->m_elements.New();
 
-            if (v222) {
+            if (!element) {
+                return 0;
+            }
+
+            if (projected) {
                 element->type = 1;
-            } else if (!model->IsBatchDoodadCompatible(batch) || v221) {
+            } else if (!model->IsBatchDoodadCompatible(batch) || transparent) {
                 element->type = 0;
             } else {
                 element->type = 2;
             }
 
             element->model = model;
-
             element->flags = 0x0;
-            if (v221 == 1 && v21 && v22 && !v222) {
+
+            if (transparent == 1 && aboveWater && belowWater && !projected) {
                 element->flags |= 0x2;
             }
-            if (model->ptr2D0) {
+
+            if (optGeo) {
                 element->flags |= 0x4;
             }
 
@@ -609,63 +626,483 @@ void CM2Scene::Animate(const C3Vector& cameraPos) {
 
             CM2Scene::ComputeElementShaders(element);
 
-            float v58;
+            float sortDepth;
 
-            if (v221 < 1) {
+            if (transparent < 1) {
                 element->float14 = model->float88;
-                v58 = model->float88;
+                sortDepth = model->float88;
             } else if (data->flags & 0x10) {
-                element->float14 = (skinSection->sortCenterPosition * model->m_boneMatrices[skinSection->centerBoneIndex]).SquaredMag();
-                v58 = model->float88;
+                C3Vector center = skinSection->sortCenterPosition * model->m_boneMatrices[skinSection->centerBoneIndex];
+                element->float14 = (center.z * center.z) + (center.y * center.y) + (center.x * center.x);
+                sortDepth = model->float88;
             } else {
-                // TODO other sort position logic
+                C44Matrix& bone = model->m_boneMatrices[skinSection->centerBoneIndex];
+                float depth;
 
-                v58 = model->float88;
+                if (batch->flags & 0x1) {
+                    C3Vector p = skinSection->sortCenterPosition * bone;
+                    C3Vector n = p;
+                    float lengthSq = (p.x * p.x) + (p.z * p.z) + (p.y * p.y);
+
+                    if (lengthSq > 2.384185791015625e-07f) {
+                        float invLength = 1.0f / sqrt(lengthSq);
+                        n.x = p.x * invLength;
+                        n.y = invLength * p.y;
+                        n.z = invLength * p.z;
+                    }
+
+                    float boneScale = sqrt((bone.a2 * bone.a2) + (bone.a1 * bone.a1) + (bone.a0 * bone.a0)) * skinSection->sortRadius;
+
+                    p.x = p.x - (n.x * boneScale);
+                    p.y = p.y - (n.y * boneScale);
+                    p.z = p.z - (n.z * boneScale);
+
+                    depth = (p.y * p.y) + (p.x * p.x) + (p.z * p.z);
+
+                    if (p.z < 0.0f) {
+                        depth = -depth;
+                    }
+                } else if (batch->flags & 0x2) {
+                    C3Vector p = skinSection->sortCenterPosition * bone;
+                    C3Vector n = p;
+                    float lengthSq = (p.z * p.z) + (p.y * p.y) + (p.x * p.x);
+
+                    if (lengthSq > 2.384185791015625e-07f) {
+                        float invLength = 1.0f / sqrt(lengthSq);
+                        n.x = p.x * invLength;
+                        n.y = invLength * p.y;
+                        n.z = invLength * p.z;
+                    }
+
+                    float boneScale = sqrt((bone.a2 * bone.a2) + (bone.a1 * bone.a1) + (bone.a0 * bone.a0)) * skinSection->sortRadius;
+
+                    p.x = (n.x * boneScale) + p.x;
+                    p.y = (n.y * boneScale) + p.y;
+                    p.z = (n.z * boneScale) + p.z;
+
+                    depth = (p.y * p.y) + (p.z * p.z) + (p.x * p.x);
+
+                    if (p.z < 0.0f) {
+                        depth = -depth;
+                    }
+                } else {
+                    C3Vector p = skinSection->sortCenterPosition * bone;
+                    depth = (p.z * p.z) + (p.y * p.y) + (p.x * p.x);
+                }
+
+                element->float14 = depth;
+
+                if (!allowShadowPass || projected || (material->flags & 0x10) != 0) {
+                    sortDepth = element->float14;
+                } else {
+                    sortDepth = model->float88;
+                }
             }
 
-            element->float10 = v58;
+            element->float10 = sortDepth;
 
             if (element->type == 2) {
-                // TODO
-            } else if (v221 == 1) {
-                if (v222) {
-                    if (v22) {
+                *this->m_doodadElements.New() = elementIndex;
+            } else if (transparent == 1) {
+                if (projected) {
+                    if (belowWater) {
                         *this->m_passElements[2].New() = elementIndex;
                     } else {
                         *this->m_passElements[1].New() = elementIndex;
                     }
                 } else {
-                    if (v21) {
+                    if (aboveWater) {
                         *this->m_passElements[1].New() = elementIndex;
                     }
 
-                    if (v22) {
+                    if (belowWater) {
                         *this->m_passElements[2].New() = elementIndex;
                     }
                 }
             } else {
-                *this->m_passElements[v221].New() = elementIndex;
+                *this->m_passElements[transparent].New() = elementIndex;
             }
 
             elementIndex++;
 
-            if (v229 && !v222 && v221 >= 1 && !(material->flags & 0x10)) {
-                // TODO
+            if (allowShadowPass && !projected && transparent >= 1 && (material->flags & 0x10) == 0) {
+                element->float14 = 3.4028235e38f;
+
+                auto shadow = this->m_elements.New();
+
+                if (!shadow) {
+                    return 0;
+                }
+
+                memcpy(shadow, &this->m_elements[elementIndex - 1], sizeof(M2Element));
+                shadow->flags |= 0x1;
+
+                if (aboveWater) {
+                    *this->m_passElements[1].New() = elementIndex;
+                }
+
+                if (belowWater) {
+                    *this->m_passElements[2].New() = elementIndex;
+                }
+
+                elementIndex++;
             }
         }
 
-        // TODO
-        // - ribbons
+        //for (uint32_t ribbonIndex = 0; ribbonIndex < data->ribbons.Count(); ribbonIndex++) {
+        //    if (model->m_ribbonEmitters[ribbonIndex]->IsDead()) {
+        //        continue;
+        //    }
+        //
+        //    auto& ribbon = data->ribbons[ribbonIndex];
+        //    auto& modelRibbon = model->m_ribbons[ribbonIndex];
+        //
+        //    float alpha = model->float198;
+        //
+        //    if (ribbon.alphaTrack.sequenceTimes.Count()) {
+        //        alpha = alpha * modelRibbon.alphaTrack.currentValue;
+        //    }
+        //
+        //    M2Material* material = &data->materials[data->materialLookup[ribbon.materialIndices[0]]];
+        //
+        //    auto element = this->m_elements.New();
+        //
+        //    if (!element) {
+        //        continue;
+        //    }
+        //
+        //    element->alpha = alpha;
+        //    element->index = ribbonIndex;
+        //    element->type = 3;
+        //    element->model = model;
+        //    element->flags = 0x0;
+        //    element->priorityPlane = ribbon.priorityPlane;
+        //    element->float10 = model->float88;
+        //    element->float14 = model->float88;
+        //    element->effect = nullptr;
+        //    element->vertexPermute = -1;
+        //    element->pixelPermute = -1;
+        //    element->uint3C = 0;
+        //
+        //    if (material->blendMode > 1 || alpha < 0.99998999f) {
+        //        if (aboveWater) {
+        //            *this->m_passElements[1].New() = elementIndex;
+        //        } else {
+        //            *this->m_passElements[2].New() = elementIndex;
+        //        }
+        //    } else {
+        //        *this->m_passElements[0].New() = elementIndex;
+        //    }
+        //
+        //    elementIndex++;
+        //}
 
-        // TODO
-        // - draw callbacks
+        //if (model->m_drawCallback) {
+        //    auto element = this->m_elements.New();
+        //
+        //    if (element) {
+        //        element->type = 5;
+        //        element->alpha = 1.0f;
+        //        element->model = model;
+        //        element->flags = 0x0;
+        //        element->index = 0;
+        //        element->priorityPlane = 0;
+        //        element->float10 = model->float88;
+        //        element->float14 = model->float88;
+        //        element->effect = nullptr;
+        //        element->vertexPermute = -1;
+        //        element->pixelPermute = -1;
+        //        element->uint3C = 0;
+        //
+        //        if (model->f_flags & 0x20) {
+        //            *this->m_passElements[0].New() = elementIndex;
+        //        } else if (aboveWater) {
+        //            *this->m_passElements[1].New() = elementIndex;
+        //        } else {
+        //            *this->m_passElements[2].New() = elementIndex;
+        //        }
+        //
+        //        elementIndex++;
+        //    }
+        //}
     }
+
+    uint32_t particleElementCount = 0;
+
+    while (this->m_particleList) {
+        auto model = this->m_particleList;
+        this->m_particleList = model->m_particleNext;
+        model->m_particlePrev = nullptr;
+        model->m_particleNext = nullptr;
+
+        if (!model->IsDrawable(0, 0)) {
+            continue;
+        }
+
+        auto lighting = model->m_currentLighting;
+        auto data = model->m_shared->m_data;
+
+        int32_t aboveWater = lighting->m_flags & 0x20;
+
+        if (aboveWater && (lighting->m_flags & 0x40) != 0) {
+            C3Vector center;
+            center.x = (data->bounds.extent.t.x + data->bounds.extent.b.x) * 0.5f;
+            center.y = (data->bounds.extent.t.y + data->bounds.extent.b.y) * 0.5f;
+            center.z = 0.5f * (data->bounds.extent.t.z + data->bounds.extent.b.z);
+
+            float scale = sqrt((model->matrixF4.a2 * model->matrixF4.a2) + (model->matrixF4.a1 * model->matrixF4.a1) + (model->matrixF4.a0 * model->matrixF4.a0));
+            float radius = scale * data->bounds.radius;
+
+            C3Vector world = center * model->matrixF4;
+            float distance = (lighting->m_liquidPlane.n.y * world.y) + (lighting->m_liquidPlane.n.z * world.z) + (lighting->m_liquidPlane.n.x * world.x) + lighting->m_liquidPlane.d;
+
+            aboveWater = -radius <= distance;
+        }
+
+        for (uint32_t i = 0; i < data->particles.Count(); i++) {
+            auto emitter = model->m_particleEmitters[i];
+
+            if ((model->f_flags & 0x2000) != 0 && (emitter->m_flags & 0x200) != 0) {
+                continue;
+            }
+
+            if ((emitter->m_flags & 0x2000000) != 0) {
+                continue;
+            }
+
+            if (!model->m_particles[i].m_active) {
+                continue;
+            }
+
+            float alpha = model->float198;
+
+            if (alpha < 0.000099999997f) {
+                continue;
+            }
+
+            auto& particle = data->particles[i];
+            C3Vector world = particle.position * model->m_boneMatrices[particle.boneIndex];
+            float depth = (world.z * world.z) + (world.y * world.y) + (world.x * world.x);
+
+            this->QueueParticleElement(emitter, model, depth, alpha, aboveWater, &elementIndex, &particleElementCount);
+
+            for (uint32_t c = 0; c < emitter->m_childEmitterCount; c++) {
+                this->QueueParticleElement(emitter->m_childEmitters[c], model, depth, alpha, aboveWater, &elementIndex, &particleElementCount);
+            }
+        }
+    }
+
+    uint32_t doodadCount = this->m_doodadElements.Count();
+
+    //if (doodadCount > 1) {
+    //    memset(CM2Scene::s_doodadHashSlots, 0xFF, sizeof(CM2Scene::s_doodadHashSlots));
+    //
+    //    for (uint32_t i = 0; i < doodadCount; i++) {
+    //        uint32_t index = this->m_doodadElements[i];
+    //        M2Element* element = &this->m_elements[index];
+    //        uint32_t start = CM2Scene::HashElement(element) % 0xFB;
+    //        uint32_t slot = start;
+    //
+    //        while (true) {
+    //            slot++;
+    //
+    //            if (slot >= 0xFB) {
+    //                slot = 0;
+    //            }
+    //
+    //            int32_t occupant = CM2Scene::s_doodadHashSlots[slot];
+    //
+    //            if (occupant == -1 || slot == start) {
+    //                CM2Scene::s_doodadHashSlots[slot] = index;
+    //                break;
+    //            }
+    //
+    //            if (!CM2Scene::InterpolateAnimationFrame(index, occupant, this)) {
+    //                break;
+    //            }
+    //        }
+    //
+    //        element->doodadKey = CM2Scene::s_doodadHashSlots[slot];
+    //    }
+    //}
+
+    //M2HeapSort(CM2Scene::SortDoodadProxy, this->m_doodadElements.Ptr(), doodadCount, this);
+
+    uint32_t writeIndex = 0;
+    uint32_t readIndex = 0;
+
+    //while (readIndex < doodadCount) {
+    //    uint32_t first = this->m_doodadElements[readIndex];
+    //    this->m_doodadElements[writeIndex] = first;
+    //    writeIndex++;
+    //
+    //    uint32_t scan = readIndex + 1;
+    //
+    //    while (scan < doodadCount) {
+    //        uint32_t candidate = this->m_doodadElements[scan];
+    //
+    //        if (this->m_elements[first].doodadKey != this->m_elements[candidate].doodadKey) {
+    //            break;
+    //        }
+    //
+    //        this->m_doodadElements[writeIndex] = candidate;
+    //        writeIndex++;
+    //        scan++;
+    //    }
+    //
+    //    if (scan - readIndex <= 1) {
+    //        this->m_elements[first].type = 0;
+    //        CM2Scene::ComputeElementShaders(&this->m_elements[first]);
+    //        *this->m_passElements[0].New() = first;
+    //        writeIndex--;
+    //        readIndex = readIndex + 1;
+    //    } else {
+    //        this->m_elements[first].doodadRunLength = scan - readIndex;
+    //        readIndex = scan;
+    //    }
+    //}
+
+    if (writeIndex > this->m_doodadElements.Count() && writeIndex > this->m_doodadElements.m_alloc) {
+        this->m_doodadElements.ReallocData(writeIndex);
+    }
+
+    this->m_doodadElements.m_count = writeIndex;
 
     M2HeapSort(CM2Scene::SortOpaque, this->m_passElements[0].Ptr(), this->m_passElements[0].Count(), this);
     M2HeapSort(CM2Scene::SortTransparent, this->m_passElements[1].Ptr(), this->m_passElements[1].Count(), this);
     M2HeapSort(CM2Scene::SortTransparent, this->m_passElements[2].Ptr(), this->m_passElements[2].Count(), this);
 
-    // TODO sort additive particles
+    if (LOBYTE(this->m_cache->m_flags) < 0 && particleElementCount > 1) {
+        this->SortAdditiveParticleElements(1);
+        this->SortAdditiveParticleElements(2);
+    }
+
+    return 1;
+}
+
+// OFFSET: 0x81CA20
+int32_t GxBlendToM2Blend(int32_t gxBlend) {
+    switch (gxBlend) {
+    case 1:
+        return 1;
+    case 2:
+        return 2;
+    case 10:
+        return 3;
+    case 3:
+        return 4;
+    case 4:
+        return 5;
+    case 5:
+        return 6;
+    default:
+        return 0;
+    }
+}
+
+// OFFSET: 0x81F9E0
+void CM2Scene::SortAdditiveParticleElements(int32_t pass) {
+    auto& passElements = this->m_passElements[pass];
+
+    uint32_t group = 0;
+    int32_t previousAdditive = 0;
+
+    for (uint32_t i = 0; i < passElements.Count(); i++) {
+        M2Element* element = &this->m_elements[passElements[i]];
+        M2Data* data = element->model->m_shared->m_data;
+
+        int32_t blendMode = 0;
+
+        switch (element->type) {
+        case 0:
+        case 1:
+        case 2: {
+            blendMode = data->materials[element->batch->materialIndex].blendMode;
+            break;
+        }
+
+        case 3: {
+            blendMode = data->materials[data->ribbons[element->index].materialIndices[0]].blendMode;
+            break;
+        }
+
+        case 4: {
+            if (this->m_cache->m_flags & 0x100) {
+                blendMode = 4;
+            } else {
+                blendMode = GxBlendToM2Blend(element->emitter->m_materialBlend);
+            }
+
+            break;
+        }
+
+        default: {
+            break;
+        }
+        }
+
+        int32_t blend = s_m2BlendToGxBlend[blendMode];
+        int32_t additive = blend == 3 || blend == 10;
+
+        if (!additive || !previousAdditive) {
+            group++;
+        }
+
+        previousAdditive = additive;
+        element->additiveGroup = group;
+    }
+
+    M2HeapSort(CM2Scene::SortAdditiveParticles, passElements.Ptr(), passElements.Count(), this);
+}
+
+// OFFSET: 0x821930
+void CM2Scene::QueueParticleElement(CParticleEmitter2* emitter, CM2Model* model, float depth, float alpha, int32_t aboveWater, uint32_t* elementIndex, uint32_t* particleCount) {
+    if (!emitter->HasLiveParticles()) {
+        return;
+    }
+
+    if (emitter->m_hasModel == 1) {
+        return;
+    }
+
+    M2Element* element = this->m_elements.New();
+
+    if (!element) {
+        return;
+    }
+
+    element->alpha = alpha;
+    element->model = model;
+    element->type = 4;
+    element->flags = 0x0;
+    element->emitter = emitter;
+    element->priorityPlane = emitter->m_priorityPlane;
+    element->float10 = model->float88;
+    element->effect = nullptr;
+    element->float14 = depth;
+    element->vertexPermute = -1;
+    element->pixelPermute = -1;
+    element->uint3C = 0;
+
+    int32_t blend = emitter->m_materialBlend;
+
+    if (blend == 10 || blend == 3) {
+        (*particleCount)++;
+    }
+
+    if (blend <= 1 && alpha >= 0.999989986f) {
+        *this->m_passElements[0].New() = *elementIndex;
+        (*elementIndex)++;
+        return;
+    }
+
+    if (aboveWater == 0 || (emitter->m_flags & 0x40000) != 0) {
+        *this->m_passElements[2].New() = *elementIndex;
+    } else {
+        *this->m_passElements[1].New() = *elementIndex;
+    }
+
+    (*elementIndex)++;
 }
 
 // OFFSET: 0x81F8F0
@@ -979,6 +1416,92 @@ int32_t CM2Scene::SortHitNear(uint32_t a, uint32_t b, const void* userArg) {
     return b < a;
 }
 
+// OFFSET: 0x47BF20
+int32_t PointerDiff4(const void* a, const void* b) {
+    return (reinterpret_cast<intptr_t>(a) - reinterpret_cast<intptr_t>(b)) >> 2;
+}
+
+// OFFSET: 0x81CA80
+int32_t ParticleRenderStateKey(const CParticleMaterial* material) {
+    int32_t key = 4;
+
+    if ((material->flags & 0x1) == 0) {
+        key = 5;
+    }
+
+    if ((material->flags & 0x2) == 0) {
+        key |= 0x2;
+    }
+
+    if ((material->flags & 0x4) == 0) {
+        key |= 0x10;
+    }
+
+    return key;
+}
+
+// OFFSET: 0x81F0E0
+int32_t CM2Scene::SortAdditiveParticles(uint32_t a, uint32_t b, const void* userArg) {
+    auto scene = static_cast<const CM2Scene*>(userArg);
+
+    const M2Element* left = &scene->m_elements[a];
+    const M2Element* right = &scene->m_elements[b];
+
+    if (left->additiveGroup > right->additiveGroup) {
+        return 1;
+    }
+
+    if (left->additiveGroup < right->additiveGroup) {
+        return -1;
+    }
+
+    if (left->type == 4 || right->type == 4) {
+        if (left->type > right->type) {
+            return -1;
+        }
+
+        if (left->type < right->type) {
+            return 1;
+        }
+    }
+
+    if (left->type != 4) {
+        return CM2Scene::SortTransparent(a, b, userArg);
+    }
+
+    CParticleEmitter2* leftEmitter = left->emitter;
+    CParticleEmitter2* rightEmitter = right->emitter;
+
+    CParticleMaterial leftMaterial;
+    leftMaterial.blend = leftEmitter->m_materialBlend;
+    leftMaterial.flags = leftEmitter->m_materialFlags;
+
+    CParticleMaterial rightMaterial;
+    rightMaterial.blend = rightEmitter->m_materialBlend;
+    rightMaterial.flags = rightEmitter->m_materialFlags;
+
+    if (leftMaterial.blend < rightMaterial.blend) {
+        return -1;
+    }
+
+    if (leftMaterial.blend > rightMaterial.blend) {
+        return 1;
+    }
+
+    uint32_t leftKey = ParticleRenderStateKey(&leftMaterial);
+    uint32_t rightKey = ParticleRenderStateKey(&rightMaterial);
+
+    if (leftKey < rightKey) {
+        return -1;
+    }
+
+    if (leftKey > rightKey) {
+        return 1;
+    }
+
+    return PointerDiff4(leftEmitter->m_texture, rightEmitter->m_texture);
+}
+
 // OFFSET: 0x81CFF0
 uint32_t CM2Scene::SphereTestModels(const C3Vector& start, const C3Vector& dir, float len, int32_t requireCurrentFrame) {
     uint32_t count = 0;
@@ -1009,7 +1532,7 @@ uint32_t CM2Scene::SphereTestModels(const C3Vector& start, const C3Vector& dir, 
         if (model->m_hitTestMode == 3) {
             bounds = &data->collisionBounds;
         } else {
-            bounds = &data->sequences[model->m_bones[0].sequence.uint8].bounds;
+            bounds = &data->sequences[model->m_bones[0].sequence.m_sequenceIndex].bounds;
         }
 
         if (std::fabs(bounds->radius) < 0.00000023841858f) {

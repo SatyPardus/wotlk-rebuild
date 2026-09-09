@@ -68,6 +68,7 @@ class CMovement_C : public CMovementShared {
     void SetUpdateInfo(int32_t time, CClientMoveUpdate* update, uint32_t a4);
     void ExecuteMovement(uint32_t time, uint32_t prevTime);
     int32_t UpdatePlayerMovement(int32_t time);
+    bool HeartBeat(CPlayerMoveEvent* moveEvent);
     void ApplyMovement(uint32_t a2, uint32_t a3);
     bool PlotUnitSplineMovement(int32_t time, uint32_t elapsed, C3Vector* out);
     void AddToMoversList();
