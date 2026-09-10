@@ -116,6 +116,7 @@ class CMapObjGroup : public CMapBaseObj {
     void GetTrisFromQuery(uint32_t a2, BspQuery* a3, CMapObjDef* mapObjDef, uint32_t a5);
     void SetLighting(uint32_t mode);
     bool Intersect(C3Segment& seg, float* dist, uint32_t flags, uint16_t faceIgnoreFlags, int32_t* hitIndex);
+    bool GetFacesForLinking(C3Segment& seg, float* t0, int32_t* face0, float* t1, int32_t* face1);
 
     static void AsyncPostloadCallback(void* arg);
     static void Initialize();

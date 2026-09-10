@@ -66,6 +66,7 @@ void BuildTriQuery(BspQuery_Segment* q, SMOPoly* polyList, C3Vector* vertexList,
     q->ray.dir.z *= q->oosegMag;
 }
 
+// OFFSET: 0x7C9B10
 template <>
 void BspQuery_Volume<CAaBox>::operator()(uint16_t faceIndex) {
     if (this->faces[faceIndex].flags & this->faceIgnoreFlags)
@@ -522,5 +523,23 @@ bool BspQuery_SegmentLink::GetFaceIndicesUsingCache(const CAaBsp& aaBsp, const C
         }
     }
 
+    return true;
+}
+
+// OFFSET: 0x7C6710
+bool BspQuery_SegmentLink::GetHits(float* t0, int32_t* face0, float* t1, int32_t* face1) {
+    *face0 = -1;
+    *face1 = -1;
+    if (this->bestFace0 == -1 && this->bestFace1 == -1) return false;
+    if (this->bestFace1 != -1) {
+        float t = this->bestT1 * this->oosegMag;
+        *t1 = t >= this->tMax ? this->tMax : t;
+        *face1 = this->bestFace1;
+    }
+    if (this->bestFace0 != -1) {
+        float t = this->bestT0 * this->oosegMag;
+        *t0 = t >= this->tMin ? this->tMin : t;
+        *face0 = this->bestFace0;
+    }
     return true;
 }

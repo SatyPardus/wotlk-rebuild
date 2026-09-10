@@ -32,9 +32,7 @@ class CMapChunk : public CMapBaseObj {
     TSLink<CMapChunk> sortListLink;
     STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) doodadDefLinkList;
     STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) mapObjDefLinkList;
-    int32_t TSExplicitList__m_linkoffset_DC;
-    void* TSExplicitList__ptr_E0;
-    void* TSExplicitList__ptr2_E4;
+    STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink) entityLinkList;
     int32_t TSExplicitList__m_linkoffset_E8;
     void* TSExplicitList__ptr_EC;
     void* TSExplicitList__ptr2_F0;

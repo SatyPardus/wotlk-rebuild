@@ -415,7 +415,7 @@ void CWorldScene::AddEntityToSortTable(CMapEntity* entity) {
     C3Vector outCorner;
     CWorldScene::GetNearestCornerToCamera(&entity->bbox, &outCorner);
     entity->m_distanceToCamera = CWorldScene::camPlane.n.z * outCorner.z + CWorldScene::camPlane.n.y * outCorner.y + CWorldScene::camPlane.n.x * outCorner.x + CWorldScene::camPlane.d;
-    //BYTE1(entity->unk_024) = 2;
+    entity->unk_025 = 2;
     if ((entity->unk_07C & 0x1) != 0) {
         CWorldScene::sortTable.culledEntityList.LinkToTail(entity);
         return;
@@ -806,6 +806,27 @@ void CWorldScene::CullDoodadsExterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLi
     }
 }
 
+// OFFSET: 0x79A260
+void CWorldScene::CullMapObjDefGroup() {
+    for (CMapObjDefGroup* mapObjDefGroup = CWorldScene::sortTable.mapObjDefGroup.Head(); mapObjDefGroup;) {
+        auto next = CWorldScene::sortTable.mapObjDefGroup.Next(mapObjDefGroup);
+
+        CMapBaseObjLink* parent = mapObjDefGroup->parentLinkList.Head();
+        CMapObjDef* mapObjDef = reinterpret_cast<CMapObjDef*>(parent->ref);
+        uint32_t groupFlags = mapObjDef->owner->GetGroupFlags(mapObjDefGroup->groupNum);
+
+        if (mapObjDef == CWorldScene::s_viewerMapObjDef || (groupFlags & 0x10008) == 0) {
+            uint8_t fadeLevel = CWorldView::GetFadeLevelForDistance(mapObjDefGroup->distanceToCamera);
+            int32_t interior = mapObjDefGroup->flags & 0x8000;
+
+            CWorldScene::CullDoodadsInterior(&mapObjDefGroup->doodadDefLinkList, mapObjDefGroup->frustumList.Head(), fadeLevel, interior);
+            CWorldScene::CullEntitysInterior(&mapObjDefGroup->entityLinkList, mapObjDefGroup->frustumList.Head(), 0, interior);
+        }
+
+        mapObjDefGroup = next;
+    }
+}
+
 // OFFSET: 0x79A160
 void CWorldScene::CullMapObjDefGroups(CSortEntry* entry, CRect* a2, uint32_t a3) {
     for (auto mapObjDefGroup = entry->exteriorGroupList.Head(); mapObjDefGroup;) {
@@ -859,18 +880,23 @@ void CWorldScene::CullEntitys(CSortEntry* entry) {
         auto next = entry->entityList.Next(entity);
 
         entity->sortEntryLink.Unlink();
+        entity->unk_025 = 1;
 
         if (CWorldScene::FrustumCull(&entity->sphere) || CWorldOcclusion::QueryVolumes(&entity->sphere) || CWorldOcclusion::QueryBuffer(&entity->sphere, 0)) {
             CWorldScene::sortTable.culledEntityList.LinkToTail(entity);
         } else {
-            //entity->model->unk0024 = 0;
+            entity->unk_025 = 0;
             if (entity->model) {
                 entity->model->SetAnimating(1);
                 entity->model->SetVisible(1);
+                bool visible = (entity->unk_07C & 4) == 0;
+
                 if (entity->model->m_attachParent) {
-                    entity->model->m_flag20000 = 1;
+                    entity->model->m_flag80 = visible;
+                    entity->model->m_flag20000 = visible;
                 } else {
-                    entity->model->m_flag10000 = 1;
+                    entity->model->m_flag8 = visible;
+                    entity->model->m_flag10000 = visible;
                 }
 
                 //entity->model->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
@@ -886,6 +912,147 @@ void CWorldScene::CullEntitys(CSortEntry* entry) {
 
         entity = next;
     }
+    CWorldScene::s_entityCanLink = 1;
+}
+
+// OFFSET: 0x799F80
+void CWorldScene::CullThroughPortal(CRect* rect) {
+    CWorldScene::FrustumPush();
+    CWorldScene::FrustumSet(rect);
+    for (CMapObjDefGroup* mapObjDefGroup = CWorldScene::sortTable.pendingExteriorGroupList.Head(); mapObjDefGroup;) {
+        auto next = CWorldScene::sortTable.pendingExteriorGroupList.Next(mapObjDefGroup);
+
+        mapObjDefGroup->sortEntryLink.Unlink();
+        auto parent = mapObjDefGroup->parentLinkList.Head();
+        CMapObjDef* mapObjDef = reinterpret_cast<CMapObjDef*>(parent->ref);
+        auto v7 = CWorldScene::sortTable.mapObjDefGroup.Head();
+        while (v7 && (v7->bbox.t.x < mapObjDefGroup->bbox.b.x || v7->bbox.t.y < mapObjDefGroup->bbox.b.y || v7->bbox.t.z < mapObjDefGroup->bbox.b.z || v7->bbox.b.x > mapObjDefGroup->bbox.t.x || v7->bbox.b.y > mapObjDefGroup->bbox.t.y || v7->bbox.b.z > mapObjDefGroup->bbox.t.z)) {
+            v7 = v7->sortTableLink.Next();
+        }
+        if (!v7 && CWorldScene::frustumPortalView.maxViewDepth < 0.0f) {
+            mapObjDefGroup = next;
+            continue;
+        }
+
+        if (!CWorldScene::FrustumCull(&mapObjDefGroup->bbox)) {
+            CWorldScene::CullMapObjDefGroupFromExterior(mapObjDef, mapObjDefGroup, rect, 1);
+            uint8_t fadeLevel = CWorldView::GetFadeLevelForDistance(mapObjDefGroup->distanceToCamera);
+            auto frustum = mapObjDefGroup->frustumList.Head();
+            auto flag = mapObjDefGroup->flags & 0x8000;
+            CWorldScene::CullDoodadsInterior(&mapObjDefGroup->doodadDefLinkList, frustum, fadeLevel, flag);
+            frustum = mapObjDefGroup->frustumList.Head();
+            CWorldScene::CullEntitysInterior(&mapObjDefGroup->entityLinkList, frustum, 1, flag);
+        }
+    }
+    CWorldScene::FrustumPop();
+}
+
+// OFFSET: 0x799B70
+void CWorldScene::CullDoodadsInterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, CFrustum* frustumList, uint8_t fadeLevel, int32_t interior) {
+    for (auto link = linkList->Head(); link;) {
+        auto next = linkList->Next(link);
+
+        CMapDoodadDef* mapDoodadDef = reinterpret_cast<CMapDoodadDef*>(link->owner);
+
+        if (mapDoodadDef->fadeLevel >= fadeLevel) {
+            if (!mapDoodadDef->model || (mapDoodadDef->flags & MAPOBJ_FLAG_PREPARED) == 0) {
+                // CAaBox localBox = mapDoodadDef->model->m_shared->m_boundingBox;
+                // CAaBox worldBox = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+                // CWorldMath::TransformAABox(&mapDoodadDef->mat, &localBox, &worldBox);
+                // CWorldScene::s_barrier.AddBarrier(&worldBox.b, 10.0f);
+            } else {
+                // if (mapDoodadDef->unk_0B0 != dword_CD87B0) {
+                //     mapDoodadDef->unk_0B0 = dword_CD87B0;
+                mapDoodadDef->unk_025 = 1;
+
+                bool animate = true; //(mapDoodadDef->unk_07C & 0x400) != 0;
+
+                if (!animate) {
+                    float dx = mapDoodadDef->sphere.c.x - CWorldScene::s_activeWorldView.x;
+                    float dy = mapDoodadDef->sphere.c.y - CWorldScene::s_activeWorldView.y;
+                    float dz = mapDoodadDef->sphere.c.z - CWorldScene::s_activeWorldView.z;
+                    animate = (dx * dx + dy * dy + dz * dz < 100.0f);
+                }
+
+                mapDoodadDef->model->SetAnimating(animate ? 1 : 0);
+                //}
+
+                if (mapDoodadDef->unk_025) {
+                    for (CFrustum* frustum = frustumList; frustum; frustum = frustum->sceneLink.Next()) {
+                        if (frustum->Cull(&mapDoodadDef->sphere)) {
+                            mapDoodadDef->unk_025 = 0;
+
+                            if (interior) {
+                                mapDoodadDef->flags |= 0x8000;
+                            } else {
+                                mapDoodadDef->flags &= ~0x8000u;
+                            }
+
+                            CWorldScene::AddDoodadDefModelToModelScene(mapDoodadDef);
+                            ++CWorldScene::s_doodadsRendered;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        link = next;
+    }
+}
+
+// OFFSET: 0x793270
+void CWorldScene::CullEntitysInterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, CFrustum* frustumList, int32_t force, int32_t interior) {
+    CWorldScene::s_entityCanLink = 0;
+
+    for (auto link = linkList->Head(); link;) {
+        auto next = linkList->Next(link);
+
+        CMapEntity* entity = reinterpret_cast<CMapEntity*>(link->owner);
+
+        if ((force || (entity->unk_07C & 1)) && entity->unk_025 && (entity->unk_07C & 4) == 0) {
+            entity->unk_025 = 1;
+
+            for (CFrustum* frustum = frustumList; frustum; frustum = frustum->sceneLink.Next()) {
+                if (frustum->Cull(&entity->sphere)) {
+                    entity->sortEntryLink.Unlink();
+                    entity->unk_025 = 0;
+
+                    if (interior) {
+                        entity->flags |= 0x8000;
+                    } else {
+                        entity->flags &= ~0x8000u;
+                    }
+
+                    if (entity->model) {
+                        entity->model->SetAnimating(1);
+
+                        bool visible = (entity->unk_07C & 4) == 0;
+
+                        if (entity->model->m_attachParent) {
+                            entity->model->m_flag80 = visible;
+                            entity->model->m_flag20000 = visible;
+                        } else {
+                            entity->model->m_flag8 = visible;
+                            entity->model->m_flag10000 = visible;
+                        }
+
+                        entity->model->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
+                        entity->model->m_lightingArg = entity;
+                    }
+
+                    if (!entity->m_func || entity->m_func(entity->m_funcParam, 5, entity->m_funcParam64, entity->m_funcParam32)) {
+                        CWorldScene::sortTable.visibleEntityList.LinkToTail(entity);
+                    }
+
+                    break;
+                }
+            }
+        }
+
+        link = next;
+    }
+
     CWorldScene::s_entityCanLink = 1;
 }
 
@@ -1009,33 +1176,34 @@ void CWorldScene::Render(const C3Vector& cameraPos, float time) {
             //flt_CD8780 = CWorldScene::frustumPortalView.maxViewDepth + 33.333332;
             CWorldScene::CullSortTable(&CWorldScene::frustumPortalView.rect);
         }
+        CRect v16;
+        v16.minY = 0.0;
+        v16.minX = 0.0;
+        v16.maxY = 1.0;
+        v16.maxX = 1.0;
+        CWorldScene::CullThroughPortal(&v16);
+    } else {
+        //++dword_CD87B0;
+        //stru_ADF570.rect.minY = 0.0;
+        //stru_ADF570.rect.minX = 0.0;
+        //stru_ADF570.maxViewDepth = 0.0;
         //v16.minY = 0.0;
+        //stru_ADF570.rect.maxY = 1.0;
         //v16.minX = 0.0;
+        //stru_ADF570.rect.maxX = 1.0;
         //v16.maxY = 1.0;
         //v16.maxX = 1.0;
-        //CWorldScene::CullThroughPortal(&v16);
-    } else {
-    //    ++dword_CD87B0;
-    //    stru_ADF570.rect.minY = 0.0;
-    //    stru_ADF570.rect.minX = 0.0;
-    //    stru_ADF570.maxViewDepth = 0.0;
-    //    v16.minY = 0.0;
-    //    stru_ADF570.rect.maxY = 1.0;
-    //    v16.minX = 0.0;
-    //    stru_ADF570.rect.maxX = 1.0;
-    //    v16.maxY = 1.0;
-    //    v16.maxX = 1.0;
-    CWorldScene::frustumPortalView.rect.minY = 0.0;
-    CWorldScene::frustumPortalView.maxViewDepth = 0.0;
-    //    stru_ADF570.vertCount = 0;
-    CWorldScene::frustumPortalView.rect.minX = 0.0;
-    //    flt_CD8780 = -10000.0;
-    CWorldScene::frustumPortalView.rect.maxY = 1.0;
-    CWorldScene::frustumPortalView.rect.maxX = 1.0;
-    CWorldScene::frustumPortalView.vertCount = 0;
-    CWorldScene::CullSortTable(&CWorldScene::frustumPortalView.rect);
+        CWorldScene::frustumPortalView.rect.minY = 0.0;
+        CWorldScene::frustumPortalView.maxViewDepth = 0.0;
+        //stru_ADF570.vertCount = 0;
+        CWorldScene::frustumPortalView.rect.minX = 0.0;
+        //flt_CD8780 = -10000.0;
+        CWorldScene::frustumPortalView.rect.maxY = 1.0;
+        CWorldScene::frustumPortalView.rect.maxX = 1.0;
+        CWorldScene::frustumPortalView.vertCount = 0;
+        CWorldScene::CullSortTable(&CWorldScene::frustumPortalView.rect);
     }
-    //CWorldScene::CullMapObjDefGroup();
+    CWorldScene::CullMapObjDefGroup();
     //maybe_CWorldScene__UpdateSortedModels();
     CWorldScene::sortTable.pendingExteriorGroupList.UnlinkAll();
     CImVector color = { 0x00, 0x00, 0x00, 0xFF };

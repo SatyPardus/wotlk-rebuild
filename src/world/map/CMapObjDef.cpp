@@ -116,3 +116,12 @@ void CMapObjDef::ReserveGroups(int32_t n) {
 bool CMapObjDef::TestAABox(C3Vector& start, C3Vector& end) {
     return CWorldMath::VectorIntersectAABox2(this->bbox, start, end);
 }
+
+// OFFSET: 0x7917B0
+CMapObjDefGroup** CMapObjDef::GroupSlot(uint32_t index) {
+    if (this->groupCount == -1) {
+        return &this->defGroups.m_array.Ptr()[index];
+    }
+
+    return &this->defGroups.m_inline[index];
+}

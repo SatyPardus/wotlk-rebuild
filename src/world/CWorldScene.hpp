@@ -137,9 +137,13 @@ class CWorldScene {
     static void CullChunks(CSortEntry* entry, int32_t index);
     static void CullDoodads(CSortEntry* entry, uint8_t fadeLevel);
     static void CullDoodadsExterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, uint8_t fadeLevel);
+    static void CullMapObjDefGroup();
     static void CullMapObjDefGroups(CSortEntry* entry, CRect* a2, uint32_t a3);
     static void CullMapObjDefGroupFromExterior(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, CRect* a3, uint32_t a4);
+    static void CullDoodadsInterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, CFrustum* frustumList, uint8_t fadeLevel, int32_t interior);
+    static void CullEntitysInterior(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, CFrustum* frustumList, int32_t force, int32_t interior);
     static void CullEntitys(CSortEntry* entry);
+    static void CullThroughPortal(CRect* rect);
     static void AddDoodadDefModelToModelScene(CMapDoodadDef* a1);
     static void AddDoodadDefs(STORM_EXPLICIT_LIST(CMapBaseObjLink, refLink)* linkList, uint32_t a2);
     static void Render(const C3Vector& cameraPos, float time);

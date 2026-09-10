@@ -33,7 +33,7 @@ void CShaderEffect::ComputeLocalLights(LocalLights* localLights, uint32_t localL
         C44Matrix xform;
 
         if (origin) {
-            xform = g_theGxDevicePtr->m_xforms[GxXform_World].m_mtx[g_theGxDevicePtr->m_xforms[GxXform_World].m_level];
+            g_theGxDevicePtr->XformView(xform);
         }
 
         do {

@@ -12,6 +12,7 @@
 #include <tempest/Intersect.hpp>
 #include "world/daynight/DayNight.hpp"
 #include "gx/shader/CShaderEffect.hpp"
+#include <world/daynight/DNInfo.hpp>
 
 TSHashTable<CMapObj, HASHKEY_STRI> CMapObj::mapObjHashtable;
 uint32_t CMapObj::s_renderMode = 5;
@@ -571,7 +572,7 @@ void CMapObj::CreateMaterial(uint8_t texture) {
         if (!*textureName1)
             textureName1 = "createcrappygreentexture.blp";
         if (!CShaderEffect::s_enableShaders)
-            textureName2 = nullptr;
+            *textureName2 = 0;
 
         switch (material->shader) {
         case 0:
@@ -618,6 +619,11 @@ bool CMapObj::TestBounds(CAaBox& box) {
 // OFFSET: 0x7AE880
 bool CMapObj::TestGroupBounds(C3Vector& start, C3Vector& end, uint32_t groupNum) {
     return this->isGroupLoaded && (this->mapObjGroupArray[groupNum]->unkLoadedFlag & 1) != 0 && CWorldMath::VectorIntersectAABox2(this->groupInfo[groupNum].boundingBox, start, end) != 0;
+}
+
+// OFFSET: 0x7AE880
+bool CMapObj::TestGroupBounds(CAaBox& box, uint32_t groupNum, bool a4) {
+    return (!a4 || this->isGroupLoaded && (this->mapObjGroupArray[groupNum]->unkLoadedFlag & 1) != 0) && this->groupInfo[groupNum].boundingBox.Intersects(&box);
 }
 
 // OFFSET: 0x7AE970
@@ -686,6 +692,83 @@ bool CMapObj::GetTris(CFrustum* frustum, uint32_t flags, uint32_t a4, CMapObjDef
     }
 
     return result;
+}
+
+// OFFSET: 0x7AF520
+bool CMapObj::VectorIntersectPortal(uint32_t groupIndex, C3Segment& seg, float* t, int32_t* outGroups) {
+    if (!this->isGroupLoaded) {
+        return false;
+    }
+
+    CMapObjGroup* group = this->mapObjGroupArray[groupIndex];
+
+    if (!(group->unkLoadedFlag & 1)) {
+        return false;
+    }
+
+    C3Vector d;
+    d.x = seg.t.x - seg.b.x;
+    d.y = seg.t.y - seg.b.y;
+    d.z = seg.t.z - seg.b.z;
+
+    float segLen = sqrtf(d.x * d.x + d.y * d.y + d.z * d.z);
+    float ooSegLen = 1.0f / segLen;
+
+    CRay ray;
+    ray.origin = seg.b;
+    ray.dir = { d.x * ooSegLen, d.y * ooSegLen, d.z * ooSegLen };
+
+    float bestT = segLen * *t;
+    bool found = false;
+
+    uint32_t portalCount = group->portalCount;
+
+    for (uint32_t i = 0; i < portalCount; i++) {
+        SMOPortalRef* ref = &this->portalRefList[group->portalStart + i];
+        SMOPortal* portal = &this->portalList[ref->portalIndex];
+
+        if (!this->isGroupLoaded) {
+            continue;
+        }
+
+        if (!(this->mapObjGroupArray[ref->groupIndex]->unkLoadedFlag & 1)) {
+            continue;
+        }
+
+        C3Vector hitPoint = { 0.0f, 0.0f, 0.0f };
+        float hitT;
+
+        if (!NTempest::Intersect(ray, portal->plane, &hitT, &hitPoint, 0.1f)) {
+            continue;
+        }
+
+        if (hitT < 0.0f || hitT > bestT) {
+            continue;
+        }
+
+        if (!NTempest::Intersect(hitPoint, &this->portalVertexList[portal->startVertex], portal->count, portal->plane.n.MajorAxis())) {
+            continue;
+        }
+
+        found = true;
+        bestT = hitT;
+
+        float side = portal->plane.n.z * seg.b.z + portal->plane.n.y * seg.b.y + seg.b.x * portal->plane.n.x + portal->plane.d;
+
+        if ((side >= 0.0f) == (ref->side > 0)) {
+            outGroups[0] = groupIndex;
+            outGroups[1] = ref->groupIndex;
+        } else {
+            outGroups[0] = ref->groupIndex;
+            outGroups[1] = groupIndex;
+        }
+    }
+
+    if (found) {
+        *t = bestT * ooSegLen;
+    }
+
+    return found;
 }
 
 // OFFSET: 0x7AF280
@@ -1167,6 +1250,27 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
     g_theGxDevicePtr->RsPop();
 }
 
+// OFFSET: 0x7A8440
+static int32_t s_fogMode = -1; // dword_CFBEB0
+
+void SetShaderFogFromDayNight(int32_t mode) {
+    if (s_fogMode == mode)
+        return;
+    s_fogMode = mode;
+
+    if (!mode) {
+        CShaderEffect::SetFogEnabled(0);
+        return;
+    }
+
+    DayNight::DNInfo* info = DayNight::GetInfo();
+    DNFogInfo* fog = (mode & 2) ? &info->m_fog : &info->m_fogInterior;
+    CImVector color = (mode & 4) ? CImVector { 0x00, 0x00, 0x00, 0xFF } : fog->color;
+
+    CShaderEffect::SetFogParams(fog->start, fog->end, fog->m_density, color);
+    CShaderEffect::SetFogEnabled(1);
+}
+
 // OFFSET: 0x7A9380
 void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t a3) {
     mapObjGroup->timer = 0.0;
@@ -1181,7 +1285,7 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
     if (!CShaderEffect::s_enableShaders) {
         g_theGxDevicePtr->RsSet(GxRs_ColorMaterial, 2);
     }
-    //v67 = 2 - (dword_CFBEB8 != 0);
+    auto v67 = 2 - (CWorldScene::s_curGroupIsInterior != 0);
     CGxTex* gxTex = nullptr;
     //if (CMap::s_isStreamingMode)
     //    GxTex = TextureGetGxTex(CWorldScene::s_defaultTexture, 1, 0);
@@ -1262,7 +1366,7 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
                 //    bn_CShadowCache_SetShadowMapGenericInterior(1);
                 //    dword_D43010 = CShadowCache::GetShadowValue() != 0;
                 //}
-                //SetShaderFogFromDayNight(v66);
+                SetShaderFogFromDayNight(v67);
             }
             GxRsSet(GxRs_BlendingMode, material->blendMode);
             CShaderEffect::SetAlphaRefDefault();
@@ -1274,7 +1378,7 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
             batch.m_maxIndex = batchList->vertexEnd;
             g_theGxDevicePtr->Draw(&batch, 1);
         } else {
-            //SetShaderFogFromDayNight((v7->flags & 2) == 0 ? v66 : 0);
+            SetShaderFogFromDayNight((material->flags & 2) == 0 ? v67 : 0);
             //if (dword_CFBEA8) {
             //    dword_CFBEA8 = 0;
             //    bn_CShadowCache_SetShadowMapGenericInterior(0);
@@ -1285,7 +1389,7 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
                 if ((material->flags & 1) == 0)
                     lightingMode = ((material->flags & 0x20) != 0 ? 1 : 0) + 1;
                 mapObjGroup->SetLighting(lightingMode);
-                //SetShaderFogFromDayNight(~v7->flags & 2);
+                SetShaderFogFromDayNight(~material->flags & 2);
                 GxRsSet(GxRs_BlendingMode, 9);
                 CShaderEffect::SetAlphaRefDefault();
                 CMapObj::SelectWorldShaders();
@@ -1298,7 +1402,7 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
                 g_theGxDevicePtr->Draw(&batch, 1);
 
                 mapObjGroup->SetLighting(3);
-                //SetShaderFogFromDayNight((v7->flags & 2) == 0 ? v66 : 0);
+                SetShaderFogFromDayNight((material->flags & 2) == 0 ? v67 : 0);
                 //if (dword_CFBEA8 != 1) {
                 //    dword_CFBEA8 = 1;
                 //    bn_CShadowCache_SetShadowMapGenericInterior(1);
@@ -1321,7 +1425,7 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
                 if ((material->flags & 1) == 0)
                     lightingMode = ((material->flags & 0x20) != 0 ? 1 : 0) + 1;
                 mapObjGroup->SetLighting(lightingMode);
-                //SetShaderFogFromDayNight((v7->flags & 2) != 0 ? 0 : 6);
+                SetShaderFogFromDayNight((material->flags & 2) != 0 ? 0 : 6);
                 GxRsSet(GxRs_BlendingMode, 9);
                 CShaderEffect::SetAlphaRefDefault();
 
@@ -1333,10 +1437,10 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
                 g_theGxDevicePtr->Draw(&batch, 1);
 
                 mapObjGroup->SetLighting(3);
-                //uint32_t v28 = 0;
-                //if ((material->flags & 2) == 0)
-                //    v28 = v66 | 4;
-                //SetShaderFogFromDayNight(v28);
+                uint32_t v28 = 0;
+                if ((material->flags & 2) == 0)
+                    v28 = v67 | 4;
+                SetShaderFogFromDayNight(v28);
                 GxRsSet(GxRs_BlendingMode, 7);
                 CShaderEffect::SetAlphaRefDefault();
 

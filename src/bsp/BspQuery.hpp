@@ -83,6 +83,7 @@ class BspQuery_SegmentLink : public BspQuery {
     public:
     void operator()(uint16_t faceIndex); // 0x007C6600
     bool GetFaceIndicesUsingCache(const CAaBsp& aaBsp, const CAaBspNode* node); // 0x007C6790
+    bool GetHits(float* t0, int32_t* face0, float* t1, int32_t* face1);
 
     CRay ray;                // +0x10
     C3Segment seg;            // +0x28

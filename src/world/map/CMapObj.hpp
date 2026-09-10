@@ -98,9 +98,11 @@ class CMapObj : public CMapHandle, public TSHashObject<CMapObj, HASHKEY_STRI> {
     bool TestBounds(C3Vector& start, C3Vector& end);
     bool TestBounds(CAaBox& box);
     bool TestGroupBounds(C3Vector& start, C3Vector& end, uint32_t groupNum);
+    bool TestGroupBounds(CAaBox& box, uint32_t groupNum, bool a4); 
     bool GroupBoundingBoxIntersectsSphere(C3Vector& pos, uint32_t groupNum, float radius);
     bool GetTris(CAaBox& box, uint32_t a3, uint32_t a4, CMapObjDef* mapObjDef);
     bool GetTris(CFrustum* frustum, uint32_t flags, uint32_t a4, CMapObjDef* mapObjDef);
+    bool VectorIntersectPortal(uint32_t groupIndex, C3Segment& seg, float* t, int32_t* outGroups);
     bool VectorIntersectPortal(C3Segment& seg, float* t, int* outGroups, int useSphereTest);
     float CalcPortalFarthestDistance(SMOPortal* portal);
     bool TestGroupBounds(C3Vector& point, uint32_t groupNum);

@@ -51,6 +51,7 @@ class CMapObjDef : public CMapBaseObj, public TSHashObject<CMapObjDef, uint32_t>
     int32_t GroupCount() const;
     void ReserveGroups(int32_t n);
     bool TestAABox(C3Vector& start, C3Vector& end);
+    CMapObjDefGroup** GroupSlot(uint32_t index);
 };
 
 #endif

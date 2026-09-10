@@ -11,10 +11,10 @@ class CM2Lighting;
 
 class CMapBaseObj : public CMapHandle {
     public:
-    uint16_t type;
-    uint16_t refCount;
-    uint32_t flags;
-    TSLink<CMapBaseObj>* lameAssLink;
+    uint16_t type = 1;
+    uint16_t refCount = 0;
+    uint32_t flags = 0;
+    TSLink<CMapBaseObj> lameAssLink;
     STORM_EXPLICIT_LIST(CMapBaseObjLink, ownerLink) parentLinkList;
 
     virtual void SelectLights(CM2Lighting* lighting);

@@ -671,6 +671,52 @@ bool CMapObjGroup::Intersect(C3Segment& seg, float* dist, uint32_t flags, uint16
     return hit;
 }
 
+// OFFSET: 0x7C77D0
+void BuildFaceLinkQuery(BspQuery_SegmentLink* q, SMOPoly* polyList, C3Vector* vertexList, uint16_t* indices, const C3Segment* seg, float t0, float t1) {
+    q->overflowFlags = nullptr;
+    q->faces = polyList;
+    q->vertexList = vertexList;
+    q->indices = indices;
+
+    q->ray.origin = seg->b;
+    q->ray.dir = { seg->t.x - seg->b.x, seg->t.y - seg->b.y, seg->t.z - seg->b.z };
+    q->seg = *seg;
+
+    float mag = sqrtf(q->ray.dir.x * q->ray.dir.x + q->ray.dir.y * q->ray.dir.y + q->ray.dir.z * q->ray.dir.z);
+    q->oosegMag = 1.0f / mag;
+
+    q->ray.dir.x *= q->oosegMag;
+    q->ray.dir.y *= q->oosegMag;
+    q->ray.dir.z *= q->oosegMag;
+
+    q->tMin = t0;
+    q->tMax = t1;
+
+    q->bestFace0 = -1;
+    q->bestFace1 = -1;
+    q->faceIgnoreFlags = 0x82;
+
+    q->bestT0 = t0 * mag;
+    q->bestT1 = t1 * mag;
+}
+
+// OFFSET: 0x7CB260
+bool CMapObjGroup::GetFacesForLinking(C3Segment& seg, float* t0, int32_t* face0, float* t1, int32_t* face1) {
+    BspQuery_SegmentLink query;
+    BuildFaceLinkQuery(&query, this->polyList, this->vertexList, this->indices, &seg, *t0, *t1);
+
+    CAaBsp_Query_Segment<BspQuery_SegmentLink> bsp = {};
+    bsp.aaBsp = &this->CAaBspNodePtr1;
+    bsp.f = &query;
+    bsp.GetFaceIndices(0, seg, this->CAaBspNodePtr1.aaBox);
+
+    bool hit = query.GetHits(t0, face0, t1, face1);
+
+    query.ClearTestFaces();
+
+    return hit;
+}
+
 // OFFSET: 0x7D8570
 void CMapObjGroup::AsyncPostloadCallback(void* arg) {
     CMapObjGroup* mapObjGroup = static_cast<CMapObjGroup*>(arg);

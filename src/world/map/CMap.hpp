@@ -18,10 +18,12 @@
 #include "world/map/CMapLight.hpp"
 #include <world/World.hpp>
 
-struct MAPOBJ_INTERSECT_CANDIDATE {
-    CMapObjDef* def;
-    CMapObjDefGroup* group;
-    float dist;
+struct MapObjIntersectData {
+    CMapObjDef*      def;        // +0x00
+    CMapObjDefGroup* group;      // +0x04
+    float            t;          // +0x08
+    int16_t          faceIndex;  // +0x0C
+    int16_t          interior;   // +0x0E
 };
 
 class CMap {
@@ -95,7 +97,8 @@ class CMap {
 
     static int32_t s_subVertexIndex[5];
     static int32_t s_subTriIndex[4][3];
-
+    static C3Vector s_subchunkCoords[5];
+    static uint32_t s_subchunkIndices[8];
 
     static void Initialize();
     static void InitializePCFShaders();
@@ -139,6 +142,21 @@ class CMap {
     static CMapEntity* ObjectCreate(CM2Model* model, MAP_OBJECT_FUNC func, void* funcParam, uint64_t param64, uint32_t param32, uint32_t a7);
     static void ObjectUpdate(CMapEntity* entity, C44Matrix& mat, CAaBox& box, CAaSphere& sphere, C3Vector& vec, bool a6, uint32_t a7);
     static void PrepareEntitys(bool a1);
+    static void UpdateEntity(CMapEntity* entity);
+    static void LinkStaticEntity(CMapEntity* entity);
+    static void LinkStaticEntityMultiple2(CMapEntity* entity);
+    static void LinkStaticEntityMultiple2ToMapObjDefInterior(CMapStaticEntity* entity, CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup);
+    static CMapBaseObjLink* LinkObjectToMapObjDefGroup(CMapBaseObj* object, CMapObjDefGroup* mapObjDefGroup);
+    static void LinkStaticEntitySingle2(CMapEntity* entity);
+    static void LinkIntersectMapObjDefGroup(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, C3Vector& start, C3Vector& end, MapObjIntersectData* interiorHit, MapObjIntersectData* groundHit);
+    static bool LinkIntersectMapObjDef(CMapObjDef* mapObjDef, C3Vector& start, C3Vector& end, C3Vector& mid, MapObjIntersectData* interiorHit, MapObjIntersectData* groundHit);
+    static bool LinkIntersectMapObjDefs(C3Vector& start, C3Vector& end, C3Vector& mid, MapObjIntersectData* interiorHit, MapObjIntersectData* groundHit, CMapChunk* chunk);
+    static bool GetHeightTerrain(CMapChunk* chunk, C3Vector& pos, int32_t cellX, int32_t cellY, float* outHeight);
+    static bool LinkStaticEntityGetChunk(C3Vector& pos, float* outHeight, CMapChunk** outChunk);
+    static void LinkStaticEntity(CMapEntity* entity, C3Vector& top, C3Vector& bottom, C3Vector& mid, int32_t& outInterior, int32_t& outHit, MapObjIntersectData* interiorHit, MapObjIntersectData* groundHit);
+    static void ClassifyStaticEntityLink(CMapStaticEntity* entity, CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, uint32_t faceInfo, C3Vector* pos);
+    static bool LinkObjectToMapExterior(CMapStaticEntity* object);
+    static void LinkStaticEntityMultiple2ToMapObjDefExterior(CMapStaticEntity* entity);
     static void EnableLight(CMapLight* light);
     static void UpdateLight(CMapLight* light);
 

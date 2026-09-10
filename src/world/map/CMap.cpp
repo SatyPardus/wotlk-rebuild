@@ -102,6 +102,21 @@ TSGrowableArray<uint16_t> CMap::debugIndexArray;
 int32_t CMap::s_subVertexIndex[5] = { 0, 9, 17, 1, 18 };
 int32_t CMap::s_subTriIndex[4][3] = { { 17, 9, 0 }, { 9, 1, 0 }, { 9, 17, 18 }, { 9, 18, 1 } };
 
+C3Vector CMap::s_subchunkCoords[5] = {
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, -4.1666665f, 0.0f },
+    { -4.1666665f, -4.1666665f, 0.0f },
+    { -4.1666665f, 0.0f, 0.0f },
+    { -2.0833333f, -2.0833333f, 0.0f },
+};
+
+uint32_t CMap::s_subchunkIndices[8] = {
+    3, 0,
+    0, 1,
+    2, 3,
+    1, 2
+};
+
 static const int32_t s_flightTriangle[8][3] = {
     { 3, 0, 4 },
     { 0, 1, 4 },
@@ -1518,8 +1533,8 @@ void CMap::ObjectUpdate(CMapEntity* entity, C44Matrix& mat, CAaBox& localBox, CA
         || dSphere.x * dSphere.x + dSphere.y * dSphere.y + dSphere.z * dSphere.z > 0.0001f
         || dRadius > 0.0001f;
 
-    //if ( changed && !a6 )
-    //    CMap::UpdateEntity(entity);
+    if (changed && !a6)
+        CMap::UpdateEntity(entity);
 }
 
 // OFFSET: 0x7B5590
@@ -1534,6 +1549,653 @@ void CMap::PrepareEntitys(bool a1) {
             CWorldScene::AddEntityToSortTable(entity);
 
         entity = next;
+    }
+}
+
+// OFFSET: 0x7C2E70
+void CMap::LinkStaticEntityMultiple2(CMapEntity* entity) {
+    C3Vector top = { entity->vec2.x, entity->vec2.y, entity->vec2.z + 4.0f };
+    C3Vector bottom = { entity->vec2.x, entity->vec2.y, entity->vec2.z - 1000.0f };
+    C3Vector mid = { entity->vec2.x, entity->vec2.y, entity->vec2.z + 0.15000001f };
+
+    float lid = entity->bbox.t.z + 0.1f;
+
+    if (lid < top.z) {
+        top.z = lid;
+    }
+
+    int32_t hit = 0;
+    int32_t groundKind = 0;
+    MapObjIntersectData interiorHit[2];
+    MapObjIntersectData groundHit[2];
+    CMap::LinkStaticEntity(entity, top, bottom, mid, hit, groundKind, interiorHit, groundHit);
+
+    if (hit) {
+        CMap::LinkStaticEntityMultiple2ToMapObjDefInterior(entity, interiorHit[0].def, interiorHit[0].group);
+
+        entity->unk_07C |= 1;
+
+        C3Vector ground = { entity->vec2.x, entity->vec2.y, entity->vec2.z - (bottom.z - top.z) * groundHit[0].t };
+        CMap::ClassifyStaticEntityLink(entity, groundHit[0].def, groundHit[0].group, *reinterpret_cast<uint32_t*>(&groundHit[0].faceIndex), &ground);
+    } else {
+        CMap::LinkStaticEntityMultiple2ToMapObjDefExterior(entity);
+        CMap::LinkObjectToMapExterior(entity);
+
+        entity->flags |= 4;
+    }
+}
+
+// OFFSET: 0x7C2F80
+void CMap::LinkStaticEntity(CMapEntity* entity) {
+    for (auto link = entity->parentLinkList.Head(); link;) {
+        auto next = entity->parentLinkList.Next(link);
+        CMap::FreeBaseObjLink(link);
+        link = next;
+    }
+
+    if ((entity->type & 0x20) != 0) {
+        entity->unk_00B8 = -1;
+    }
+
+    if ((entity->unk_07C & 0x2000) != 0) {
+        CMap::LinkStaticEntityMultiple2(entity);
+    } else {
+        CMap::LinkStaticEntitySingle2(entity);
+    }
+}
+
+// OFFSET: 0x7A1BC0
+void CMap::UpdateEntity(CMapEntity* entity) {
+    uint32_t flags = entity->flags;
+
+    entity->unk_07C &= 0xFFFFFC96;
+    entity->flags = (flags & 0xFFFFFFF8) | 1;
+
+    CMap::LinkStaticEntity(entity);
+
+    if ((entity->unk_07C & 1) != 0) {
+        // CMapEntity::UpdateMapObjLiquid(entity);
+    } else {
+        // uint32_t areaId = 0;
+        // int32_t depth = 0;
+        // if (CMap::QueryLiquidStatus(&entity->position, &areaId, &entity->unk_080, &depth, 1)) {
+        //     entity->unk_07C |= 0x20;
+        //     if (&entity->unk_080 <= entity->bbox.t.z)
+        //         entity->unk_07C |= 0x40;
+        //     else
+        //         entity->unk_07C &= ~0x40u;
+        //     entity->unk_00BC = areaId;
+        // }
+    }
+
+    // if ((entity->unk_07C & 0x2000) == 0 && (entity->unk_07C & 0x40) != 0 && entity->unk_080 + 0.0099999998f > entity->position.z) {
+    //     uint32_t areaId = 0;
+    //     if (CMap::QueryAreaId(entity, &areaId)) {
+    //         auto liquidType = GetLiquidTypeRecForArea(areaId, entity->unk_00BC);
+    //         if (liquidType) {
+    //             uint32_t typeFlags = liquidType->flags;
+    //             if ((typeFlags & 4) != 0 || entity->unk_080 > entity->position.z) {
+    //                 entity->unk_07C ^= (entity->unk_07C ^ (typeFlags << 8)) & 0x100;
+    //                 entity->unk_07C ^= (entity->unk_07C ^ (typeFlags << 8)) & 0x200;
+    //             }
+    //         }
+    //     }
+    // }
+
+    if ((entity->flags & 2) != 0) {
+        if ((entity->unk_07C & 0x1000) != 0) {
+            entity->unk_00C4 = (2.5f - 1.0f) * (entity->m2DiffuseColor.a * 0.0039215689f) + 1.0f;
+        } else {
+            entity->unk_00C4 = 1.0f;
+        }
+    } else {
+        C3Vector ambient = CMap::s_mapLight->m_light.m_ambColor;
+        CImVector packed;
+        packed.a = 0xFF;
+        packed.b = ambient.z > 0.0f ? (ambient.z < 1.0f ? ambient.z * 255.0f + 0.5f : 255.0f) : 0.0f;
+        packed.g = ambient.y > 0.0f ? (ambient.y < 1.0f ? ambient.y * 255.0f + 0.5f : 255.0f) : 0.0f;
+        packed.r = ambient.x > 0.0f ? (ambient.x < 1.0f ? ambient.x * 255.0f + 0.5f : 255.0f) : 0.0f;
+        entity->unk_00C0 = packed;
+        
+        // if (CShadowCache::GetActiveShadowMode() > 1 || (entity->flags & 0x200) != 0 || !CMap::QueryShadow(&entity->position)) {
+        //     entity->unk_00C4 = 2.5f;
+        // } else {
+        //     entity->unk_07C |= 8;
+        //     entity->unk_00C4 = 0.5f;
+        // }
+    }
+}
+
+// OFFSET: 0x7C2D30
+void CMap::LinkStaticEntityMultiple2ToMapObjDefInterior(CMapStaticEntity* entity, CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup) {
+    CMapObj* mapObj = mapObjDef->owner;
+
+    if (!mapObj || !mapObj->isGroupLoaded) {
+        return;
+    }
+
+    CAaBox localBox;
+    CWorldMath::TransformAABox(mapObjDef->invMat, entity->bbox, localBox);
+
+    if (!mapObj->TestBounds(localBox)) {
+        return;
+    }
+
+    CMapBaseObjLink* link = CMap::AllocBaseObjLink(entity);
+    link->ref = mapObjDefGroup;
+
+    if ((entity->type & 0x20) != 0) {
+        if ((entity->unk_07C & 2) != 0) {
+            mapObjDefGroup->entityLinkList.LinkToHead(link);
+        } else {
+            mapObjDefGroup->entityLinkList.LinkToTail(link);
+        }
+    } else if ((entity->type & 0x40) != 0) {
+        mapObjDefGroup->doodadDefLinkList.LinkToTail(link);
+    }
+
+    for (auto groupLink = mapObjDef->mapObjDefGroupLinkList.Head(); groupLink; groupLink = mapObjDef->mapObjDefGroupLinkList.Next(groupLink)) {
+        CMapObjDefGroup* other = reinterpret_cast<CMapObjDefGroup*>(groupLink->owner);
+
+        if (other != mapObjDefGroup && (mapObj->GetGroupFlags(other->groupNum) & 0x410088) == 0 && mapObj->TestGroupBounds(localBox, other->groupNum, true)) {
+            CMap::LinkObjectToMapObjDefGroup(entity, other);
+        }
+    }
+}
+
+// OFFSET: 0x7C1FF0
+CMapBaseObjLink* CMap::LinkObjectToMapObjDefGroup(CMapBaseObj* object, CMapObjDefGroup* mapObjDefGroup) {
+    CMapBaseObjLink* link = CMap::AllocBaseObjLink(object);
+    link->ref = mapObjDefGroup;
+
+    if ((object->type & 0x20) != 0) {
+        if ((static_cast<CMapStaticEntity*>(object)->unk_07C & 2) != 0) {
+            mapObjDefGroup->entityLinkList.LinkToHead(link);
+        } else {
+            mapObjDefGroup->entityLinkList.LinkToTail(link);
+        }
+    } else if ((object->type & 0x40) != 0) {
+        mapObjDefGroup->doodadDefLinkList.LinkToTail(link);
+    }
+
+    return link;
+}
+
+// OFFSET: 0x7C2A70
+void CMap::LinkStaticEntitySingle2(CMapEntity* entity) {
+    C3Vector top = { entity->vec2.x, entity->vec2.y, entity->vec2.z + 0.1f };
+    C3Vector bottom = { entity->vec2.x, entity->vec2.y, entity->vec2.z - 1000.0f };
+
+    int32_t hitFull = 0;
+    int32_t hitAny = 0;
+    MapObjIntersectData interior[2];
+    MapObjIntersectData ground[2];
+    CMap::LinkStaticEntity(entity, top, bottom, top, hitFull, hitAny, interior, ground);
+
+    bool isEntity = (entity->type & 0x20) != 0;
+    int32_t groundType = -1;
+
+    if (!hitAny) {
+        CMap::LinkObjectToMapExterior(entity);
+
+        if (isEntity) {
+            // entity->unk_00B8 = CMap::QueryGroundTypeTerrain(&entity->position, &groundType) ? groundType : -1;
+            entity->unk_00B8 = -1;
+        }
+
+        entity->flags = (entity->flags & 0xFFFFFDFF) | 4;
+        return;
+    }
+
+    int32_t pick = 0;
+    if (!ground[0].def)
+         pick = 1;
+
+    if (interior[0].def)
+        CMap::LinkObjectToMapObjDefGroup(entity, interior[0].group);
+    if (interior[1].def)
+        CMap::LinkObjectToMapObjDefGroup(entity, interior[1].group);
+
+    if (isEntity) {
+        // entity->unk_00B8 = ground[pick].def->GetGroundType(ground[pick].group->groupNum, static_cast<uint16_t>(ground[pick].faceIndex));
+    }
+
+    entity->flags |= 0x200;
+
+    if (!hitFull) {
+        entity->flags |= 4;
+        return;
+    }
+
+    entity->unk_07C |= 1;
+
+    C3Vector hitPos = { entity->vec2.x, entity->vec2.y, entity->vec2.z - (bottom.z - top.z) * ground[pick].t };
+    CMap::ClassifyStaticEntityLink(entity, ground[pick].def, ground[pick].group, static_cast<uint16_t>(ground[pick].faceIndex), &hitPos);
+}
+
+// OFFSET: 0x7C1DC0
+void CMap::LinkIntersectMapObjDefGroup(CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, C3Vector& start, C3Vector& end, MapObjIntersectData* interiorHit, MapObjIntersectData* groundHit) {
+    CMapObj* mapObj = mapObjDef->owner;
+    CMapObjGroup* mapObjGroup = mapObj->GetGroup(mapObjDefGroup->groupNum, false);
+
+    if (!mapObjGroup) {
+        return;
+    }
+
+    int16_t interior = (mapObjGroup->flags & 8) == 0;
+
+    int32_t face0 = -1;
+    int32_t face1 = -1;
+
+    C3Segment seg;
+    seg.b = start;
+    seg.t = end;
+
+    if (mapObjGroup->GetFacesForLinking(seg, &interiorHit->t, &face0, &groundHit->t, &face1)) {
+        if (face0 != -1) {
+            interiorHit->def = mapObjDef;
+            interiorHit->group = mapObjDefGroup;
+            interiorHit->faceIndex = face0;
+            interiorHit->interior = interior;
+        }
+
+        if (face1 != -1) {
+            groundHit->faceIndex = face1;
+            groundHit->def = mapObjDef;
+            groundHit->group = mapObjDefGroup;
+            groundHit->interior = interior;
+        }
+    }
+
+    if (!interior) {
+        return;
+    }
+
+    float t = 1.05f;
+    int32_t outGroups[2];
+
+    if (!mapObj->VectorIntersectPortal(mapObjDefGroup->groupNum, seg, &t, outGroups)) {
+        return;
+    }
+
+    if (!(t - interiorHit->t < 0.0001f)) {
+        return;
+    }
+
+    interiorHit->def = mapObjDef;
+
+    CMapObjDefGroup* portalGroup = *mapObjDef->GroupSlot(outGroups[0]);
+
+    interiorHit->t = t;
+    interiorHit->group = portalGroup;
+    interiorHit->faceIndex = -1;
+    interiorHit->interior = (mapObj->GetGroup(portalGroup->groupNum, false)->flags & 8) == 0;
+}
+
+// OFFSET: 0x7C25D0
+bool CMap::LinkIntersectMapObjDef(CMapObjDef* mapObjDef, C3Vector& start, C3Vector& end, C3Vector& mid, MapObjIntersectData* interiorHit, MapObjIntersectData* groundHit) {
+    CMapObj* mapObj = mapObjDef->owner;
+
+    if (!mapObj) {
+        return false;
+    }
+
+    C3Vector localStart = mapObjDef->invMat.TransformPoint(start);
+    C3Vector localEnd = mapObjDef->invMat.TransformPoint(end);
+    C3Vector localMid = mapObjDef->invMat.TransformPoint(mid);
+
+    bool moved = (mapObjDef->flags & 0x400) != 0;
+
+    for (auto link = mapObjDef->mapObjDefGroupLinkList.Head(); link; link = mapObjDef->mapObjDefGroupLinkList.Next(link)) {
+        CMapObjDefGroup* mapObjDefGroup = reinterpret_cast<CMapObjDefGroup*>(link->owner);
+
+        uint32_t groupFlags = mapObj->GetGroupFlags(mapObjDefGroup->groupNum);
+
+        if ((groupFlags & 0x410080) != 0) {
+            continue;
+        }
+
+        if (!mapObj->TestGroupBounds(localStart, localEnd, mapObjDefGroup->groupNum)) {
+            continue;
+        }
+
+        if ((moved || (groupFlags & 8) == 0) && !mapObj->TestGroupBounds(localMid, mapObjDefGroup->groupNum)) {
+            continue;
+        }
+
+        int32_t slot = moved ? 0 : 1;
+
+        CMap::LinkIntersectMapObjDefGroup(mapObjDef, mapObjDefGroup, localStart, localEnd, &interiorHit[slot], &groundHit[slot]);
+    }
+
+    return true;
+}
+
+// OFFSET: 0x7C2700
+bool CMap::LinkIntersectMapObjDefs(C3Vector& start, C3Vector& end, C3Vector& mid, MapObjIntersectData* interiorHit, MapObjIntersectData* groundHit, CMapChunk* chunk) {
+    groundHit[0].def = nullptr;
+    groundHit[0].t = 1.05f;
+    groundHit[1].def = nullptr;
+    groundHit[1].t = 1.05f;
+
+    interiorHit[0].def = nullptr;
+    interiorHit[0].t = 1.05f;
+    interiorHit[1].def = nullptr;
+    interiorHit[1].t = 1.05f;
+
+    if (chunk) {
+        for (auto link = chunk->mapObjDefLinkList.Head(); link; link = chunk->mapObjDefLinkList.Next(link)) {
+            CMapObjDef* mapObjDef = reinterpret_cast<CMapObjDef*>(link->owner);
+
+            if ((mapObjDef->flags & 0x20) != 0) {
+                continue;
+            }
+
+            if (!mapObjDef->TestAABox(start, end)) {
+                continue;
+            }
+
+            CMap::LinkIntersectMapObjDef(mapObjDef, start, end, mid, interiorHit, groundHit);
+        }
+    } else {
+        for (auto mapObjDef = CMap::mapObjDefHashtable.Head(); mapObjDef; mapObjDef = CMap::mapObjDefHashtable.Next(mapObjDef)) {
+            if ((mapObjDef->flags & 0x20) != 0) {
+                continue;
+            }
+
+            if (!mapObjDef->TestAABox(start, end)) {
+                continue;
+            }
+
+            CMap::LinkIntersectMapObjDef(mapObjDef, start, end, mid, interiorHit, groundHit);
+        }
+    }
+
+    for (int32_t slot = 0; slot < 2; slot++) {
+        if (!interiorHit[slot].def && groundHit[slot].def) {
+            interiorHit[slot] = groundHit[slot];
+        }
+    }
+
+    if (!interiorHit[0].def) {
+        if (!interiorHit[1].def) {
+            return false;
+        }
+
+        interiorHit[0] = interiorHit[1];
+        groundHit[0] = groundHit[1];
+        interiorHit[1].def = nullptr;
+        groundHit[1].def = nullptr;
+    }
+
+    for (int32_t slot = 0; slot < 2; slot++) {
+        if (!groundHit[slot].def) {
+            groundHit[slot] = interiorHit[slot];
+            groundHit[slot].faceIndex = -1;
+        }
+    }
+
+    return true;
+}
+
+// OFFSET: 0x7AD3B0
+bool CMap::GetHeightTerrain(CMapChunk* chunk, C3Vector& pos, int32_t cellX, int32_t cellY, float* outHeight) {
+    int32_t col = cellX & 7;
+    int32_t row = cellY & 7;
+
+    if ((chunk->header->holes & CMap::s_holeMask[4 * (row >> 1) + (col >> 1)]) != 0) {
+        return false;
+    }
+
+    float originX = row * -4.1666665f;
+    float originY = col * -4.1666665f;
+
+    float dx = pos.x - chunk->topLeftCoords.x;
+    float dy = pos.y - chunk->topLeftCoords.y;
+
+    int32_t fan = 0;
+
+    if ((CMap::s_subchunkCoords[2].x - CMap::s_subchunkCoords[0].x) * (originY + CMap::s_subchunkCoords[2].y - dy) - (CMap::s_subchunkCoords[2].y - CMap::s_subchunkCoords[0].y) * (originX + CMap::s_subchunkCoords[2].x - dx) <= 0.0f) {
+        fan = 1;
+    }
+
+    if ((CMap::s_subchunkCoords[3].x - CMap::s_subchunkCoords[1].x) * (originY + CMap::s_subchunkCoords[3].y - dy) - (CMap::s_subchunkCoords[3].y - CMap::s_subchunkCoords[1].y) * (originX + CMap::s_subchunkCoords[3].x - dx) <= 0.0f) {
+        fan += 2;
+    }
+
+    float* height = &chunk->height[17 * row + col];
+
+    uint32_t ia = CMap::s_subchunkIndices[2 * fan];
+    uint32_t ib = CMap::s_subchunkIndices[2 * fan + 1];
+
+    C3Vector a = { originX + CMap::s_subchunkCoords[ia].x, originY + CMap::s_subchunkCoords[ia].y, height[CMap::s_fanIndices[2 * fan]] };
+    C3Vector b = { originX + CMap::s_subchunkCoords[ib].x, originY + CMap::s_subchunkCoords[ib].y, height[CMap::s_fanIndices[2 * fan + 1]] };
+    C3Vector c = { originX + CMap::s_subchunkCoords[4].x, originY + CMap::s_subchunkCoords[4].y, height[9] };
+
+    if (CMap::dword_CF08F8) {
+        float ax = a.x - c.x;
+        float ay = a.y - c.y;
+        float az = a.z - c.z;
+        float bx = b.x - c.x;
+        float by = b.y - c.y;
+        float bz = b.z - c.z;
+
+        float nx = ay * bz - az * by;
+        float ny = az * bx - bz * ax;
+        float nz = ax * by - ay * bx;
+
+        float scale = 1.0f / sqrtf(nx * nx + ny * ny + nz * nz);
+        nx = nx * scale;
+        ny = ny * scale;
+        nz = nz * scale;
+
+        *outHeight = chunk->topLeftCoords.z - (ny * dy + nx * dx - (nz * c.z + ny * c.y + nx * c.x)) / nz;
+    } else {
+        C4Plane plane;
+        plane.From3Pos(c, a, b);
+
+        *outHeight = chunk->topLeftCoords.z - (plane.n.y * dy + plane.n.x * dx + plane.d) / plane.n.z;
+    }
+
+    return true;
+}
+
+// OFFSET: 0x7C1660
+bool CMap::LinkStaticEntityGetChunk(C3Vector& pos, float* outHeight, CMapChunk** outChunk) {
+    *outChunk = nullptr;
+
+    int32_t cellX = (int32_t)floorf((17066.666f - pos.y) * 0.24f);
+    int32_t cellY = (int32_t)floorf((17066.666f - pos.x) * 0.24f);
+
+    CMapArea* area = CMap::areaTable[64 * ((cellY >> 7) & 0x3F) + ((cellX >> 7) & 0x3F)];
+
+    if (!area || area->asyncObject) {
+        return false;
+    }
+
+    CMapChunk* chunk = area->mapChunks[16 * ((cellY >> 3) & 0xF) + ((cellX >> 3) & 0xF)];
+
+    if (!chunk) {
+        return false;
+    }
+
+    *outChunk = chunk;
+
+    return CMap::GetHeightTerrain(chunk, pos, cellX, cellY, outHeight);
+}
+
+// OFFSET: 0x7C28F0
+void CMap::LinkStaticEntity(CMapEntity* entity, C3Vector& top, C3Vector& bottom, C3Vector& mid, int32_t& outInterior, int32_t& outHit, MapObjIntersectData* interiorHit, MapObjIntersectData* groundHit) {
+    float terrainHeight = 100000.0f;
+    float terrainT = 2.0f;
+
+    groundHit[0].def = nullptr;
+    interiorHit[0].def = nullptr;
+    groundHit[1].def = nullptr;
+    interiorHit[1].def = nullptr;
+
+    int32_t onTerrain = 0;
+
+    if (!CMap::bDungeon) {
+        CMapChunk* chunk = nullptr;
+        onTerrain = CMap::LinkStaticEntityGetChunk(top, &terrainHeight, &chunk);
+
+        terrainT = (top.z - terrainHeight) * 0.001f;
+
+        if (terrainT < 0.0f) {
+            onTerrain = 0;
+        }
+    }
+
+    int32_t hitDefs = 0;
+
+    if ((entity->flags & 0x2000) == 0) {
+        hitDefs = CMap::LinkIntersectMapObjDefs(top, bottom, mid, interiorHit, groundHit, nullptr);
+    }
+
+    if (!onTerrain && !hitDefs) {
+        top = entity->vec2;
+        bottom = entity->vec2;
+        bottom.z = bottom.z + 1000.0f;
+
+        CMap::LinkIntersectMapObjDefs(top, bottom, mid, interiorHit, groundHit, nullptr);
+    }
+
+    if ((entity->unk_07C & 0x2000) != 0) {
+        interiorHit[1].def = nullptr;
+        groundHit[1].def = nullptr;
+    }
+
+    if (onTerrain) {
+        if (terrainT < interiorHit[0].t) {
+            interiorHit[0].def = nullptr;
+            groundHit[0].def = nullptr;
+        }
+
+        if (terrainT < interiorHit[1].t) {
+            interiorHit[1].def = nullptr;
+            groundHit[1].def = nullptr;
+        }
+    }
+
+    outInterior = 0;
+    outHit = 0;
+
+    if (interiorHit[0].def) {
+        outHit = 1;
+    }
+
+    if (interiorHit[1].def) {
+        outHit = 1;
+    }
+
+    if (interiorHit[0].def) {
+        outInterior = interiorHit[0].interior;
+    } else if (interiorHit[1].def) {
+        outInterior = interiorHit[1].interior;
+    }
+}
+
+// OFFSET: 0x7C15F0
+void CMap::ClassifyStaticEntityLink(CMapStaticEntity* entity, CMapObjDef* mapObjDef, CMapObjDefGroup* mapObjDefGroup, uint32_t faceInfo, C3Vector* pos) {
+    CMapObjGroup* mapObjGroup = mapObjDef->owner->GetGroup(mapObjDefGroup->groupNum, false);
+
+    if (!mapObjGroup) {
+        entity->flags |= 4;
+    } else if ((mapObjGroup->flags & 8) != 0) {
+        entity->flags |= 4;
+    } else if ((mapObjGroup->flags & 0x40) != 0) {
+        entity->flags |= 4;
+    } else {
+        entity->flags |= 2;
+    }
+
+    if ((entity->flags & 2) != 0) {
+        // entity->QueryInteriorLighting(mapObjDef, mapObjDefGroup->groupNum, reinterpret_cast<uint16_t*>(&faceInfo), pos);
+    }
+}
+
+// OFFSET: 0x7C2040
+bool CMap::LinkObjectToMapExterior(CMapStaticEntity* object) {
+    bool linked = false;
+
+    if (CMap::bDungeon) {
+        return false;
+    }
+
+    int32_t minChunkY = (int32_t)floorf((17066.666f - object->bbox.t.x) * 0.03f);
+    int32_t maxChunkY = (int32_t)floorf((17066.666f - object->bbox.b.x) * 0.03f);
+    int32_t minChunkX = (int32_t)floorf((17066.666f - object->bbox.t.y) * 0.03f);
+    int32_t maxChunkX = (int32_t)floorf((17066.666f - object->bbox.b.y) * 0.03f);
+
+    for (int32_t chunkY = minChunkY; chunkY <= maxChunkY; chunkY++) {
+        for (int32_t chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+            CMapArea* area = CMap::areaTable[64 * ((chunkY >> 4) & 0x3F) + ((chunkX >> 4) & 0x3F)];
+
+            if (!area || area->asyncObject) {
+                continue;
+            }
+
+            CMapChunk* chunk = area->mapChunks[16 * (chunkY & 0xF) + (chunkX & 0xF)];
+
+            if (!chunk) {
+                continue;
+            }
+
+            if (chunk->bbox.b.z > object->bbox.t.z) {
+                continue;
+            }
+
+            CMapBaseObjLink* link = CMap::AllocBaseObjLink(object);
+            link->ref = chunk;
+
+            if ((object->type & 0x20) != 0) {
+                if ((object->unk_07C & 2) != 0) {
+                    chunk->entityLinkList.LinkToHead(link);
+                } else {
+                    chunk->entityLinkList.LinkToTail(link);
+                }
+            } else if ((object->type & 0x40) != 0) {
+                chunk->doodadDefLinkList.LinkToTail(link);
+            }
+
+            object->flags |= 4;
+            linked = true;
+        }
+    }
+
+    return linked;
+}
+
+// OFFSET: 0x7C2BF0
+void CMap::LinkStaticEntityMultiple2ToMapObjDefExterior(CMapStaticEntity* entity) {
+    for (auto mapObjDef = CMap::mapObjDefHashtable.Head(); mapObjDef; mapObjDef = CMap::mapObjDefHashtable.Next(mapObjDef)) {
+        if ((mapObjDef->flags & 0x20) != 0) {
+            continue;
+        }
+
+        CMapObj* mapObj = mapObjDef->owner;
+
+        if (!mapObj || !mapObj->isGroupLoaded) {
+            continue;
+        }
+
+        CAaBox localBox;
+        CWorldMath::TransformAABox(mapObjDef->invMat, entity->bbox, localBox);
+
+        if (!mapObj->TestBounds(localBox)) {
+            continue;
+        }
+
+        for (auto link = mapObjDef->mapObjDefGroupLinkList.Head(); link; link = mapObjDef->mapObjDefGroupLinkList.Next(link)) {
+            CMapObjDefGroup* mapObjDefGroup = reinterpret_cast<CMapObjDefGroup*>(link->owner);
+
+            uint32_t groupFlags = mapObj->GetGroupFlags(mapObjDefGroup->groupNum);
+
+            if ((groupFlags & 0x410080) == 0 && (groupFlags & 8) != 0 && mapObj->TestGroupBounds(localBox, mapObjDefGroup->groupNum, 1)) {
+                CMap::LinkObjectToMapObjDefGroup(entity, mapObjDefGroup);
+            }
+        }
     }
 }
 
@@ -1568,13 +2230,13 @@ void CMap::UpdateLight(CMapLight* light) {
 
 // OFFSET: 0x7A2070
 static int32_t CompareIntersectCandidates(const void* a, const void* b) {
-    const MAPOBJ_INTERSECT_CANDIDATE* ca = static_cast<const MAPOBJ_INTERSECT_CANDIDATE*>(a);
-    const MAPOBJ_INTERSECT_CANDIDATE* cb = static_cast<const MAPOBJ_INTERSECT_CANDIDATE*>(b);
+    const MapObjIntersectData* ca = static_cast<const MapObjIntersectData*>(a);
+    const MapObjIntersectData* cb = static_cast<const MapObjIntersectData*>(b);
 
-    if (cb->dist > ca->dist)
+    if (cb->t > ca->t)
         return -1;
 
-    if (cb->dist < ca->dist)
+    if (cb->t < ca->t)
         return 1;
 
     return 0;
@@ -1660,7 +2322,7 @@ bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint3
     groupBox.t.y = 0.0f;
     groupBox.t.z = 0.0f;
 
-    MAPOBJ_INTERSECT_CANDIDATE candidates[500];
+    MapObjIntersectData candidates[500];
     size_t candidateCount = 0;
 
     for (auto def = CMap::mapObjDefHashtable.Head(); def; def = CMap::mapObjDefHashtable.Next(def)) {
@@ -1681,14 +2343,14 @@ bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint3
             if (!owner->IsGroupLoaded(i) || !CWorldMath::VectorIntersectAABox2(group->bbox, *start, *end))
                 continue;
 
-            MAPOBJ_INTERSECT_CANDIDATE* entry = &candidates[candidateCount];
+            MapObjIntersectData* entry = &candidates[candidateCount];
             entry->def = def;
             entry->group = group;
 
             C3Vector localStart = def->invMat.TransformPoint(*start);
 
             if (owner->TestGroupBounds(localStart, i)) {
-                entry->dist = 0.0f;
+                entry->t = 0.0f;
                 candidateCount++;
                 continue;
             }
@@ -1711,12 +2373,12 @@ bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint3
             float oy = localStart.y - cy;
             float oz = localStart.z - cz;
 
-            entry->dist = sqrtf(ox * ox + oy * oy + oz * oz) / segLength;
+            entry->t = sqrtf(ox * ox + oy * oy + oz * oz) / segLength;
             candidateCount++;
         }
     }
 
-    qsort(candidates, candidateCount, sizeof(MAPOBJ_INTERSECT_CANDIDATE), CompareIntersectCandidates);
+    qsort(candidates, candidateCount, sizeof(MapObjIntersectData), CompareIntersectCandidates);
 
     uint32_t ignoreFlags = CMapObj::CreateWmoIgnoreFlags(flags);
     uint32_t entityFlags = flags & 0x40F00000;
@@ -1733,7 +2395,7 @@ bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint3
         C3Vector localStart = def->invMat.TransformPoint(*start);
         C3Vector localEnd = def->invMat.TransformPoint(*end);
 
-        if (candidates[i].dist <= bestDist && owner->TestGroupBounds(localStart, localEnd, group->groupNum)) {
+        if (candidates[i].t <= bestDist && owner->TestGroupBounds(localStart, localEnd, group->groupNum)) {
             if (owner->Intersect(localStart, localEnd, &bestDist, flags, ignoreFlags, group->groupNum, &bestHitIndex)) {
                 hit = true;
 
@@ -1752,7 +2414,7 @@ bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint3
             CMap::VectorIntersectDoodadDefs(&group->doodadDefLinkList, flags);
 
         //if (entityFlags)
-        //    CMap::VectorIntersectEntitys(&group->mapEntityLinkList, flags);
+        //    CMap::VectorIntersectEntitys(&group->entityLinkList, flags);
     }
 
     if (hit) {
@@ -1877,7 +2539,7 @@ bool CMap::VectorIntersectSubChunkList(C3Vector* start, C3Vector* end, float* di
             if (m2Flags)
                 CMap::VectorIntersectDoodadDefs(&chunk->doodadDefLinkList, flags);
             //if (flags & 0x40F00000)
-            //    CMap::VectorIntersectEntitys(&chunk->TSExplicitList__m_linkoffset_DC, flags);
+            //    CMap::VectorIntersectEntitys(&chunk->entityLinkList, flags);
         }
 
         const int32_t subX = x & 7;

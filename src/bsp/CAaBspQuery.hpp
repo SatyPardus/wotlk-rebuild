@@ -12,6 +12,10 @@ struct CAaBsp_Query
     const CAaBsp* aaBsp; // +0x00
     F* f;                // +0x04
 
+    // OFFSET: 0x7C9A00  <BspQuery_Segment>
+    // OFFSET: 0x7C9A60  <BspQuery_Volume<CFrustum>>
+    // OFFSET: 0x7C9AB0  <BspQuery_SegmentLink>
+    // OFFSET: 0x7CA8C0  <BspQuery_Volume<CAaBox>>
     void GetFaceIndices(const CAaBspNode* node) {
         if (!this->f->GetFaceIndicesUsingCache(*this->aaBsp, node)) {
             const uint16_t* faceIndices =
@@ -25,6 +29,8 @@ struct CAaBsp_Query
 
 template <class F>
 struct CAaBsp_Query_AaBox : public CAaBsp_Query<F> {
+    // OFFSET: 0x7CA440  <BspQuery_Volume<CFrustum>>
+    // OFFSET: 0x7CA920  <BspQuery_Volume<CAaBox>>
     void GetFaceIndices(uint32_t nodeIndex, const CAaBox& queryBox, const CAaBox& nodeBox) {
         const CAaBspNode* node = &this->aaBsp->nodes[nodeIndex];
 
@@ -67,6 +73,8 @@ struct CAaBsp_Query_AaBox : public CAaBsp_Query<F> {
 
 template <class F>
 struct CAaBsp_Query_Segment : public CAaBsp_Query<F> {
+    // OFFSET: 0x7CA180  <BspQuery_Segment>
+    // OFFSET: 0x7CA600  <BspQuery_SegmentLink>
     void GetFaceIndices(uint32_t nodeIndex, const C3Segment& seg, const CAaBox& nodeBox) {
         const CAaBspNode* node = this->aaBsp->nodes + nodeIndex;
 
