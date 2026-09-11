@@ -23,6 +23,7 @@ void* CMapObj::gRenderUserParam;
 CImVector CMapObj::s_lastSidnColor;
 CShaderEffect* CMapObj::s_unifiedShaders[14];
 int32_t CMapObj::s_lightingMode = -1;
+static int32_t s_fogMode = -1; // dword_CFBEB0
 
 // OFFSET: 0x7D80C0
 bool CMapObj::Read(char* fileName) {
@@ -996,7 +997,7 @@ void CMapObj::ExteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
     mapObjGroup->SetIndexVB();
     mapObjGroup->SetVertexVB();
     g_theGxDevicePtr->RsPush();
-    //dword_CFBEB0 = -1;
+    s_fogMode = -1;
     CMapObj::s_lightingMode = -1;
     s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
     //dword_CFBEA8 = -1;
@@ -1099,7 +1100,7 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
     mapObjGroup->SetIndexVB();
     mapObjGroup->SetVertexVB();
     g_theGxDevicePtr->RsPush();
-    // dword_CFBEB0 = -1;
+    s_fogMode = -1;
     CMapObj::s_lightingMode = -1;
     s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
     // dword_CFBEA8 = -1;
@@ -1251,8 +1252,6 @@ void CMapObj::InteriorRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_
 }
 
 // OFFSET: 0x7A8440
-static int32_t s_fogMode = -1; // dword_CFBEB0
-
 void SetShaderFogFromDayNight(int32_t mode) {
     if (s_fogMode == mode)
         return;
@@ -1278,7 +1277,7 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
     mapObjGroup->SetIndexVB();
     mapObjGroup->SetVertexVB();
     g_theGxDevicePtr->RsPush();
-    //dword_CFBEB0 = -1;
+    s_fogMode = -1;
     CMapObj::s_lightingMode = -1;
     s_lastSidnColor = { 0xFF, 0xFF, 0xFF, 0xFF };
     //dword_CFBEA8 = -1;
@@ -1349,13 +1348,12 @@ void CMapObj::UnifiedRender(CMapObj* mapObj, CMapObjGroup* mapObjGroup, uint32_t
                 //    bn_CShadowCache_SetShadowMapGenericInterior(0);
                 //    dword_D43010 = CShadowCache::GetShadowValue();
                 //}
-                //if (dword_CFBEB0 != 2) {
-                //    dword_CFBEB0 = 2;
-                //    ActiveDayNight = DayNight::GetActiveDayNight();
-                //    color = ActiveDayNight->fogInfo.color;
-                //    bn_CShaderEffect_SetFogParams(ActiveDayNight->fogInfo.start, ActiveDayNight->fogInfo.end, *&ActiveDayNight->unk38, &color);
-                //    bn_CShaderEffect_SetFogEnabled(1);
-                //}
+                if (s_fogMode != 2) {
+                    s_fogMode = 2;
+                    auto dayNight = DayNight::GetInfo();
+                    CShaderEffect::SetFogParams(dayNight->m_fog.start, dayNight->m_fog.end, dayNight->m_fog.m_density, dayNight->m_fog.color);
+                    CShaderEffect::SetFogEnabled(1);
+                }
             } else {
                 if ((material->flags & 0x20) != 0)
                     mapObjGroup->SetLighting(2);
