@@ -2644,6 +2644,23 @@ bool CM2Model::HasKeyBone(uint32_t boneId) {
     return m_data->bones.count && (boneId == -1 || boneId < m_data->boneIndicesById.count && m_data->boneIndicesById[boneId] != 0xFFFF);
 }
 
+// OFFSET: 0x8273D0
+bool CM2Model::HasAttachment(uint32_t attachmentId) {
+    if ((this->f_flags & 1) == 0) {
+        if (this->m_shared->asyncObject)
+            AsyncFileReadWait(this->m_shared->asyncObject);
+        m_shared = this->m_shared;
+        if (m_shared->asyncObject)
+            AsyncFileReadWait(m_shared->asyncObject);
+        if ((this->m_flags & 0x20) != 0)
+            this->InitializeLoaded();
+    }
+
+    if (attachmentId < this->m_shared->m_data->attachmentIndicesById.Count())
+        return this->m_shared->m_data->attachmentIndicesById[attachmentId] < this->m_shared->m_data->attachments.Count();
+    return this->m_shared->m_data->attachments.Count() > 0xFFFF;
+}
+
 // OFFSET: 0x8267E0
 uint32_t CM2Model::GetBoneSequenceId(uint32_t boneId) {
     if ((this->f_flags & 1) == 0) {
@@ -2664,6 +2681,30 @@ uint32_t CM2Model::GetBoneSequenceId(uint32_t boneId) {
         return this->m_bones[v5].m_sequenceId;
 
     return 0;
+}
+
+// OFFSET: 0x831330
+C3Vector CM2Model::GetAttachmentPosition(uint32_t attachmentId) {
+    if ((this->f_flags & 1) == 0) {
+        if (this->m_shared->asyncObject)
+            AsyncFileReadWait(this->m_shared->asyncObject);
+        if (this->m_shared->asyncObject)
+            AsyncFileReadWait(this->m_shared->asyncObject);
+        if ((this->m_flags & 0x20) != 0)
+            this->InitializeLoaded();
+    }
+
+    uint32_t attachmentIndice = -1;
+    if (attachmentId < this->m_shared->m_data->attachmentIndicesById.Count())
+        attachmentIndice = this->m_shared->m_data->attachmentIndicesById[attachmentId];
+    uint16_t boneIndex = 0;
+    if (attachmentIndice < this->m_shared->m_data->attachments.Count())
+        boneIndex = this->m_shared->m_data->attachments[attachmentIndice].boneIndex;
+
+    this->Animate();
+    C3Vector pos = this->m_boneMatrices[boneIndex].TransformPoint(this->m_shared->m_data->attachments[attachmentIndice].position);
+    pos = this->m_scene->m_viewInv.TransformPoint(pos);
+    return pos;
 }
 
 void CM2Model::SetIndices() {

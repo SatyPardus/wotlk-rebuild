@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cwctype>
 #include <storm/Unicode.hpp>
+#include <common/Unicode.hpp>
 
 void CalcWrapPoint(CGxFont* face, const char* currentText, float fontHeight, float blockWidth, uint32_t* numBytes, float* extent, const char** nextText, float a8, uint32_t flags, bool* a10, float* a11, float scale) {
     if (fontHeight < 0.0f || blockWidth <= 0.0f || !currentText || !*currentText) {
@@ -44,8 +45,87 @@ void CalcWrapPoint(CGxFont* face, const char* currentText, float fontHeight, flo
     }
 }
 
+// OFFSET: 0x6C1AE0
 void CalcWrapPointBillboarded(const char* currentText, uint32_t flags, CGxFont* face, float fontHeight, uint32_t* numBytes, float* extent, const char** nextText, float* a8, float scale) {
-    // TODO
+    if (fontHeight == 0.0f) {
+        *numBytes = 0;
+        *extent = 0.0f;
+        *nextText = nullptr;
+
+        if (a8) {
+            *a8 = 0.0f;
+        }
+
+        return;
+    }
+
+    if (a8) {
+        *a8 = 0.0f;
+    }
+
+    const char* startText = currentText;
+    float width = 0.0f;
+    float lastCharWidth = 0.0f;
+    uint32_t prevCode = 0;
+    int32_t advance = 0;
+    uint32_t code = 0;
+
+    while (*currentText) {
+        QUOTEDCODE quotedCode = GxuDetermineQuotedCode(currentText, advance, 0, flags, code);
+
+        if (quotedCode == CODE_NEWLINE) {
+            break;
+        }
+
+        switch (quotedCode) {
+        case CODE_COLORON:
+        case CODE_COLORRESTORE:
+        case CODE_HYPERLINKSTART:
+        case CODE_HYPERLINKSTOP:
+        case CODE_TEXTURESTOP:
+            break;
+
+        case CODE_TEXTURESTART:
+            // TODO ParseEmbeddedTexture
+            break;
+
+        default:
+            if (face->NewCodeDesc(code)) {
+                float step = 0.0f;
+
+                if (prevCode) {
+                    if (flags & 0x10) {
+                        step = face->ComputeStepFixedWidth(prevCode, code);
+                    } else {
+                        step = face->ComputeStep(prevCode, code);
+                    }
+                }
+
+                width += step;
+                lastCharWidth = GetCharacterWidth(&currentText[advance], flags, code, face, fontHeight);
+                prevCode = code;
+            }
+
+            break;
+        }
+
+        currentText += advance;
+    }
+
+    *numBytes = currentText - startText;
+    *extent = (fontHeight / static_cast<float>(face->GetPixelSize())) * (width + lastCharWidth);
+
+    while (*currentText) {
+        code = sgetu8(reinterpret_cast<const uint8_t*>(currentText), &advance);
+
+        if (!iswspace(code)) {
+            break;
+        }
+
+        currentText += advance;
+    }
+
+    *nextText = currentText;
 }
 
 void CalcWrapPointNonBillboarded(const char* currentText, CGxFont* face, float fontHeight, float blockWidth, uint32_t* numBytes, float* extent, const char** nextText, float a8, uint32_t flags, bool* a10, float* a11, float scale) {

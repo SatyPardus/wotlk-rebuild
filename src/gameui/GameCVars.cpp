@@ -3,6 +3,7 @@
 #include "gameui/camera/CameraCVars.hpp"
 #include "util/Unimplemented.hpp"
 #include <storm/String.hpp>
+#include <clientobject/PlayerName.hpp>
 
 CVar* g_minimapPortalMaxCVar;
 CVar* g_showToastBroadcastCVar;
@@ -224,7 +225,7 @@ void CGGameUI::RegisterGameCVars() {
     CVar::Register("lockActionBars", "Whether the action bars should be locked, preventing changes", 16, "1", nullptr, 4, 0, nullptr, 0);
     CVar::Register("alwaysShowActionBars", "Whether to always show the action bar grid", 16, "0", nullptr, 4, 0, nullptr, 0);
     g_secureAbilityToggleCVar = CVar::Register("secureAbilityToggle", "Whether you should be protected against accidentally double-clicking an aura", 16, "1", nullptr, 4, 0, nullptr, 0);
-    // PlayerNameRegisterCVars();
+    PlayerNameRegisterCVars();
     g_combatDamageCVar = CVar::Register("CombatDamage", "Display damage numbers over hostile creatures when damaged", 16, "1", nullptr, 4, 0, nullptr, 0);
     s_cvCombatLogPeriodicSpells = CVar::Register("CombatLogPeriodicSpells", "Display damage caused by periodic effects", 16, "1", nullptr, 4, 0, nullptr, 0);
     g_petMeleeDamageCVar = CVar::Register("PetMeleeDamage", "Display pet melee damage in the world", 16, "1", nullptr, 4, 0, nullptr, 0);

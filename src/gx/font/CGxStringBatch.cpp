@@ -272,7 +272,7 @@ void CGxStringBatch::RenderBatch() {
                 fontBatch->RenderBatch();
 
                 if (this->m_flags & 0x2) {
-                    // TODO
+                    fontBatch->m_strings.UnlinkAll();
                 }
             } else {
                 this->m_fontBatch.Unlink(fontBatch);

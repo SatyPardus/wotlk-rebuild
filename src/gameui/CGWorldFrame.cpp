@@ -29,6 +29,7 @@
 #include "gameui/CGGameUI.hpp"
 #include <gx/Coordinate.hpp>
 #include <util/Unimplemented.hpp>
+#include <clientobject/PlayerName.hpp>
 
 CDataAllocator CGWorldFrame::s_allocator(sizeof(CGWorldFrame), 1);
 
@@ -394,6 +395,8 @@ void CGWorldFrame::OnWorldRender() {
     if (CWorldScene::s_m2Scene) {
         CWorldScene::s_m2Scene->Draw(M2PASS_0);
     }
+
+    PlayerNameTestRender();
 
     GxRsPop();
 }

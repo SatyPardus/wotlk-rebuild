@@ -9,6 +9,8 @@
 #include <bc/Memory.hpp>
 #include <storm/String.hpp>
 #include <tempest/Math.hpp>
+#include "gx/font/CGxStringBatch.hpp"
+#include "gx/Transform.hpp"
 
 TEXTLINETEXTURE* TEXTLINETEXTURE::NewTextLineTexture() {
     // TODO
@@ -76,9 +78,15 @@ void TEXTLINETEXTURE::WriteGeometry(CGxVertexPCT* buf, const CImVector& fontColo
         }
     }
 
-    // if (BATCHEDRENDERFONTDESC::s_billboarded) {
-    //     // TODO
-    // }
+    C44Matrix billboard;
+
+    if (BATCHEDRENDERFONTDESC::s_billboarded) {
+        C44Matrix view;
+        GxXformView(view);
+
+        billboard.Translate(view.TransformPoint(viewTranslation));
+        billboard *= view.Inverse();
+    }
 
     for (int32_t i = 0; i < size; i++) {
         auto& vert = this->m_vert[i + ofs];
@@ -86,20 +94,20 @@ void TEXTLINETEXTURE::WriteGeometry(CGxVertexPCT* buf, const CImVector& fontColo
         auto color = colorCount ? this->m_colors[i + ofs] : fontColor;
         GxFormatColor(color);
 
-        // if (BATCHEDRENDERFONTDESC::s_billboarded) {
-        //     // TODO
-        //     continue;
-        // }
+        C3Vector p;
 
-        C3Vector p = {
-            vert.vc.x + viewTranslation.x,
-            vert.vc.y + viewTranslation.y,
-            vert.vc.z + viewTranslation.z
-        };
+        if (BATCHEDRENDERFONTDESC::s_billboarded) {
+            p = billboard.TransformPoint(vert.vc);
+        } else {
+            p = {
+                vert.vc.x + viewTranslation.x,
+                vert.vc.y + viewTranslation.y,
+                vert.vc.z + viewTranslation.z
+            };
+        }
 
         buf->p = p;
         buf->tc[0] = vert.tc;
-
         buf->c = color;
 
         buf++;

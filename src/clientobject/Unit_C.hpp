@@ -188,6 +188,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool IsLocalClientControlled();
     bool IsAllowedToSendMessage(NETMESSAGE msgId);
     void ToggleMovementFlag2_0x40(uint8_t flag);
+    float GetStandHeight();
 
     bool ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
     bool SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);

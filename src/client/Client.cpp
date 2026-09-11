@@ -45,6 +45,7 @@
 #include <gameui/CGInputControl.hpp>
 #include <gameui/CGWorldFrame.hpp>
 #include "gameui/camera/CGCamera.hpp"
+#include <clientobject/PlayerName.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -893,7 +894,7 @@ void ClientInitializeGame(int32_t zoneId, C3Vector* position) {
     auto activeCamera = CGWorldFrame::GetActiveCamera();
     activeCamera->m_position = *position;
     //WorldTextInitialize();
-    //PlayerNameInitialize();
+    PlayerNameInitialize();
     //NOP();
     //CGObject_C::Initialize();
     //SpellTableInitialize();

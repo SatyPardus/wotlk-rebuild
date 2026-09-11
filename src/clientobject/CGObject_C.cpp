@@ -282,6 +282,16 @@ void CGObject_C::UpdateWorldObject(bool a2) {
     CMap::ObjectUpdate(this->m_worldObject, mat, box, sphere, vec, a2, 0xFFFFFFFF);
 }
 
+// OFFSET: 0x7451B0
+void CGObject_C::GetNamePosition(C3Vector& pos) {
+    if (this->m_worldModel->HasAttachment(18)) {
+        pos = this->m_worldModel->GetAttachmentPosition(18);
+    } else {
+        this->GetPosition(pos);
+        pos.z += this->m_height * this->m_scale * 1.25f;
+    }
+}
+
 // OFFSET: 0x4D5EA0
 void CGObject_C::GetPosition(C3Vector& pos) {
     pos = C3Vector();
@@ -316,6 +326,12 @@ WGUID CGObject_C::GetTransportGUID() {
 bool CGObject_C::GetModelFileName(const char** fileName) {
     *fileName = nullptr;
     return false;
+}
+
+// OFFSET: 0x4D5F70
+bool CGObject_C::GetSelectionHighlightColor(CImVector& color) {
+    color = { 0xFF, 0xFF, 0xFF, 0xFF };
+    return true;
 }
 
 // OFFSET: 0x4D5F90
@@ -416,9 +432,32 @@ void CGObject_C::GetMatrix(C44Matrix& mat) {
     mat.d3 = 1.0;
 }
 
+// OFFSET: 0x7434E0
+uint32_t CGObject_C::UpdateObjectNameString(uint32_t mask, char* text, uint32_t textSize) {
+    char* name = this->GetObjectName();
+    if (name) {
+        SStrPrintf(text, textSize, "%s", name);
+    } else {
+        *text = 0;
+    }
+    return 1;
+}
+
+// OFFSET: 0x743530
+bool CGObject_C::ShouldRenderObjectName(uint32_t mask) {
+    //if (this->m_model)
+    //    return 0;
+    return (mask >> 11) & 1;
+}
+
 // OFFSET: 0x4D5FE0
 CM2Model* CGObject_C::GetObjectModel() {
     return this->m_worldModel;
+}
+
+// OFFSET: 0x8E5250
+char* CGObject_C::GetObjectName() {
+    return nullptr;
 }
 
 // OFFSET: 0x743640

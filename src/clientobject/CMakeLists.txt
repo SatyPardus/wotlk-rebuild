@@ -11,6 +11,7 @@ target_include_directories(clientobject
 
 target_link_libraries(clientobject
     PRIVATE
+        gx
         storm
         db
 )

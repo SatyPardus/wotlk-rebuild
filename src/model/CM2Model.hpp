@@ -314,7 +314,9 @@ class CM2Model {
         void SetBoneSequenceDeferred(uint16_t a2, M2Data* data, uint16_t boneIndex, uint32_t time, float a6, M2SequenceFallback fallback, int32_t a8, int32_t a9, int32_t a10);
         bool HasSequence(uint32_t sequenceId);
         bool HasKeyBone(uint32_t boneId);
+        bool HasAttachment(uint32_t attachmentId);
         uint32_t GetBoneSequenceId(uint32_t boneId);
+        C3Vector GetAttachmentPosition(uint32_t attachmentId);
         void SetIndices();
         void SetLightingCallback(void (*lightingCallback)(CM2Model*, CM2Lighting*, void*), void* lightingArg);
         void SetLoadedCallback(void (*loadedCallback)(CM2Model*, void*), void* loadedArg);

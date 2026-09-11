@@ -15,6 +15,7 @@
 #include <util/Network.hpp>
 #include <client/FrameTime.hpp>
 #include <tempest/Math.hpp>
+#include "clientobject/PlayerName.hpp"
 
 WGUID CGUnit_C::s_activeMover = 0;
 CVar* CGUnit_C::s_cvShowFootPrintParticles = nullptr;
@@ -216,7 +217,7 @@ void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdat
     //m_obj = this->ObjectBase.m_obj;
     //guid_low = m_obj->OBJECT_FIELD_GUID.guid_low;
     //guid_high = m_obj->OBJECT_FIELD_GUID.guid_high;
-    //this->ObjectBase.ukn_00B0 = PlayerNameCreate(&guid_low);
+    this->m_nameDesc = PlayerNameCreate(this->m_obj->m_guid);
     //maybe_CGUnit_C__UpdateBreathState(this, FrameTime::s_curTimeMs);
     //CGUnit_C::UpdateChannelEffects(this);
     //if (!(this->ObjectBase.ukn57)(this)) {
@@ -618,6 +619,16 @@ bool CGUnit_C::IsAllowedToSendMessage(NETMESSAGE msgId) {
 // OFFSET: 0x74B9B0
 void CGUnit_C::ToggleMovementFlag2_0x40(uint8_t flag) {
     this->movementData.ToggleMovementFlag2_0x40(flag);
+}
+
+// OFFSET: 0x717AD0
+float CGUnit_C::GetStandHeight() {
+    if (!this->m_modelData) {
+        this->m_modelData = this->GetModelData();
+        if (!this->m_modelData)
+            return 0.0f;
+    }
+    return this->GetTrueScale() * (this->m_modelData->m_geoBoxMaxZ - this->m_modelData->m_geoBoxMinZ);
 }
 
 // OFFSET: 0x7413F0
