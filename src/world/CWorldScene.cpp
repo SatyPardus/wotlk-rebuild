@@ -85,12 +85,6 @@ char CWorldScene::s_debugMapChunk[64];
 
 STORM_EXPLICIT_LIST(CFrustum, sceneLink) CWorldScene::s_frustumFreeList;
 
-void CWorldSceneLightingCallback(CM2Model* model, CM2Lighting* lighting, void* userArg) {
-    lighting->AddAmbient({ 1.0f, 1.0f, 1.0f });
-    lighting->AddDiffuse({ 1.0f, 1.0f, 1.0f }, { 1.0f, 0.0f, 0.0f });
-    lighting->AddSpecular({ 0.0f, 0.0f, 0.0f });
-}
-
 // OFFSET: 0x7997D0
 void CWorldScene::Initialize() {
     // CBarrier::Initialize();
@@ -899,8 +893,7 @@ void CWorldScene::CullEntitys(CSortEntry* entry) {
                     entity->model->m_flag10000 = visible;
                 }
 
-                //entity->model->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
-                entity->model->m_lightingCallback = CWorldSceneLightingCallback;
+                entity->model->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
                 entity->model->m_lightingArg = entity;
             }
             if (entity->m_func && !entity->m_func(entity->m_funcParam, 5, entity->m_funcParam64, entity->m_funcParam32)) {

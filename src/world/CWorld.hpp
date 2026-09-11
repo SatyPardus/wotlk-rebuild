@@ -59,6 +59,7 @@ class CWorld {
         static float s_farClip;
         static float s_nearClip;
         static float prevFarClip;
+        static float farFog;
         static CALLBACK_FUNC s_loadProgressCallback;
         static void* s_loadProgressParam;
         static int32_t terrainAlphaBitDepth;

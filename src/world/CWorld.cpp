@@ -13,6 +13,7 @@
 #include <gameui/CGWorldFrame.hpp>
 #include <gameui/camera/CGCamera.hpp>
 #include "world/MapWeather.hpp"
+#include "world/daynight/DNInfo.hpp"
 
 uint32_t CWorld::s_enables;
 uint32_t CWorld::s_enables2;
@@ -24,6 +25,7 @@ CiRect CWorld::s_chunkRectLow;
 float CWorld::s_farClip;
 float CWorld::s_nearClip = 0.1f;
 float CWorld::prevFarClip;
+float CWorld::farFog;
 CWorld::CALLBACK_FUNC CWorld::s_loadProgressCallback;
 void* CWorld::s_loadProgressParam;
 int32_t CWorld::terrainAlphaBitDepth;
@@ -64,7 +66,7 @@ void CWorld::Initialize() {
     //dword_CD7754 |= 7u;
     //dword_CD765C = *(_DWORD*)(dword_CD85C4 + 48);
     //CWorld::shadowMipLevel = CWorldParam::cvar_shadowLevel->m_intValue;
-    //CWorld::farFog = CWorldParam::cvar_farClip->m_numberValue;
+    CWorld::farFog = 1583.3334f; //TODO CWorldParam ::cvar_farClip->m_numberValue;
     //dword_CD7664 = 4;
     CWorld::s_prepareAll = 0;
     CWorld::s_areaOfInterestJumped = 0;
@@ -276,10 +278,9 @@ void CWorld::Update(C3Vector* camPos, C3Vector* camTarget, C3Vector* position) {
     //}
     CWorldScene::LocateViewer3();
     DayNight::Update((CWorld::s_prepareAll || CWorld::s_areaOfInterestJumped), camPos);
-    //sub_7816F0(HIDWORD(CWorld::prepareAll) | CWorld::prepareAll, &camPos->x);
-    //CWorld::farFog = DayNight::GetActiveDayNight()->fogInfo.end;
-    //if (!CGxDevice::MasterEnable(g_theGxDevicePtr, 1))
-    //    CWorld::farFog = 100000.0;
+    CWorld::farFog = DayNight::GetInfo()->m_fog.end;
+    if (!g_theGxDevicePtr->MasterEnable(GxMasterEnable_Fog))
+        CWorld::farFog = 100000.0f;
     CWorld::s_prepareAll = false;
     //if ((CWorld::enables & 0x2000000) != 0 && dword_CD8794)
     //    sub_79BF40(CWorld::particulate);

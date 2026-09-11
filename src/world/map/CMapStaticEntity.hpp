@@ -29,6 +29,7 @@ class CMapStaticEntity : public CMapBaseObj {
     float diffuseLightScale = 0.0f;
 
     static C3Vector s_interiorSunDir;
+    static float s_characterAmbient;
 
     void SelectLights(CM2Lighting* lighting) override;
     void SelectUnderwater(CM2Lighting* lighting) override;
