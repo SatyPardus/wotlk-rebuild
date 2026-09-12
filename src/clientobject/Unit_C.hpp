@@ -11,6 +11,7 @@
 class ChrRacesRec;
 class ChrClassesRec;
 class CGPlayer_C;
+class CreatureStats_C;
 
 struct CGUnitData {
     WGUID UNIT_FIELD_CHARM;
@@ -133,6 +134,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
 
     /* 0788 */ CMovement_C movementData;
 
+    /* 0964 */ CreatureStats_C* m_creatureCacheEntry = nullptr;
     /* 0968 */ CreatureDisplayInfoRec* m_displayInfo = nullptr;
     /* 096C */ CreatureDisplayInfoExtraRec* m_displayInfoExtra = nullptr;
     /* 0970 */ CreatureModelDataRec* m_modelData = nullptr;
@@ -189,6 +191,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool IsAllowedToSendMessage(NETMESSAGE msgId);
     void ToggleMovementFlag2_0x40(uint8_t flag);
     float GetStandHeight();
+    char* GetUnitName(char** a2, bool a3);
+    void UpdateUnitNameText();
 
     bool ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
     bool SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
@@ -256,6 +260,11 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 34 */ void PreAnimate(CGWorldFrame* worldFrame) override;
     /* 36 */ void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) override;
     /* 37 */ float GetRenderFacing() override;
+    /* 54 */ char* GetObjectName() override;
+    /* 66 */ virtual void GetAFKText(char* text, uint32_t textLength);
+    /* 67 */ virtual void GetDNDText(char* text, uint32_t textLength);
+    /* 68 */ virtual void GetGMText(char* text, uint32_t textLength);
+    /* 69 */ virtual void GetDevText(char* text, uint32_t textLength);
     /* 78 */ virtual uint8_t GetClientStandState();
     /* 83 */ virtual float GetPitch();
 

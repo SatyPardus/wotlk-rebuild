@@ -17,6 +17,9 @@
 #include <tempest/Math.hpp>
 #include "clientobject/PlayerName.hpp"
 #include "db/DBCache.hpp"
+#include "db/DBCacheInstances.hpp"
+#include "ui/FrameScript.hpp"
+#include <gameui/CGGameUI.hpp>
 
 WGUID CGUnit_C::s_activeMover = 0;
 CVar* CGUnit_C::s_cvShowFootPrintParticles = nullptr;
@@ -484,6 +487,37 @@ void CGUnit_C::UpdateAllSmoothFacing() {
         ClntObjMgrEnumVisibleObjects(UpdateAllSmoothFacingCallback, camera);
 }
 
+// OFFSET: 0x72CDE0
+void CreatureQueryCallback(uint32_t id, void* data, void* arg, int32_t success) {
+    uint64_t requester = 0;
+    CreatureStats_C* entry = g_creatureCache.GetRecord(static_cast<int32_t>(id), &requester, nullptr, nullptr, false);
+
+    if (!entry) {
+        return;
+    }
+
+    WGUID guid = *static_cast<uint64_t*>(data);
+    CGUnit_C* unit = ClntObjMgrObjectPtr<CGUnit_C*>(guid, TYPEMASK_UNIT);
+
+    if (unit) {
+        //unit->DestroyNamePlate();
+        unit->m_creatureCacheEntry = entry;
+        //if (entry->m_family) {
+        //    unit->UpdateModelScale(0);
+        //}
+        //unit->UpdateUnitCollisionBox(1, 0);
+    }
+
+    CGGameUI::UnitNameUpdate(guid);
+    //Script_SendUnitSignal(&guid, 148);
+
+    //auto totemInfo = CGGameUI::GetTotemInfo(guid);
+    //if (totemInfo) {
+    //    totemInfo->unk_10 = unit->GetUnitName(0, 1);
+    //    FrameScript::SignalEvent(165, "%d", totemInfo->unk_00 + 1);
+    //}
+}
+
 // OFFSET: 0x72D940
 void CGUnit_C::RefreshDataPointers() {
     uint32_t displayId = this->m_displayId;
@@ -512,9 +546,8 @@ void CGUnit_C::RefreshDataPointers() {
     }
 
     if (this->m_obj->m_type == HIER_TYPE_UNIT) {
-        //v21[0] = m_obj->OBJECT_FIELD_GUID.guid_low;
-        //v21[1] = m_obj->OBJECT_FIELD_GUID.guid_high;
-        //this->m_creatureCacheEntry = DbCreatureCache_GetInfoBlockById(WDB_CACHE_CREATURE, m_obj->OBJECT_FIELD_ENTRY, v21, bn_CreatureQueryCallback, 0, 0);
+        uint64_t requester = static_cast<uint64_t>(this->m_obj->m_guid);
+        this->m_creatureCacheEntry = g_creatureCache.GetRecord(static_cast<int32_t>(this->m_obj->m_entryID), &requester, CreatureQueryCallback, nullptr, false);
     }
 
     if (this->m_unit->UNIT_FIELD_NATIVEDISPLAYID == this->m_unit->UNIT_FIELD_DISPLAYID)
@@ -630,6 +663,88 @@ float CGUnit_C::GetStandHeight() {
             return 0.0f;
     }
     return this->GetTrueScale() * (this->m_modelData->m_geoBoxMaxZ - this->m_modelData->m_geoBoxMinZ);
+}
+
+// OFFSET: 0x72A000
+char* CGUnit_C::GetUnitName(char** a2, bool a3) {
+    //v3 = 0;
+    //if (a3 && (this->dataF00[16] & 0x800000) != 0) {
+    //    WowClientDB::GetRow(&v18);
+    //    v21 = 0;
+    //    if (CGUnit_C::GetAuraCount(this)) {
+    //        while (1) {
+    //            auraCount2 = this->auraCount2;
+    //            if (auraCount2 == -1)
+    //                auraCount2 = this->auraData2[0].auraCount1;
+    //            if (v21 >= auraCount2)
+    //                v6 = 0;
+    //            else
+    //                v6 = this->auraCount2 == -1 ? &this->auraData2[0].auradata1[v3] : &this->auraData2[v3];
+    //            if (ClientDb::GetLocalizedRow(&g_spellDB, v6->spellId, &v18))
+    //                break;
+//LABEL_16:
+    //            ++v21;
+    //            ++v3;
+    //            if (v21 >= CGUnit_C::GetAuraCount(this))
+    //                goto LABEL_17;
+    //        }
+    //        v7 = 0;
+    //        while (v18.m_effectAura[v7] != 279 || ((1 << v7) & v6->flags) == 0) {
+    //            if (++v7 >= 3)
+    //                goto LABEL_16;
+    //        }
+    //        v11 = ClntObjMgrObjectPtr(v6->creator, TYPEMASK_UNIT);
+    //        if (v11)
+    //            UnitName = CGUnit_C::GetUnitName(v11, a2, 0);
+    //        else
+    //            UnitName = GetObjectNameFromGuid(&v6->creator.guid_low);
+    //        NOP(v17);
+    //        return UnitName;
+    //    }
+//LABEL_17:
+    //    NOP(v17);
+    //}
+
+    if ((this->m_obj->m_type & TYPEMASK_PLAYER) != 0) {
+        //uint64_t guid = static_cast<uint64_t>(this->m_obj->m_guid);
+        //NameCache* record = g_nameCache.GetRecord(guid, &guid, NameQueryCallback, nullptr, true);
+        //if (record) {
+        //    if (a2 && record->m_realmName[0]) {
+        //        *a2 = record->m_realmName;
+        //    }
+        //    return record->m_name;
+        //}
+    } else if (this->m_unit->UNIT_FIELD_PETNUMBER) {
+        //uint64_t guid = static_cast<uint64_t>(this->m_obj->m_guid);
+        //PetNameCache* record = g_petNameCache.GetRecord(this->m_unit->UNIT_FIELD_PETNUMBER, &guid, NameQueryCallback, nullptr, true);
+        //if (record) {
+        //    if (record->m_timestamp == this->m_unit->UNIT_FIELD_PET_NAME_TIMESTAMP) {
+        //        return record->m_name;
+        //    }
+        //    UnitCombatLogInvalidateName(record);
+        //    g_petNameCache.Invalidate(this->m_unit->UNIT_FIELD_PETNUMBER);
+        //    g_petNameCache.GetRecord(this->m_unit->UNIT_FIELD_PETNUMBER, &guid, NameQueryCallback, nullptr, true);
+        //}
+    } else if (this->m_creatureCacheEntry) {
+        return this->m_creatureCacheEntry->m_name[0];
+    }
+
+    const char* text = FrameScript_GetText("UNKNOWNOBJECT", -1, GENDER_NOT_APPLICABLE);
+
+    if (!text || !text[0]) {
+        text = "Unknown Being";
+    }
+
+    return const_cast<char*>(text);
+}
+
+// OFFSET: 0x715500
+void CGUnit_C::UpdateUnitNameText() {
+    if (this->m_nameDesc)
+        PlayerNameTriggerNameRegenerate(this->m_nameDesc);
+    //m_namePlateFrame = this->m_namePlateFrame;
+    //if (m_namePlateFrame)
+    //    bn_CGNamePlateFrame_UpdateNameDisplay(m_namePlateFrame, this);
 }
 
 // OFFSET: 0x7413F0
@@ -2420,6 +2535,32 @@ void CGUnit_C::ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) {
 float CGUnit_C::GetRenderFacing() {
     return this->movementData.GetFacing(this->m_renderFacing);
 }
+
+// OFFSET: 0x6E6EE0
+char* CGUnit_C::GetObjectName() {
+    return this->GetUnitName(nullptr, 1);
+}
+
+// OFFSET: 0x653A10 (NOP)
+void CGUnit_C::GetAFKText(char* text, uint32_t textLength) {
+
+}
+
+// OFFSET: 0x653A10 (NOP)
+void CGUnit_C::GetDNDText(char* text, uint32_t textLength) {
+
+}
+
+// OFFSET: 0x653A10 (NOP)
+void CGUnit_C::GetGMText(char* text, uint32_t textLength) {
+
+}
+
+// OFFSET: 0x653A10 (NOP)
+void CGUnit_C::GetDevText(char* text, uint32_t textLength) {
+
+}
+
 
 // OFFSET: 0x6E6FC0
 float CGUnit_C::GetPitch() {

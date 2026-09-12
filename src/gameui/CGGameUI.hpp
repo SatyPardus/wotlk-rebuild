@@ -23,6 +23,7 @@ class CGGameUI {
         static void OnMouseModeNormal();
         static int32_t FilterMouseMotion(CMouseEvent* evt);
         static int32_t FilterMouseButton(CMouseEvent* evt);
+        static void UnitNameUpdate(WGUID guid);
 
     public:
         static CSimpleTop* m_simpleTop;

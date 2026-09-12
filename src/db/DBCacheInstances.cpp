@@ -67,8 +67,11 @@ void DbCache_LoadAll() {
     g_danceCache.Load();
 }
 
+// OFFSET: 0x635190
 int32_t Packet_SMSG_CREATURE_QUERY_RESPONSE(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
-    WHOA_UNIMPLEMENTED(0);
+    g_creatureCache.AddItems(msg, true);
+
+    return 1;
 }
 
 int32_t Packet_SMSG_GAMEOBJECT_QUERY_RESPONSE(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {

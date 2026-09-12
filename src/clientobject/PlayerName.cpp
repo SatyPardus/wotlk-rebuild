@@ -119,6 +119,12 @@ PLAYERNAMEDESC* PlayerNameCreate(WGUID guid) {
     return name;
 }
 
+// OFFSET: 0x7E5130
+void PlayerNameTriggerNameRegenerate(PLAYERNAMEDESC* name) {
+    if (name)
+        name->m_flags |= 1;
+}
+
 void PlayerNameTestRender() {
     for (PLAYERNAMEDESC* i = s_playerNames.Head(); i; i = s_playerNames.Next(i)) {
         i->Render();

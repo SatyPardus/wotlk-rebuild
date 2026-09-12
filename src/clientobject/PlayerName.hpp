@@ -16,6 +16,7 @@ void PlayerNameShutdown();
 void PlayerNameRegisterCVars();
 float PlayerNameComputeScale(CGObject_C* obj);
 PLAYERNAMEDESC* PlayerNameCreate(WGUID guid);
+void PlayerNameTriggerNameRegenerate(PLAYERNAMEDESC* name);
 
 void PlayerNameTestRender();
 

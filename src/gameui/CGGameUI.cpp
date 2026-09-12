@@ -26,6 +26,7 @@
 #include "clientobject/Unit_C.hpp"
 #include "CGInputControl.hpp"
 #include <event/Input.hpp>
+#include <clientobject/ObjectMgrClient.hpp>
 
 
 CSimpleTop* CGGameUI::m_simpleTop = nullptr;
@@ -320,4 +321,14 @@ int32_t CGGameUI::FilterMouseButton(CMouseEvent* evt) {
     }
 
     return 1;
+}
+
+// OFFSET: 0x512B00
+void CGGameUI::UnitNameUpdate(WGUID guid) {
+    auto unit = ClntObjMgrObjectPtr<CGUnit_C*>(guid, TYPEMASK_UNIT);
+    if (unit) {
+        //bn_CGGameUI_UnitTooltipUpdate(a1);
+        unit->UpdateUnitNameText();
+    }
+    //Script_SendUnitSignal(a1, 144);
 }
