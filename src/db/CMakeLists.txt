@@ -1,4 +1,4 @@
-file(GLOB PRIVATE_SOURCES "*.cpp" "rec/*.cpp")
+file(GLOB PRIVATE_SOURCES "*.cpp" "rec/*.cpp" "cache/*.cpp")
 
 add_library(db STATIC
     ${PRIVATE_SOURCES}
@@ -14,4 +14,5 @@ target_link_libraries(db
         bc
         common
         storm
+        console
 )

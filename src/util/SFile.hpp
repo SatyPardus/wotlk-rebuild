@@ -23,6 +23,8 @@ enum SFILE_TYPE {
 
 class SFile {
     public:
+        static uint32_t s_locale;
+
         // Static functions
         static void Initialize();
         static int32_t Close(SFile*);

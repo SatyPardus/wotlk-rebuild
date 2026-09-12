@@ -32,6 +32,8 @@ void ClientPostClose(int32_t a1);
 
 const char* UpdateInstallLocation();
 
+bool IsCommonMpqExists();
+
 void CommonMain();
 
 void StormInitialize();

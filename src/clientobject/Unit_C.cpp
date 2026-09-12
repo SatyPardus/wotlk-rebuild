@@ -16,6 +16,7 @@
 #include <client/FrameTime.hpp>
 #include <tempest/Math.hpp>
 #include "clientobject/PlayerName.hpp"
+#include "db/DBCache.hpp"
 
 WGUID CGUnit_C::s_activeMover = 0;
 CVar* CGUnit_C::s_cvShowFootPrintParticles = nullptr;

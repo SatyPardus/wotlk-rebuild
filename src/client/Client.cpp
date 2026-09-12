@@ -46,6 +46,7 @@
 #include <gameui/CGWorldFrame.hpp>
 #include "gameui/camera/CGCamera.hpp"
 #include <clientobject/PlayerName.hpp>
+#include <db/DBCacheInstances.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -807,9 +808,8 @@ void WowClientInit() {
     //     ComSatClient_Init();
     // }
 
-    // TODO
-    // DBCache_RegisterHandlers();
-    // DBCache_Initialize(a1);
+    DbCache_RegisterHandlers();
+    DbCache_LoadAll();
 
     CWorldParam::Initialize();
     CWorld::Initialize();

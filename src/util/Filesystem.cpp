@@ -1,4 +1,5 @@
 #include "util/Filesystem.hpp"
+#include "util/SFile.hpp"
 #include <cstring>
 #include <sys/stat.h>
 #include <storm/String.hpp>
@@ -146,6 +147,10 @@ void OpenArchives()
     }
 
     if (language) {
+        SFile::s_locale = 0;
+        for (size_t i = 0; i < 4 && language[i]; ++i)
+            SFile::s_locale = (SFile::s_locale << 8) | static_cast<uint8_t>(language[i]);
+
         SStrCopy(path, "Data/", sizeof(path));
         SStrPack(path, language, sizeof(path));
 
