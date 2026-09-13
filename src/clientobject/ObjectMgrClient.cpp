@@ -11,6 +11,7 @@
 #include "clientobject/GameObject_C.hpp"
 #include "clientobject/DynamicObject_C.hpp"
 #include <common/ObjectAlloc.hpp>
+#include <common/time/Time.hpp>
 
 #define MAX_CHANGE_MASKS 42
 
@@ -54,26 +55,66 @@ CGObject_C* GetUpdateObject(WGUID guid, bool* reenable) {
     *reenable = false;
     CGObject_C* obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, guid);
     if (obj) {
-        // obj->SetDisablePending(0);
+        obj->SetDisablePending(0);
         return obj;
     }
 
     obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_lazyCleanupObjects, guid);
     if (obj) {
-        // sub_4D4790(result);
-        // TSLink::Unlink(&v9->ukn_0054);
-        // TSHashTable__CGObject_C__Insert(&pObjMgr->m_objects, v9, __PAIR64__(v12, a4));
-        // v10 = v13->pObjMgr;
-        // if (!*(&v9->unk_0004 + v10->unk_A4.m_linkoffset)) {
-        //     p_unk_B0 = &v10->unk_B0;
-        //     if (!List::Contains(&v10->unk_B0.m_linkoffset, v9)) {
-        //         *a3 = 1;
-        //         HashTable::AddEntry(p_unk_B0, v9);
-        //     }
-        // }
+        obj->Unlink();
+        obj->m_link.Unlink();
+        g_tlsBlock.pObjMgr->m_objects.Insert(obj, obj->m_hashval, obj->m_key.m_guid);
+        if (!g_tlsBlock.pObjMgr->m_visibleObjects.IsLinked(obj) && !g_tlsBlock.pObjMgr->m_pendingReenableObjects.IsLinked(obj)) {
+            *reenable = true;
+            g_tlsBlock.pObjMgr->m_pendingReenableObjects.LinkToTail(obj);
+        }
         return obj;
     }
     return nullptr;
+}
+
+// OFFSET: 0x4D6FC0
+void ObjDelete(CGObject_C* obj) {
+    // ObjDelete__ClearMirrorLists(this);
+    obj->Unlink();
+    auto objMgr = g_tlsBlock.pObjMgr;
+    if (objMgr->m_visibleObjects.IsLinked(obj))
+        objMgr->m_visibleObjects.UnlinkNode(obj);
+    objMgr->m_lazyCleanupObjects.Insert(obj, obj->m_hashval, obj->m_key.m_guid);
+    objMgr->m_deletedObjects[obj->m_typeID - 1].LinkToTail(obj);
+}
+
+// OFFSET: 0x4D4090
+void ObjFree(CGObject_C* obj) {
+    auto objMgr = g_tlsBlock.pObjMgr;
+
+    WGUID playerGuid;
+    if (objMgr) {
+        playerGuid = objMgr->playerGuid;
+    }
+
+    bool isLocalPlayer = obj->m_obj->m_guid == playerGuid;
+
+    switch (obj->m_obj->m_type) {
+    case HIER_TYPE_OBJECT:
+    case HIER_TYPE_ITEM:
+    case HIER_TYPE_CONTAINER:
+    case HIER_TYPE_UNIT:
+    case HIER_TYPE_PLAYER:
+    case HIER_TYPE_GAMEOBJECT:
+    case HIER_TYPE_DYNAMICOBJECT:
+    case HIER_TYPE_CORPSE:
+        obj->~CGObject_C();
+        break;
+    default:
+        break;
+    }
+
+    if (isLocalPlayer) {
+        STORM_FREE(obj);
+    } else {
+        ObjectFree(s_objHeapId[obj->m_typeID], obj->m_heapIndex);
+    }
 }
 
 // OFFSET: 0x4D3F10
@@ -351,9 +392,9 @@ bool CreateObject(CDataStore* msg, uint32_t time) {
             return 0;
         }
     
-    //    if (reenable) {
-    //        existingObject->Reenable();
-    //    }
+        if (reenable) {
+            existingObject->Reenable();
+        }
     
         return 1;
     }
@@ -465,13 +506,13 @@ void UpdateOutOfRangeObjects(CDataStore* msg) {
         //    OBJECT_FIELD_GUID = ObjectPtr->m_obj->OBJECT_FIELD_GUID;
         //    maybe_UpdateArenaOpponents(&OBJECT_FIELD_GUID);
         //}
-        //(v4->ukn4)(v4, 0);
-        //if (CGObject_C__IsObjectLocked(v4)) {
-        //    CGObject_C::SetDisablePending(v4, 1);
-        //} else {
-        //    CGObject_C::SetDisablePending(v4, 0);
-        //    v4->Disable(v4);
-        //}
+        obj->HandleOutOfRange();
+        if (obj->IsObjectLocked()) {
+            obj->SetDisablePending(1);
+        } else {
+            obj->SetDisablePending(0);
+            obj->Disable();
+        }
     }
 
     msg->Seek(readPosition);
@@ -485,8 +526,8 @@ void UpdateOutOfRangeObjects(CDataStore* msg) {
         if (!obj)
             continue;
 
-        // if (!CGObject_C__IsObjectLocked(v5))
-        //     ObjDelete(v6);
+        if (!obj->IsObjectLocked())
+            ObjDelete(obj);
     }
 
     // CVehiclePassenger_C::ExecutePendingRescueTransitions();
@@ -610,37 +651,17 @@ int32_t ObjectUpdateSecondPass(CDataStore* msg, uint32_t time, uint32_t updateCo
         }
     }
 
-    //v15 = *(NtCurrentTeb()->ThreadLocalStoragePointer + TlsIndex);
-    //while (1) {
-    //    pObjMgr = v15->pObjMgr;
-    //    m_next = pObjMgr->unk_B0.m_terminator.m_next;
-    //    if ((m_next & 1) != 0 || !m_next)
-    //        break;
-    //    m_linkoffset = pObjMgr->unk_A4.m_linkoffset;
-    //    v9 = *&m_next[m_linkoffset];
-    //    v10 = &m_next[m_linkoffset];
-    //    if (v9) {
-    //        v11 = v10->m_next;
-    //        if ((v11 & 1) == 0 && v11)
-    //            v12 = (&v10->m_prevlink + v11 - *(v9 + 4));
-    //        else
-    //            v12 = (v11 & 0xFFFFFFFE);
-    //        *v12 = v9;
-    //        v10->m_prevlink->m_next = v10->m_next;
-    //        v10->m_prevlink = 0;
-    //        v10->m_next = 0;
-    //    }
-    //    m_prevlink = pObjMgr->unk_A4.m_terminator.m_prevlink;
-    //    v10->m_prevlink = m_prevlink;
-    //    v10->m_next = m_prevlink->m_next;
-    //    m_prevlink->m_next = m_next;
-    //    pObjMgr->unk_A4.m_terminator.m_prevlink = v10;
-    //    (*(*m_next + 12))(m_next);
-    //}
+    auto objMgr = g_tlsBlock.pObjMgr;
+
+    while (CGObject_C* obj = objMgr->m_pendingReenableObjects.Head()) {
+        objMgr->m_visibleObjects.LinkToTail(obj);
+        obj->PostReenable();
+    }
 
     return 1;
 }
 
+// OFFSET: 0x4D73A0
 int32_t Packet_SMSG_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
     uint32_t updateCount;
     msg->Get(updateCount);
@@ -663,40 +684,22 @@ int32_t Packet_SMSG_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, 
         msg->Seek(startPos);
         result = ObjectUpdateSecondPass(msg, time, updateCount);
     }
-    // v8 = (WowTlsBlock*)*((_DWORD*)NtCurrentTeb()->ThreadLocalStoragePointer + TlsIndex);
-    // v9 = 0x54;
-    // for (i = 0x54; i < 168; i += 12) {
-    //     v10 = *(CGObject_C**)((char*)&v8->pObjMgr->m_objects.m_fulllist.m_linkoffset + v9);
-    //     if (((unsigned __int8)v10 & 1) == 0) {
-    //         if (v10) {
-    //             ukn_0040 = v10->ukn_0024;
-    //             if ((int)(-120000 - ukn_0040 + OsGetAsyncTimeMs()) >= 0) {
-    //                 sub_4D4790(v10);
-    //                 ukn_0038 = v10->ukn_001C;
-    //                 p_ukn_0038 = &v10->ukn_001C;
-    //                 if (ukn_0038) {
-    //                     ukn_003C = v10->ukn_0020;
-    //                     if ((ukn_003C & 1) == 0 && ukn_003C)
-    //                         v15 = (DWORD*)((char*)p_ukn_0038 + ukn_003C - *(_DWORD*)(ukn_0038 + 4));
-    //                     else
-    //                         v15 = (_DWORD*)(ukn_003C & 0xFFFFFFFE);
-    //                     *v15 = ukn_0038;
-    //                     *(_DWORD*)(*p_ukn_0038 + 4) = v10->ukn_0020;
-    //                     *p_ukn_0038 = 0;
-    //                     v10->ukn_0020 = 0;
-    //                 }
-    //                 sub_4D4090(v10);
-    //             }
-    //         }
-    //     }
-    //     v9 = i + 12;
-    // }
-    // return v17;
+
+    for (uint32_t i = ID_ITEM; i <= ID_CORPSE; i++) {
+        auto deletedObjList = g_tlsBlock.pObjMgr->m_deletedObjects[i - 1];
+        auto deletedObj = deletedObjList.Head();
+        if (deletedObj && (-120000 - deletedObj->m_disableTime + OsGetAsyncTimeMs()) >= 0) {
+            deletedObj->Unlink();
+            deletedObj->m_link.Unlink();
+            ObjFree(deletedObj);
+        }
+    }
 
     OsOutputDebugString("Received Packet_SMSG_UPDATE_OBJECT with %d updates\n", updateCount);
     return result;
 }
 
+// OFFSET: 0x4D7610
 int32_t Packet_SMSG_DESTROY_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
     WGUID guid;
     *msg >> guid;
@@ -708,14 +711,15 @@ int32_t Packet_SMSG_DESTROY_OBJECT(void* param, NETMESSAGE msgId, uint32_t time,
     if (obj) {
         //if (v9 && (ObjectPtr->ObjectBase.m_obj->OBJECT_FIELD_TYPE & TYPEMASK_UNIT) != 0 && ObjectPtr->m_unit->UNIT_FIELD_HEALTH > 0)
         //    CGUnit_C::OnDeath(ObjectPtr);
-        //(p_ObjectBase->ukn4)(p_ObjectBase, 1);
-        //if (CGObject_C__IsObjectLocked(p_ObjectBase)) {
-        //    CGObject_C::SetDisablePending(p_ObjectBase, 1);
-        //    return 1;
-        //}
-        //CGObject_C::SetDisablePending(p_ObjectBase, 0);
-        //p_ObjectBase->Disable(p_ObjectBase);
-        //ObjDelete(p_ObjectBase);
+        obj->HandleOutOfRange();
+        if (obj->IsObjectLocked()) {
+            obj->SetDisablePending(true);
+            return 1;
+        }
+
+        obj->SetDisablePending(false);
+        obj->Disable();
+        ObjDelete(obj);
     }
     return 1;
 }

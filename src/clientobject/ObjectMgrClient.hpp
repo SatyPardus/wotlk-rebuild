@@ -15,15 +15,9 @@ class ObjectMgr {
     // Member variables
     TSHashTable<CGObject_C, WGUID> m_objects;
     TSHashTable<CGObject_C, WGUID> m_lazyCleanupObjects;
-    // TSList unk_50;
-    // TSList unk_5C;
-    // TSList unk_68;
-    // TSList unk_74;
-    // TSList unk_80;
-    // TSList unk_8C;
-    // TSList unk_98;
+    STORM_EXPLICIT_LIST(CGObject_C, m_link) m_deletedObjects[7];
     STORM_EXPLICIT_LIST(CGObject_C, m_link) m_visibleObjects;
-    // TSList unk_B0;
+    STORM_EXPLICIT_LIST(CGObject_C, m_link) m_pendingReenableObjects;
     // DWORD unk_BC;
     WGUID playerGuid;
     // DWORD unk_C8;

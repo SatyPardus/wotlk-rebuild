@@ -412,6 +412,26 @@ namespace World {
         return CMap::Intersect(start, end, hitPoint, distance, flags, hitInfo);
     }
 
+    // OFFSET: 0x782350
+    void ObjectSetModel(CMapEntity* entity, CM2Model* model) {
+        if (entity->model) {
+            entity->model->m_lightingCallback = nullptr;
+            entity->model->m_lightingArg = nullptr;
+            entity->model->Release();
+        }
+
+        entity->unk_07C &= ~0x4000;
+        entity->model = model;
+
+        if (model) {
+            //if (!SStrCmpI(off_ADEE74, model->m_shared->m_fileNameWithoutPath, 0x7FFFFFFFu))
+            //    entity->unk_07C |= 0x4000u;
+            entity->model->m_lightingCallback = CMapStaticEntity::ModelLightingCallback;
+            entity->model->m_lightingArg = entity;
+            entity->model->m_refCount++;
+        }
+    }
+
 } // namespace World
 
 World::TriData::Batch* World::TriData::AllocBatch(uint32_t indexCount, uint32_t faceCount) {

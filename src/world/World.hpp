@@ -11,6 +11,7 @@
 
 class CMapObjDef;
 class CFrustum;
+class CMapEntity;
 
 extern uint32_t s_newZoneID;
 extern C3Vector s_newPosition;
@@ -78,6 +79,7 @@ namespace World {
     uint32_t TriDataToFacetData(void* unused, FacetData* facets, WGUID guid);
     int32_t GetFlightBoundsLower(const C3Vector& pos, float* height);
     bool Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* distance, uint32_t flags, void* hitInfo);
+    void ObjectSetModel(CMapEntity* entity, CM2Model* model);
 
 }
 

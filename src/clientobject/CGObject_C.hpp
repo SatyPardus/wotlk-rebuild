@@ -45,6 +45,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     // Member variables
     /* 0x0038 */ TSLink<CGObject_C> m_link;
     /* 0x0040 */ int32_t m_disableTime = 0;
+    /* 0x008C */ CM2Model* m_model = nullptr;
     /* 0x0098 */ float m_scale = 1.0f;
     /* 0x009C */ float unk_009C = 1.0f;
     /* 0x00AC */ float m_height = 1.0f;

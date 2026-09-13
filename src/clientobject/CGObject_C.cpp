@@ -146,9 +146,9 @@ void CGObject_C::AddWorldObject() {
         //    v6 = 8;
         //if (CGUnit_C::HasNoShadowBlob(this))
         //    v6 |= 2u;
-        //v6 |= 0x10u;
-        //if ((this->m_obj->m_type & 0x10) != 0)
-        //    v6 |= 0x20u;
+        v6 |= 0x10u;
+        if ((this->m_obj->m_type & 0x10) != 0)
+            v6 |= 0x20u;
     }
     CM2Model* v7 = this->GetObjectModel();
     this->m_worldObject = CMap::ObjectCreate(v7, CGWorldFrame::ObjectEnumProc, nullptr, (uint64_t)this->m_obj->m_guid, 0, v6);
@@ -158,29 +158,29 @@ void CGObject_C::AddWorldObject() {
 
 // OFFSET: 0x743680
 void CGObject_C::SetModelFinish(CM2Model* model) {
-    //m_model = this->ukn_00A8;
-    //if (m_model) {
+    //m_effectList = this->m_effectList;
+    //if (m_effectList) {
     //    do {
-    //        ukn48 = m_model->ukn48;
-    //        bn_CEffect_DetachFromParent(m_model);
+    //        v4 = *(m_effectList + 264);
+    //        bn_CEffect_DetachFromParent(m_effectList);
     //        if (CM2Model::IsLoaded(this->m_worldModel, 0, 0))
-    //            CEffect::UpdateAttachment(m_model);
-    //        m_model = ukn48;
-    //    } while (ukn48);
+    //            CEffect::UpdateAttachment(m_effectList);
+    //        m_effectList = v4;
+    //    } while (v4);
     //}
     if (model) {
         model->SetLoadedCallback(nullptr, nullptr);
-        //if (a2->ukn19)
-        //    CM2Model::DetachFromParent(a2);
+        if (model->m_attachParent)
+            model->DetachFromParent();
         model->Release();
     }
 
     if (this->m_worldModel)
         this->m_worldModel->SetLoadedCallback(CGObject_C::ModelLoadedCallback, this);
 
-    //if (this->m_worldObject && this->m_worldModel == this->GetObjectModel()) {
-    //    World::ObjectSetModel(this->m_worldObject, this->m_worldModel);
-    //}
+    if (this->m_worldObject && this->m_worldModel == this->GetObjectModel()) {
+        World::ObjectSetModel(this->m_worldObject, this->m_worldModel);
+    }
 }
 
 // OFFSET: 0x744230
@@ -256,17 +256,17 @@ void CGObject_C::Disable() {
     //        CGCamera::MakeRelativeTo(ActiveCamera, 0.0);
     //}
     //this->Fadeout();
-    //if (this->m_model) {
-    //    if (this->m_model->m_attachParent)
-    //        this->m_model->DetachFromParent();
-    //    this->m_model->Release();
-    //    this->m_model = 0;
-    //}
+    if (this->m_model) {
+        if (this->m_model->m_attachParent)
+            this->m_model->DetachFromParent();
+        this->m_model->Release();
+        this->m_model = 0;
+    }
     //this->ukn_00C4 = 0;
     //BYTE2(this->ukn_00C8) = 0;
     //LOBYTE(this->ukn_00C8) = 0;
     this->m_modelFlags = this->m_modelFlags & 0xF8FEFFFF | 0x10000;
-    //this->ukn_005C = FrameTime::s_curTimeMs;
+    this->m_disableTime = FrameTime::s_curTimeMs;
 }
 
 // OFFSET: 0x744DB0
@@ -393,12 +393,12 @@ void CGObject_C::ModelLoaded(CM2Model* model) {
         return;
 
     this->ModelChanged();
-    //ukn_00A8 = this->ukn_00A8;
-    //if (ukn_00A8) {
+    //m_effectList = this->m_effectList;
+    //if (m_effectList) {
     //    do {
-    //        v4 = *(ukn_00A8 + 264);
-    //        CEffect::UpdateAttachment(ukn_00A8);
-    //        ukn_00A8 = v4;
+    //        v4 = *(m_effectList + 264);
+    //        CEffect::UpdateAttachment(m_effectList);
+    //        m_effectList = v4;
     //    } while (v4);
     //}
 }
@@ -498,8 +498,8 @@ uint32_t CGObject_C::UpdateObjectNameString(uint32_t mask, char* text, uint32_t 
 
 // OFFSET: 0x743530
 bool CGObject_C::ShouldRenderObjectName(uint32_t mask) {
-    //if (this->m_model)
-    //    return 0;
+    if (this->m_model)
+        return 0;
     return (mask >> 11) & 1;
 }
 
