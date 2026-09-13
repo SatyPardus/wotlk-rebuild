@@ -1,5 +1,23 @@
 #include "clientobject/DynamicObject_C.hpp"
 
+// OFFSET: 0x70CBA0
+void CGDynamicObject_C::SetStorage(CGDynamicObject_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr) {
+    CGObject_C::SetStorage(obj, descriptorPtr, mirrorPtr);
+    obj->m_dynamicObject = reinterpret_cast<CGDynamicObjectData*>(descriptorPtr + CGObject::GetDataSize());
+    obj->m_dynamicObjectMirror = reinterpret_cast<void*>(mirrorPtr + 4 * CGObject::TotalFields());
+}
+
+// OFFSET: 0x7F3B60 (folded with MinimapGetZoomLevels)
+uint32_t CGDynamicObject::MirrorIndexFromFieldIndex(uint32_t fieldIndex) {
+    return CGDynamicObject::GetFieldCount();
+}
+
+// OFFSET: 0x4D4340
+uint32_t CGDynamicObject::DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset) {
+    uint32_t mirrorIndex = CGDynamicObject::MirrorIndexFromFieldIndex((fieldByteOffset - baseByteOffset) >> 2);
+    return (fieldByteOffset & 3) + 4 * (CGObject::TotalFields() + mirrorIndex);
+}
+
 CGDynamicObject_C::CGDynamicObject_C() {
 }
 
@@ -52,11 +70,4 @@ void CGDynamicObject_C::PostInit(uint32_t time, CClientObjCreate* objCreate, boo
     //        }
     //    }
     //}
-}
-
-// OFFSET: 0x70CBA0
-void CGDynamicObject_C::SetStorage(CGDynamicObject_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr) {
-    CGObject_C::SetStorage(obj, descriptorPtr, mirrorPtr);
-    obj->m_dynamicObject = reinterpret_cast<CGDynamicObjectData*>(descriptorPtr + CGObject::GetDataSize());
-    obj->m_dynamicObjectMirror = reinterpret_cast<void*>(mirrorPtr + 4 * CGObject::TotalFields());
 }

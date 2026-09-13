@@ -10,6 +10,9 @@
 
 struct CMovementGlobals;
 
+extern STORM_EXPLICIT_LIST(CMirrorHandler, m_link) g_globalMirrorList[NUM_CLIENT_OBJECT_TYPES][CGPlayer::GetTotalFieldCount()];
+
+
 class ObjectMgr {
     public:
     // Member variables
@@ -48,6 +51,8 @@ CGObject_C* ClntObjMgrAllocObject(OBJECT_TYPE_ID typeId, WGUID guid);
 void ClntObjMgrSetMovementGlobals(CMovementGlobals* globals);
 CMovementGlobals* ClntObjMgrGetMovementGlobals();
 bool ClntObjMgrEnumVisibleObjects(bool (*func)(WGUID guid, void* param), void* param);
+void ClntObjMgrSetObjMirrorHandler(WGUID guid, OBJECT_TYPE_ID typeId, uint32_t dataOffset, uint32_t fieldByteSize, MIRRORHANDLERFUNC func, void* functionParam, uint32_t linkPositionSelector, int32_t alwaysFire);
+void ClntObjMgrSetTypeMirrorHandler(OBJECT_TYPE_ID typeId, uint32_t dataOffset, uint32_t fieldByteSize, MIRRORHANDLERFUNC func, void* functionParam, uint32_t linkPositionSelector, int32_t alwaysFire);
 
 template <typename T>
 T GetObjectPtr(TSHashTable<CGObject_C, WGUID>* table, WGUID guid);

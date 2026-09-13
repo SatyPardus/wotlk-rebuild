@@ -12,6 +12,7 @@
 class CMapObjDef;
 class CFrustum;
 class CMapEntity;
+class CM2Model;
 
 extern uint32_t s_newZoneID;
 extern C3Vector s_newPosition;

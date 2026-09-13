@@ -111,13 +111,24 @@ class CGUnit {
     void* m_unitMirror;
 
     // OFFSET: 0x4F52C0
-    static uint32_t TotalFields() {
+    static constexpr uint32_t TotalFields() {
         return CGObject::TotalFields() + 123;
     }
 
-    static uint32_t GetDataSize() {
+    static constexpr uint32_t GetDataSize() {
         return CGObject::GetDataSize() + sizeof(CGUnitData);
     }
+
+    static constexpr uint32_t GetTotalFieldCount() {
+        return CGUnit::GetDataSize() / sizeof(uint32_t);
+    }
+
+    static constexpr uint32_t GetFieldCount() {
+        return sizeof(CGUnitData) / sizeof(uint32_t);
+    }
+
+    static uint32_t MirrorIndexFromFieldIndex(uint32_t fieldIndex);
+    static uint32_t DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset);
 };
 
 class CGUnit_C : public CGObject_C, public CGUnit {
@@ -131,7 +142,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
 
     // Member variables
     /* 00D8 */ CMovementShared* m_passenger = nullptr;
-
+    /* 00D8 */ STORM_EXPLICIT_LIST(CMirrorHandler, m_link) m_unitMirrorLists[CGUnit::GetFieldCount()];
+    /* 0784 */
     /* 0788 */ CMovement_C movementData;
 
     /* 0964 */ CreatureStats_C* m_creatureCacheEntry = nullptr;
@@ -194,6 +206,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     char* GetUnitName(char** a2, bool a3);
     void UpdateUnitNameText();
     bool IsLowPrioritySelection(uint32_t time);
+    bool IsActivePlayer();
 
     bool ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
     bool SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
@@ -277,6 +290,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     static void ClientInitialize();
     static void Initialize();
     static void InitActiveMover(WGUID guid);
+    static void RegisterMirrorHandlers();
     static int32_t GetTrackingType();
     static float GetTrackingTurn();
     static void UpdateAllSmoothFacing();

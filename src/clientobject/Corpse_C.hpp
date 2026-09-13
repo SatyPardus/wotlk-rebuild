@@ -23,17 +23,31 @@ class CGCorpse {
     void* m_corpseMirror;
 
     // OFFSET: 0x4F5680
-    static uint32_t TotalFields() {
+    static constexpr uint32_t TotalFields() {
         return CGObject::TotalFields() + 3;
     }
 
-    static uint32_t GetDataSize() {
+    static constexpr uint32_t GetDataSize() {
         return CGObject::GetDataSize() + sizeof(CGCorpseData);
     }
+
+    static constexpr uint32_t GetTotalFieldCount() {
+        return CGCorpse::GetDataSize() / sizeof(uint32_t);
+    }
+
+    static constexpr uint32_t GetFieldCount() {
+        return sizeof(CGCorpseData) / sizeof(uint32_t);
+    }
+
+    static uint32_t MirrorIndexFromFieldIndex(uint32_t fieldIndex);
+    static uint32_t DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset);
 };
 
 class CGCorpse_C : public CGObject_C, public CGCorpse {
     public:
+
+    STORM_EXPLICIT_LIST(CMirrorHandler, m_link) m_corpseMirrorLists[CGCorpse::GetFieldCount()];
+
     CGCorpse_C();
     CGCorpse_C(CClientObjCreate& objCreate, uint32_t time);
     void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);

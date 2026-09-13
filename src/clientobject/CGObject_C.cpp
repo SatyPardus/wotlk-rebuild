@@ -8,6 +8,23 @@
 #include "model/CM2Shared.hpp"
 #include <client/FrameTime.hpp>
 
+static const uint32_t s_objectMirrorIndex[CGObject::TotalFields()] = {
+    3,
+    4,
+    5,
+};
+
+// OFFSET: 0x4F4A20
+uint32_t CGObject::MirrorIndexFromFieldIndex(uint32_t fieldIndex) {
+    for (uint32_t i = 0; i < CGObject::TotalFields(); i++) {
+        if (s_objectMirrorIndex[i] == fieldIndex) {
+            return i;
+        }
+    }
+
+    return CGObject::GetFieldCount();
+}
+
 CGObject_C::CGObject_C() {
     
 }
@@ -246,6 +263,32 @@ CGPlayer_C* CGObject_C::AsPlayer() {
     STORM_ASSERT(this->m_obj->m_type & TYPEMASK_PLAYER);
     return reinterpret_cast<CGPlayer_C*>(this);
 }
+
+CGItem_C* CGObject_C::AsItem() {
+    STORM_ASSERT(this->m_obj->m_type & TYPEMASK_ITEM);
+    return reinterpret_cast<CGItem_C*>(this);
+}
+
+CGContainer_C* CGObject_C::AsContainer() {
+    STORM_ASSERT(this->m_obj->m_type & TYPEMASK_CONTAINER);
+    return reinterpret_cast<CGContainer_C*>(this);
+}
+
+CGGameObject_C* CGObject_C::AsGameObject() {
+    STORM_ASSERT(this->m_obj->m_type & TYPEMASK_GAMEOBJECT);
+    return reinterpret_cast<CGGameObject_C*>(this);
+}
+
+CGDynamicObject_C* CGObject_C::AsDynamicObject() {
+    STORM_ASSERT(this->m_obj->m_type & TYPEMASK_DYNAMICOBJECT);
+    return reinterpret_cast<CGDynamicObject_C*>(this);
+}
+
+CGCorpse_C* CGObject_C::AsCorpse() {
+    STORM_ASSERT(this->m_obj->m_type & TYPEMASK_CORPSE);
+    return reinterpret_cast<CGCorpse_C*>(this);
+}
+
 
 // OFFSET: 0x744D20
 void CGObject_C::Disable() {

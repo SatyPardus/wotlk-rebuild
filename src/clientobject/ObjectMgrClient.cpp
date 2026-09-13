@@ -1,4 +1,5 @@
 #include "clientobject/ObjectMgrClient.hpp"
+#include "clientobject/Mirror.hpp"
 #include "client/ClientServices.hpp"
 #include "common/DataStore.hpp"
 #include <os/Debug.hpp>
@@ -19,15 +20,27 @@ thread_local WowTlsBlock g_tlsBlock {};
 
 bool s_heapsAllocated;
 uint32_t s_objTotalSize[8] {
-    sizeof(uint32_t) * CGObject::TotalFields() + sizeof(CGObject_C) + CGObject::GetDataSize(),
-    sizeof(uint32_t) * CGItem::TotalFields() + sizeof(CGItem_C) + CGItem::GetDataSize(),
-    sizeof(uint32_t) * CGContainer::TotalFields() + sizeof(CGContainer_C) + CGContainer::GetDataSize(),
-    sizeof(uint32_t) * CGUnit::TotalFields() + sizeof(CGUnit_C) + CGUnit::GetDataSize(),
-    sizeof(uint32_t) * CGPlayer::TotalRemoteFields() + sizeof(CGPlayer_C) + CGPlayer::GetDataSize(),
-    sizeof(uint32_t) * CGGameObject::TotalFields() + sizeof(CGGameObject_C) + CGGameObject::GetDataSize(),
-    sizeof(uint32_t) * CGDynamicObject::TotalFields() + sizeof(CGDynamicObject_C) + CGDynamicObject::GetDataSize(),
-    sizeof(uint32_t) * CGCorpse::TotalFields() + sizeof(CGCorpse_C) + CGCorpse::GetDataSize()
+    sizeof(CGObject_C) + CGObject::GetDataSize() + sizeof(uint32_t) * CGObject::TotalFields(),
+    sizeof(CGItem_C) + CGItem::GetDataSize() + sizeof(uint32_t) * CGItem::TotalFields(),
+    sizeof(CGContainer_C) + CGContainer::GetDataSize() + sizeof(uint32_t) * CGContainer::TotalFields(),
+    sizeof(CGUnit_C) + CGUnit::GetDataSize() + sizeof(uint32_t) * CGUnit::TotalFields(),
+    sizeof(CGPlayer_C) + CGPlayer::GetRemoteDataSize() + sizeof(uint32_t) * CGPlayer::TotalRemoteFields(),
+    sizeof(CGGameObject_C) + CGGameObject::GetDataSize() + sizeof(uint32_t) * CGGameObject::TotalFields(),
+    sizeof(CGDynamicObject_C) + CGDynamicObject::GetDataSize() + sizeof(uint32_t) * CGDynamicObject::TotalFields(),
+    sizeof(CGCorpse_C) + CGCorpse::GetDataSize() + sizeof(uint32_t) * CGCorpse::TotalFields()
 };
+
+uint32_t s_objDwordCount[8] {
+    CGObject::GetDataSize() / sizeof(uint32_t),
+    CGItem::GetDataSize() / sizeof(uint32_t),
+    CGContainer::GetDataSize() / sizeof(uint32_t),
+    CGUnit::GetDataSize() / sizeof(uint32_t),
+    CGPlayer::GetDataSize() / sizeof(uint32_t),
+    CGGameObject::GetDataSize() / sizeof(uint32_t),
+    CGDynamicObject::GetDataSize() / sizeof(uint32_t),
+    CGCorpse::GetDataSize() / sizeof(uint32_t)
+};
+
 char* s_objNames[8] = {
     "CGObject_C",
     "CGItem_C",
@@ -75,7 +88,7 @@ CGObject_C* GetUpdateObject(WGUID guid, bool* reenable) {
 
 // OFFSET: 0x4D6FC0
 void ObjDelete(CGObject_C* obj) {
-    // ObjDelete__ClearMirrorLists(this);
+    Mirror_ClearLists(obj);
     obj->Unlink();
     auto objMgr = g_tlsBlock.pObjMgr;
     if (objMgr->m_visibleObjects.IsLinked(obj))
@@ -173,6 +186,43 @@ int32_t GetNumDwordBlocks(OBJECT_TYPE mask, WGUID guid) {
     return 0;
 }
 
+OBJECT_TYPE_ID IncTypeID(CGObject_C* obj, OBJECT_TYPE_ID typeId) {
+    switch (obj->m_obj->m_type) {
+    case TYPEMASK_ITEM | TYPEMASK_OBJECT:
+    case TYPEMASK_CONTAINER | TYPEMASK_ITEM | TYPEMASK_OBJECT:
+        if (typeId != ID_OBJECT) {
+            if (typeId != ID_ITEM)
+                return NUM_CLIENT_OBJECT_TYPES;
+            return ID_CONTAINER;
+        } else {
+            return ID_ITEM;
+        }
+    case TYPEMASK_UNIT | TYPEMASK_OBJECT:
+    case TYPEMASK_PLAYER | TYPEMASK_UNIT | TYPEMASK_OBJECT:
+        if (typeId != ID_OBJECT) {
+            if (typeId != ID_UNIT)
+                return NUM_CLIENT_OBJECT_TYPES;
+            return ID_PLAYER;
+        } else {
+            return ID_UNIT;
+        }
+    case TYPEMASK_GAMEOBJECT | TYPEMASK_OBJECT:
+        if (typeId != ID_OBJECT)
+            return NUM_CLIENT_OBJECT_TYPES;
+        return ID_GAMEOBJECT;
+    case TYPEMASK_DYNAMICOBJECT | TYPEMASK_OBJECT:
+        if (typeId != ID_OBJECT)
+            return NUM_CLIENT_OBJECT_TYPES;
+        return ID_DYNAMICOBJECT;
+    case TYPEMASK_CORPSE | TYPEMASK_OBJECT:
+        if (typeId != ID_OBJECT)
+            return NUM_CLIENT_OBJECT_TYPES;
+        return ID_CORPSE;
+    }
+
+    return NUM_CLIENT_OBJECT_TYPES;
+}
+
 // OFFSET 0x4D53C0
 int32_t FillInPartialObjectData(CGObject_C* object, WGUID guid, CDataStore* msg, bool forFullUpdate, bool zeroZeroBits) {
     uint8_t changeMaskCount;
@@ -185,24 +235,27 @@ int32_t FillInPartialObjectData(CGObject_C* object, WGUID guid, CDataStore* msg,
     uint32_t blockOffset = 0;
     uint32_t numBlocks = GetNumDwordBlocks(object->m_obj->m_type, guid);
 
-    //v17.m_linkoffset = 8;
-    //v17.m_terminator.m_prevlink = &v17.m_terminator;
-    //v17.m_terminator.m_next = &v17.m_terminator.m_prevlink + 1;
+    STORM_EXPLICIT_LIST(CMirrorHandler, m_link2) pending;
 
     for (int32_t block = 0; block < numBlocks; block++) {
-        //if (block >= s_objMirrorBlocks[typeID]) {
-        //    blockOffset = s_objMirrorBlocks[typeID];
-        //    typeID = IncTypeID(object, typeID);
-        //}
+        if (block >= s_objDwordCount[typeID]) {
+            blockOffset = s_objDwordCount[typeID];
+            typeID = IncTypeID(object, typeID);
+        }
 
         if (!forFullUpdate) {
-            //sub_4D4850(&v17);
-            //v9 = (g_objFieldMirrorLists + 12 * v7 + 12 * (1326 * a1 - v16));
-            //if (CallMirrorHandlers__LinkPendingNodes(&v17, v9))
-            //    maybe_ClntObjMgr__CopyMirrorFields(v9, obj);
-            //ActiveObj = GetObjectMirrorList(a1, obj, v7 - v16);
-            //if (CallMirrorHandlers__LinkPendingNodes(&v17, ActiveObj))
-            //    maybe_ClntObjMgr__CopyMirrorFields(ActiveObj, obj);
+            Mirror_ExpirePending(&pending);
+            auto globalList = &g_globalMirrorList[typeID][block - blockOffset];
+
+            if (Mirror_LinkPending(&pending, globalList)) {
+                Mirror_CopyFields(globalList, object);
+            }
+
+            auto objectList = GetObjectMirrorList(typeID, object, block - blockOffset);
+
+            if (Mirror_LinkPending(&pending, objectList)) {
+                Mirror_CopyFields(objectList, object);
+            }
         }
 
         if (IsMaskBitSet(changeMasks, block)) {
@@ -214,16 +267,6 @@ int32_t FillInPartialObjectData(CGObject_C* object, WGUID guid, CDataStore* msg,
             object->SetData(block, 0);
         }
     }
-
-    //bn_TSList_TSGetExplicitLink_UnlinkAll(&v17);
-    //if (v17.m_terminator.m_prevlink) {
-    //    if ((v17.m_terminator.m_next & 1) == 0 && v17.m_terminator.m_next)
-    //        v11 = v17.m_terminator.m_next + &v17.m_terminator - v17.m_terminator.m_prevlink->m_next;
-    //    else
-    //        v11 = (v17.m_terminator.m_next & 0xFFFFFFFE);
-    //    *v11 = v17.m_terminator.m_prevlink;
-    //    v17.m_terminator.m_prevlink->m_next = v17.m_terminator.m_next;
-    //}
 
     return 1;
 }
@@ -337,10 +380,10 @@ void SetupObjectStorage(CGObject_C* obj, OBJECT_TYPE_ID typeId, WGUID guid) {
         offset = reinterpret_cast<uintptr_t>(obj) + sizeof(CGPlayer_C);
         if ((guid == ClntObjMgrGetActivePlayer())) {
             dataSize = CGPlayer::GetDataSize();
-            //*(a1 + 0x614) = &a1[4 * CGPlayer::TotalFields() + 0x2E10];
+            reinterpret_cast<CGPlayer_C*>(obj)->m_playerLocalMirrorLists = reinterpret_cast<STORM_EXPLICIT_LIST(CMirrorHandler, m_link)*>(offset + dataSize + sizeof(uint32_t) * CGPlayer::TotalFields());
         } else {
             dataSize = CGPlayer::GetRemoteDataSize();
-            //*(a1 + 0x614) = 0;
+            reinterpret_cast<CGPlayer_C*>(obj)->m_playerLocalMirrorLists = nullptr;
         }
 
         CGPlayer_C::SetStorage(reinterpret_cast<CGPlayer_C*>(obj), offset, offset + dataSize);
@@ -535,8 +578,48 @@ void UpdateOutOfRangeObjects(CDataStore* msg) {
 
 // OFFSET: 0x4D5550
 bool CallMirrorHandlers(CDataStore* msg, bool a2, WGUID a3) {
-    // TODO
-    return SkipPartialObjectUpdate(msg);
+    if (!a2) {
+        *msg >> a3;
+    }
+
+    auto obj = GetObjectPtr<CGObject_C*>(&g_tlsBlock.pObjMgr->m_objects, a3);
+    if (!obj)
+        return SkipPartialObjectUpdate(msg);
+
+    uint8_t changeMaskCount;
+    uint32_t changeMasks[MAX_CHANGE_MASKS];
+    if (!ExtractDirtyMasks(msg, &changeMaskCount, changeMasks)) {
+        return 0;
+    }
+
+    OBJECT_TYPE_ID typeID = ID_OBJECT;
+    uint32_t blockOffset = 0;
+    uint32_t numBlocks = GetNumDwordBlocks(obj->m_obj->m_type, a3);
+
+    STORM_EXPLICIT_LIST(CMirrorHandler, m_link2) pending;
+
+    for (int32_t block = 0; block < numBlocks; block++) {
+        if (block >= s_objDwordCount[typeID]) {
+            blockOffset = s_objDwordCount[typeID];
+            typeID = IncTypeID(obj, typeID);
+        }
+
+        Mirror_ExpirePending(&pending);
+        Mirror_LinkPending(&pending, &g_globalMirrorList[typeID][block - blockOffset]);
+        auto objectList = GetObjectMirrorList(typeID, obj, block - blockOffset);
+        Mirror_LinkPending(&pending, objectList);
+
+        if (IsMaskBitSet(changeMasks, block)) {
+            uint32_t blockValue;
+            msg->Get(blockValue);
+        } else if (!a2) {
+            continue;
+        }
+
+        CallMirrorFunctions(&pending, a3, obj, typeID);
+    }
+
+    return true;
 }
 
 // OFFSET: 0x4D41C0
@@ -847,15 +930,14 @@ int32_t ClntObjMgrGetMapID() {
 // OFFSET: 0x4D4930
 CGObject_C* ClntObjMgrAllocObject(OBJECT_TYPE_ID typeId, WGUID guid) {
     if (guid == g_tlsBlock.pObjMgr->playerGuid) {
-        void* m = STORM_ALLOC(sizeof(uint32_t) * CGPlayer::TotalFields() + sizeof(CGPlayer_C) + CGPlayer::GetDataSize());
-        CGObject_C* obj = new (m) CGObject_C();
+        void* m = STORM_ALLOC(sizeof(CGPlayer_C) + CGPlayer::GetDataSize() + sizeof(uint32_t) * CGPlayer::TotalFields() + sizeof(STORM_EXPLICIT_LIST(CMirrorHandler, m_link)) * CGPlayer::GetLocalFieldCount());
+        CGObject_C* obj = reinterpret_cast<CGObject_C*>(m);
         return obj;
     }
 
     //maybe_ClntObjMgr__ExpireOldObjects(10000, a1);
     if (ObjectAlloc(s_objHeapId[typeId], &guid.guid_high, nullptr, false)) {
-        void* m = ObjectPtr(s_objHeapId[typeId], guid.guid_high);
-        CGObject_C* obj = new (m) CGObject_C();
+        CGObject_C* obj = reinterpret_cast<CGObject_C*>(ObjectPtr(s_objHeapId[typeId], guid.guid_high));
         obj->m_heapIndex = guid.guid_high;
         return obj;
     }
@@ -882,6 +964,44 @@ bool ClntObjMgrEnumVisibleObjects(bool (*func)(WGUID guid, void* param), void* p
             return false;
     }
     return true;
+}
+
+// OFFSET: 0x4D5A80
+void ClntObjMgrSetObjMirrorHandler(WGUID guid, OBJECT_TYPE_ID typeId, uint32_t dataOffset, uint32_t fieldByteSize, MIRRORHANDLERFUNC func, void* functionParam, uint32_t linkPositionSelector, int32_t alwaysFire) {
+    auto objMgr = g_tlsBlock.pObjMgr;
+
+    CGObject_C* obj = GetObjectPtr<CGObject_C*>(&objMgr->m_objects, guid);
+
+    if (!obj) {
+        return;
+    }
+
+    uint32_t fieldByteOffset = GetObjectTypeFieldByteOffset(typeId) + dataOffset;
+
+    WGUID playerGuid;
+
+    if (objMgr) {
+        playerGuid = objMgr->playerGuid;
+    }
+
+    int32_t localPlayer = guid == playerGuid;
+
+    uint32_t mirrorByteOffset = ObjDescriptorToMirrorOffset(obj->m_typeID, localPlayer, fieldByteOffset, fieldByteSize);
+
+    auto list = GetObjectMirrorList(typeId, obj, dataOffset >> 2);
+
+    AssignMirrorHandler(fieldByteOffset, mirrorByteOffset, fieldByteSize, func, functionParam, linkPositionSelector, alwaysFire, list);
+}
+
+// OFFSET: 0x4D5BA0
+void ClntObjMgrSetTypeMirrorHandler(OBJECT_TYPE_ID typeId, uint32_t dataOffset, uint32_t fieldByteSize, MIRRORHANDLERFUNC func, void* functionParam, uint32_t linkPositionSelector, int32_t alwaysFire) {
+    uint32_t mirrorByteOffset = TypeDescriptorToMirrorOffset(typeId, dataOffset, fieldByteSize);
+
+    uint32_t fieldByteOffset = GetObjectTypeFieldByteOffset(typeId) + dataOffset;
+
+    auto list = &g_globalMirrorList[typeId][dataOffset >> 2];
+
+    AssignMirrorHandler(fieldByteOffset, mirrorByteOffset, fieldByteSize, func, functionParam, linkPositionSelector, alwaysFire, list);
 }
 
 // OFFSET: 0x4D4BB0

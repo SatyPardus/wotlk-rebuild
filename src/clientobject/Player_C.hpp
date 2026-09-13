@@ -239,27 +239,51 @@ class CGPlayer {
     void* m_playerMirror;
 
     // OFFSET: 0x4F5530
-    static uint32_t TotalFields() {
+    static constexpr uint32_t TotalFields() {
         return CGUnit::TotalFields() + 1043;
     }
 
     // OFFSET: 0x4F5540
-    static uint32_t TotalRemoteFields() {
+    static constexpr uint32_t TotalRemoteFields() {
         return CGUnit::TotalFields() + 173;
     }
 
-    static uint32_t GetDataSize() {
+    static constexpr uint32_t GetDataSize() {
         return CGUnit::GetDataSize() + sizeof(CGPlayerData);
     }
 
-    static uint32_t GetRemoteDataSize() {
+    static constexpr uint32_t GetRemoteDataSize() {
         return CGUnit::GetDataSize() + sizeof(CGPlayerData) - sizeof(CGLocalPlayerData);
     }
+
+    static constexpr uint32_t GetTotalFieldCount() {
+        return CGPlayer::GetDataSize() / sizeof(uint32_t);
+    }
+
+    static constexpr uint32_t GetTotalRemoteFieldCount() {
+        return CGPlayer::GetRemoteDataSize() / sizeof(uint32_t);
+    }
+
+    static constexpr uint32_t GetFieldCount() {
+        return sizeof(CGPlayerData) / sizeof(uint32_t);
+    }
+
+    static constexpr uint32_t GetLocalFieldCount() {
+        return sizeof(CGLocalPlayerData) / sizeof(uint32_t);
+    }
+
+    static constexpr uint32_t GetRemoteFieldCount() {
+        return (sizeof(CGPlayerData) - sizeof(CGLocalPlayerData)) / sizeof(uint32_t);
+    }
+
+    static uint32_t MirrorIndexFromFieldIndex(uint32_t fieldIndex, uint32_t fieldDwordCount, int32_t localPlayer);
+    static uint32_t DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset);
 };
 
 class CGPlayer_C : public CGUnit_C, public CGPlayer {
     public:
-
+    /* 1010 */ STORM_EXPLICIT_LIST(CMirrorHandler, m_link) m_playerMirrorLists[CGPlayer::GetRemoteFieldCount()];
+    /* 1850 */ STORM_EXPLICIT_LIST(CMirrorHandler, m_link)* m_playerLocalMirrorLists;
     /* 18E0 */ uint32_t m_playerMirrorFlag = 0;
 
     CGPlayer_C();

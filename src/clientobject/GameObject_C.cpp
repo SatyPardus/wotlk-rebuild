@@ -1,5 +1,29 @@
 #include "clientobject/GameObject_C.hpp"
 
+static const uint32_t s_gameObjectMirrorIndex[CGGameObject::TotalFields() - CGObject::TotalFields()] = {
+    3,
+    8,
+    11,
+    12,
+};
+
+// OFFSET: 0x4F55C0
+uint32_t CGGameObject::MirrorIndexFromFieldIndex(uint32_t fieldIndex) {
+    for (uint32_t i = 0; i < CGGameObject::TotalFields() - CGObject::TotalFields(); i++) {
+        if (s_gameObjectMirrorIndex[i] == fieldIndex) {
+            return i;
+        }
+    }
+
+    return CGGameObject::GetFieldCount();
+}
+
+// OFFSET: 0x4D4300
+uint32_t CGGameObject::DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset) {
+    uint32_t mirrorIndex = CGGameObject::MirrorIndexFromFieldIndex((fieldByteOffset - baseByteOffset) >> 2);
+    return (fieldByteOffset & 3) + 4 * (CGObject::TotalFields() + mirrorIndex);
+}
+
 CGGameObject_C::CGGameObject_C() {
 }
 

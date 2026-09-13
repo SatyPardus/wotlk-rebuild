@@ -27,6 +27,37 @@ CVar* CGUnit_C::s_cvPathingDistTolerance = nullptr;
 int32_t CGUnit_C::m_trackingType = 0;
 float CGUnit_C::m_trackingFacing = 0.0f;
 
+static const uint32_t s_unitMirrorIndex[CGUnit::TotalFields() - CGObject::TotalFields()] = {
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13,
+    14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+    38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 58, 61, 63, 64,
+    65, 66, 67, 68, 69, 70, 71, 72, 73, 76, 77, 78,
+    79, 80, 81, 82, 93, 94, 95, 96, 97, 98, 99, 100,
+    101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112,
+    113, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126,
+    127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138,
+    139, 140, 142,
+};
+
+// OFFSET: 0x4F52D0
+uint32_t CGUnit::MirrorIndexFromFieldIndex(uint32_t fieldIndex) {
+    for (uint32_t i = 0; i < CGUnit::TotalFields() - CGObject::TotalFields(); i++) {
+        if (s_unitMirrorIndex[i] == fieldIndex) {
+            return i;
+        }
+    }
+
+    return CGUnit::GetFieldCount();
+}
+
+// OFFSET: 0x4D4240
+uint32_t CGUnit::DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset) {
+    uint32_t mirrorIndex = CGUnit::MirrorIndexFromFieldIndex((fieldByteOffset - baseByteOffset) >> 2);
+    return (fieldByteOffset & 3) + 4 * (CGObject::TotalFields() + mirrorIndex);
+}
+
 CGUnit_C::CGUnit_C() {
 
 }
@@ -458,6 +489,41 @@ void CGUnit_C::InitActiveMover(WGUID guid) {
     msg.Destroy();
 }
 
+// OFFSET: 0x741D00
+void CGUnit_C::RegisterMirrorHandlers() {
+    //for (i = 200; i < 0xD4; i += 4)
+    //    ClntObjMgrSetTypeMirrorHandler(3, i, 4, bn_VirtualItemIDMirrorHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0xC0u, 4, maybe_CGUnit_C__OnLevelFieldChanged, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(0, 0xCu, 4, bn_UnitModeUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x48u, 4, maybe_CGUnit_C__OnFlagChanged_0, 0, 0, 0);
+    //for (j = 108; j < 0x88; j += 4) {
+    //    ClntObjMgrSetTypeMirrorHandler(3, j - 32, 4, maybe_CGUnit_C__UpdatePredictedPower, 0, 0, 0);
+    //    ClntObjMgrSetTypeMirrorHandler(3, j, 4, maybe_CGUnit_C__OnPowerFieldChanged, 0, 0, 0);
+    //}
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x47u, 1, maybe_CGUnit_C__OnDisplayPowerChanged, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0xDCu, 4, maybe_Signal_EVENT_PET_BAR_UPDATE_USABLE, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0xD4u, 4, bn_UnitFlagUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0xD8u, 4, bn_UnitFlag2UpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x112u, 1, bn_UnitVisFlagUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x1D1u, 1, bn_UnitPvPFlagUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x113u, 1, maybe_CGUnit_C__SyncPowerTypeField, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0xFCu, 4, bn_MountDisplayIDUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0xC4u, 4, bn_UnitFactionUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x18u, 16, bn_UnitCharmedUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0xF4u, 4, bn_DisplayIDUpdateHandler, 0, 1, 0);
+    //ClntObjMgrSetTypeMirrorHandler(ID_UNIT, 0x110u, 1, StandStateUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x130u, 4, maybe_NPCFlagsHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x134u, 4, maybe_CGUnit_C__ResetUnitByGuid, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x118u, 4, bn_PetNameChangeHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x124u, 4, bn_DynamicFlagsChangeHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x38u, 12, bn_ChannelSpellOrObjectChangeHandler, 0, 0, 1);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x114u, 4, bn_PetNumberChangeHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(0, 0x10u, 4, bn_ScaleUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x1D0u, 1, bn_SheatheStateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x30u, 8, bn_TargetChangeHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0x230u, 4, bn_HoverHeightChangeHandler, 0, 0, 0);
+}
+
 // OFFSET: 0x715C60
 int32_t CGUnit_C::GetTrackingType() {
     return CGUnit_C::m_trackingType;
@@ -763,6 +829,11 @@ bool CGUnit_C::IsLowPrioritySelection(uint32_t time) {
         //    return 0;
     }
     return true;
+}
+
+// OFFSET: 0x4CEE50
+bool CGUnit_C::IsActivePlayer() {
+    return this->m_obj->m_guid == ClntObjMgrGetActivePlayer();
 }
 
 // OFFSET: 0x7413F0
@@ -2829,7 +2900,7 @@ void CGUnit_C::Initialize() {
     //maybe_UnitSoundInitialize();
     //Spell_C::SystemInitialize();
     //bn_UnitCombatClientInitialize();
-    //maybe_CGUnit_C__RegisterMirrorHandlers();
+    CGUnit_C::RegisterMirrorHandlers();
     //sub_7165D0();
     //numRows = bnl_g_environmentalDamageDB.numRows;
     //dword_CA120C[0] = 0;

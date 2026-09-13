@@ -52,17 +52,31 @@ class CGItem {
     void* m_itemMirror;
 
     // OFFSET: 0x4F51C0
-    static uint32_t TotalFields() {
+    static constexpr uint32_t TotalFields() {
         return CGObject::TotalFields() + 47;
     }
 
-    static uint32_t GetDataSize() {
+    static constexpr uint32_t GetDataSize() {
         return CGObject::GetDataSize() + sizeof(CGItemData);
     }
+
+    static constexpr uint32_t GetTotalFieldCount() {
+        return CGItem::GetDataSize() / sizeof(uint32_t);
+    }
+
+    static constexpr uint32_t GetFieldCount() {
+        return sizeof(CGItemData) / sizeof(uint32_t);
+    }
+
+    static uint32_t MirrorIndexFromFieldIndex(uint32_t fieldIndex);
+    static uint32_t DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset);
 };
 
 class CGItem_C : public CGObject_C, public CGItem {
     public:
+
+    STORM_EXPLICIT_LIST(CMirrorHandler, m_link) m_itemMirrorLists[CGItem::GetFieldCount()];
+
     CGItem_C();
     CGItem_C(CClientObjCreate& objCreate, uint32_t time);
     void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);

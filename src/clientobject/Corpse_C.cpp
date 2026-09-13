@@ -1,5 +1,28 @@
 #include "clientobject/Corpse_C.hpp"
 
+static const uint32_t s_corpseMirrorIndex[CGCorpse::TotalFields() - CGObject::TotalFields()] = {
+    27,
+    28,
+    30,
+};
+
+// OFFSET: 0x4F5690
+uint32_t CGCorpse::MirrorIndexFromFieldIndex(uint32_t fieldIndex) {
+    for (uint32_t i = 0; i < CGCorpse::TotalFields() - CGObject::TotalFields(); i++) {
+        if (s_corpseMirrorIndex[i] == fieldIndex) {
+            return i;
+        }
+    }
+
+    return CGCorpse::GetFieldCount();
+}
+
+// OFFSET: 0x4D4380
+uint32_t CGCorpse::DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset) {
+    uint32_t mirrorIndex = CGCorpse::MirrorIndexFromFieldIndex((fieldByteOffset - baseByteOffset) >> 2);
+    return (fieldByteOffset & 3) + 4 * (CGObject::TotalFields() + mirrorIndex);
+}
+
 CGCorpse_C::CGCorpse_C() {
 }
 

@@ -8,9 +8,15 @@
 #include "model/CM2Model.hpp"
 #include "storm/Hash.hpp"
 #include "world/map/CMapEntity.hpp"
+#include "clientobject/Mirror.hpp"
 
 class CGUnit_C;
 class CGPlayer_C;
+class CGItem_C;
+class CGContainer_C;
+class CGGameObject_C;
+class CGDynamicObject_C;
+class CGCorpse_C;
 class CGWorldFrame;
 class PLAYERNAMEDESC;
 
@@ -31,13 +37,23 @@ class CGObject {
     OBJECT_TYPE_ID m_typeID;
 
     // OFFSET: 0x4F4A10
-    static uint32_t TotalFields() {
+    static constexpr uint32_t TotalFields() {
         return 3;
     };
 
-    static uint32_t GetDataSize() {
+    static constexpr uint32_t GetDataSize() {
         return sizeof(CGObjectData);
     }
+
+    static constexpr uint32_t GetTotalFieldCount() {
+        return CGObject::GetDataSize() / sizeof(uint32_t);
+    }
+
+    static constexpr uint32_t GetFieldCount() {
+        return sizeof(CGObjectData) / sizeof(uint32_t);
+    }
+
+    static uint32_t MirrorIndexFromFieldIndex(uint32_t fieldIndex);
 };
 
 class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID> {
@@ -45,6 +61,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     // Member variables
     /* 0x0038 */ TSLink<CGObject_C> m_link;
     /* 0x0040 */ int32_t m_disableTime = 0;
+    /* 0x0040 */ STORM_EXPLICIT_LIST(CMirrorHandler, m_link) m_objMirrorLists[CGObject::GetFieldCount()];
     /* 0x008C */ CM2Model* m_model = nullptr;
     /* 0x0098 */ float m_scale = 1.0f;
     /* 0x009C */ float unk_009C = 1.0f;
@@ -70,6 +87,11 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
 
     CGUnit_C* AsUnit();
     CGPlayer_C* AsPlayer();
+    CGItem_C* AsItem();
+    CGContainer_C* AsContainer();
+    CGGameObject_C* AsGameObject();
+    CGDynamicObject_C* AsDynamicObject();
+    CGCorpse_C* AsCorpse();
 
     // Virtual functions
     /* 01 */ virtual void Disable();
