@@ -5,8 +5,19 @@
 #include "ui/CSimpleTop.hpp"
 #include "clientobject/CGObject_C.hpp"
 #include "common/DataAllocator.hpp"
+#include <storm/List.hpp>
+#include <limits>
 
 class CGCamera;
+class CM2Model;
+
+struct CModelRecord : public TSLinkedNode<CModelRecord> {
+    /* 0x08 */ CM2Model* m_model = nullptr;
+    /* 0x0C */ float m_dist = std::numeric_limits<float>::infinity();
+    /* 0x10 */ WGUID m_guid;
+    /* 0x18 */ CGObject_C* m_object = nullptr;
+    /* 0x1C */ uint32_t m_unk1C;
+};
 
 struct KEYDOWNSTATE {
     /* 0x00 */ char m_keyString[0x20];
@@ -16,7 +27,7 @@ struct KEYDOWNSTATE {
 struct HITTESTRESULT {
     WGUID guid;        // +0x00
     C3Vector point;    // +0x08
-    float unused;      // +0x14
+    float distance;    // +0x14
     C3Vector segStart; // +0x18
     C3Vector segEnd;   // +0x24
 };
@@ -43,15 +54,27 @@ class CGWorldFrame : public CSimpleFrame {
     void OnMouseModeRelative();
     void OnMouseModeNormal();
     void PerformDefaultAction(MOUSEBUTTON button);
+    bool GetLineSegment(float mouseX, float mouseY, C3Vector* start, C3Vector* end);
+    uint32_t GetHitTestFilterFlags(uint32_t unused);
+    void MoveToFreeList(STORM_LIST(CModelRecord)* list);
+    int32_t HitTest(C3Vector* start, C3Vector* end, uint32_t flags, HITTESTRESULT* result);
+    int32_t HitTestPoint(float mouseX, float mouseY, int32_t a4, HITTESTRESULT* result);
+    void AddObjectToHitTestList(CModelRecord* record, uint32_t flags);
+    WGUID FindClosestModel(C3Vector* start, C3Vector* end, uint32_t flags, float* dist);
+    bool GetScreenCoordinates(C3Vector* worldPos, C3Vector* screenPos, int32_t* clipFlags);
+    bool IsLegalSelection(CGObject_C* obj, uint32_t a2);
+
+    /* 18 */ void OnFrameSizeChanged(const CRect& rect) override;
+    /* 30 */ void OnLayerUpdate(float elapsedSec) override;
 
     static CSimpleFrame* Create(CSimpleFrame* parent);
     static void RenderWorld(void* param);
     static CGCamera* GetActiveCamera();
     static bool ObjectEnumProc(void* param, uint32_t status, uint64_t param64, uint32_t param32);
 
-    /* 029C */ //TSList<CModelRecord> m_modelList;
-    /* 02A8 */ //TSList<CModelRecord> m_hitModelList;
-    /* 02B4 */ //TSList<CModelRecord> m_freeModelList;
+    /* 029C */ STORM_LIST(CModelRecord) m_modelList;
+    /* 02A8 */ STORM_LIST(CModelRecord) m_hitModelList;
+    /* 02B4 */ STORM_LIST(CModelRecord) m_freeModelList;
     /* 02C0 */ uint32_t unk_02C0;
     /* 02C4 */ uint32_t unk_02C4;
     /* 02C8 */ WGUID m_trackedGuid;

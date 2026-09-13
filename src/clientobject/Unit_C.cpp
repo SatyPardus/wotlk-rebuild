@@ -747,6 +747,24 @@ void CGUnit_C::UpdateUnitNameText() {
     //    bn_CGNamePlateFrame_UpdateNameDisplay(m_namePlateFrame, this);
 }
 
+// OFFSET: 0x7207E0
+bool CGUnit_C::IsLowPrioritySelection(uint32_t time) {
+    if ((this->m_unit->UNIT_FIELD_FLAGS & 0x2000000) == 0) {
+        if (this->m_obj->m_type != (TYPEMASK_UNIT | TYPEMASK_OBJECT))
+            return 0;
+        if (this->m_unit->UNIT_FIELD_HEALTH > 0)
+            return 0;
+        //if (bn_CGUnit_C_CanBeLooted(a2)) {
+        //    ClntObjMgrGetActivePlayerObj();
+        //    if (CGPlayer_C::CanLoot(this))
+        //        return 0;
+        //}
+        //if ((this->m_unit->UNIT_FIELD_FLAGS & 0x4000000) != 0 && CGSpellBook::GetSkinningSpell(this))
+        //    return 0;
+    }
+    return true;
+}
+
 // OFFSET: 0x7413F0
 bool CGUnit_C::ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat) {
     // this->UpdateObjectEffectMovementStates();
@@ -2534,6 +2552,20 @@ void CGUnit_C::ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) {
 // OFFSET: 0x7156A0
 float CGUnit_C::GetRenderFacing() {
     return this->movementData.GetFacing(this->m_renderFacing);
+}
+
+// OFFSET: 0x71A390
+bool CGUnit_C::CanHighlight() {
+    if ((this->m_unit->UNIT_FIELD_FLAGS & 0x2000000) != 0) {
+        if (this->m_unit->UNIT_FIELD_CREATEDBY != ClntObjMgrGetActivePlayer())
+            return false;
+        //m_obj = this->m_obj;
+        //guid_low = m_obj->m_guid.guid_low;
+        //guid_high = m_obj->m_guid.guid_high;
+        //if (__PAIR64__(guid_high, guid_low) != CGPetInfo__GetPet(0))
+        //    return 0;
+    }
+    return true;
 }
 
 // OFFSET: 0x6E6EE0

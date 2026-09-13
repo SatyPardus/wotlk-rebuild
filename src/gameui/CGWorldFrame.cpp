@@ -1,4 +1,6 @@
 #include "gameui/CGWorldFrame.hpp"
+#include "model/CM2Model.hpp"
+#include "model/CM2Scene.hpp"
 
 #include "gx/Transform.hpp"
 #include "gx/Draw.hpp"
@@ -6,6 +8,8 @@
 #include "gx/Device.hpp"
 #include "gx/RenderState.hpp"
 #include "world/CWorld.hpp"
+#include "world/World.hpp"
+#include "world/map/CMap.hpp"
 #include "world/CWorldScene.hpp"
 #include "gameui/camera/CGCamera.hpp"
 #include "event/EvtKeyDown.hpp"
@@ -27,9 +31,11 @@
 #include "gameui/CGUIBindings.hpp"
 #include <util/Input.hpp>
 #include "gameui/CGGameUI.hpp"
+#include "gameui/CGInputControl.hpp"
 #include <gx/Coordinate.hpp>
 #include <util/Unimplemented.hpp>
 #include <clientobject/PlayerName.hpp>
+#include "console/DebugScreen.hpp"
 
 CDataAllocator CGWorldFrame::s_allocator(sizeof(CGWorldFrame), 1);
 
@@ -70,42 +76,28 @@ void CGWorldFrame::UpdateObject(CGObject_C* obj, int a3) {
     if (!obj->Animate(this->m_elapsedSec))
         return;
 
-    //if ((a2->m_obj->OBJECT_FIELD_TYPE & (TYPEMASK_CORPSE | TYPEMASK_GAMEOBJECT | TYPEMASK_UNIT)) != 0 && a2a && (a2->m_modelFlags & 0x100000) == 0) {
-    //    if (sub_4F7180(&this->unk_02B4)) {
-    //        v6 = maybe_CGWorldFrame__AllocModelRecord(&this->unk_029C, 2, 0, 0);
-    //    } else {
-    //        unk_02BC = this->unk_02BC;
-    //        if ((unk_02BC & 1) == 0 && unk_02BC)
-    //            v6 = this->unk_02BC;
-    //        else
-    //            v6 = 0;
-    //        bn_TSList_UnlinkNode(v6);
-    //        TSList::LinkToTail(&this->unk_029C, v6);
-    //    }
-    //    v8 = a2->GetObjectModel(a2);
-    //    *(v6 + 2) = v8;
-    //    ++v8->m_refCount;
-    //    m_obj = a2->m_obj;
-    //    v6[4] = *&m_obj->OBJECT_FIELD_GUID.guid_low;
-    //    v6[5] = *&m_obj->OBJECT_FIELD_GUID.guid_high;
-    //}
+    if ((obj->m_obj->m_type & (TYPEMASK_UNIT | TYPEMASK_GAMEOBJECT | TYPEMASK_CORPSE)) && a2a && (obj->m_modelFlags & 0x100000) == 0) {
+        CModelRecord* record;
+
+        if (this->m_freeModelList.IsEmpty()) {
+            record = this->m_modelList.NewNode(STORM_LIST_TAIL, 0, 0);
+        } else {
+            record = this->m_freeModelList.Head();
+            this->m_freeModelList.UnlinkNode(record);
+            this->m_modelList.LinkToTail(record);
+        }
+
+        record->m_model = obj->GetObjectModel();
+        record->m_model->m_refCount++;
+        record->m_guid = obj->m_obj->m_guid;
+    }
+
     model->SetVisible(a2a);
-    //m_attachedParent = v5->m_attachedParent;
-    //m_bitFlags = v5->m_bitFlags;
-    //v12 = a2a & 1;
-    //if (m_attachedParent) {
-    //    v13 = v12 << 7;
-    //    v14 = m_bitFlags & 0xFFFFFF7F;
-    //} else {
-    //    v13 = 8 * v12;
-    //    v14 = m_bitFlags & 0xFFFFFFF7;
-    //}
-    //v15 = v14 | v13;
-    //v5->m_bitFlags = v15;
-    //if (m_attachedParent)
-    //    v5->m_bitFlags = v15 & 0xFFFDFFFF | (v12 << 17);
-    //else
-    //    v5->m_bitFlags = v5->m_bitFlags & 0xFFFEFFFF | (v12 << 16);
+    if (model->m_attachParent) {
+        model->m_flag20000 = a2a;
+    } else {
+        model->m_flag10000 = a2a;
+    }
 }
 
 void CGWorldFrame::OnFrameRender(CRenderBatch* batch, uint32_t layer) {
@@ -233,9 +225,8 @@ int32_t CGWorldFrame::OnLayerMouseWheel(const CMouseEvent& evt) {
 
 // OFFSET: 0x4FA570
 void CGWorldFrame::SetupDefaultAction() {
-    WHOA_UNIMPLEMENTED();
-    //NDCToDDC(this->m_top->m_mousePosition.x, this->m_top->m_mousePosition.y, &this->m_defaultActionPointDDC.x, &this->m_defaultActionPointDDC.y);
-    //this->m_defaultActionHitKind = this->HitTestPoint(&this->m_defaultActionPointDDC.x, &this->m_defaultActionPointDDC.y, 0, this->m_defaultActionHit);
+    NDCToDDC(this->m_top->m_mousePosition.x, this->m_top->m_mousePosition.y, &this->m_defaultActionPointDDC.x, &this->m_defaultActionPointDDC.y);
+    this->m_defaultActionHitKind = this->HitTestPoint(this->m_defaultActionPointDDC.x, this->m_defaultActionPointDDC.y, 0, &this->m_defaultActionHit);
 }
 
 // OFFSET: 0x4F5D30
@@ -327,9 +318,7 @@ void CGWorldFrame::OnWorldUpdate() {
     C3Vector camForward = this->m_camera->Forward();
     C3Vector camTarget = camPos + camForward;
 
-    CRect rect;
-    this->GetRect(&rect); // VALIDATE - Binary does not check any flag
-    this->m_camera->SetupWorldProjection(rect);
+    this->m_camera->SetupWorldProjection(this->m_viewportDDC);
     CGWorldFrame::s_currentWorldFrame->UpdateDayNightInfo(0.0f);
 
     // TODO
@@ -348,6 +337,9 @@ void CGWorldFrame::OnWorldUpdate() {
     C3Vector position = camPos;
 
     CWorld::Update(&camPos, &camTarget, &position);
+
+    this->MoveToFreeList(&this->m_modelList);
+    this->MoveToFreeList(&this->m_hitModelList);
 
     CGUnit_C::UpdateAllSmoothFacing();
 }
@@ -457,4 +449,666 @@ bool CGWorldFrame::ObjectEnumProc(void* param, uint32_t status, uint64_t param64
             model->m_flag10000 = 0;
     }
     return true;
+}
+
+// OFFSET: 0x4F9310
+void CGWorldFrame::MoveToFreeList(STORM_LIST(CModelRecord)* list) {
+    for (CModelRecord* record = list->Head(); record; record = list->Next(record)) {
+        if (record->m_model) {
+            record->m_model->Release();
+            record->m_model = nullptr;
+        }
+    }
+
+    STORM_ASSERT(list);
+    STORM_ASSERT(list != &this->m_freeModelList);
+    STORM_ASSERT(list->m_linkoffset == this->m_freeModelList.m_linkoffset);
+
+    while (CModelRecord* record = list->Head()) {
+        list->UnlinkNode(record);
+        this->m_freeModelList.LinkToTail(record);
+    }
+}
+
+// OFFSET: 0x4F6370
+static void AddModelToHitTestList(CM2Model* model, int32_t group, void* owner, uint32_t mode) {
+    if (model->f_flags & 0x1) {
+        if (!model->m_hitTestPrev) {
+            CM2Model** head = &model->m_scene->m_hitTestList;
+
+            model->m_hitTestPrev = head;
+            model->m_hitTestNext = *head;
+            *head = model;
+
+            if (model->m_hitTestNext) {
+                model->m_hitTestNext->m_hitTestPrev = &model->m_hitTestNext;
+            }
+        }
+
+        model->m_hitTestMode = mode;
+        model->m_hitTestGroup = group;
+        model->m_hitTestOwner = owner;
+    }
+
+    for (CM2Model* child = model->m_attachList; child; child = child->m_attachNext) {
+        if (!child->m_hitTestPrev) {
+            AddModelToHitTestList(child, group, reinterpret_cast<void*>(static_cast<intptr_t>(-1)), mode);
+        }
+    }
+}
+
+// OFFSET: 0x4F6400
+void CGWorldFrame::AddObjectToHitTestList(CModelRecord* record, uint32_t flags) {
+    int32_t group = -1;
+
+    if (record->m_guid != this->m_hitGuid) {
+        group = 0;
+
+        //CGObject_C* obj = record->m_object;
+        //
+        //if (obj) {
+        //    switch (obj->m_obj->m_type) {
+        //    case TYPEMASK_OBJECT | TYPEMASK_UNIT:
+        //    case TYPEMASK_OBJECT | TYPEMASK_UNIT | TYPEMASK_PLAYER:
+        //        group = 3;
+        //        if (obj->AsUnit()->unk_00D0->unk_48 <= 0) {
+        //            group = obj->AsUnit()->CanBeLooted(OsGetAsyncTimeMs()) ? 2 : 0;
+        //        }
+        //        break;
+        //    case TYPEMASK_OBJECT | TYPEMASK_GAMEOBJECT:
+        //        group = static_cast<CGGameObject_C*>(obj)->CanUse();
+        //        break;
+        //    case TYPEMASK_OBJECT | TYPEMASK_CORPSE:
+        //        group = static_cast<CGCorpse_C*>(obj)->CanBeLooted() ? 2 : 0;
+        //        break;
+        //    }
+        //}
+    }
+
+    record->m_object = nullptr;
+
+    AddModelToHitTestList(record->m_model, group, record, (flags >> 25) & 4);
+}
+
+// OFFSET: 0x4F6450
+bool CGWorldFrame::GetLineSegment(float mouseX, float mouseY, C3Vector* start, C3Vector* end) {
+    float x = (mouseX - this->m_viewportDDC.minX) / (this->m_viewportDDC.maxX - this->m_viewportDDC.minX);
+    float y = (mouseY - this->m_viewportDDC.minY) / (this->m_viewportDDC.maxY - this->m_viewportDDC.minY);
+
+    if (x < 0.0f || y < 0.0f || x > 1.0f || y > 1.0f) {
+        return false;
+    }
+
+    CameraGetLineSegment(x, y, start, end);
+
+    const C3Vector& position = this->m_camera->Position();
+
+    start->x += position.x;
+    start->y += position.y;
+    start->z += position.z;
+
+    end->x += position.x;
+    end->y += position.y;
+    end->z += position.z;
+
+    return true;
+}
+
+// OFFSET: 0x4F7650
+uint32_t CGWorldFrame::GetHitTestFilterFlags(uint32_t unused) {
+    //if (Spell_C_IsTargeting()) {
+    //    uint32_t flags = 0;
+    //    if (Spell_C_CanTargetTerrain())
+    //        flags = 3;
+    //    if (Spell_C_CanTargetObjects())
+    //        flags |= 4;
+    //    if (Spell_C_CanTargetUnits()) {
+    //        flags |= 0x18;
+    //        if (Spell_C_CanTargetMe())
+    //            flags |= 0x20;
+    //        if (Spell_C_CanTargetParty())
+    //            flags |= 0x10000;
+    //        if (Spell_C_CanTargetFriends())
+    //            flags |= 0x40000;
+    //        if (Spell_C_CanTargetEnemies())
+    //            flags |= 0x80000;
+    //        if (Spell_C_CanTargetRaid())
+    //            flags |= 0x20000;
+    //        if (Spell_C_CanTargetDead())
+    //            flags |= 0x200040;
+    //        if (Spell_C_CanTargetAlive())
+    //            flags |= 0x100000;
+    //        if (Spell_C_CanTargetNonCombatPet())
+    //            flags |= 0x400000;
+    //        if (Spell_C_CanTargetPossessedFriends())
+    //            flags |= 0x800000;
+    //    }
+    //    if (Spell_C_CanTargetFriendCorpses())
+    //        flags |= 0x40040;
+    //    if (Spell_C_CanTargetEnemyCorpses())
+    //        flags |= 0x80040;
+    //    return flags;
+    //}
+
+    uint32_t flags = 0;
+    auto player = ClntObjMgrObjectPtr<CGPlayer_C*>(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER);
+    auto mover = ClntObjMgrObjectPtr<CGUnit_C*>(CGUnit_C::s_activeMover, TYPEMASK_UNIT);
+
+    //if (mover && mover->CanAutoInteract() && CGGameUI::m_cursorItemType == 0) {
+    //    uint32_t f = mover->m_passenger->unk_44;
+    //    flags = 1;
+    //    if ((f & 0x10000000) && !(f & 0x200000)) {
+    //        flags = 3;
+    //    }
+    //}
+
+    if (player) {
+        flags |= 0x5C;
+    }
+
+    return flags;
+}
+
+
+// OFFSET: 0x4F9930
+int32_t CGWorldFrame::HitTest(C3Vector* start, C3Vector* end, uint32_t flags, HITTESTRESULT* result) {
+    C3Vector hitPoint = { 0.0f, 0.0f, 0.0f };
+    float t = 1.0f;
+    float objDist = 0.0f;
+    WGUID collisionGuid;
+
+    uint32_t queryFlags = 0x1000124;
+
+    if (flags & 0x2) {
+        queryFlags = 0x1020124;
+    }
+
+    C3Vector segEnd = *end;
+
+    float dirX = segEnd.x - start->x;
+    float dirY = segEnd.y - start->y;
+    float dirZ = segEnd.z - start->z;
+
+    float len = dirZ * dirZ + dirY * dirY + dirX * dirX;
+
+    if (fabsf(len) >= 0.00000023841858f) {
+        len = sqrtf(len);
+        dirX = dirX * (1.0f / len);
+        dirY = dirY * (1.0f / len);
+        dirZ = (1.0f / len) * dirZ;
+    }
+
+    bool terrainHit = World::Intersect(start, &segEnd, &hitPoint, &t, queryFlags, nullptr);
+
+    if (terrainHit) {
+        float dist = len * t;
+        collisionGuid = CMap::s_lastCollisionGUID;
+        len = dist;
+        segEnd.x = dirX * dist + start->x;
+        segEnd.y = dirY * dist + start->y;
+        segEnd.z = dirZ * dist + start->z;
+        t = dist;
+    }
+
+    WGUID modelGuid;
+
+    if (flags & 0x7C) {
+        modelGuid = this->FindClosestModel(start, &segEnd, flags, &objDist);
+
+        if (modelGuid) {
+            len = objDist;
+            segEnd.x = dirX * objDist + start->x;
+            segEnd.y = dirY * objDist + start->y;
+            segEnd.z = objDist * dirZ + start->z;
+        }
+    }
+
+    uint32_t terrainFlags = flags & 0x3;
+
+    if (terrainFlags) {
+        t = 1.0f;
+
+        if (World::Intersect(start, &segEnd, &hitPoint, &t, 0x100111, nullptr)) {
+            float dist = len * t;
+            collisionGuid = CMap::s_lastCollisionGUID;
+            terrainHit = true;
+            segEnd.x = dirX * dist + start->x;
+            segEnd.y = dirY * dist + start->y;
+            segEnd.z = dirZ * dist + start->z;
+            t = dist;
+        }
+    }
+
+    C3Vector screenPos;
+    screenPos.z = 0.0f;
+
+    if (this->GetScreenCoordinates(&segEnd, &screenPos, nullptr)) {
+        g_theGxDevicePtr->CursorSetDepth(screenPos.z);
+    }
+
+    if (modelGuid) {
+        result->distance = objDist;
+        result->point = segEnd;
+        result->guid = modelGuid;
+
+        return 2;
+    }
+
+    if (!terrainHit) {
+        return 0;
+    }
+
+    if (collisionGuid) {
+        result->point = segEnd;
+
+        CGObject_C* obj = ClntObjMgrObjectPtr<CGObject_C*>(collisionGuid, TYPEMASK_OBJECT);
+
+        if (obj) {
+            result->guid = collisionGuid;
+
+            if (obj->IsTransport()) {
+                C44Matrix matrix;
+                obj->GetMatrix(matrix);
+                result->point *= matrix.AffineInverse();
+                result->distance = t;
+
+                return 3;
+            }
+        } else {
+            result->guid = 0;
+        }
+
+        result->distance = t;
+
+        return 3;
+    }
+
+    result->point = segEnd;
+    result->distance = t;
+    result->guid = 0;
+
+    return terrainFlags != 0;
+}
+
+// OFFSET: 0x4F9550
+WGUID CGWorldFrame::FindClosestModel(C3Vector* start, C3Vector* end, uint32_t flags, float* dist) {
+    C44Matrix view;
+    GxXformView(view);
+
+    const C3Vector& camPos = this->m_camera->Position();
+
+    C3Vector local;
+
+    local.x = start->x - camPos.x;
+    local.y = start->y - camPos.y;
+    local.z = start->z - camPos.z;
+
+    C3Vector segStart = view.TransformPoint(local);
+
+    local.x = end->x - camPos.x;
+    local.y = end->y - camPos.y;
+    local.z = end->z - camPos.z;
+
+    C3Vector segEnd = view.TransformPoint(local);
+
+    STORM_LIST(CModelRecord) lowPriorityList;
+
+    int32_t time = static_cast<int32_t>(OsGetAsyncTimeMs());
+
+    CWorldScene::s_m2Scene->BeginHitTest();
+
+    //bool allowTerrain = Spell_C_TargetingSpellAllowsTerrain();
+    bool allowTerrain = false;
+
+    CModelRecord* record = this->m_modelList.Head();
+
+    while (record) {
+        CModelRecord* next = this->m_modelList.Next(record);
+
+        CGObject_C* obj = ClntObjMgrObjectPtr<CGObject_C*>(record->m_guid, TYPEMASK_OBJECT);
+
+        if (obj && this->IsLegalSelection(obj, flags) && (obj->CanHighlight() || allowTerrain)) {
+            record->m_object = obj;
+        
+            if ((obj->m_obj->m_type & TYPEMASK_UNIT) && obj->AsUnit()->IsLowPrioritySelection(time)) {
+                lowPriorityList.LinkToTail(record);
+            } else {
+                this->AddObjectToHitTestList(record, flags);
+            }
+        }
+
+        record = next;
+    }
+
+    float t = 1.0f;
+    CModelRecord* hit = static_cast<CModelRecord*>(CWorldScene::s_m2Scene->EndHitTest(segStart, segEnd, &t, 1));
+
+    if (!hit) {
+        CWorldScene::s_m2Scene->BeginHitTest();
+
+        for (CModelRecord* low = lowPriorityList.Head(); low; low = lowPriorityList.Next(low)) {
+            this->AddObjectToHitTestList(low, flags);
+        }
+
+        t = 1.0f;
+        hit = static_cast<CModelRecord*>(CWorldScene::s_m2Scene->EndHitTest(segStart, segEnd, &t, 1));
+    }
+
+    STORM_ASSERT(&lowPriorityList != &this->m_modelList);
+    STORM_ASSERT(lowPriorityList.m_linkoffset == this->m_modelList.m_linkoffset);
+
+    while (CModelRecord* low = lowPriorityList.Head()) {
+        lowPriorityList.UnlinkNode(low);
+        this->m_modelList.LinkToTail(low);
+    }
+
+    if (!hit) {
+        return WGUID();
+    }
+
+    float dx = segEnd.x - segStart.x;
+    float dy = segEnd.y - segStart.y;
+    float dz = segEnd.z - segStart.z;
+
+    float hitDist = sqrtf(dz * dz + dy * dy + dx * dx) * t;
+
+    hit->m_dist = hitDist;
+    *dist = hitDist;
+
+    return hit->m_guid;
+}
+
+// OFFSET: 0x4F6D20
+bool CGWorldFrame::GetScreenCoordinates(C3Vector* worldPos, C3Vector* screenPos, int32_t* clipFlags) {
+    const C3Vector& camPos = this->m_camera->Position();
+
+    C4Vector local;
+    local.x = worldPos->x - camPos.x;
+    local.y = worldPos->y - camPos.y;
+    local.z = worldPos->z - camPos.z;
+    local.w = 0.0f;
+
+    C4Vector clip = this->m_viewProjection.TransformPoint(local);
+
+    if (clip.z < this->m_camera->NearZ()) {
+        return false;
+    }
+
+    screenPos->z = clip.z;
+
+    float invW = 1.0f / clip.w;
+
+    float ndcX = (clip.x * invW + 1.0f) * 0.5f;
+    float ndcY = (clip.y * invW + 1.0f) * 0.5f;
+
+    float ddcX;
+    float ddcY;
+    NDCToDDC(ndcX * (this->m_viewportNDC.maxX - this->m_viewportNDC.minX), ndcY * (this->m_viewportNDC.maxY - this->m_viewportNDC.minY), &ddcX, &ddcY);
+
+    if (this->m_resizeRect.minX < 0.0f) {
+        ddcX = ddcX - this->m_resizeRect.minX;
+    }
+
+    if (this->m_resizeRect.minY < 0.0f) {
+        ddcY = ddcY - this->m_resizeRect.minY;
+    }
+
+    screenPos->x = ddcX;
+    screenPos->y = ddcY;
+
+    float width = this->m_resizeRect.maxX - this->m_resizeRect.minX;
+    float height = this->m_resizeRect.maxY - this->m_resizeRect.minY;
+
+    if (!clipFlags) {
+        return ddcX >= 0.0f && width >= ddcX && ddcY >= 0.0f && height >= ddcY;
+    }
+
+    int32_t inside = (ddcX >= 0.0f) | (2 * (ddcY >= 0.0f)) | (4 * (width >= ddcX)) | (8 * (height >= ddcY));
+
+    *clipFlags = inside;
+
+    return inside == 15;
+}
+
+// OFFSET: 0x4F7530
+bool CGWorldFrame::IsLegalSelection(CGObject_C* obj, uint32_t a2) {
+    //switch (a1->m_obj->m_type) {
+    //case TYPEMASK_UNIT | TYPEMASK_OBJECT:
+    //    if ((a2 & 8) == 0)
+    //        goto LABEL_12;
+    //    goto LABEL_3;
+    //case TYPEMASK_PLAYER | TYPEMASK_UNIT | TYPEMASK_OBJECT:
+    //    if ((a2 & 0x10) == 0)
+    //        goto LABEL_12;
+//LABEL_3:
+    //    result = maybe_CGWorldFrame__IsUnitLegalSelection(a1, a2);
+    //    break;
+    //case TYPEMASK_GAMEOBJECT | TYPEMASK_OBJECT:
+    //    if ((a2 & 4) == 0 || Spell_C_IsTargeting() && !bn_Spell_C_CanTargetObject(a1))
+    //        goto LABEL_12;
+    //    result = 1;
+    //    break;
+    //case TYPEMASK_CORPSE | TYPEMASK_OBJECT:
+    //    if ((a2 & 0x40) == 0)
+    //        goto LABEL_12;
+    //    result = maybe_CGWorldFrame__CanTargetCorpseSelection(a1, a2);
+    //    break;
+    //default:
+//LABEL_12:
+    //    result = 0;
+    //    break;
+    //}
+    //return result;
+    return true;
+}
+
+// OFFSET: 0x4F5A90
+void CGWorldFrame::OnFrameSizeChanged(const CRect& rect) {
+    this->CSimpleFrame::OnFrameSizeChanged(rect);
+
+    this->m_viewportDDC = this->m_rect;
+
+    if (this->m_viewportDDC.minX <= 0.0f) {
+        this->m_viewportDDC.minX = 0.0f;
+    }
+
+    if (this->m_viewportDDC.minY <= 0.0f) {
+        this->m_viewportDDC.minY = 0.0f;
+    }
+
+    if (NDCToDDCWidth(1.0f) <= this->m_viewportDDC.maxX) {
+        this->m_viewportDDC.maxX = NDCToDDCWidth(1.0f);
+    }
+
+    if (NDCToDDCHeight(1.0f) <= this->m_viewportDDC.maxY) {
+        this->m_viewportDDC.maxY = NDCToDDCHeight(1.0f);
+    }
+
+    //if (this->unk_7E00) {
+    //    CCameraManager::SetScreenAspect(&this->m_viewportDDC);
+    //}
+
+    DDCToNDC(this->m_rect.minX, this->m_rect.minY, &this->m_viewportNDC.minX, &this->m_viewportNDC.minY);
+    DDCToNDC(this->m_rect.maxX, this->m_rect.maxY, &this->m_viewportNDC.maxX, &this->m_viewportNDC.maxY);
+
+    if (this->m_viewportNDC.minX <= 0.0f) {
+        this->m_viewportNDC.minX = 0.0f;
+    }
+
+    if (this->m_viewportNDC.minY <= 0.0f) {
+        this->m_viewportNDC.minY = 0.0f;
+    }
+
+    if (this->m_viewportNDC.maxX >= 1.0f) {
+        this->m_viewportNDC.maxX = 1.0f;
+    }
+
+    if (this->m_viewportNDC.maxY >= 1.0f) {
+        this->m_viewportNDC.maxY = 1.0f;
+    }
+}
+
+// OFFSET: 0x4FA040
+void CGWorldFrame::OnLayerUpdate(float elapsedSec) {
+    CSimpleFrame::OnLayerUpdate(elapsedSec);
+
+    // CGChatBubbleFrame::OnWorldLayerUpdate();
+
+    CSimpleTop* top = this->m_top;
+
+    HITTESTRESULT hit = {};
+    int32_t kind = -1;
+
+    CSimpleFrame* mouseFocus = top->m_mouseFocus;
+
+    if (mouseFocus == this) {
+        float x = 0.0f;
+        float y = 0.0f;
+
+        NDCToDDC(top->m_mousePosition.x, top->m_mousePosition.y, &x, &y);
+
+        // if (Spell_C_IsTargeting() && Spell_C_CanTargetTerrain() && !Spell_C_CanTargetUnits()) {
+        //     CGUnit_C::ClearNamePlateFocus();
+        // } else {
+        //     CGUnit_C::SetNamePlateFocus(&x);
+        // }
+
+        // if (CGNamePlateFrame::GetNamePlateFocus()) {
+        //     kind = 2;
+        //     hit.guid = CGNamePlateFrame::GetNamePlateFocus()->m_trackedGuid;
+        // } else {
+        kind = this->HitTestPoint(x, y, 1, &hit);
+        //}
+    } else if (mouseFocus && (mouseFocus->m_layoutFlags & 0x10000)) {
+        // lua_State* L = FrameScript_GetContext();
+        //
+        // FrameScript_TaintExpectedBegin();
+        //
+        // lua_rawgeti(L, LUA_REGISTRYINDEX, FrameScript_GetErrorHandlerReference());
+        // lua_pushstring(L, "SecureButton_GetModifiedUnit");
+        // lua_rawget(L, LUA_GLOBALSINDEX);
+        //
+        // if (!mouseFocus->luaRegistered) {
+        //     mouseFocus->RegisterScriptObject(0);
+        // }
+        //
+        // lua_rawgeti(L, LUA_REGISTRYINDEX, mouseFocus->lua_objectRef);
+        // lua_pushstring(L, CGUIMacros::m_macroRunning);
+        //
+        // if (!lua_pcall(L, 2, 1, -4)) {
+        //     const char* token = lua_tolstring(L, -1, nullptr);
+        //
+        //     if (token && !*lua_tainted && Script_GetGUIDFromToken(token, &hit.guid, 0)) {
+        //         kind = 2;
+        //     }
+        // }
+        //
+        // lua_settop(L, -3);
+        //
+        // FrameScript_TaintExpectedEnd();
+    }
+
+    // s_spellShadowStyle = 3;
+
+    switch (kind) {
+    case 0:
+        // if (Spell_C_IsTargeting()) {
+        //     CursorSetMode(CURSORMODE(28));
+        // } else {
+        //     CursorResetMode();
+        // }
+        //
+        // this->SendObjectTrackEvent(0, 0);
+        break;
+
+    case 1:
+        // this->OnLayerTrackTerrain(&hit.guid);
+        break;
+
+    case 2:
+        // this->OnLayerTrackObject(&hit.guid);
+        break;
+
+    case 3:
+        //{
+        //    CGGameObject_C* obj = ClntObjMgrObjectPtr<CGGameObject_C*>(hit.guid, TYPEMASK_GAMEOBJECT);
+        //
+        //    bool ownTransport = false;
+        //
+        //    if (obj && obj->m_gameObjectDef->m_type == 33 && !Spell_C_CanTargetTerrain()) {
+        //        CGPlayer_C* player = ClntObjMgrGetActivePlayerObj();
+        //
+        //        if (player && obj->m_obj->m_guid == World::QueryObjectParentParam64(player->m_worldObject)) {
+        //            ownTransport = true;
+        //        }
+        //    } else {
+        //        ownTransport = true;
+        //    }
+        //
+        //    if (ownTransport) {
+        //        this->OnLayerTrackTerrain(&hit.guid);
+        //    } else {
+        //        this->OnLayerTrackObject(&hit.guid);
+        //    }
+        //}
+        break;
+
+    default:
+        break;
+    }
+
+    DebugScreenSet("Mouse Target Type", "%d", kind);
+    DebugScreenSet("Hit Guid", "%u", hit.guid);
+
+    // CGInputControl::GetActive()->OnUpdate(elapsedSec);
+
+    this->m_elapsedSec = elapsedSec;
+
+    // CGGameUI::UpdateInteractTarget();
+    // CGGameUI::UpdateCorpseDistance();
+    // CGGameUI::UpdateAreaSpiritHealerDistance();
+    // CGMailInfo::UpdatePendingMail(elapsedSec);
+}
+
+// OFFSET: 0x4F9DA0
+int32_t CGWorldFrame::HitTestPoint(float mouseX, float mouseY, int32_t a4, HITTESTRESULT* result) {
+    if ((CGInputControl::GetActive()->m_mouseModeFlags & 0x1) == 0) {
+        return 0;
+    }
+
+    C44Matrix savedProjection;
+    GxXformProjection(savedProjection);
+
+    C44Matrix savedView;
+    GxXformView(savedView);
+
+    this->m_camera->SetupWorldProjection(this->m_viewportDDC);
+
+    int32_t kind = 0;
+
+    uint32_t filterFlags = this->GetHitTestFilterFlags(a4);
+
+    if (filterFlags) {
+        C3Vector start = { 0.0f, 0.0f, 0.0f };
+        C3Vector end = { 0.0f, 0.0f, 0.0f };
+
+        if (this->GetLineSegment(mouseX, mouseY, &start, &end)) {
+            result->segStart = start;
+            result->segEnd = end;
+
+            kind = this->HitTest(&start, &end, filterFlags, result);
+
+            if (kind >= 2) {
+                this->m_hitGuid = result->guid;
+            } else {
+                this->MoveToFreeList(&this->m_hitModelList);
+                this->m_hitGuid = 0;
+            }
+        }
+    }
+
+    GxXformSetProjection(savedProjection);
+    GxXformSetView(savedView);
+
+    return kind;
 }

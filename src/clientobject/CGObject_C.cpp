@@ -209,6 +209,19 @@ bool CGObject_C::IsReadyToDraw() {
     return false;
 }
 
+// OFFSET: 0x743420
+void CGObject_C::SetDisablePending(bool pending) {
+    if (pending)
+        this->m_modelFlags |= 0x100000u;
+    else
+        this->m_modelFlags &= ~0x100000u;
+}
+
+// OFFSET: 0x7433D0
+bool CGObject_C::IsObjectLocked() {
+    return (this->m_modelFlags & 0xFFFF) != 0;
+}
+
 // OFFSET: 0x743BA0
 void CGObject_C::SetData(uint32_t offset, uint32_t value) {
     reinterpret_cast<uint32_t*>(this->m_obj)[offset] = value;
@@ -216,12 +229,9 @@ void CGObject_C::SetData(uint32_t offset, uint32_t value) {
 
 // OFFSET: 0x744A50
 void CGObject_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3) {
-    //ukn57 = this->ukn57;
     this->m_modelFlags |= 0x40000u;
-    //v8 = ukn57() != 0 ? 0x3E8 : 0;
-    //alpha = (this->ukn58)(this);
-    //CGObject_C::DoFade(this, alpha, v8);
-    //(this->ukn20)();
+    //this->DoFade(this->GetBaseAlpha(), this->ShouldFadeIn() != 0 ? 1000 : 0);
+    this->RefreshInteractIcon();
     //this->ukn_00A0 = 0;
     if (this->m_worldObject)
         this->UpdateWorldObject(0);
@@ -237,16 +247,49 @@ CGPlayer_C* CGObject_C::AsPlayer() {
     return reinterpret_cast<CGPlayer_C*>(this);
 }
 
+// OFFSET: 0x744D20
+void CGObject_C::Disable() {
+    //ActiveCamera = CGWorldFrame::GetActiveCamera();
+    //if (ActiveCamera) {
+    //    m_obj = this->m_obj;
+    //    if (ActiveCamera->m_relativeTo.guid_low == m_obj->m_guid.guid_low && ActiveCamera->m_relativeTo.guid_high == m_obj->m_guid.guid_high)
+    //        CGCamera::MakeRelativeTo(ActiveCamera, 0.0);
+    //}
+    //this->Fadeout();
+    //if (this->m_model) {
+    //    if (this->m_model->m_attachParent)
+    //        this->m_model->DetachFromParent();
+    //    this->m_model->Release();
+    //    this->m_model = 0;
+    //}
+    //this->ukn_00C4 = 0;
+    //BYTE2(this->ukn_00C8) = 0;
+    //LOBYTE(this->ukn_00C8) = 0;
+    this->m_modelFlags = this->m_modelFlags & 0xF8FEFFFF | 0x10000;
+    //this->ukn_005C = FrameTime::s_curTimeMs;
+}
+
 // OFFSET: 0x744DB0
 void CGObject_C::Reenable() {
-    //v2 = this->__vftable;
-    //this->ukn_00BC = this->ukn_00BC & 0xFFFCFFFF | 0x20000;
-    //*&this->ukn_0090[2] = (v2->GetScale)();
-    //SetFrameOfReference = this->__vftable[1].SetFrameOfReference;
-    //this->ukn_0090[4] = 0;
-    //v5 = (SetFrameOfReference)(this) != 0 ? 1000 : 0;
-    //alpha = (this->__vftable[1].ukn19)(this);
-    //CGObject_C::DoFade(this, alpha, v5);
+    this->m_modelFlags = this->m_modelFlags & 0xFFFCFFFF | 0x20000;
+    this->m_scale = this->GetScale();
+    //this->ukn_00A0 = 0;
+    //this->DoFade(this->GetBaseAlpha(), this->ShouldFadeIn() != 0 ? 1000 : 0);
+}
+
+// OFFSET: 0x743FF0
+void CGObject_C::PostReenable() {
+    this->RefreshInteractIcon();
+    this->m_modelFlags &= ~0x20000u;
+    if (!this->m_worldObject) {
+        if (this->GetObjectModel())
+            this->AddWorldObject();
+    }
+}
+
+// OFFSET: 0x632050 (NOP)
+void CGObject_C::HandleOutOfRange() {
+    
 }
 
 // OFFSET: 0x7438E0
@@ -320,6 +363,11 @@ float CGObject_C::GetScale() {
 // OFFSET: 0x4D5F10
 WGUID CGObject_C::GetTransportGUID() {
     return 0;
+}
+
+// OFFSET: 0x5EEB70 (NOP)
+void CGObject_C::RefreshInteractIcon() {
+
 }
 
 // OFFSET: 0x4899F0
@@ -412,6 +460,11 @@ float CGObject_C::GetRenderFacing() {
     return this->GetRawFacing();
 }
 
+// OFFSET: 0x8E5250
+bool CGObject_C::CanHighlight() {
+    return false;
+}
+
 // OFFSET: 0x4D5FA0
 void CGObject_C::GetMatrix(C44Matrix& mat) {
     mat.a0 = 1.0;
@@ -458,6 +511,11 @@ CM2Model* CGObject_C::GetObjectModel() {
 // OFFSET: 0x8E5250
 char* CGObject_C::GetObjectName() {
     return nullptr;
+}
+
+// OFFSET: 0x427A90
+bool CGObject_C::IsTransport() {
+    return false;
 }
 
 // OFFSET: 0x743640

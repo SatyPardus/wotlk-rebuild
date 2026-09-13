@@ -2266,7 +2266,7 @@ bool CMap::Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* 
 
             if (hitInfo) {
                 if (CWorldScene::s_m2Scene->m_lastHit.model)
-                    CMap::SetHitTestDebug(hitInfo, CWorldScene::s_m2Scene->m_lastHitOwner);
+                    CMap::SetHitTestDebug(hitInfo, static_cast<CMapBaseObj*>(CWorldScene::s_m2Scene->m_lastHitOwner));
                 else
                     CMap::SetHitTestDebug(hitInfo, hitGroup);
             }
@@ -2282,7 +2282,7 @@ bool CMap::Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* 
             CMap::s_lastCollisionGUID = 0;
 
             if (hitInfo && CWorldScene::s_m2Scene->m_lastHit.model)
-                CMap::SetHitTestDebug(hitInfo, CWorldScene::s_m2Scene->m_lastHitOwner);
+                CMap::SetHitTestDebug(hitInfo, static_cast<CMapBaseObj*>(CWorldScene::s_m2Scene->m_lastHitOwner));
 
             hit = true;
         }
@@ -2429,7 +2429,7 @@ bool CMap::VectorIntersect(C3Vector* start, C3Vector* end, uint32_t flags, uint3
         C3Vector m2End = CWorldScene::camTransportView.TransformPoint(*end);
     
         float t = *distance;
-        CMapBaseObj* mapBaseObj = CWorldScene::s_m2Scene->EndHitTest(m2Start, m2End, &t, 0);
+        CMapBaseObj* mapBaseObj = static_cast<CMapBaseObj*>(CWorldScene::s_m2Scene->EndHitTest(m2Start, m2End, &t, 0));
     
         if (t < *distance) {
             if (mapBaseObj->type & 0x40) {

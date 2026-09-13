@@ -1688,6 +1688,11 @@ void CGxDevice::XformViewport(float& minX, float& maxX, float& minY, float& maxY
     maxZ = this->m_viewport.z.h;
 }
 
+// OFFSET: 0x683660
+void CGxDevice::CursorSetDepth(float depth) {
+    this->m_cursorDepth = depth;
+}
+
 void CGxDevice::CursorSetVisible(int32_t visible) {
     this->m_cursorVisible = visible;
 }

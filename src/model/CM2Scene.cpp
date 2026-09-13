@@ -1942,7 +1942,7 @@ void CM2Scene::BeginHitTest() {
 }
 
 // OFFSET: 0x81DF10
-CMapBaseObj* CM2Scene::EndHitTest(const C3Vector& start, const C3Vector& end, float* dist, int32_t allowSecondPass) {
+void* CM2Scene::EndHitTest(const C3Vector& start, const C3Vector& end, float* dist, int32_t allowSecondPass) {
     C3Vector dir = { 0.0f, 0.0f, 0.0f };
     float len = 0.0f;
 
@@ -2004,10 +2004,10 @@ CMapBaseObj* CM2Scene::EndHitTest(const C3Vector& start, const C3Vector& end, fl
 
     *dist = t / len;
 
-    CMapBaseObj* owner = nullptr;
+    void* owner = nullptr;
 
     for (CM2Model* model = best->model; model; model = model->m_attachParent) {
-        if (model->m_hitTestOwner) {
+        if (reinterpret_cast<intptr_t>(model->m_hitTestOwner) != -1) {
             owner = model->m_hitTestOwner;
             break;
         }
@@ -2020,7 +2020,7 @@ CMapBaseObj* CM2Scene::EndHitTest(const C3Vector& start, const C3Vector& end, fl
 }
 
 // OFFSET: 0x81E110
-CMapBaseObj* CM2Scene::EndHitTestCollisionWorld(const C3Vector& start, const C3Vector& end, float* dist) {
+void* CM2Scene::EndHitTestCollisionWorld(const C3Vector& start, const C3Vector& end, float* dist) {
     C3Vector dir = { 0.0f, 0.0f, 0.0f };
     float len = 0.0f;
 

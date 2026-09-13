@@ -44,6 +44,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     public:
     // Member variables
     /* 0x0038 */ TSLink<CGObject_C> m_link;
+    /* 0x0040 */ int32_t m_disableTime = 0;
     /* 0x0098 */ float m_scale = 1.0f;
     /* 0x009C */ float unk_009C = 1.0f;
     /* 0x00AC */ float m_height = 1.0f;
@@ -61,6 +62,8 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     void SetModelFinish(CM2Model* model);
     void ModelChanged();
     bool IsReadyToDraw();
+    void SetDisablePending(bool pending);
+    bool IsObjectLocked();
     void SetData(uint32_t offset, uint32_t value);
     void PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdate3);
 
@@ -68,7 +71,10 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     CGPlayer_C* AsPlayer();
 
     // Virtual functions
+    /* 01 */ virtual void Disable();
     /* 02 */ virtual void Reenable();
+    /* 03 */ virtual void PostReenable();
+    /* 04 */ virtual void HandleOutOfRange();
     /* 05 */ virtual void UpdateWorldObject(bool a2);
     /* 08 */ virtual void GetNamePosition(C3Vector& pos);
     /* 11 */ virtual void GetPosition(C3Vector& pos);
@@ -77,6 +83,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     /* 14 */ virtual float GetRawFacing();
     /* 15 */ virtual float GetScale();
     /* 16 */ virtual WGUID GetTransportGUID();
+    /* 20 */ virtual void RefreshInteractIcon();
     /* 24 */ virtual bool GetModelFileName(const char** fileName);
     /* 31 */ virtual bool GetSelectionHighlightColor(CImVector& color);
     /* 31 */ virtual float GetTrueScale();
@@ -85,11 +92,13 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     /* 35 */ virtual bool Animate(float a2);
     /* 36 */ virtual void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out);
     /* 37 */ virtual float GetRenderFacing();
+    /* 41 */ virtual bool CanHighlight();
     /* 49 */ virtual void GetMatrix(C44Matrix& pos);
     /* 51 */ virtual uint32_t UpdateObjectNameString(uint32_t mask, char* text, uint32_t textSize);
     /* 52 */ virtual bool ShouldRenderObjectName(uint32_t mask);
     /* 53 */ virtual CM2Model* GetObjectModel();
     /* 54 */ virtual char* GetObjectName();
+    /* 59 */ virtual bool IsTransport();
 
     // Static functions
     static void SetStorage(CGObject_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);

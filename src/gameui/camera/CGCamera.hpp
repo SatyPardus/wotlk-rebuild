@@ -160,4 +160,7 @@ class CGCamera : public CSimpleCamera {
     bool CheckViewSmoothingCVarsChanged(uint32_t viewIndex);
 };
 
+// OFFSET: 0x4BF0F0
+void CameraGetLineSegment(float x, float y, C3Vector* start, C3Vector* end);
+
 #endif // GAME_UI_CAMERA_CGCAMERA_HPP

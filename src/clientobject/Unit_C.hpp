@@ -193,6 +193,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     float GetStandHeight();
     char* GetUnitName(char** a2, bool a3);
     void UpdateUnitNameText();
+    bool IsLowPrioritySelection(uint32_t time);
 
     bool ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
     bool SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
@@ -260,6 +261,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 34 */ void PreAnimate(CGWorldFrame* worldFrame) override;
     /* 36 */ void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) override;
     /* 37 */ float GetRenderFacing() override;
+    /* 41 */ bool CanHighlight() override;
     /* 54 */ char* GetObjectName() override;
     /* 66 */ virtual void GetAFKText(char* text, uint32_t textLength);
     /* 67 */ virtual void GetDNDText(char* text, uint32_t textLength);

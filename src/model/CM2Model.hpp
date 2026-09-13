@@ -236,7 +236,7 @@ class CM2Model {
         /* 02D4 */ uint32_t m_hitTestMode = 0;
         /* 02D8 */ CM2Model** m_hitTestPrev = nullptr;
         /* 02DC */ CM2Model* m_hitTestNext = nullptr;
-        /* 02E0 */ CMapBaseObj* m_hitTestOwner = nullptr;
+        /* 02E0 */ void* m_hitTestOwner = nullptr;
         /* 02E4 */ uint32_t m_hitTestGroup = 0;
 
         /* 0000 */ float float198 = 1.0f;

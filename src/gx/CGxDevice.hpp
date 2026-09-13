@@ -195,6 +195,7 @@ class CGxDevice {
         bool CapsHasContext(int32_t a2);
         bool CapsIsWindowVisible(int32_t a2);
         EGxApi DeviceApi();
+        void CursorSetDepth(float depth);
         void DeviceCreatePools();
         void DeviceCreateStreamBufs();
         const CRect& DeviceCurWindow();

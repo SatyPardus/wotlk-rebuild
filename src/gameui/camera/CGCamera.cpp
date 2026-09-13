@@ -1,4 +1,6 @@
 #include "gameui/camera/CGCamera.hpp"
+#include "gx/Transform.hpp"
+#include <storm/Error.hpp>
 #include "clientobject/Unit_C.hpp"
 #include <common/time/Time.hpp>
 #include <clientobject/ObjectMgrClient.hpp>
@@ -2820,4 +2822,60 @@ uint32_t CGCamera::CollideCameraWithWorld(C3Vector* target, float* distance, flo
         *distance = this->m_distance;
 
     return collideFlags;
+}
+
+// OFFSET: 0x4BF0F0
+void CameraGetLineSegment(float x, float y, C3Vector* start, C3Vector* end) {
+    STORM_VALIDATE_BEGIN;
+    STORM_VALIDATE(start);
+    STORM_VALIDATE(end);
+    STORM_VALIDATE(x >= 0.0f);
+    STORM_VALIDATE(x <= 1.0f);
+    STORM_VALIDATE(y >= 0.0f);
+    STORM_VALIDATE(y <= 1.0f);
+    STORM_VALIDATE_END_VOID;
+
+    C3Vector corners[8];
+
+    for (int32_t i = 0; i < 8; i++) {
+        corners[i].x = 0.0f;
+        corners[i].y = 0.0f;
+        corners[i].z = 0.0f;
+    }
+
+    C44Matrix viewMatrix;
+    C44Matrix projMatrix;
+
+    GxXformView(viewMatrix);
+    GxXformProjection(projMatrix);
+
+    GxuXformCalcFrustumCorners(&viewMatrix, &projMatrix, corners);
+
+    C3Vector nearA;
+    nearA.x = corners[0].x + (corners[1].x - corners[0].x) * y;
+    nearA.y = corners[0].y + (corners[1].y - corners[0].y) * y;
+    nearA.z = corners[0].z + (corners[1].z - corners[0].z) * y;
+
+    C3Vector nearB;
+    nearB.x = corners[3].x + (corners[2].x - corners[3].x) * y;
+    nearB.y = corners[3].y + (corners[2].y - corners[3].y) * y;
+    nearB.z = corners[3].z + (corners[2].z - corners[3].z) * y;
+
+    start->x = nearA.x + (nearB.x - nearA.x) * x;
+    start->y = nearA.y + (nearB.y - nearA.y) * x;
+    start->z = nearA.z + (nearB.z - nearA.z) * x;
+
+    C3Vector farA;
+    farA.x = corners[4].x + (corners[5].x - corners[4].x) * y;
+    farA.y = corners[4].y + (corners[5].y - corners[4].y) * y;
+    farA.z = corners[4].z + (corners[5].z - corners[4].z) * y;
+
+    C3Vector farB;
+    farB.x = corners[7].x + (corners[6].x - corners[7].x) * y;
+    farB.y = corners[7].y + (corners[6].y - corners[7].y) * y;
+    farB.z = corners[7].z + (corners[6].z - corners[7].z) * y;
+
+    end->x = farA.x + (farB.x - farA.x) * x;
+    end->y = farA.y + (farB.y - farA.y) * x;
+    end->z = farA.z + (farB.z - farA.z) * x;
 }

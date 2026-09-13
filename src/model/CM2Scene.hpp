@@ -65,7 +65,7 @@ class CM2Scene {
     /* 0124 */ C3Vector* m_hitVerts = nullptr;
     /* 0128 */ uint32_t m_hitVertCapacity = 0;
     /* 012C */ M2HitRec m_lastHit;
-    /* 013C */ CMapBaseObj* m_lastHitOwner = nullptr;
+    /* 013C */ void* m_lastHitOwner = nullptr;
     /* 0140 */ uint32_t m_liquidTypeId = 0;
     /* 0144 */ uint32_t m_passMask = 0;
 
@@ -86,8 +86,8 @@ class CM2Scene {
     void AllocateSpaceForHitList();
     int32_t ComputeRayDirAndLen(const C3Vector& start, const C3Vector& end, float dist, float* len, C3Vector* dir);
     void BeginHitTest();
-    CMapBaseObj* EndHitTest(const C3Vector& start, const C3Vector& end, float* dist, int32_t allowSecondPass);
-    CMapBaseObj* EndHitTestCollisionWorld(const C3Vector& start, const C3Vector& end, float* dist);
+    void* EndHitTest(const C3Vector& start, const C3Vector& end, float* dist, int32_t allowSecondPass);
+    void* EndHitTestCollisionWorld(const C3Vector& start, const C3Vector& end, float* dist);
     M2HitRec* HitTestCollision(CM2Model* model, uint32_t pass, const C3Vector& dir, float dirDotStart, const C3Vector& start, M2HitRec* rec, float* t, M2HitRec* best);
     M2HitRec* HitTestGeometry(CM2Model* model, uint32_t pass, const C3Vector& dir, float dirDotStart, const C3Vector& start, M2HitRec* rec, float* t, M2HitRec* best);
     M2HitRec* IntersectHitTestTriangles(const uint16_t* begin, const uint16_t* end, uint32_t vertexStart, const C3Vector& start, uint32_t pass, M2HitRec* rec, float* t, M2HitRec* best);

@@ -40,11 +40,11 @@ class CScriptRegion : public CScriptObject, public CLayoutFrame {
         /* 12 */ virtual void NotifyAnimBegin(CSimpleAnimGroup* animGroup);
         /* 13 */ virtual void NotifyAnimEnd(CSimpleAnimGroup* animGroup);
         /* 14 */ virtual void StopAnimating();
+        /* 30 */ virtual void OnLayerUpdate(float elapsedSec);
 
         /* 00 */ virtual bool IsDragging();
         /* 00 */ virtual bool IsMouseOver(float a1, float a2, float a3, float a4);
         /* 00 */ virtual void PreOnAnimUpdate() {};
-        /* 00 */ virtual void OnLayerUpdate(float elapsedSec);
         /* 00 */ virtual void AnimActivated(CSimpleAnimGroup* animGroup, int32_t, int32_t) {};
         /* 00 */ virtual void AnimDeactivated(CSimpleAnimGroup* animGroup, int32_t, int32_t) {};
         /* 00 */ virtual void AddAnimTranslation(CScriptRegion*, const C2Vector&) {};
