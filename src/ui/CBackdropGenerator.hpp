@@ -34,8 +34,8 @@ class CBackdropGenerator {
         float m_bottomInset = 0.0f;
         float m_leftInset = 0.0f;
         float m_rightInset = 0.0f;
-        CImVector m_color = { 0x00 };
-        CImVector m_borderColor = { 0x00 };
+        CImVector m_color;
+        CImVector m_borderColor;
         EGxBlend m_blend;
 
         // Member functions

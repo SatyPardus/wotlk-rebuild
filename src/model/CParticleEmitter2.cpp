@@ -635,11 +635,6 @@ void CParticleEmitter2::GetReplacementColors(CImVector* color0, CImVector* color
     WHOA_UNIMPLEMENTED();
 }
 
-// OFFSET: 0x97A990
-void CParticleEmitter2::SetParticleColors(const CImVector* color0, const CImVector* color1, const CImVector* color2) {
-    WHOA_UNIMPLEMENTED();
-}
-
 // OFFSET: 0x97D370
 void CParticleEmitter2::DetermineIfSimple() {
     WHOA_UNIMPLEMENTED();
@@ -2675,4 +2670,41 @@ void ParticleSystemManager::SetScaler(float scaler) {
         g_particleDensity = 0.0f;
     else if (g_particleDensity > 1.0f)
         g_particleDensity = 1.0f;
+}
+
+// OFFSET: 0x97A990
+void CParticleEmitter2::SetParticleColors(const CImVector* start, const CImVector* mid, const CImVector* end) {
+    this->m_replacementColors[0].x = start->r;
+    this->m_replacementColors[0].y = start->g;
+    this->m_replacementColors[0].z = start->b;
+
+    this->m_replacementColors[1].x = mid->r;
+    this->m_replacementColors[1].y = mid->g;
+    this->m_replacementColors[1].z = mid->b;
+
+    this->m_replacementColors[2].x = end->r;
+    this->m_replacementColors[2].y = end->g;
+    this->m_replacementColors[2].z = end->b;
+
+    this->m_flags |= 0x10;
+
+    if ((this->m_flags & 0x1000000) == 0) {
+        return;
+    }
+
+    this->m_simpleKeys[0].m_color.r = start->r;
+    this->m_simpleKeys[0].m_color.g = start->g;
+    this->m_simpleKeys[0].m_color.b = start->b;
+
+    this->m_simpleKeys[0].m_redDelta = mid->r - start->r;
+    this->m_simpleKeys[0].m_greenDelta = mid->g - start->g;
+    this->m_simpleKeys[0].m_blueDelta = mid->b - start->b;
+
+    this->m_simpleKeys[1].m_color.r = mid->r;
+    this->m_simpleKeys[1].m_color.g = mid->g;
+    this->m_simpleKeys[1].m_color.b = mid->b;
+
+    this->m_simpleKeys[1].m_redDelta = end->r - mid->r;
+    this->m_simpleKeys[1].m_greenDelta = end->g - mid->g;
+    this->m_simpleKeys[1].m_blueDelta = end->b - mid->b;
 }

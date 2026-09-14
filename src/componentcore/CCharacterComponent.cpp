@@ -15,6 +15,9 @@
 #include <gx/Texture.hpp>
 #include "gx/texture/CBLPFile.hpp"
 #include <event/Event.hpp>
+#include "model/CM2Scene.hpp"
+#include "model/CM2Shared.hpp"
+#include <util/Filesystem.hpp>
 
 CVar* CCharacterComponent::g_componentTextureLevelVar = nullptr;
 CVar* CCharacterComponent::g_componentThreadVar = nullptr;
@@ -30,6 +33,8 @@ EGxTexFormat CCharacterComponent::s_gxFormat;
 uint32_t CCharacterComponent::s_textureSize;
 
 char CCharacterComponent::s_path[260];
+char CCharacterComponent::s_path2[260];
+char CCharacterComponent::s_buffer[260];
 char* CCharacterComponent::s_pathEnd;
 CStatus CCharacterComponent::s_status;
 
@@ -56,6 +61,21 @@ CompSectionInfo CCharacterComponent::s_sectionInfoRaw[] = {
     { { 0,   384 }, { 256, 128 } }, // SECTION_HEAD_LOWER
 };
 
+int32_t s_itemPriority[NUM_ITEM_SLOT][NUM_COMPONENT_SECTIONS] = {
+    { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
+    { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },
+    { 0, 0, -1, 0, 0, -1, -1, -1, -1, -1 },
+    { 1, 1, -1, 1, 1, 1, 1, -1, -1, -1 },
+    { -1, -1, -1, -1, 5, 2, -1, -1, -1, -1 },
+    { -1, -1, -1, -1, -1, 0, 0, -1, -1, -1 },
+    { -1, -1, -1, -1, -1, -1, 2, 0, -1, -1 },
+    { -1, 2, -1, -1, -1, -1, -1, -1, -1, -1 },
+    { -1, 3, 0, -1, -1, -1, -1, -1, -1, -1 },
+    { -1, -1, -1, 4, 4, -1, -1, -1, -1, -1 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+};
+
 const char* s_componentSections[] = {
     "ArmUpperTexture",
     "ArmLowerTexture",
@@ -73,6 +93,54 @@ const char* s_fileDecorations[] = {
     "U"
 };
 
+// OFFSET: 0x4ED8C0
+bool ItemDisplayHasGeosetGroup(uint32_t displayId, int32_t groupIndex, ItemDisplayInfoRec* rec) {
+    if (!displayId) {
+        return false;
+    }
+
+    ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(displayId);
+
+    if (!found) {
+        return false;
+    }
+
+    *rec = *found;
+
+    return rec->m_geosetGroup[groupIndex] != 0;
+}
+
+// OFFSET: 0x4EFB80
+bool ItemDisplayHasGeosetGroup(uint32_t displayId, int32_t groupIndex) {
+    if (!displayId) {
+        return false;
+    }
+
+    ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(displayId);
+
+    return found && found->m_geosetGroup[groupIndex] != 0;
+}
+
+// OFFSET: 0x4EA9E0
+void ReplaceParticleColor(int32_t particleColorId, CM2Model* model) {
+    if (!model || !particleColorId) {
+        return;
+    }
+
+    ParticleColorRec* rec = g_particleColorDB.GetRecord(particleColorId);
+
+    if (!rec) {
+        for (uint32_t i = 0; i < 3; i++) {
+            model->ReplaceParticleColor(i + 11, CImVector(0xFF00FF00), CImVector(0xFF00FF00), CImVector(0xFF00FF00));
+        }
+
+        return;
+    }
+
+    for (uint32_t i = 0; i < 3; i++) {
+        model->ReplaceParticleColor(i + 11, CImVector(rec->m_start[i]), CImVector(rec->m_mid[i]), CImVector(rec->m_end[i]));
+    }
+}
 
 static bool ComponentVarHandler(CVar*, const char*, const char*, void*) {
     return true;
@@ -157,16 +225,16 @@ void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t textureLevel,
     CCharacterComponent::s_prepFunc[5] = &CCharacterComponent::RenderPrepLU;
     CCharacterComponent::s_prepFunc[6] = &CCharacterComponent::RenderPrepLL;
     CCharacterComponent::s_prepFunc[7] = &CCharacterComponent::RenderPrepFO;
-    //CCharacterComponent::m_itemFunc[0] = CCharacterComponent::UpdateItemAU;
-    //CCharacterComponent::m_itemFunc[1] = CCharacterComponent::UpdateItemAL;
-    //CCharacterComponent::m_itemFunc[2] = CCharacterComponent::UpdateItemHA;
-    //CCharacterComponent::m_itemFunc[8] = NOP_0;
-    //CCharacterComponent::m_itemFunc[9] = NOP_0;
-    //CCharacterComponent::m_itemFunc[3] = CCharacterComponent::UpdateItemTU;
-    //CCharacterComponent::m_itemFunc[4] = CCharacterComponent::UpdateItemTL;
-    //CCharacterComponent::m_itemFunc[5] = CCharacterComponent::UpdateItemLU;
-    //CCharacterComponent::m_itemFunc[6] = CCharacterComponent::UpdateItemLL;
-    //CCharacterComponent::m_itemFunc[7] = CCharacterComponent::UpdateItemFO;
+    CCharacterComponent::s_itemFunc[0] = &CCharacterComponent::UpdateItemAU;
+    CCharacterComponent::s_itemFunc[1] = &CCharacterComponent::UpdateItemAL;
+    CCharacterComponent::s_itemFunc[2] = &CCharacterComponent::UpdateItemHA;
+    CCharacterComponent::s_itemFunc[8] = &CCharacterComponent::UpdateItemHU;
+    CCharacterComponent::s_itemFunc[9] = &CCharacterComponent::UpdateItemHL;
+    CCharacterComponent::s_itemFunc[3] = &CCharacterComponent::UpdateItemTU;
+    CCharacterComponent::s_itemFunc[4] = &CCharacterComponent::UpdateItemTL;
+    CCharacterComponent::s_itemFunc[5] = &CCharacterComponent::UpdateItemLU;
+    CCharacterComponent::s_itemFunc[6] = &CCharacterComponent::UpdateItemLL;
+    CCharacterComponent::s_itemFunc[7] = &CCharacterComponent::UpdateItemFO;
 
     uint32_t mipLevels = std::min(std::max(textureLevel, 6u), 9u);
 
@@ -226,6 +294,7 @@ void CCharacterComponent::Initialize(EGxTexFormat format, uint32_t textureLevel,
     EventRegisterEx(EVENT_ID_POLL, &CCharacterComponent::Update, 0, 0.0);
 }
 
+// OFFSET: 0x4F18F0
 int32_t CCharacterComponent::Update(const void*, void*) {
     bool hasContext = false;
     if (g_theGxDevicePtr)
@@ -243,7 +312,8 @@ int32_t CCharacterComponent::Update(const void*, void*) {
             component->m_link.Unlink();
         } else {
             bool variationsUpdated = component->VariationsLoaded(0);
-            if (!variationsUpdated /* || !itemsUpdated */) {
+            bool itemsUpdated = component->ItemsLoaded(0);
+            if (!variationsUpdated || !itemsUpdated) {
                 component = next;
                 continue;
             }
@@ -1756,7 +1826,7 @@ bool CCharacterComponent::RenderPrep(int32_t a2) {
             this->m_request = nullptr;
         }
         this->VariationsLoaded(1);
-        // this->ItemsLoaded(1);
+        this->ItemsLoaded(1);
         this->m_flags |= 8u;
         this->RenderPrepSections();
         this->m_link.Unlink();
@@ -1828,7 +1898,7 @@ void CCharacterComponent::RenderPrepAll() {
     }
     this->m_flags &= ~8u;
     this->VariationsLoaded(1);
-    //this->ItemsLoaded(1);
+    this->ItemsLoaded(1);
     for (uint32_t i = 0; i < NUM_COMPONENT_SECTIONS; i++) {
         (this->*CCharacterComponent::s_prepFunc[i])();
     }
@@ -2054,7 +2124,139 @@ void CCharacterComponent::GeosRenderPrep() {
             model->SetGeometryVisible(this->m_data.m_geosets[i], this->m_data.m_geosets[i], 1);
     }
 
-    // TODO item stuff
+    ItemDisplayInfoRec* rec = this->m_itemDisplayID[8] ? g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[8]) : nullptr;
+
+    if (rec && rec->m_geosetGroup[0]) {
+        model->SetGeometryVisible(401, 499, 0);
+        model->SetGeometryVisible(rec->m_geosetGroup[0] + 401, rec->m_geosetGroup[0] + 401, 1);
+    } else if (this->m_itemDisplayID[3]) {
+        rec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[3]);
+
+        if (rec && rec->m_geosetGroup[0]) {
+            model->SetGeometryVisible(rec->m_geosetGroup[0] + 801, rec->m_geosetGroup[0] + 801, 1);
+        }
+    }
+
+    bool armLowerCovered = false;
+
+    for (int32_t i = 1; i < 7; i++) {
+        if (((1 << i) & this->m_section[SECTION_ARM_LOWER].layerMask) != 0) {
+            armLowerCovered = true;
+            break;
+        }
+    }
+
+    if (!armLowerCovered && this->m_itemDisplayID[2]) {
+        rec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[2]);
+
+        if (rec && rec->m_geosetGroup[0]) {
+            model->SetGeometryVisible(rec->m_geosetGroup[0] + 801, rec->m_geosetGroup[0] + 801, 1);
+        }
+    }
+
+    bool chestRobe = false;
+    bool legsRobe = false;
+    bool group12Applied = false;
+
+    rec = this->m_itemDisplayID[3] ? g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[3]) : nullptr;
+
+    if (rec && rec->m_geosetGroup[2]) {
+        model->SetGeometryVisible(501, 599, 0);
+        model->SetGeometryVisible(902, 999, 0);
+        model->SetGeometryVisible(1100, 1199, 0);
+        model->SetGeometryVisible(1300, 1399, 0);
+        model->SetGeometryVisible(rec->m_geosetGroup[2] + 1301, rec->m_geosetGroup[2] + 1301, 1);
+        chestRobe = true;
+    } else {
+        rec = this->m_itemDisplayID[5] ? g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[5]) : nullptr;
+
+        if (rec && rec->m_geosetGroup[2] && (this->m_flags & 0x20) == 0) {
+            model->SetGeometryVisible(501, 599, 0);
+            model->SetGeometryVisible(902, 999, 0);
+            model->SetGeometryVisible(1100, 1199, 0);
+            model->SetGeometryVisible(1300, 1399, 0);
+            model->SetGeometryVisible(rec->m_geosetGroup[2] + 1301, rec->m_geosetGroup[2] + 1301, 1);
+            legsRobe = true;
+        } else {
+            rec = this->m_itemDisplayID[6] ? g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[6]) : nullptr;
+
+            if (rec && rec->m_geosetGroup[0]) {
+                model->SetGeometryVisible(501, 599, 0);
+                model->SetGeometryVisible(901, 901, 1);
+                model->SetGeometryVisible(rec->m_geosetGroup[0] + 501, rec->m_geosetGroup[0] + 501, 1);
+            } else {
+                rec = this->m_itemDisplayID[5] ? g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[5]) : nullptr;
+
+                if (!rec || !rec->m_geosetGroup[1] || (this->m_flags & 0x20) != 0) {
+                    model->SetGeometryVisible(901, 901, 1);
+                } else {
+                    model->SetGeometryVisible(rec->m_geosetGroup[1] + 901, rec->m_geosetGroup[1] + 901, 1);
+                }
+            }
+
+            rec = this->m_itemDisplayID[9] ? g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[9]) : nullptr;
+
+            if (rec && rec->m_geosetGroup[0]) {
+                model->SetGeometryVisible(rec->m_geosetGroup[0] + 1201, rec->m_geosetGroup[0] + 1201, 1);
+                group12Applied = true;
+            }
+        }
+    }
+
+    bool skipTail = false;
+
+    if ((this->m_flags & 0x40) != 0) {
+        model->SetGeometryVisible(1201, 1201, 1);
+
+        if (chestRobe) {
+            skipTail = true;
+        } else if (!legsRobe) {
+            model->SetGeometryVisible(1202, 1202, 1);
+        }
+    } else if (chestRobe) {
+        skipTail = true;
+    }
+
+    if (!skipTail) {
+        if (!group12Applied && this->m_itemDisplayID[2]) {
+            rec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[2]);
+
+            if (rec && rec->m_geosetGroup[1]) {
+                model->SetGeometryVisible(rec->m_geosetGroup[1] + 1001, rec->m_geosetGroup[1] + 1001, 1);
+            }
+        }
+
+        if ((this->m_flags & 0x20) == 0 && this->m_itemDisplayID[5]) {
+            rec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[5]);
+
+            if (rec && rec->m_geosetGroup[0]) {
+                if (rec->m_geosetGroup[0] > 2) {
+                    model->SetGeometryVisible(1300, 1399, 0);
+                    model->SetGeometryVisible(rec->m_geosetGroup[0] + 1101, rec->m_geosetGroup[0] + 1101, 1);
+                } else if (!group12Applied) {
+                    model->SetGeometryVisible(rec->m_geosetGroup[0] + 1101, rec->m_geosetGroup[0] + 1101, 1);
+                }
+            }
+        }
+    }
+
+    if (this->m_itemDisplayID[10]) {
+        rec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[10]);
+
+        if (rec && rec->m_geosetGroup[0]) {
+            model->SetGeometryVisible(1500, 1599, 0);
+            model->SetGeometryVisible(rec->m_geosetGroup[0] + 1501, rec->m_geosetGroup[0] + 1501, 1);
+        }
+    }
+
+    if (this->m_itemDisplayID[4]) {
+        rec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[4]);
+
+        if (rec && rec->m_geosetGroup[0]) {
+            model->SetGeometryVisible(1800, 1899, 0);
+            model->SetGeometryVisible(rec->m_geosetGroup[0] + 1801, rec->m_geosetGroup[0] + 1801, 1);
+        }
+    }
 
     //this->m_data.m_model->OptimizeVisibleGeometry();
     this->m_flags &= ~4;
@@ -2363,23 +2565,2019 @@ void CCharacterComponent::PasteOpaque(CACHEENTRY* entry, BlpPalPixel* pal, MipBi
     }
 }
 
+// OFFSET: 0x4EF9D0
 void CCharacterComponent::PasteScale(CACHEENTRY* entry, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
     C2iVector dst = dstPos;
     C2iVector src = srcPos;
     C2iVector size = srcSize;
 
-    //switch (srcInfo.alphaSize) {
-    //case 0:
-    //    this->PasteOpaqueScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
-    //    break;
-    //case 1:
-    //    this->PasteTransparent1BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
-    //    break;
-    //case 4:
-    //    this->PasteTransparent4BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
-    //    break;
-    //case 8:
-    //    this->PasteTransparent8BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
-    //    break;
-    //}
+    switch (srcInfo.alphaSize) {
+    case 0:
+        this->PasteOpaqueScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
+        break;
+    case 1:
+        this->PasteTransparent1BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
+        break;
+    case 4:
+        this->PasteTransparent4BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
+        break;
+    case 8:
+        this->PasteTransparent8BitScale(entry, dstMips, dst, 4 * s_textureSize, src, size, srcInfo);
+        break;
+    }
+}
+
+// OFFSET: 0x4E89F0
+void CCharacterComponent::PasteOpaqueScale(CACHEENTRY* entry, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, C2iVector& srcSize, const TCTEXTUREINFO& srcInfo) {
+    uint32_t srcRowPitch = srcInfo.width;
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    BlpPalPixel* pal = TextureCacheGetPal(entry);
+
+    if (!pal) {
+        return;
+    }
+
+    srcPos.x >>= 1;
+    srcPos.y >>= 1;
+
+    auto srcBase = static_cast<const uint8_t*>(TextureCacheGetMip(entry, 0)) + srcPos.x + srcRowPitch * srcPos.y;
+
+    auto dstRow = reinterpret_cast<uint8_t*>(dstMips->mip[0]) + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+
+    for (uint32_t y = 0; y < copyHeight; y++) {
+        uint32_t y0 = y >> 1;
+        uint32_t y1 = y0 + 1;
+
+        if (y1 >= (copyHeight >> 1) - 1) {
+            y1 = (copyHeight >> 1) - 1;
+        }
+
+        auto dst = reinterpret_cast<C4Pixel*>(dstRow);
+
+        if (y & 1) {
+            auto row0 = srcBase + srcRowPitch * y0;
+            auto row1 = srcBase + srcRowPitch * y1;
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t x0 = x >> 1;
+                uint32_t x1 = x0 + 1;
+
+                if (x1 >= (copyWidth >> 1) - 1) {
+                    x1 = (copyWidth >> 1) - 1;
+                }
+
+                const BlpPalPixel& p00 = pal[row0[x0]];
+                const BlpPalPixel& p10 = pal[row1[x0]];
+
+                if (x & 1) {
+                    const BlpPalPixel& p01 = pal[row0[x1]];
+                    const BlpPalPixel& p11 = pal[row1[x1]];
+
+                    dst[x].b = (p00.b + p01.b + p10.b + p11.b) >> 2;
+                    dst[x].g = (p00.g + p01.g + p10.g + p11.g) >> 2;
+                    dst[x].r = (p00.r + p01.r + p10.r + p11.r) >> 2;
+                    dst[x].a = 0xFF;
+                } else {
+                    dst[x].b = (p00.b + p10.b) >> 1;
+                    dst[x].g = (p00.g + p10.g) >> 1;
+                    dst[x].r = (p00.r + p10.r) >> 1;
+                    dst[x].a = 0xFF;
+                }
+            }
+        } else {
+            auto row0 = srcBase + srcRowPitch * y0;
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t x0 = x >> 1;
+                uint32_t x1 = x0 + 1;
+
+                if (x1 >= (copyWidth >> 1) - 1) {
+                    x1 = (copyWidth >> 1) - 1;
+                }
+
+                const BlpPalPixel& p00 = pal[row0[x0]];
+
+                if (x & 1) {
+                    const BlpPalPixel& p01 = pal[row0[x1]];
+
+                    dst[x].b = (p00.b + p01.b) >> 1;
+                    dst[x].g = (p00.g + p01.g) >> 1;
+                    dst[x].r = (p00.r + p01.r) >> 1;
+                    dst[x].a = 0xFF;
+                } else {
+                    dst[x].b = p00.b;
+                    dst[x].g = p00.g;
+                    dst[x].r = p00.r;
+                    dst[x].a = 0xFF;
+                }
+            }
+        }
+
+        dstRow += pixelStrideInBytes;
+    }
+
+    srcSize.x = (srcSize.x >> 1) < 1 ? 1 : (srcSize.x >> 1);
+    srcSize.y = (srcSize.y >> 1) < 1 ? 1 : (srcSize.y >> 1);
+
+    dstPos.x >>= 1;
+    dstPos.y >>= 1;
+
+    this->PasteOpaque(entry, pal, dstMips, dstPos, pixelStrideInBytes >> 1, srcPos, srcSize, srcInfo, 0, 1);
+}
+
+// OFFSET: 0x4EC690
+void CCharacterComponent::PasteTransparent1BitScale(CACHEENTRY* entry, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, C2iVector& srcSize, const TCTEXTUREINFO& srcInfo) {
+    uint32_t srcRowPitch = srcInfo.width;
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    BlpPalPixel* pal = TextureCacheGetPal(entry);
+
+    if (!pal) {
+        return;
+    }
+
+    srcPos.x >>= 1;
+    srcPos.y >>= 1;
+
+    auto srcBase = static_cast<const uint8_t*>(TextureCacheGetMip(entry, 0));
+    auto alphaBase = srcBase + srcRowPitch * srcInfo.height;
+
+    auto dstRow = reinterpret_cast<uint8_t*>(dstMips->mip[0]) + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+
+    for (uint32_t y = 0; y < copyHeight; y++) {
+        uint32_t y0 = y >> 1;
+        uint32_t y1 = y0 + 1;
+
+        if (y1 >= (copyHeight >> 1) - 1) {
+            y1 = (copyHeight >> 1) - 1;
+        }
+
+        uint32_t rowOff0 = srcRowPitch * y0;
+        uint32_t rowOff1 = srcRowPitch * y1;
+
+        auto dst = reinterpret_cast<C4Pixel*>(dstRow);
+
+        if (y & 1) {
+            auto row0 = srcBase + rowOff0;
+            auto row1 = srcBase + rowOff1;
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t x0 = x >> 1;
+                uint32_t x1 = x0 + 1;
+
+                if (x1 >= (copyWidth >> 1) - 1) {
+                    x1 = (copyWidth >> 1) - 1;
+                }
+
+                const BlpPalPixel& p00 = pal[row0[x0]];
+                const BlpPalPixel& p10 = pal[row1[x0]];
+
+                uint32_t a00 = (alphaBase[(rowOff0 + x0) >> 3] & (1 << (x0 & 7))) ? 255 : 0;
+                uint32_t a10 = (alphaBase[(rowOff1 + x0) >> 3] & (1 << (x0 & 7))) ? 255 : 0;
+
+                uint32_t a;
+                uint32_t srcB;
+                uint32_t srcG;
+                uint32_t srcR;
+
+                if (x & 1) {
+                    const BlpPalPixel& p01 = pal[row0[x1]];
+                    const BlpPalPixel& p11 = pal[row1[x1]];
+
+                    uint32_t a01 = (alphaBase[(rowOff0 + x1) >> 3] & (1 << (x1 & 7))) ? 255 : 0;
+                    uint32_t a11 = (alphaBase[(rowOff1 + x1) >> 3] & (1 << (x1 & 7))) ? 255 : 0;
+
+                    a = (a00 + a10 + a01 + a11) >> 2;
+                    srcB = (p00.b + p01.b + p10.b + p11.b) >> 2;
+                    srcG = (p00.g + p01.g + p10.g + p11.g) >> 2;
+                    srcR = (p00.r + p01.r + p10.r + p11.r) >> 2;
+                } else {
+                    a = (a00 + a10) >> 1;
+                    srcB = (p00.b + p10.b) >> 1;
+                    srcG = (p00.g + p10.g) >> 1;
+                    srcR = (p00.r + p10.r) >> 1;
+                }
+
+                dst[x].b = ((255 - a) * dst[x].b + a * srcB) >> 8;
+                dst[x].g = ((255 - a) * dst[x].g + a * srcG) >> 8;
+                dst[x].r = ((255 - a) * dst[x].r + a * srcR) >> 8;
+                dst[x].a = 0xFF;
+            }
+        } else {
+            auto row0 = srcBase + rowOff0;
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t x0 = x >> 1;
+                uint32_t x1 = x0 + 1;
+
+                if (x1 >= (copyWidth >> 1) - 1) {
+                    x1 = (copyWidth >> 1) - 1;
+                }
+
+                const BlpPalPixel& p00 = pal[row0[x0]];
+
+                uint32_t a00 = (alphaBase[(rowOff0 + x0) >> 3] & (1 << (x0 & 7))) ? 255 : 0;
+
+                uint32_t a;
+                uint32_t srcB;
+                uint32_t srcG;
+                uint32_t srcR;
+
+                if (x & 1) {
+                    const BlpPalPixel& p01 = pal[row0[x1]];
+
+                    uint32_t a01 = (alphaBase[(rowOff0 + x1) >> 3] & (1 << (x1 & 7))) ? 255 : 0;
+
+                    a = (a00 + a01) >> 1;
+                    srcB = (p00.b + p01.b) >> 1;
+                    srcG = (p00.g + p01.g) >> 1;
+                    srcR = (p00.r + p01.r) >> 1;
+                } else {
+                    a = a00;
+                    srcB = p00.b;
+                    srcG = p00.g;
+                    srcR = p00.r;
+                }
+
+                dst[x].b = ((255 - a) * dst[x].b + a * srcB) >> 8;
+                dst[x].g = ((255 - a) * dst[x].g + a * srcG) >> 8;
+                dst[x].r = ((255 - a) * dst[x].r + a * srcR) >> 8;
+                dst[x].a = 0xFF;
+            }
+        }
+
+        dstRow += pixelStrideInBytes;
+    }
+
+    srcSize.x = (srcSize.x >> 1) < 1 ? 1 : (srcSize.x >> 1);
+    srcSize.y = (srcSize.y >> 1) < 1 ? 1 : (srcSize.y >> 1);
+
+    dstPos.x >>= 1;
+    dstPos.y >>= 1;
+
+    this->PasteTransparent1Bit(entry, pal, dstMips, dstPos, pixelStrideInBytes >> 1, srcPos, srcSize, srcInfo, 0, 1);
+}
+
+// OFFSET: 0x4ECC20
+void CCharacterComponent::PasteTransparent4BitScale(CACHEENTRY* entry, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, C2iVector& srcSize, const TCTEXTUREINFO& srcInfo) {
+    uint32_t srcRowPitch = srcInfo.width;
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    BlpPalPixel* pal = TextureCacheGetPal(entry);
+
+    if (!pal) {
+        return;
+    }
+
+    srcPos.x >>= 1;
+    srcPos.y >>= 1;
+
+    auto srcBase = static_cast<const uint8_t*>(TextureCacheGetMip(entry, 0));
+    auto alphaBase = srcBase + srcRowPitch * srcInfo.height;
+
+    auto dstRow = reinterpret_cast<uint8_t*>(dstMips->mip[0]) + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+
+    for (uint32_t y = 0; y < copyHeight; y++) {
+        uint32_t y0 = y >> 1;
+        uint32_t y1 = y0 + 1;
+
+        if (y1 >= (copyHeight >> 1) - 1) {
+            y1 = (copyHeight >> 1) - 1;
+        }
+
+        uint32_t rowOff0 = srcRowPitch * y0;
+        uint32_t rowOff1 = srcRowPitch * y1;
+
+        auto dst = reinterpret_cast<C4Pixel*>(dstRow);
+
+        if (y & 1) {
+            auto row0 = srcBase + rowOff0;
+            auto row1 = srcBase + rowOff1;
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t x0 = x >> 1;
+                uint32_t x1 = x0 + 1;
+
+                if (x1 >= (copyWidth >> 1) - 1) {
+                    x1 = (copyWidth >> 1) - 1;
+                }
+
+                uint32_t shift0 = 4 * (x0 & 1);
+
+                const BlpPalPixel& p00 = pal[row0[x0]];
+                const BlpPalPixel& p10 = pal[row1[x0]];
+
+                uint32_t n00 = (alphaBase[(rowOff0 + x0) >> 1] & (15 << shift0)) >> shift0;
+                uint32_t n10 = (alphaBase[(rowOff1 + x0) >> 1] & (15 << shift0)) >> shift0;
+
+                uint32_t a00 = (n00 << 4) | n00;
+                uint32_t a10 = (n10 << 4) | n10;
+
+                uint32_t a;
+                uint32_t srcB;
+                uint32_t srcG;
+                uint32_t srcR;
+
+                if (x & 1) {
+                    uint32_t shift1 = 4 * (x1 & 1);
+
+                    const BlpPalPixel& p01 = pal[row0[x1]];
+                    const BlpPalPixel& p11 = pal[row1[x1]];
+
+                    uint32_t n01 = (alphaBase[(rowOff0 + x1) >> 1] & (15 << shift1)) >> shift1;
+                    uint32_t n11 = (alphaBase[(rowOff1 + x1) >> 1] & (15 << shift1)) >> shift1;
+
+                    uint32_t a01 = (n01 << 4) | n01;
+                    uint32_t a11 = (n11 << 4) | n11;
+
+                    a = (a00 + a01 + a10 + a11) >> 2;
+                    srcB = (p00.b + p01.b + p10.b + p11.b) >> 2;
+                    srcG = (p00.g + p01.g + p10.g + p11.g) >> 2;
+                    srcR = (p00.r + p01.r + p10.r + p11.r) >> 2;
+                } else {
+                    a = (a00 + a10) >> 1;
+                    srcB = (p00.b + p10.b) >> 1;
+                    srcG = (p00.g + p10.g) >> 1;
+                    srcR = (p00.r + p10.r) >> 1;
+                }
+
+                dst[x].b = ((255 - a) * dst[x].b + a * srcB) >> 8;
+                dst[x].g = ((255 - a) * dst[x].g + a * srcG) >> 8;
+                dst[x].r = ((255 - a) * dst[x].r + a * srcR) >> 8;
+                dst[x].a = 0xFF;
+            }
+        } else {
+            auto row0 = srcBase + rowOff0;
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t x0 = x >> 1;
+                uint32_t x1 = x0 + 1;
+
+                if (x1 >= (copyWidth >> 1) - 1) {
+                    x1 = (copyWidth >> 1) - 1;
+                }
+
+                uint32_t shift0 = 4 * (x0 & 1);
+
+                const BlpPalPixel& p00 = pal[row0[x0]];
+
+                uint32_t n00 = (alphaBase[(rowOff0 + x0) >> 1] & (15 << shift0)) >> shift0;
+                uint32_t a00 = (n00 << 4) | n00;
+
+                uint32_t a;
+                uint32_t srcB;
+                uint32_t srcG;
+                uint32_t srcR;
+
+                if (x & 1) {
+                    uint32_t shift1 = 4 * (x1 & 1);
+
+                    const BlpPalPixel& p01 = pal[row0[x1]];
+
+                    uint32_t n01 = (alphaBase[(rowOff0 + x1) >> 1] & (15 << shift1)) >> shift1;
+                    uint32_t a01 = (n01 << 4) | n01;
+
+                    a = (a00 + a01) >> 1;
+                    srcB = (p00.b + p01.b) >> 1;
+                    srcG = (p00.g + p01.g) >> 1;
+                    srcR = (p00.r + p01.r) >> 1;
+                } else {
+                    a = a00;
+                    srcB = p00.b;
+                    srcG = p00.g;
+                    srcR = p00.r;
+                }
+
+                dst[x].b = ((255 - a) * dst[x].b + a * srcB) >> 8;
+                dst[x].g = ((255 - a) * dst[x].g + a * srcG) >> 8;
+                dst[x].r = ((255 - a) * dst[x].r + a * srcR) >> 8;
+                dst[x].a = 0xFF;
+            }
+        }
+
+        dstRow += pixelStrideInBytes;
+    }
+
+    srcSize.x = (srcSize.x >> 1) < 1 ? 1 : (srcSize.x >> 1);
+    srcSize.y = (srcSize.y >> 1) < 1 ? 1 : (srcSize.y >> 1);
+
+    dstPos.x >>= 1;
+    dstPos.y >>= 1;
+
+    this->PasteTransparent4Bit(entry, pal, dstMips, dstPos, pixelStrideInBytes >> 1, srcPos, srcSize, srcInfo, 0, 1);
+}
+
+// OFFSET: 0x4ED200
+void CCharacterComponent::PasteTransparent8BitScale(CACHEENTRY* entry, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, C2iVector& srcSize, const TCTEXTUREINFO& srcInfo) {
+    uint32_t srcRowPitch = srcInfo.width;
+    uint32_t copyWidth = srcSize.x;
+    uint32_t copyHeight = srcSize.y;
+
+    BlpPalPixel* pal = TextureCacheGetPal(entry);
+
+    if (!pal) {
+        return;
+    }
+
+    srcPos.x >>= 1;
+    srcPos.y >>= 1;
+
+    auto srcBase = static_cast<const uint8_t*>(TextureCacheGetMip(entry, 0));
+    auto alphaBase = srcBase + srcRowPitch * srcInfo.height;
+
+    auto dstRow = reinterpret_cast<uint8_t*>(dstMips->mip[0]) + pixelStrideInBytes * dstPos.y + 4 * dstPos.x;
+
+    for (uint32_t y = 0; y < copyHeight; y++) {
+        uint32_t y0 = y >> 1;
+        uint32_t y1 = y0 + 1;
+
+        if (y1 >= (copyHeight >> 1) - 1) {
+            y1 = (copyHeight >> 1) - 1;
+        }
+
+        uint32_t rowOff0 = srcRowPitch * y0;
+        uint32_t rowOff1 = srcRowPitch * y1;
+
+        auto dst = reinterpret_cast<C4Pixel*>(dstRow);
+
+        if (y & 1) {
+            auto row0 = srcBase + rowOff0;
+            auto row1 = srcBase + rowOff1;
+
+            auto alphaRow0 = alphaBase + rowOff0;
+            auto alphaRow1 = alphaBase + rowOff1;
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t x0 = x >> 1;
+                uint32_t x1 = x0 + 1;
+
+                if (x1 >= (copyWidth >> 1) - 1) {
+                    x1 = (copyWidth >> 1) - 1;
+                }
+
+                const BlpPalPixel& p00 = pal[row0[x0]];
+                const BlpPalPixel& p10 = pal[row1[x0]];
+
+                uint32_t a;
+                uint32_t srcB;
+                uint32_t srcG;
+                uint32_t srcR;
+
+                if (x & 1) {
+                    const BlpPalPixel& p01 = pal[row0[x1]];
+                    const BlpPalPixel& p11 = pal[row1[x1]];
+
+                    a = (alphaRow1[x0] + alphaRow1[x1] + alphaRow0[x0] + alphaRow0[x1]) >> 2;
+                    srcB = (p00.b + p01.b + p10.b + p11.b) >> 2;
+                    srcG = (p00.g + p01.g + p10.g + p11.g) >> 2;
+                    srcR = (p00.r + p01.r + p10.r + p11.r) >> 2;
+                } else {
+                    a = (alphaRow1[x0] + alphaRow0[x0]) >> 1;
+                    srcB = (p00.b + p10.b) >> 1;
+                    srcG = (p00.g + p10.g) >> 1;
+                    srcR = (p00.r + p10.r) >> 1;
+                }
+
+                dst[x].b = ((255 - a) * dst[x].b + a * srcB) >> 8;
+                dst[x].g = ((255 - a) * dst[x].g + a * srcG) >> 8;
+                dst[x].r = ((255 - a) * dst[x].r + a * srcR) >> 8;
+                dst[x].a = 0xFF;
+            }
+        } else {
+            auto row0 = srcBase + rowOff0;
+
+            auto alphaRow0 = alphaBase + rowOff0;
+
+            for (uint32_t x = 0; x < copyWidth; x++) {
+                uint32_t x0 = x >> 1;
+                uint32_t x1 = x0 + 1;
+
+                if (x1 >= (copyWidth >> 1) - 1) {
+                    x1 = (copyWidth >> 1) - 1;
+                }
+
+                const BlpPalPixel& p00 = pal[row0[x0]];
+
+                uint32_t a;
+                uint32_t srcB;
+                uint32_t srcG;
+                uint32_t srcR;
+
+                if (x & 1) {
+                    const BlpPalPixel& p01 = pal[row0[x1]];
+
+                    a = (alphaRow0[x0] + alphaRow0[x1]) >> 1;
+                    srcB = (p00.b + p01.b) >> 1;
+                    srcG = (p00.g + p01.g) >> 1;
+                    srcR = (p00.r + p01.r) >> 1;
+                } else {
+                    a = alphaRow0[x0];
+                    srcB = p00.b;
+                    srcG = p00.g;
+                    srcR = p00.r;
+                }
+
+                dst[x].b = ((255 - a) * dst[x].b + a * srcB) >> 8;
+                dst[x].g = ((255 - a) * dst[x].g + a * srcG) >> 8;
+                dst[x].r = ((255 - a) * dst[x].r + a * srcR) >> 8;
+                dst[x].a = 0xFF;
+            }
+        }
+
+        dstRow += pixelStrideInBytes;
+    }
+
+    srcSize.x = (srcSize.x >> 1) < 1 ? 1 : (srcSize.x >> 1);
+    srcSize.y = (srcSize.y >> 1) < 1 ? 1 : (srcSize.y >> 1);
+
+    dstPos.x >>= 1;
+    dstPos.y >>= 1;
+
+    this->PasteTransparent8Bit(entry, pal, dstMips, dstPos, pixelStrideInBytes >> 1, srcPos, srcSize, srcInfo, 0, 1);
+}
+
+// OFFSET: 0x4E6FB0
+CACHEENTRY* CCharacterComponent::LoadItemComponentTexture(ItemDisplayInfoRec* itemDisplayInfo, COMPONENT_SECTIONS section) {
+    SStrPrintf(CCharacterComponent::s_path, sizeof(CCharacterComponent::s_path), "Item\\TextureComponents\\%s\\%s_%s.blp", s_componentSections[section], itemDisplayInfo->m_texture[section], s_fileDecorations[2]);
+
+    if (!SFile::FileExists(CCharacterComponent::s_path)) {
+        CCharacterComponent::s_path[SStrLen(CCharacterComponent::s_path) - 5] = s_fileDecorations[this->m_data.m_preferences.sexID][0];
+    }
+
+    return TextureCacheCreateTexture(CCharacterComponent::s_path);
+}
+
+// OFFSET: 0x4ED6D0
+bool CCharacterComponent::ItemsLoaded(bool a2) {
+    TCTEXTUREINFO info;
+    bool loaded = true;
+
+    for (uint32_t i = 0; i < NUM_COMPONENT_SECTIONS; i++) {
+        if (((1 << i) & this->m_dirtySections) == 0) {
+            continue;
+        }
+
+        CharacterSection* section = &this->m_section[i];
+
+        for (uint32_t j = 0; j < 7; j++) {
+            if (section->layerItemDisplayId[j]) {
+                if (!section->layerTex[j]) {
+                    ItemDisplayInfoRec* displayRec = g_itemDisplayInfoDB.GetRecord(section->layerItemDisplayId[j]);
+
+                    if (displayRec) {
+                        section->layerTex[j] = this->LoadItemComponentTexture(displayRec, (COMPONENT_SECTIONS)i);
+                    }
+                }
+            } else if (!section->layerTex[j]) {
+                continue;
+            }
+
+            if (a2) {
+                if (!section->layerTex[j]) {
+                    continue;
+                }
+
+                TextureCacheGetInfo(section->layerTex[j], &info, 1);
+            } else if (!TextureCacheGetInfo(section->layerTex[j], &info, 0)) {
+                loaded = false;
+                continue;
+            }
+
+            if (TextureCacheHasMips(section->layerTex[j])) {
+                section->layerMask |= 1 << j;
+            } else {
+                section->layerMask &= ~(1 << j);
+            }
+        }
+    }
+
+    return loaded;
+}
+
+// OFFSET: 0x4EE380
+bool CCharacterComponent::UpdateTextureSlot(COMPONENT_SECTIONS section, const ItemDisplayInfoRec* displayRec, int32_t layer) {
+    if ((this->m_data.m_flags & 1) != 0) {
+        return false;
+    }
+
+    CharacterSection* characterSection = &this->m_section[section];
+
+    if (characterSection->layerItemDisplayId[layer]) {
+        ItemDisplayInfoRec* current = g_itemDisplayInfoDB.GetRecord(characterSection->layerItemDisplayId[layer]);
+
+        if (current && current->m_texture[section] == displayRec->m_texture[section]) {
+            return false;
+        }
+    }
+
+    characterSection->layerMask &= ~(1 << layer);
+
+    if (characterSection->layerTex[layer]) {
+        TextureCacheDestroyTexture(characterSection->layerTex[layer]);
+        characterSection->layerTex[layer] = nullptr;
+    }
+
+    characterSection->layerItemDisplayId[layer] = displayRec->m_ID;
+
+    return true;
+}
+
+// OFFSET: 0x4EA880
+void CCharacterComponent::FreeSectionTexture(COMPONENT_SECTIONS section, int32_t layer) {
+    if (layer == -1) {
+        return;
+    }
+
+    CharacterSection* characterSection = &this->m_section[section];
+
+    if (characterSection->layerTex[layer]) {
+        TextureCacheDestroyTexture(characterSection->layerTex[layer]);
+        characterSection->layerTex[layer] = nullptr;
+    }
+
+    characterSection->layerItemDisplayId[layer] = 0;
+    characterSection->layerMask &= ~(1 << layer);
+}
+
+// OFFSET: 0x4EFFA0
+void CCharacterComponent::GetItemDisplayPriority(ITEM_SLOT itemSlot, COMPONENT_SECTIONS section, const ItemDisplayInfoRec* displayRec, bool update) {
+    int32_t layer = s_itemPriority[itemSlot][section];
+    bool handled = false;
+
+    if (section == SECTION_ARM_LOWER) {
+        if (displayRec && displayRec->m_geosetGroup[0]) {
+            if (itemSlot == ITEMSLOT_3) {
+                layer = 5;
+            } else if (itemSlot == ITEMSLOT_8) {
+                layer = 6;
+            }
+        }
+    } else if (section == SECTION_LEG_LOWER) {
+        if (itemSlot == ITEMSLOT_3) {
+            if (displayRec && displayRec->m_geosetGroup[2]) {
+                layer = 4;
+                this->m_flags |= 4;
+            }
+        } else if (itemSlot == ITEMSLOT_5) {
+            if (displayRec && displayRec->m_geosetGroup[2]) {
+                layer = ItemDisplayHasGeosetGroup(this->m_itemDisplayID[3], 2) ? 3 : 4;
+                this->m_flags |= 4;
+            }
+        } else if (itemSlot == ITEMSLOT_6 && displayRec && displayRec->m_geosetGroup[0]) {
+            this->m_flags |= 4;
+            layer = 3;
+        }
+    } else if (section == SECTION_FOOT && (this->m_flags & 0x10) != 0) {
+        update = false;
+        this->FreeSectionTexture(section, s_itemPriority[itemSlot][section]);
+        handled = true;
+    }
+
+    if (!handled) {
+        if (update) {
+            if (!this->UpdateTextureSlot(section, displayRec, layer)) {
+                return;
+            }
+        } else {
+            this->FreeSectionTexture(section, layer);
+        }
+    }
+
+    if (section == SECTION_LEG_LOWER && !update) {
+        ItemDisplayInfoRec rec;
+
+        if (itemSlot == ITEMSLOT_3) {
+            if (ItemDisplayHasGeosetGroup(this->m_itemDisplayID[5], 2, &rec)) {
+                this->FreeSectionTexture(SECTION_LEG_LOWER, 3);
+                this->UpdateTextureSlot(SECTION_LEG_LOWER, &rec, 4);
+            }
+
+            if (ItemDisplayHasGeosetGroup(this->m_itemDisplayID[6], 0, &rec)) {
+                this->UpdateTextureSlot(SECTION_LEG_LOWER, &rec, 3);
+            }
+        } else if (itemSlot == ITEMSLOT_5 && ItemDisplayHasGeosetGroup(this->m_itemDisplayID[5], 2, &rec)) {
+            this->UpdateTextureSlot(SECTION_LEG_LOWER, &rec, 4);
+        }
+    }
+
+    if (layer != -1) {
+        this->m_dirtySections |= 1 << section;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+// OFFSET: 0x4F01A0
+void CCharacterComponent::UpdateItemAU(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+    int32_t layer = s_itemPriority[itemSlot][SECTION_ARM_UPPER];
+
+    if (update) {
+        if (!this->UpdateTextureSlot(SECTION_ARM_UPPER, displayRec, layer)) {
+            return;
+        }
+    } else {
+        this->FreeSectionTexture(SECTION_ARM_UPPER, layer);
+    }
+
+    if (layer != -1) {
+        this->m_dirtySections |= 1 << SECTION_ARM_UPPER;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+// OFFSET: 0x4F0200
+void CCharacterComponent::UpdateItemAL(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+    int32_t layer = s_itemPriority[itemSlot][SECTION_ARM_LOWER];
+
+    if (displayRec && displayRec->m_geosetGroup[0]) {
+        if (itemSlot == ITEMSLOT_3) {
+            layer = 5;
+        } else if (itemSlot == ITEMSLOT_8) {
+            layer = itemSlot - 2;
+        }
+    }
+
+    if (update) {
+        if (!this->UpdateTextureSlot(SECTION_ARM_LOWER, displayRec, layer)) {
+            return;
+        }
+    } else {
+        this->FreeSectionTexture(SECTION_ARM_LOWER, layer);
+    }
+
+    if (layer != -1) {
+        this->m_dirtySections |= 1 << SECTION_ARM_LOWER;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+// OFFSET: 0x4F0280
+void CCharacterComponent::UpdateItemHA(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+    int32_t layer = s_itemPriority[itemSlot][SECTION_HAND];
+
+    if (update) {
+        if (!this->UpdateTextureSlot(SECTION_HAND, displayRec, layer)) {
+            return;
+        }
+    } else {
+        this->FreeSectionTexture(SECTION_HAND, layer);
+    }
+
+    if (layer != -1) {
+        this->m_dirtySections |= 1 << SECTION_HAND;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+void CCharacterComponent::UpdateItemHU(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+}
+
+void CCharacterComponent::UpdateItemHL(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+}
+
+// OFFSET: 0x4F02E0
+void CCharacterComponent::UpdateItemTU(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+    int32_t layer = s_itemPriority[itemSlot][SECTION_TORSO_UPPER];
+
+    if (update) {
+        if (!this->UpdateTextureSlot(SECTION_TORSO_UPPER, displayRec, layer)) {
+            return;
+        }
+    } else {
+        this->FreeSectionTexture(SECTION_TORSO_UPPER, layer);
+    }
+
+    if (layer != -1) {
+        this->m_dirtySections |= 1 << SECTION_TORSO_UPPER;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+// OFFSET: 0x4F0340
+void CCharacterComponent::UpdateItemTL(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+    int32_t layer = s_itemPriority[itemSlot][SECTION_TORSO_LOWER];
+
+    if (update) {
+        if (!this->UpdateTextureSlot(SECTION_TORSO_LOWER, displayRec, layer)) {
+            return;
+        }
+    } else {
+        this->FreeSectionTexture(SECTION_TORSO_LOWER, layer);
+    }
+
+    if (layer != -1) {
+        this->m_dirtySections |= 1 << SECTION_TORSO_LOWER;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+// OFFSET: 0x4F03A0
+void CCharacterComponent::UpdateItemLU(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+    int32_t layer = s_itemPriority[itemSlot][SECTION_LEG_UPPER];
+
+    if (update) {
+        if (!this->UpdateTextureSlot(SECTION_LEG_UPPER, displayRec, layer)) {
+            return;
+        }
+    } else {
+        this->FreeSectionTexture(SECTION_LEG_UPPER, layer);
+    }
+
+    if (layer != -1) {
+        this->m_dirtySections |= 1 << SECTION_LEG_UPPER;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+// OFFSET: 0x4F0400
+void CCharacterComponent::UpdateItemLL(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+    this->GetItemDisplayPriority(itemSlot, SECTION_LEG_LOWER, displayRec, update);
+}
+
+// OFFSET: 0x4F0420
+void CCharacterComponent::UpdateItemFO(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update) {
+    int32_t layer = s_itemPriority[itemSlot][SECTION_FOOT];
+
+    if ((this->m_flags & 0x10) == 0 && update) {
+        if (!this->UpdateTextureSlot(SECTION_FOOT, displayRec, layer)) {
+            return;
+        }
+    } else {
+        this->FreeSectionTexture(SECTION_FOOT, layer);
+    }
+
+    if (layer != -1) {
+        this->m_dirtySections |= 1 << SECTION_FOOT;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+// OFFSET: 0x4EC0E0
+void CCharacterComponent::ClearGuildTexture(int32_t layer) {
+    for (int32_t i = layer; i > 1; i--) {
+        CharacterSection* section = &this->m_section[SECTION_TORSO_UPPER];
+
+        if (section->layerTex[i]) {
+            TextureCacheDestroyTexture(section->layerTex[i]);
+            section->layerTex[i] = nullptr;
+        }
+
+        section->layerMask &= ~(1 << i);
+        section->layerItemDisplayId[i] = 0;
+
+        this->m_dirtySections |= 1 << SECTION_TORSO_UPPER;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+
+    for (int32_t i = layer; i > 1; i--) {
+        CharacterSection* section = &this->m_section[SECTION_TORSO_LOWER];
+
+        if (section->layerTex[i]) {
+            TextureCacheDestroyTexture(section->layerTex[i]);
+            section->layerTex[i] = nullptr;
+        }
+
+        section->layerMask &= ~(1 << i);
+        section->layerItemDisplayId[i] = 0;
+
+        this->m_dirtySections |= 1 << SECTION_TORSO_LOWER;
+
+        if (this->m_request) {
+            *static_cast<uint32_t*>(this->m_request) &= ~1u;
+            this->m_request = nullptr;
+        }
+
+        this->m_flags &= ~8u;
+    }
+}
+
+// OFFSET: 0x4EE460
+void CCharacterComponent::RemoveItem(ITEM_SLOT itemSlot) {
+    if (!this->m_itemDisplayID[itemSlot]) {
+        return;
+    }
+
+    this->m_flags |= 4;
+
+    switch (itemSlot) {
+    case ITEMSLOT_0: {
+        this->m_data.m_geosets[0] = GetConditionalGeoset(&this->m_data.m_preferences);
+
+        CM2Model* model = this->m_data.m_model;
+
+        if (model && model->IsLoaded(0, 0) && model->HasAttachment(11)) {
+            model->DetachAllChildrenById(11);
+        }
+
+        CharacterFacialHairStylesRec* facialHair = GetConditionalFacialHairStyle(&this->m_data.m_preferences);
+
+        if (facialHair) {
+            this->m_data.m_geosets[1] = facialHair->m_variationID + 100;
+            this->m_data.m_geosets[3] = facialHair->m_geoset[0] + 300;
+            this->m_data.m_geosets[2] = facialHair->m_geoset[1] + 200;
+            this->m_data.m_geosets[7] = 702;
+            this->m_data.m_geosets[16] = facialHair->m_geoset[2] + 1600;
+            this->m_data.m_geosets[17] = facialHair->m_geoset[3] + 1700;
+        }
+
+        this->m_itemDisplayID[itemSlot] = 0;
+
+        return;
+    }
+
+    case ITEMSLOT_1: {
+        CM2Model* model = this->m_data.m_model;
+
+        if (model && model->IsLoaded(0, 0) && model->HasAttachment(6)) {
+            model->DetachAllChildrenById(6);
+        }
+
+        model = this->m_data.m_model;
+
+        if (model && model->IsLoaded(0, 0) && model->HasAttachment(5)) {
+            model->DetachAllChildrenById(5);
+        }
+
+        this->m_itemDisplayID[itemSlot] = 0;
+
+        return;
+    }
+
+    case ITEMSLOT_3:
+        this->m_flags &= ~0x20u;
+
+        break;
+
+    case ITEMSLOT_9:
+        if ((this->m_flags & 0x40) != 0) {
+            this->m_itemDisplayID[itemSlot] = 0;
+
+            return;
+        }
+
+        this->m_data.m_geosets[15] = 1501;
+        this->ClearGuildTexture(4);
+
+        break;
+
+    case ITEMSLOT_10:
+        this->m_data.m_geosets[15] = 1501;
+        this->m_itemDisplayID[itemSlot] = 0;
+
+        return;
+
+    case ITEMSLOT_11: {
+        if (this->m_itemSlotForAttachSlot[26] == 11) {
+            CM2Model* model = this->m_data.m_model;
+
+            if (model && model->IsLoaded(0, 0) && model->HasAttachment(26)) {
+                model->DetachAllChildrenById(26);
+            }
+
+            this->m_itemSlotForAttachSlot[26] = -1;
+        }
+
+        this->m_itemDisplayID[itemSlot] = 0;
+
+        return;
+    }
+
+    default:
+        break;
+    }
+
+    ItemDisplayInfoRec* displayRec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[itemSlot]);
+
+    this->m_itemDisplayID[itemSlot] = 0;
+
+    for (int32_t i = 0; i < 8; i++) {
+        (this->*CCharacterComponent::s_itemFunc[i])(itemSlot, displayRec, false);
+    }
+}
+
+// OFFSET: 0x4EEB30
+void CCharacterComponent::RemoveItemByInventoryType(uint32_t inventoryType) {
+    ITEM_SLOT itemSlot;
+    uint32_t clearMask = 0;
+
+    switch (inventoryType) {
+    case 1:
+        this->RemoveItem(ITEMSLOT_0);
+
+        return;
+
+    case 3:
+        this->RemoveItem(ITEMSLOT_1);
+
+        return;
+
+    case 4:
+        itemSlot = ITEMSLOT_2;
+
+        break;
+
+    case 5:
+    case 20:
+        itemSlot = ITEMSLOT_3;
+        clearMask = 0x20;
+
+        break;
+
+    case 6:
+        itemSlot = ITEMSLOT_4;
+
+        break;
+
+    case 7:
+        itemSlot = ITEMSLOT_5;
+
+        break;
+
+    case 8:
+        itemSlot = ITEMSLOT_6;
+
+        break;
+
+    case 9:
+        itemSlot = ITEMSLOT_7;
+
+        break;
+
+    case 10:
+        itemSlot = ITEMSLOT_8;
+
+        break;
+
+    case 16:
+        if (this->m_itemDisplayID[ITEMSLOT_10]) {
+            this->m_flags |= 4;
+            this->m_data.m_geosets[15] = 1501;
+            this->m_itemDisplayID[ITEMSLOT_10] = 0;
+        }
+
+        return;
+
+    case 19:
+        if (this->m_itemDisplayID[ITEMSLOT_9]) {
+            this->m_flags |= 4;
+
+            if ((this->m_flags & 0x40) != 0) {
+                this->m_itemDisplayID[ITEMSLOT_9] = 0;
+            } else {
+                this->m_data.m_geosets[15] = 1501;
+                this->ClearGuildTexture(4);
+
+                ItemDisplayInfoRec* displayRec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[ITEMSLOT_9]);
+
+                this->m_itemDisplayID[ITEMSLOT_9] = 0;
+
+                for (int32_t i = 0; i < 8; i++) {
+                    (this->*CCharacterComponent::s_itemFunc[i])(ITEMSLOT_9, displayRec, false);
+                }
+            }
+        }
+
+        return;
+
+    default:
+        return;
+    }
+
+    if (!this->m_itemDisplayID[itemSlot]) {
+        return;
+    }
+
+    this->m_flags = (this->m_flags & ~clearMask) | 4;
+
+    ItemDisplayInfoRec* displayRec = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[itemSlot]);
+
+    this->m_itemDisplayID[itemSlot] = 0;
+
+    for (int32_t i = 0; i < 8; i++) {
+        (this->*CCharacterComponent::s_itemFunc[i])(itemSlot, displayRec, false);
+    }
+}
+
+// OFFSET: 0x4E7700
+void CCharacterComponent::ComponentCloseFingers(CM2Model* model, bool rightHand) {
+    uint32_t first = rightHand ? 13 : 8;
+    uint32_t last = rightHand ? 17 : 12;
+
+    for (uint32_t i = first; i <= last; i++) {
+        model->SetBoneSequence(i, 15, -1, 0, 1.0f, 0, 1);
+    }
+}
+
+// OFFSET: 0x4E7800
+bool CCharacterComponent::ComposeHelmModelFilePath(const ChrRacesRec* racesRec, const ItemDisplayInfoRec* displayRec, char* dest, uint32_t destSize) {
+    char path[260];
+
+    strcpy(path, "Item\\ObjectComponents\\Head\\");
+    strcat(path, displayRec->m_modelName[0]);
+
+    uint32_t length = strlen(path);
+    char* cursor = &path[length];
+
+    while (cursor > path && *cursor != '.') {
+        cursor--;
+    }
+
+    if (cursor == path) {
+        cursor = &path[length];
+    }
+
+    *cursor = '_';
+    strcpy(cursor + 1, racesRec->m_clientPrefix);
+    strcat(path, s_fileDecorations[this->m_data.m_preferences.sexID]);
+    strcat(path, ".mdx");
+    strcpy(dest, path);
+
+    return 1;
+}
+
+// OFFSET: 0x4EEFA0
+bool CCharacterComponent::GetHelmModelFilePath(ItemDisplayInfoRec* rec, ItemDisplayInfoRec** displayRec) {
+    if (!this->m_itemDisplayID[ITEMSLOT_0]) {
+        return 0;
+    }
+
+    ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[ITEMSLOT_0]);
+
+    if (!found) {
+        return 0;
+    }
+
+    *rec = *found;
+
+    if (!rec->m_modelName[0][0]) {
+        return 0;
+    }
+
+    *displayRec = rec;
+
+    ChrRacesRec* racesRec = g_chrRacesDB.GetRecord(this->m_data.m_preferences.raceID);
+
+    if (!racesRec) {
+        return 0;
+    }
+
+    return this->ComposeHelmModelFilePath(racesRec, rec, CCharacterComponent::s_pathEnd, 260);
+}
+
+// OFFSET: 0x4EA8F0
+void CCharacterComponent::ComponentUtilAddItemVisual(CM2Model* model, int32_t itemVisualId) {
+    while (model->m_attachList) {
+        model->m_attachList->DetachFromParent();
+    }
+
+    ItemVisualsRec* visuals = g_itemVisualsDB.GetRecord(itemVisualId);
+
+    if (!visuals) {
+        return;
+    }
+
+    for (int32_t i = 0; i < 5; i++) {
+        ItemVisualEffectsRec* effect = g_itemVisualEffectsDB.GetRecord(visuals->m_slot[i]);
+
+        if (!effect || !effect->m_model[0]) {
+            continue;
+        }
+
+        strcpy(CCharacterComponent::s_pathEnd, effect->m_model);
+
+        CM2Model* visual = model->m_scene->CreateModel(CCharacterComponent::s_path, 0);
+
+        if (visual) {
+            visual->AttachToParent(model, i, nullptr, 0);
+            visual->Release();
+        }
+    }
+}
+
+// OFFSET: 0x4EAA70
+void CCharacterComponent::AddLink(CM2Model* parent, uint32_t attachmentId, const char* modelPath, const char* texturePath, int32_t itemVisualId, const ItemDisplayInfoRec* displayRec) {
+    if (!parent) {
+        return;
+    }
+
+    CM2Model* model = parent->m_scene->CreateModel(modelPath, 0);
+
+    if (!model) {
+        return;
+    }
+
+    HTEXTURE texture = TextureCreate(texturePath, CGxTexFlags(GxTex_LinearMipNearest, 0, 0, 0, 0, 0, 1), &CCharacterComponent::s_status, 0);
+
+    if (!texture) {
+        model->Release();
+
+        return;
+    }
+
+    model->ReplaceTexture(2, texture);
+    HandleClose(texture);
+
+    if (itemVisualId > 0) {
+        this->ComponentUtilAddItemVisual(model, itemVisualId);
+    }
+
+    parent->DetachAllChildrenById(attachmentId);
+    model->AttachToParent(parent, attachmentId, nullptr, 0);
+
+    if (attachmentId == 1) {
+        this->ComponentCloseFingers(parent, 0);
+    } else if (attachmentId == 2) {
+        this->ComponentCloseFingers(parent, 1);
+    }
+
+    ReplaceParticleColor(displayRec->m_particleColorID, model);
+    model->Release();
+}
+
+// OFFSET: 0x4EF020
+bool CCharacterComponent::IsHelmModelCorrect() {
+    CM2Model* child = this->m_data.m_model->m_attachList;
+
+    while (child && child->m_attachmentId != 11) {
+        child = child->m_attachNext;
+    }
+
+    if (!child) {
+        return false;
+    }
+
+    ItemDisplayInfoRec rec;
+    ItemDisplayInfoRec* displayRec;
+
+    if (!this->GetHelmModelFilePath(&rec, &displayRec)) {
+        return false;
+    }
+
+    strcpy(OsPathRemoveExtension(CCharacterComponent::s_path), "m2");
+
+    return SStrCmpI(child->m_shared->m_filePath, CCharacterComponent::s_path, 0x7FFFFFFF) == 0;
+}
+
+// OFFSET: 0x4EF0D0
+void CCharacterComponent::AddHelm(int32_t itemVisualId) {
+    ItemDisplayInfoRec rec;
+    ItemDisplayInfoRec* displayRec;
+
+    if (!this->GetHelmModelFilePath(&rec, &displayRec)) {
+        return;
+    }
+
+    strcpy(CCharacterComponent::s_buffer, "Item\\ObjectComponents\\Head\\");
+    strcat(CCharacterComponent::s_buffer, displayRec->m_modelTexture[0]);
+    strcat(CCharacterComponent::s_buffer, ".blp");
+    strcpy(CCharacterComponent::s_path2, CCharacterComponent::s_buffer);
+
+    this->AddLink(this->m_data.m_model, 11, CCharacterComponent::s_path, CCharacterComponent::s_path2, itemVisualId, displayRec);
+
+    HelmetGeosetVisDataRec* visData = g_helmetGeosetVisDataDB.GetRecord(displayRec->m_helmetGeosetVisID[this->m_data.m_preferences.sexID]);
+
+    if (!visData) {
+        return;
+    }
+
+    uint32_t raceMask = 1 << this->m_data.m_preferences.raceID;
+
+    if (raceMask & visData->m_hideGeoset[0]) {
+        this->m_data.m_geosets[0] = 1;
+    }
+
+    if (raceMask & visData->m_hideGeoset[1]) {
+        this->m_data.m_geosets[1] = 101;
+    }
+
+    if (raceMask & visData->m_hideGeoset[2]) {
+        this->m_data.m_geosets[2] = 201;
+    }
+
+    if (raceMask & visData->m_hideGeoset[3]) {
+        this->m_data.m_geosets[3] = 301;
+    }
+
+    if (raceMask & visData->m_hideGeoset[4]) {
+        this->m_data.m_geosets[7] = 701;
+    }
+
+    if (raceMask & visData->m_hideGeoset[5]) {
+        this->m_data.m_geosets[16] = 1601;
+    }
+
+    if (raceMask & visData->m_hideGeoset[6]) {
+        this->m_data.m_geosets[17] = 1701;
+    }
+}
+
+// OFFSET: 0x4EF250
+int32_t CCharacterComponent::GetQuiverModelFilePath(ItemDisplayInfoRec* rec, ItemDisplayInfoRec** displayRec) {
+    if (!this->m_itemDisplayID[ITEMSLOT_11]) {
+        return 0;
+    }
+
+    ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[ITEMSLOT_11]);
+
+    if (!found) {
+        return 0;
+    }
+
+    *rec = *found;
+
+    if (!rec->m_modelName[0][0]) {
+        return 0;
+    }
+
+    *displayRec = rec;
+
+    strcpy(CCharacterComponent::s_buffer, "Item\\ObjectComponents\\Quiver\\");
+    strcat(CCharacterComponent::s_buffer, (*displayRec)->m_modelName[0]);
+    strcpy(CCharacterComponent::s_pathEnd, CCharacterComponent::s_buffer);
+
+    return 1;
+}
+
+// OFFSET: 0x4EF300
+bool CCharacterComponent::IsQuiverModelCorrect() {
+    CM2Model* child = this->m_data.m_model->m_attachList;
+
+    while (child && child->m_attachmentId != 26) {
+        child = child->m_attachNext;
+    }
+
+    if (!child) {
+        return false;
+    }
+
+    ItemDisplayInfoRec rec;
+    ItemDisplayInfoRec* displayRec;
+
+    if (!this->GetQuiverModelFilePath(&rec, &displayRec)) {
+        return false;
+    }
+
+    strcpy(OsPathRemoveExtension(CCharacterComponent::s_path), "m2");
+
+    return SStrCmpI(child->m_shared->m_filePath, CCharacterComponent::s_path, 0x7FFFFFFF) == 0;
+}
+
+// OFFSET: 0x4EF3B0
+void CCharacterComponent::AddQuiver(int32_t itemVisualId) {
+    ItemDisplayInfoRec rec;
+    ItemDisplayInfoRec* displayRec;
+
+    if (!this->GetQuiverModelFilePath(&rec, &displayRec)) {
+        return;
+    }
+
+    strcpy(CCharacterComponent::s_buffer, "Item\\ObjectComponents\\Quiver\\");
+    strcat(CCharacterComponent::s_buffer, displayRec->m_modelTexture[0]);
+    strcat(CCharacterComponent::s_buffer, ".blp");
+    strcpy(CCharacterComponent::s_path2, CCharacterComponent::s_buffer);
+
+    this->m_itemSlotForAttachSlot[26] = ITEMSLOT_11;
+
+    this->AddLink(this->m_data.m_model, 26, CCharacterComponent::s_path, CCharacterComponent::s_path2, itemVisualId, displayRec);
+}
+
+// OFFSET: 0x4EF4B0
+int32_t CCharacterComponent::BuildShoulderItemPaths(ItemDisplayInfoRec* rec, ItemDisplayInfoRec** displayRec, char* leftModel, char* rightModel, char* leftTexture, char* rightTexture) {
+    *leftModel = 0;
+    *rightModel = 0;
+
+    if (leftTexture) {
+        *leftTexture = 0;
+    }
+
+    if (rightTexture) {
+        *rightTexture = 0;
+    }
+
+    if (!this->m_itemDisplayID[ITEMSLOT_1]) {
+        return 0;
+    }
+
+    ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[ITEMSLOT_1]);
+
+    if (!found) {
+        return 0;
+    }
+
+    *rec = *found;
+    *displayRec = rec;
+
+    if ((*displayRec)->m_modelName[0][0]) {
+        strcpy(CCharacterComponent::s_buffer, "Item\\ObjectComponents\\Shoulder\\");
+        strcat(CCharacterComponent::s_buffer, (*displayRec)->m_modelName[0]);
+        strcpy(leftModel, CCharacterComponent::s_buffer);
+
+        if (leftTexture) {
+            strcpy(CCharacterComponent::s_buffer, "Item\\ObjectComponents\\Shoulder\\");
+            strcat(CCharacterComponent::s_buffer, (*displayRec)->m_modelTexture[0]);
+            strcat(CCharacterComponent::s_buffer, ".blp");
+            strcpy(leftTexture, CCharacterComponent::s_buffer);
+        }
+    }
+
+    if ((*displayRec)->m_modelName[1][0]) {
+        strcpy(CCharacterComponent::s_buffer, "Item\\ObjectComponents\\Shoulder\\");
+        strcat(CCharacterComponent::s_buffer, (*displayRec)->m_modelName[1]);
+        strcpy(rightModel, CCharacterComponent::s_buffer);
+
+        if (rightTexture) {
+            strcpy(CCharacterComponent::s_buffer, "Item\\ObjectComponents\\Shoulder\\");
+            strcat(CCharacterComponent::s_buffer, (*displayRec)->m_modelTexture[1]);
+            strcat(CCharacterComponent::s_buffer, ".blp");
+            strcpy(rightTexture, CCharacterComponent::s_buffer);
+        }
+    }
+
+    return 1;
+}
+
+// OFFSET: 0x4EF710
+int32_t CCharacterComponent::AreShoulderModelsCorrect() {
+    CM2Model* left = this->m_data.m_model->m_attachList;
+
+    while (left && left->m_attachmentId != 6) {
+        left = left->m_attachNext;
+    }
+
+    if (!left) {
+        return 0;
+    }
+
+    CM2Model* right = this->m_data.m_model->m_attachList;
+
+    while (right && right->m_attachmentId != 5) {
+        right = right->m_attachNext;
+    }
+
+    if (!right) {
+        return 0;
+    }
+
+    ItemDisplayInfoRec rec;
+    ItemDisplayInfoRec* displayRec;
+
+    if (!this->BuildShoulderItemPaths(&rec, &displayRec, CCharacterComponent::s_path, CCharacterComponent::s_path2, nullptr, nullptr)) {
+        return 0;
+    }
+
+    strcpy(OsPathRemoveExtension(CCharacterComponent::s_path), "m2");
+    strcpy(OsPathRemoveExtension(CCharacterComponent::s_path2), "m2");
+
+    if (SStrCmpI(left->m_shared->m_filePath, CCharacterComponent::s_path, 0x7FFFFFFF)) {
+        return 0;
+    }
+
+    if (SStrCmpI(right->m_shared->m_filePath, CCharacterComponent::s_path2, 0x7FFFFFFF)) {
+        return 0;
+    }
+
+    return 1;
+}
+
+// OFFSET: 0x4EF840
+void CCharacterComponent::AddShoulders(int32_t itemVisualId) {
+    char leftModel[260];
+    char rightModel[260];
+    char leftTexture[260];
+    char rightTexture[260];
+
+    ItemDisplayInfoRec rec;
+    ItemDisplayInfoRec* displayRec;
+
+    if (!this->BuildShoulderItemPaths(&rec, &displayRec, leftModel, rightModel, leftTexture, rightTexture)) {
+        return;
+    }
+
+    if (leftModel[0]) {
+        this->AddLink(this->m_data.m_model, 6, leftModel, leftTexture, itemVisualId, displayRec);
+    }
+
+    if (rightModel[0]) {
+        this->AddLink(this->m_data.m_model, 5, rightModel, rightTexture, itemVisualId, displayRec);
+    }
+}
+
+// OFFSET: 0x4F21E0
+void CCharacterComponent::AddCape() {
+    if (!this->m_itemDisplayID[ITEMSLOT_10]) {
+        return;
+    }
+
+    ItemDisplayInfoRec rec;
+    ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(this->m_itemDisplayID[ITEMSLOT_10]);
+
+    if (!found) {
+        return;
+    }
+
+    rec = *found;
+
+    if (!rec.m_modelTexture[0][0]) {
+        return;
+    }
+
+    strcpy(CCharacterComponent::s_buffer, "Item\\ObjectComponents\\Cape\\");
+    strcat(CCharacterComponent::s_buffer, rec.m_modelTexture[0]);
+    strcat(CCharacterComponent::s_buffer, ".blp");
+    strcpy(CCharacterComponent::s_path, CCharacterComponent::s_buffer);
+
+    CStatus status;
+
+    HTEXTURE texture = TextureCreate(CCharacterComponent::s_path, &status);
+
+    if (texture) {
+        this->m_data.m_model->ReplaceTexture(2, texture);
+        HandleClose(texture);
+    }
+}
+
+// OFFSET: 0x4F2640
+void CCharacterComponent::AddItem(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, int32_t itemVisualId) {
+    this->m_flags |= 4;
+    this->m_itemDisplayID[itemSlot] = displayRec->m_ID;
+
+    switch (itemSlot) {
+    case ITEMSLOT_0:
+        if (!this->IsHelmModelCorrect()) {
+            if (this->m_itemDisplayID[ITEMSLOT_0]) {
+                CM2Model* model = this->m_data.m_model;
+
+                if (model && model->IsLoaded(0, 0) && model->HasAttachment(11)) {
+                    model->DetachAllChildrenById(11);
+                }
+            }
+
+            this->AddHelm(itemVisualId);
+        }
+
+        return;
+
+    case ITEMSLOT_1:
+        if (!this->AreShoulderModelsCorrect()) {
+            if (this->m_itemDisplayID[ITEMSLOT_1]) {
+                CM2Model* model = this->m_data.m_model;
+
+                if (model && model->IsLoaded(0, 0) && model->HasAttachment(6)) {
+                    model->DetachAllChildrenById(6);
+                }
+
+                model = this->m_data.m_model;
+
+                if (model && model->IsLoaded(0, 0) && model->HasAttachment(5)) {
+                    model->DetachAllChildrenById(5);
+                }
+            }
+
+            this->AddShoulders(itemVisualId);
+        }
+
+        return;
+
+    case ITEMSLOT_3:
+        this->m_flags = (this->m_flags & ~0x20u) | (displayRec->m_flags & 4 ? 0x20 : 0);
+
+        break;
+
+    case ITEMSLOT_10:
+        this->AddCape();
+
+        return;
+
+    case ITEMSLOT_11:
+        if (!this->IsQuiverModelCorrect()) {
+            if (this->m_itemDisplayID[ITEMSLOT_11]) {
+                CM2Model* model = this->m_data.m_model;
+
+                if (model && model->IsLoaded(0, 0) && model->HasAttachment(26)) {
+                    model->DetachAllChildrenById(26);
+                }
+            }
+
+            this->AddQuiver(itemVisualId);
+        }
+
+        return;
+
+    default:
+        break;
+    }
+
+    if ((this->m_data.m_flags & 1) != 0) {
+        return;
+    }
+
+    for (int32_t i = 0; i < 8; i++) {
+        if (displayRec->m_texture[i][0] && s_itemPriority[itemSlot][i] != -1) {
+            (this->*CCharacterComponent::s_itemFunc[i])(itemSlot, displayRec, true);
+        }
+    }
+}
+
+// OFFSET: 0x4F2830
+void CCharacterComponent::AddItem(ITEM_SLOT itemSlot, int32_t itemDisplayId, int32_t itemVisualId) {
+    if (itemDisplayId <= 0) {
+        return;
+    }
+
+    ItemDisplayInfoRec* displayRec = g_itemDisplayInfoDB.GetRecord(itemDisplayId);
+
+    if (!displayRec) {
+        return;
+    }
+
+    this->AddItem(itemSlot, displayRec, itemVisualId);
+}
+
+// OFFSET: 0x4E79A0
+void CCharacterComponent::RemoveLinkpt(CM2Model* model, uint32_t attachmentId) {
+    if (attachmentId == -1) {
+        return;
+    }
+
+    if (attachmentId == 0 || attachmentId == 2) {
+        for (uint32_t i = 13; i <= 17; i++) {
+            model->UnsetBoneSequence(i, 0, 1);
+        }
+    } else if (attachmentId == 1) {
+        for (uint32_t i = 8; i <= 12; i++) {
+            model->UnsetBoneSequence(i, 0, 1);
+        }
+    }
+
+    if (model && model->IsLoaded(0, 0) && model->HasAttachment(attachmentId)) {
+        model->DetachAllChildrenById(attachmentId);
+    }
+}
+
+// OFFSET: 0x4EACD0
+uint32_t CCharacterComponent::AddHandItem(CM2Model* model, const ItemDisplayInfoRec* displayRec, uint32_t attachmentId, int32_t sheatheType, bool useSheathed, bool isShield, bool treatAsMainHand, int32_t itemVisualId) {
+    if (!model || !displayRec || attachmentId > 0x12) {
+        return -1;
+    }
+
+    const char* prefix = "Item\\ObjectComponents\\Weapon\\";
+
+    uint32_t hand;
+    uint32_t sheathed;
+
+    if (attachmentId == 15 || (attachmentId == 17 && treatAsMainHand)) {
+        hand = 1;
+
+        switch (sheatheType) {
+        case 1:
+            sheathed = 26;
+            break;
+
+        case 2:
+            sheathed = 30;
+            break;
+
+        case 3:
+            sheathed = 32;
+            break;
+
+        case 4:
+            sheathed = 28;
+            break;
+
+        default:
+            sheathed = -1;
+            break;
+        }
+    } else if (attachmentId == 16 || attachmentId == 17) {
+        hand = 2;
+
+        switch (sheatheType) {
+        case 1:
+            sheathed = 27;
+            break;
+
+        case 2:
+            sheathed = 31;
+            break;
+
+        case 3:
+            sheathed = 33;
+            break;
+
+        case 4:
+            sheathed = 28;
+            break;
+
+        default:
+            sheathed = -1;
+            break;
+        }
+
+        if (attachmentId == 16 && isShield) {
+            prefix = "Item\\ObjectComponents\\Shield\\";
+            hand = 0;
+        }
+    } else {
+        return -1;
+    }
+
+    this->RemoveLinkpt(model, hand);
+    this->RemoveLinkpt(model, sheathed);
+
+    uint32_t attachment = useSheathed ? sheathed : hand;
+
+    if (model->IsLoaded(0, 0) && !model->HasAttachment(attachment)) {
+        return -1;
+    }
+
+    strcpy(CCharacterComponent::s_buffer, prefix);
+    strcat(CCharacterComponent::s_buffer, displayRec->m_modelName[0]);
+    strcpy(CCharacterComponent::s_path, CCharacterComponent::s_buffer);
+
+    strcpy(CCharacterComponent::s_buffer, prefix);
+    strcat(CCharacterComponent::s_buffer, displayRec->m_modelTexture[0]);
+    strcat(CCharacterComponent::s_buffer, ".blp");
+    strcpy(CCharacterComponent::s_path2, CCharacterComponent::s_buffer);
+
+    this->AddLink(model, attachment, CCharacterComponent::s_path, CCharacterComponent::s_path2, itemVisualId ? itemVisualId : displayRec->m_itemVisual, displayRec);
+
+    return attachment;
+}
+
+// OFFSET: 0x4EF900
+void CCharacterComponent::SetHandItemDisplay(int32_t itemDisplayId, uint32_t handIndex, uint32_t attachmentId, bool isShield) {
+    ItemDisplayInfoRec* displayRec = g_itemDisplayInfoDB.GetRecord(itemDisplayId);
+
+    if (!displayRec) {
+        return;
+    }
+
+    this->m_handItemDisplayID[handIndex] = itemDisplayId;
+
+    this->AddHandItem(this->m_data.m_model, displayRec, attachmentId, 0, 0, isShield, 0, 0);
+}
+
+// OFFSET: 0x4EF970
+void CCharacterComponent::SetMainHandItemDisplay(int32_t itemDisplayId) {
+    this->SetHandItemDisplay(itemDisplayId, 0, 15, 0);
+}
+
+// OFFSET: 0x4EF990
+void CCharacterComponent::SetOffHandItemDisplay(int32_t itemDisplayId) {
+    this->SetHandItemDisplay(itemDisplayId, 1, 16, 0);
+}
+
+// OFFSET: 0x4EF9B0
+void CCharacterComponent::SetShieldItemDisplay(int32_t itemDisplayId) {
+    this->SetHandItemDisplay(itemDisplayId, 1, 16, 1);
+}
+
+// OFFSET: 0x4F29C0
+void CCharacterComponent::AddItemByType(uint32_t inventoryType, int32_t itemDisplayId) {
+    this->RemoveItemByInventoryType(inventoryType);
+
+    if (itemDisplayId <= 0) {
+        return;
+    }
+
+    switch (inventoryType) {
+    case 1:
+        this->AddItem(ITEMSLOT_0, itemDisplayId, 0);
+        break;
+
+    case 3:
+        this->AddItem(ITEMSLOT_1, itemDisplayId, 0);
+        break;
+
+    case 4:
+        this->AddItem(ITEMSLOT_2, itemDisplayId, 0);
+        break;
+
+    case 5:
+    case 20:
+        this->AddItem(ITEMSLOT_3, itemDisplayId, 0);
+        break;
+
+    case 6:
+        this->AddItem(ITEMSLOT_4, itemDisplayId, 0);
+        break;
+
+    case 7:
+        this->AddItem(ITEMSLOT_5, itemDisplayId, 0);
+        break;
+
+    case 8:
+        this->AddItem(ITEMSLOT_6, itemDisplayId, 0);
+        break;
+
+    case 9:
+        this->AddItem(ITEMSLOT_7, itemDisplayId, 0);
+        break;
+
+    case 10:
+        this->AddItem(ITEMSLOT_8, itemDisplayId, 0);
+        break;
+
+    case 13:
+    case 17:
+    case 21:
+        this->SetMainHandItemDisplay(itemDisplayId);
+        break;
+
+    case 14:
+        this->SetShieldItemDisplay(itemDisplayId);
+        break;
+
+    case 16:
+        this->AddItem(ITEMSLOT_10, itemDisplayId, 0);
+        break;
+
+    case 19:
+        this->AddItem(ITEMSLOT_9, itemDisplayId, 0);
+        break;
+
+    case 22:
+        this->SetOffHandItemDisplay(itemDisplayId);
+        break;
+
+    default:
+        break;
+    }
+}
+
+// OFFSET: 0x4F2880
+void CCharacterComponent::AddItemBySlot(int32_t itemSlot, int32_t itemDisplayId, int32_t itemVisualId) {
+    switch (itemSlot) {
+    case 0:
+        this->AddItem(ITEMSLOT_0, itemDisplayId, itemVisualId);
+        break;
+
+    case 2:
+        this->AddItem(ITEMSLOT_1, itemDisplayId, itemVisualId);
+        break;
+
+    case 3:
+        this->AddItem(ITEMSLOT_2, itemDisplayId, itemVisualId);
+        break;
+
+    case 4:
+        this->AddItem(ITEMSLOT_3, itemDisplayId, itemVisualId);
+        break;
+
+    case 5:
+        this->AddItem(ITEMSLOT_4, itemDisplayId, itemVisualId);
+        break;
+
+    case 6:
+        this->AddItem(ITEMSLOT_5, itemDisplayId, itemVisualId);
+        break;
+
+    case 7:
+        this->AddItem(ITEMSLOT_6, itemDisplayId, itemVisualId);
+        break;
+
+    case 8:
+        this->AddItem(ITEMSLOT_7, itemDisplayId, itemVisualId);
+        break;
+
+    case 9:
+        this->AddItem(ITEMSLOT_8, itemDisplayId, itemVisualId);
+        break;
+
+    case 14:
+        this->AddItem(ITEMSLOT_10, itemDisplayId, itemVisualId);
+        break;
+
+    case 18:
+        this->AddItem(ITEMSLOT_9, itemDisplayId, itemVisualId);
+        break;
+
+    default:
+        break;
+    }
+}
+
+// OFFSET: 0x4EB070
+void CCharacterComponent::RemoveHandItem(CM2Model* model, uint32_t attachmentId, int32_t sheatheType, bool isShield) {
+    if (!model || attachmentId - 14 > 4) {
+        return;
+    }
+
+    uint32_t hand = -1;
+    uint32_t sheathed = -1;
+
+    if (attachmentId == 15) {
+        hand = 1;
+
+        switch (sheatheType) {
+        case 1:
+            sheathed = 26;
+            break;
+
+        case 2:
+            sheathed = 30;
+            break;
+
+        case 3:
+            sheathed = 32;
+            break;
+
+        case 4:
+            sheathed = 28;
+            break;
+
+        default:
+            sheathed = -1;
+            break;
+        }
+    } else if (attachmentId > 15 && attachmentId <= 17) {
+        hand = 2;
+
+        switch (sheatheType) {
+        case 1:
+            sheathed = 27;
+            break;
+
+        case 2:
+            sheathed = 31;
+            break;
+
+        case 3:
+            sheathed = 33;
+            break;
+
+        case 4:
+            sheathed = 28;
+            break;
+
+        default:
+            sheathed = -1;
+            break;
+        }
+
+        if (isShield) {
+            hand = 0;
+        }
+    }
+
+    this->RemoveLinkpt(model, hand);
+    this->RemoveLinkpt(model, sheathed);
 }

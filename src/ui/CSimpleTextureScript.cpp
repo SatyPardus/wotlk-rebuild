@@ -45,10 +45,10 @@ int32_t CSimpleTexture_SetVertexColor(lua_State* L) {
     int32_t type = CSimpleTexture::GetObjectType();
     CSimpleTexture* texture = static_cast<CSimpleTexture*>(FrameScript_GetObjectThis(L, type));
 
-    CImVector curColor = { 0 };
+    CImVector curColor = CImVector(0);
     texture->GetVertexColor(curColor);
 
-    CImVector newColor = { 0 };
+    CImVector newColor = CImVector(0);
     FrameScript_GetColor(L, 2, newColor);
     if (!lua_isnumber(L, 5)) {
         newColor.a = curColor.a;

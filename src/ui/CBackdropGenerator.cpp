@@ -139,12 +139,12 @@ void CBackdropGenerator::LoadXML(XMLNode* node, CStatus* status) {
             }
 
         } else if (!SStrCmpI(child->GetName(), "Color", STORM_MAX_STR)) {
-            CImVector color = { 0 };
+            CImVector color = CImVector(0);
             LoadXML_Color(child, color);
             this->SetVertexColor(color);
 
         } else if (!SStrCmpI(child->GetName(), "BorderColor", STORM_MAX_STR)) {
-            CImVector borderColor = { 0 };
+            CImVector borderColor = CImVector(0);
             LoadXML_Color(child, borderColor);
             this->SetBorderVertexColor(borderColor);
 

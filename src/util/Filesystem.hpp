@@ -7,6 +7,7 @@
 void OsBuildFontFilePath(const char*, char*, size_t);
 
 char* OsPathFindExtensionWithDot(char*);
+char* OsPathRemoveExtension(char* path);
 
 void OsFileToNativeSlashes(char* path, size_t size = (size_t) -1);
 void OsFileToForwardSlashes(char* path, size_t size = (size_t) -1);

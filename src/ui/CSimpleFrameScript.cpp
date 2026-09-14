@@ -845,7 +845,7 @@ int32_t CSimpleFrame_SetBackdropColor(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     auto object = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
 
-    CImVector color = { 0 };
+    CImVector color = CImVector(0);
     FrameScript_GetColor(L, 2, color);
 
     if (object->m_backdrop) {
@@ -865,7 +865,7 @@ int32_t CSimpleFrame_SetBackdropBorderColor(lua_State* L) {
     int32_t type = CSimpleFrame::GetObjectType();
     auto object = static_cast<CSimpleFrame*>(FrameScript_GetObjectThis(L, type));
 
-    CImVector color = { 0 };
+    CImVector color = CImVector(0);
     FrameScript_GetColor(L, 2, color);
 
     if (object->m_backdrop) {

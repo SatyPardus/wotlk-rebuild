@@ -198,7 +198,7 @@ void CSimpleTexture::LoadXML(const XMLNode* node, CStatus* status) {
 
     int32_t wrapU = 0;
     int32_t wrapV = 0;
-    CImVector color = { 0 };
+    CImVector color = CImVector(0);
 
     const char* horizTileAttr = node->GetAttributeByName("horizTile");
     if (horizTileAttr && *horizTileAttr) {
@@ -458,7 +458,7 @@ void CSimpleTexture::SetAlpha(float alpha) {
     // Clamp
     alpha = std::max(0.0f, std::min(alpha, 1.0f));
 
-    CImVector color = { 0 };
+    CImVector color = CImVector(0);
     this->GetVertexColor(color);
     color.a = alpha * 255.0f;
     this->SetVertexColor(color);

@@ -39,7 +39,7 @@ class CSimpleModel : public CSimpleFrame {
         float m_facing = 0.0f;
         float m_scale = 1.0f;
         uint32_t m_flags = 0;
-        CImVector m_fogColor = { 0 };
+        CImVector m_fogColor = CImVector(0);
         float m_fogNear = 0.0f;
         float m_fogFar = 1.0f;
         CAaBox m_bounds;

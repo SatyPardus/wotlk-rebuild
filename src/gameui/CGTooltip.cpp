@@ -21,14 +21,14 @@ int32_t CGTooltip::s_objectType;
 CImVector CGTooltip::s_defaultColor{ 0, 210, 255, 255 };
 
 CImVector CGTooltip::s_itemQualityColors[8] = {
-    0xFF9D9D9D,
-    0xFFFFFFFF,
-    0xFF1EFF00,
-    0xFF0070DD,
-    0xFFA335EE,
-    0xFFFF8000,
-    0xFFE6CC80,
-    0xFFE6CC80
+    CImVector(0xFF9D9D9D),
+    CImVector(0xFFFFFFFF),
+    CImVector(0xFF1EFF00),
+    CImVector(0xFF0070DD),
+    CImVector(0xFFA335EE),
+    CImVector(0xFFFF8000),
+    CImVector(0xFFE6CC80),
+    CImVector(0xFFE6CC80)
 };
 
 const char* CGTooltip::s_itemQualityColorStrings[8] = {

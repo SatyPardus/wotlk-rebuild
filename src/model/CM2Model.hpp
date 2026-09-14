@@ -109,10 +109,10 @@ struct CM2ModelCall {
 
         // type 11 -- ReplaceParticleColor (0x8254D0)
         struct {
-            uint32_t a2;
-            uint32_t a3;
-            uint32_t a4;
-            uint32_t a5;
+            uint32_t colorIndex;
+            CImVector start;
+            CImVector mid;
+            CImVector end;
         } replaceParticleColor;
 
         // type 12 -- SetEmittersEnabled (0x827A76)
@@ -339,6 +339,7 @@ class CM2Model {
         void SetGeometryVisible(uint32_t start, uint32_t end, int32_t visible);
         void ReplaceTexture(uint32_t textureId, HTEXTURE texture);
         void GetCollisionFacets(CAaBox* box, C44Matrix* mat, TSGrowableArray<CFacet>* facets);
+        void ReplaceParticleColor(uint32_t colorIndex, CImVector start, CImVector mid, CImVector end);
 };
 
 #endif

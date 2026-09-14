@@ -200,8 +200,149 @@ void CCharacterCreation::CalcClasses(uint32_t raceID) {
     }
 }
 
+// OFFSET: 0x4E0FD0
 void CCharacterCreation::Dress() {
-    // TODO
+    if (CCharacterCreation::m_existingCharacterIndex >= 0) {
+        CharacterSelectionDisplay* display = CCharacterSelection::GetCharacterDisplay(CCharacterCreation::m_existingCharacterIndex);
+
+        if (display) {
+            for (uint32_t slot = 0; slot < 23; slot++) {
+                uint32_t itemDisplayId = display->m_characterInfo.items[slot].displayID;
+
+                if (!itemDisplayId) {
+                    continue;
+                }
+
+                bool skip;
+
+                if (display->m_characterInfo.classID == 3) {
+                    if (slot == 15) {
+                        continue;
+                    }
+
+                    skip = slot == 16;
+                } else {
+                    skip = slot == 17;
+                }
+
+                if (skip || slot == 0) {
+                    continue;
+                }
+
+                if ((display->m_characterInfo.flags & 0x800) && slot == 14) {
+                    continue;
+                }
+
+                ItemDisplayInfoRec rec;
+                ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(itemDisplayId);
+
+                if (found) {
+                    rec = *found;
+                }
+
+                int32_t itemVisualId = display->m_characterInfo.items[slot].auraID;
+
+                if (found && g_itemVisualsDB.GetRecord(rec.m_itemVisual)) {
+                    itemVisualId = 0;
+                }
+
+                if (slot != 15 && slot != 16 && slot != 17) {
+                    CCharacterCreation::m_character->AddItemBySlot(slot, itemDisplayId, itemVisualId);
+                } else if (found) {
+                    CCharacterCreation::m_character->AddHandItem(CCharacterCreation::m_character->m_data.m_model, &rec, slot, 0, 0, display->m_characterInfo.items[slot].type == 14, 0, itemVisualId);
+                }
+
+                if (slot == 18 && found && (rec.m_flags & 1)) {
+                    // TODO: GuildGetGuildTabard (0x7EADA0) and ApplyGuildColor (0x4EC1C0)
+                    //
+                    // int32_t emblemStyle;
+                    // int32_t emblemColor;
+                    // int32_t borderStyle;
+                    // int32_t borderColor;
+                    // int32_t backgroundColor;
+                    //
+                    // if (GuildGetGuildTabard(display->m_characterInfo.guid, display->m_characterInfo.guildID, 0, 0, &emblemStyle, &emblemColor, &borderStyle, &borderColor, &backgroundColor)) {
+                    //     CCharacterCreation::m_character->ApplyGuildColor(emblemStyle, emblemColor, borderStyle, borderColor, backgroundColor);
+                    // }
+                }
+            }
+
+            return;
+        }
+    }
+
+    for (uint32_t i = 0; i < 12; i++) {
+        CCharacterCreation::m_character->RemoveItem(static_cast<ITEM_SLOT>(i));
+    }
+
+    CM2Model* model = CCharacterCreation::m_character->m_data.m_model;
+
+    CCharacterCreation::m_character->RemoveHandItem(model, 15, 0, 0);
+    CCharacterCreation::m_character->RemoveHandItem(model, 16, 0, 0);
+    CCharacterCreation::m_character->RemoveHandItem(model, 16, 0, 1);
+    CCharacterCreation::m_character->RemoveHandItem(model, 17, 0, 0);
+
+    CharStartOutfitRec* outfit = nullptr;
+
+    for (int32_t i = 0; i < g_charStartOutfitDB.GetNumRecords(); i++) {
+        CharStartOutfitRec* row = g_charStartOutfitDB.GetRecordByIndex(i);
+
+        if (row && row->m_raceID == CCharacterCreation::m_character->m_data.m_preferences.raceID && row->m_classID == CCharacterCreation::m_selectedClassID && row->m_sexID == CCharacterCreation::m_character->m_data.m_preferences.sexID) {
+            outfit = row;
+            break;
+        }
+    }
+
+    if (!outfit) {
+        return;
+    }
+
+    for (int32_t i = 0; i < 24; i++) {
+        if (outfit->m_displayItemID[i] <= 0) {
+            continue;
+        }
+
+        int32_t inventoryType = outfit->m_inventoryType[i];
+
+        if (inventoryType == 1) {
+            continue;
+        }
+
+        if (CCharacterCreation::m_selectedClassID == 3) {
+            if (inventoryType == 13 || inventoryType == 17 || inventoryType == 21 || inventoryType == 22) {
+                continue;
+            }
+
+            if (inventoryType == 15 || inventoryType == 26) {
+                ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(outfit->m_displayItemID[i]);
+
+                if (found) {
+                    CCharacterCreation::m_character->AddHandItem(model, found, 17, 0, 0, 0, inventoryType == 26, 0);
+
+                    // TODO: bow string draw callback (CM2Model::SetLoadedCallback with 0x4E2280)
+                    //
+                    // if (inventoryType == 15) {
+                    //     for (CM2Model* child = model->m_attachList; child; child = child->m_attachNext) {
+                    //         if (child->m_attachmentId == attachment) {
+                    //             child->SetLoadedCallback(SetupBowStringDraw, nullptr);
+                    //             break;
+                    //         }
+                    //     }
+                    // }
+                }
+            } else if (inventoryType == 18) {
+                ItemDisplayInfoRec* found = g_itemDisplayInfoDB.GetRecord(outfit->m_displayItemID[i]);
+
+                if (found && found->m_modelName[0][0]) {
+                    CCharacterCreation::m_character->AddItem(ITEMSLOT_11, found, 0);
+                }
+
+                continue;
+            }
+        }
+
+        CCharacterCreation::m_character->AddItemByType(inventoryType, outfit->m_displayItemID[i]);
+    }
 }
 
 void CCharacterCreation::InitCharacterComponent(ComponentData* data, int32_t randomize) {

@@ -2226,7 +2226,11 @@ int32_t CM2Model::InitializeLoaded() {
             }
 
             case 11: {
-                // TODO
+                this->ReplaceParticleColor(
+                    modelCall->replaceParticleColor.colorIndex,
+                    modelCall->replaceParticleColor.start,
+                    modelCall->replaceParticleColor.mid,
+                    modelCall->replaceParticleColor.end);
                 break;
             }
 
@@ -3298,5 +3302,32 @@ void CM2Model::GetCollisionFacets(CAaBox* box, C44Matrix* mat, TSGrowableArray<C
         facet->plane.n.y = normal.z * rotation.c1 + normal.x * rotation.a1 + normal.y * rotation.b1;
         facet->plane.n.z = normal.x * rotation.a2 + normal.y * rotation.b2 + normal.z * rotation.c2;
         facet->plane.d = -(facet->v[0].z * facet->plane.n.z + facet->v[0].y * facet->plane.n.y + facet->v[0].x * facet->plane.n.x);
+    }
+}
+
+// OFFSET: 0x825410
+void CM2Model::ReplaceParticleColor(uint32_t colorIndex, CImVector start, CImVector mid, CImVector end) {
+    if (this->m_loaded) {
+        M2Data* data = this->m_shared->m_data;
+
+        for (uint32_t i = 0; i < data->particles.Count(); i++) {
+            if (data->particles[i].colorIndex == colorIndex) {
+                this->m_particleEmitters[i]->SetParticleColors(&start, &mid, &end);
+            }
+        }
+    } else {
+        auto modelCall = NEW(CM2ModelCall);
+
+        modelCall->type = 11;
+        modelCall->modelCallNext = nullptr;
+        modelCall->time = this->m_scene->m_time;
+
+        modelCall->replaceParticleColor.colorIndex = colorIndex;
+        modelCall->replaceParticleColor.start = start;
+        modelCall->replaceParticleColor.mid = mid;
+        modelCall->replaceParticleColor.end = end;
+
+        *this->m_modelCallTail = modelCall;
+        this->m_modelCallTail = &modelCall->modelCallNext;
     }
 }

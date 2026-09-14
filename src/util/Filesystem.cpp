@@ -30,6 +30,30 @@ char* OsPathFindExtensionWithDot(char* pathName) {
     return result;
 }
 
+// OFFSET: 0x86BCC0
+static char* PathFindExtension(char* path, int32_t offset) {
+    char* found = nullptr;
+
+    for (;;) {
+        if (*path == '\0') {
+            return found ? found : path;
+        }
+
+        if (*path == '.') {
+            found = path + offset;
+        } else if (*path == '/' || *path == '\\') {
+            found = nullptr;
+        }
+
+        path++;
+    }
+}
+
+// OFFSET: 0x86BD60
+char* OsPathRemoveExtension(char* path) {
+    return PathFindExtension(path, 1);
+}
+
 void OsFileToNativeSlashes(char* path, size_t size) {
 #ifdef WHOA_SYSTEM_WIN
     OsFileToBackSlashes(path, size);

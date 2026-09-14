@@ -12,6 +12,7 @@ class CSimpleModelFFX;
 class CM2Model;
 class CVar;
 class ItemDisplayInfoRec;
+class ChrRacesRec;
 class CCharacterComponent;
 struct TCTEXTUREINFO;
 class BlpPalPixel;
@@ -40,6 +41,8 @@ class CCharacterComponent {
     static uint32_t s_textureSize;
 
     static char s_path[260];
+    static char s_path2[260];
+    static char s_buffer[260];
     static char* s_pathEnd;
     static CStatus s_status;
 
@@ -136,6 +139,54 @@ class CCharacterComponent {
     void PasteTransparent8Bit(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel);
     void PasteOpaque(CACHEENTRY* entry, BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, const C2iVector& srcSize, const TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t invSrcMipLevel);
     void PasteScale(CACHEENTRY* entry, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo);
+    void PasteOpaqueScale(CACHEENTRY* entry, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, C2iVector& srcSize, const TCTEXTUREINFO& srcInfo);
+    void PasteTransparent1BitScale(CACHEENTRY* entry, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, C2iVector& srcSize, const TCTEXTUREINFO& srcInfo);
+    void PasteTransparent4BitScale(CACHEENTRY* entry, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, C2iVector& srcSize, const TCTEXTUREINFO& srcInfo);
+    void PasteTransparent8BitScale(CACHEENTRY* entry, MipBits* dstMips, C2iVector& dstPos, uint32_t pixelStrideInBytes, C2iVector& srcPos, C2iVector& srcSize, const TCTEXTUREINFO& srcInfo);
+
+    CACHEENTRY* LoadItemComponentTexture(ItemDisplayInfoRec* itemDisplayInfo, COMPONENT_SECTIONS section);
+    bool ItemsLoaded(bool a2);
+    bool UpdateTextureSlot(COMPONENT_SECTIONS section, const ItemDisplayInfoRec* displayRec, int32_t layer);
+    void FreeSectionTexture(COMPONENT_SECTIONS section, int32_t layer);
+    void GetItemDisplayPriority(ITEM_SLOT itemSlot, COMPONENT_SECTIONS section, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemAU(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemAL(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemHA(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemHU(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemHL(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemTU(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemTL(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemLU(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemLL(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void UpdateItemFO(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, bool update);
+    void ClearGuildTexture(int32_t layer);
+    void RemoveItem(ITEM_SLOT itemSlot);
+    void RemoveItemByInventoryType(uint32_t inventoryType);
+    void ComponentCloseFingers(CM2Model* model, bool rightHand); 
+    bool ComposeHelmModelFilePath(const ChrRacesRec* racesRec, const ItemDisplayInfoRec* displayRec, char* dest, uint32_t destSize);
+    bool GetHelmModelFilePath(ItemDisplayInfoRec* rec, ItemDisplayInfoRec** displayRec);
+    void ComponentUtilAddItemVisual(CM2Model* model, int32_t itemVisualId);
+    void AddLink(CM2Model* parent, uint32_t attachmentId, const char* modelPath, const char* texturePath, int32_t itemVisualId, const ItemDisplayInfoRec* displayRec);
+    bool IsHelmModelCorrect();
+    void AddHelm(int32_t itemVisualId);
+    int32_t GetQuiverModelFilePath(ItemDisplayInfoRec* rec, ItemDisplayInfoRec** displayRec);
+    bool IsQuiverModelCorrect();
+    void AddQuiver(int32_t itemVisualId);
+    int32_t BuildShoulderItemPaths(ItemDisplayInfoRec* rec, ItemDisplayInfoRec** displayRec, char* leftModel, char* rightModel, char* leftTexture, char* rightTexture);
+    int32_t AreShoulderModelsCorrect();
+    void AddShoulders(int32_t itemVisualId);
+    void AddCape();
+    void AddItem(ITEM_SLOT itemSlot, const ItemDisplayInfoRec* displayRec, int32_t itemVisualId);
+    void AddItem(ITEM_SLOT itemSlot, int32_t itemDisplayId, int32_t itemVisualId);
+    void RemoveLinkpt(CM2Model* model, uint32_t attachmentId);
+    uint32_t AddHandItem(CM2Model* model, const ItemDisplayInfoRec* displayRec, uint32_t attachmentId, int32_t sheatheType, bool useSheathed, bool isShield, bool treatAsMainHand, int32_t itemVisualId);
+    void SetHandItemDisplay(int32_t itemDisplayId, uint32_t handIndex, uint32_t attachmentId, bool isShield);
+    void SetMainHandItemDisplay(int32_t itemDisplayId);
+    void SetOffHandItemDisplay(int32_t itemDisplayId);
+    void SetShieldItemDisplay(int32_t itemDisplayId);
+    void AddItemByType(uint32_t inventoryType, int32_t itemDisplayId);
+    void AddItemBySlot(int32_t itemSlot, int32_t itemDisplayId, int32_t itemVisualId);
+    void RemoveHandItem(CM2Model* model, uint32_t attachmentId, int32_t sheatheType, bool isShield);
 
     public:
     TSLink<CCharacterComponent> m_link;

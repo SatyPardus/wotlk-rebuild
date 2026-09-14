@@ -197,7 +197,6 @@ class CParticleEmitter2 {
     void SetFollowParams(float speed1, float scale1, float speed2, float scale2);
     void SetTextureDimensions(uint32_t rows, uint32_t cols);
     void GetReplacementColors(CImVector* color0, CImVector* color1, CImVector* color2);
-    void SetParticleColors(const CImVector* color0, const CImVector* color1, const CImVector* color2);
     void DetermineIfSimple();
     void SetParticleStyle(int32_t head, int32_t tail, float tailLength, int32_t style);
     void EmitNewParticles(float dt, C44Matrix* xform);
@@ -229,6 +228,7 @@ class CParticleEmitter2 {
     void InterpolateAllTracks(CParticle2* particle, CImVector* color, C2Vector* scale, uint32_t* headCell, uint32_t* tailCell);
     CImVector InterpolateColorTrack(float t);
     int32_t BuildVertex(CParticle2* particle, ParticleVertexWriter* writer);
+    void SetParticleColors(const CImVector* start, const CImVector* mid, const CImVector* end);
 };
 
 class CPlaneParticleEmitter : public CParticleEmitter2 {
