@@ -2135,6 +2135,15 @@ int32_t CM2Model::InitializeLoaded() {
 
     this->m_loaded = 1;
 
+    M2SequenceFallback fallback;
+    this->SequenceFallbackById(fallback, 0);
+
+    uint32_t sequenceId = CM2Model::HasSequence(this->m_shared->m_data, fallback.uint0)
+                              ? 0
+                              : this->m_shared->m_data->sequences[0].id;
+
+    this->SetBoneSequence(0xFFFFFFFF, sequenceId, -1, 0, 1.0f, 0, 1);
+
     uint32_t savedTime = this->m_scene->m_time;
 
     while (this->m_modelCallList) {
