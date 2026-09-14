@@ -79,4 +79,9 @@ struct M2HitRec {
     uint32_t priority;
 };
 
+struct M2ComboList {
+    uint32_t count;
+    uint16_t* data;
+};
+
 #endif

@@ -913,22 +913,423 @@ void CM2Shared::SubstituteSimpleShaders() {
     }
 }
 
+// OFFSET: 0x835E90
+void CM2Shared::PackBatchTextureCombos() {
+    for (uint32_t batchIndex = 0; batchIndex < this->m_skinData->batches.Count(); batchIndex++) {
+        auto& batch = this->m_skinData->batches[batchIndex];
+
+        if (batch.textureCount == 2) {
+            uint16_t* textureCombo = &this->m_data->textureCombos[batch.textureComboIndex];
+            uint16_t* transformCombo = &this->m_data->textureTransformCombos[batch.textureTransformComboIndex];
+
+            uint32_t transform0 = transformCombo[0] == 0xFFFF ? 0 : transformCombo[0] + 1;
+            uint32_t transform1 = transformCombo[1] == 0xFFFF ? 0 : transformCombo[1] + 1;
+
+            batch.textureComboIndex = static_cast<uint8_t>(textureCombo[0]) | (static_cast<uint8_t>(textureCombo[1]) << 8);
+            batch.textureTransformComboIndex = static_cast<uint8_t>(transform0) | (static_cast<uint8_t>(transform1) << 8);
+        } else {
+            uint16_t textureCombo = this->m_data->textureCombos[batch.textureComboIndex];
+            uint16_t transformCombo = this->m_data->textureTransformCombos[batch.textureTransformComboIndex];
+
+            batch.textureComboIndex = textureCombo;
+            batch.textureTransformComboIndex = transformCombo == 0xFFFF ? 0 : transformCombo + 1;
+        }
+    }
+}
+
 // OFFSET: 0x837680
 void CM2Shared::SubstituteSpecializedShaders() {
-    // TODO
+    if (!this->m_skinData->indices.Count()) {
+        return;
+    }
+
+    if (!this->m_skinData->batches.Count()) {
+        return;
+    }
+
+    bool layered = false;
+
+    for (uint32_t batchIndex = 0; batchIndex < this->m_skinData->batches.Count(); batchIndex++) {
+        if (this->m_skinData->batches[batchIndex].materialLayer > 0) {
+            layered = true;
+            break;
+        }
+    }
+
+    if (!layered) {
+        return;
+    }
+
+    this->PackBatchTextureCombos();
+
+    uint8_t stateA = 0;
+    uint8_t stateB = 0;
+    bool repeatedMaterial = false;
+    bool rebuildCombos = false;
+    int32_t prevMaterialIndex = -1;
+    M2Batch* base = nullptr;
+
+    for (uint32_t batchIndex = 0; batchIndex < this->m_skinData->batches.Count(); batchIndex++) {
+        M2Batch* batch = &this->m_skinData->batches[batchIndex];
+
+        if (batch->materialIndex == prevMaterialIndex) {
+            repeatedMaterial = true;
+            continue;
+        }
+
+        uint32_t combiner = batch->shader & M2COMBINER_OP_MASK;
+        M2Material* material = &this->m_data->materials[batch->materialIndex];
+
+        prevMaterialIndex = batch->materialIndex;
+
+        if (batch->materialLayer == 0) {
+            stateA = 0;
+
+            if (batch->textureCount >= 1 && material->blendMode == M2BLEND_OPAQUE) {
+                batch->shader &= 0xFF8F;
+            }
+
+            base = batch;
+        }
+
+        if (stateA == 1) {
+            if (
+                (material->blendMode == M2BLEND_ALPHA || material->blendMode == M2BLEND_ALPHA_KEY) && batch->textureCount == 1 && ((this->m_data->materials[base->materialIndex].flags ^ material->flags) & 0x1) == 0 && batch->textureComboIndex == static_cast<uint8_t>(base->textureComboIndex) && this->m_data->textureWeightCombos[base->textureWeightComboIndex] == this->m_data->textureWeightCombos[batch->textureWeightComboIndex]) {
+                batch->shader = 0x8000;
+                base->shader = 0x8001;
+                stateA = 3;
+
+                continue;
+            }
+
+            stateA = 0;
+        }
+
+        if (stateA < 2) {
+            if (
+                material->blendMode == M2BLEND_OPAQUE && batch->textureCount == 2 && (combiner == M2COMBINER_MOD2X || combiner == M2COMBINER_MOD2X_NA) && this->m_data->textureCoordCombos[batch->textureCoordComboIndex] == 0 && this->m_data->textureCoordCombos[batch->textureCoordComboIndex + 1] > 2) {
+                stateA = 1;
+            }
+        }
+
+        if (stateB == 3) {
+            continue;
+        }
+
+        if (stateB == 2) {
+            if (
+                (material->blendMode == M2BLEND_ALPHA || material->blendMode == M2BLEND_ALPHA_KEY) && batch->textureCount == 1 && ((this->m_data->materials[base->materialIndex].flags ^ material->flags) & 0x1) == 0 && static_cast<uint8_t>(batch->textureComboIndex) == static_cast<uint8_t>(base->textureComboIndex) && this->m_data->textureWeightCombos[base->textureWeightComboIndex] == this->m_data->textureWeightCombos[batch->textureWeightComboIndex]) {
+                batch->shader = 0x8000;
+                base->shader = base->shader == 0x8002 ? 0x8003 : 0x8001;
+                stateB = 3;
+
+                continue;
+            }
+
+            stateB = 0;
+        } else if (stateB == 1) {
+            if (
+                (material->blendMode == M2BLEND_ADD || material->blendMode == M2BLEND_MOD_2X) && batch->textureCount == 1 && this->m_data->textureCoordCombos[batch->textureCoordComboIndex] > 2 && this->m_data->textureWeightCombos[base->textureWeightComboIndex] == this->m_data->textureWeightCombos[batch->textureWeightComboIndex]) {
+                batch->shader = 0x8000;
+                base->shader = material->blendMode == M2BLEND_ADD ? 0x8002 : 0x000E;
+                base->textureCount = 2;
+                base->textureComboIndex = static_cast<uint8_t>(base->textureComboIndex) | (static_cast<uint8_t>(batch->textureComboIndex) << 8);
+                base->textureTransformComboIndex = static_cast<uint8_t>(base->textureTransformComboIndex) | (static_cast<uint8_t>(batch->textureTransformComboIndex) << 8);
+
+                rebuildCombos = true;
+                stateB = 2;
+
+                continue;
+            }
+
+            stateB = 0;
+        }
+
+        if (
+            material->blendMode == M2BLEND_OPAQUE && batch->textureCount == 1 && this->m_data->textureCoordCombos[batch->textureCoordComboIndex] == 0) {
+            stateB = 1;
+        }
+    }
+
+    if (rebuildCombos) {
+        this->ConvertTextureValuesToCombos();
+    }
+
+    this->AssignBatchTextureComboIndices();
+
+    if (repeatedMaterial) {
+        int32_t lastMaterialIndex = -1;
+
+        for (uint32_t batchIndex = 0; batchIndex < this->m_skinData->batches.Count(); batchIndex++) {
+            M2Batch* batch = &this->m_skinData->batches[batchIndex];
+
+            if (batch->materialIndex != lastMaterialIndex) {
+                lastMaterialIndex = batch->materialIndex;
+                continue;
+            }
+
+            M2Batch* prev = batch - 1;
+
+            batch->shader = prev->shader;
+            batch->textureCount = prev->textureCount;
+            batch->textureComboIndex = prev->textureComboIndex;
+            batch->textureTransformComboIndex = prev->textureTransformComboIndex;
+        }
+    }
 }
 
 // OFFSET: 0x837250
 void CM2Shared::ConvertTextureValuesToCombos() {
-    // TODO
+    uint32_t batchCount = this->m_skinData->batches.Count();
+
+    M2ComboList comboList;
+    comboList.data = static_cast<uint16_t*>(_alloca(4 * batchCount));
+    comboList.count = 0;
+
+    M2ComboList transformList;
+    transformList.data = static_cast<uint16_t*>(_alloca(4 * batchCount));
+    transformList.count = 0;
+
+    int32_t prevMaterialIndex = -1;
+
+    for (uint32_t batchIndex = 0; batchIndex < this->m_skinData->batches.Count(); batchIndex++) {
+        M2Batch* batch = &this->m_skinData->batches[batchIndex];
+
+        if (batch->materialIndex == prevMaterialIndex) {
+            continue;
+        }
+
+        prevMaterialIndex = batch->materialIndex;
+
+        if (batch->textureCount < 2) {
+            continue;
+        }
+
+        ConvertTextureComboEntry(&comboList, batch->textureComboIndex, 0);
+        ConvertTextureComboEntry(&transformList, batch->textureTransformComboIndex, 1);
+    }
+
+    prevMaterialIndex = -1;
+
+    uint16_t* comboEnd = comboList.data + comboList.count;
+    uint16_t* transformEnd = transformList.data + transformList.count;
+
+    for (uint32_t batchIndex = 0; batchIndex < this->m_skinData->batches.Count(); batchIndex++) {
+        M2Batch* batch = &this->m_skinData->batches[batchIndex];
+
+        if (batch->materialIndex == prevMaterialIndex) {
+            continue;
+        }
+
+        prevMaterialIndex = batch->materialIndex;
+
+        if (batch->textureCount > 1) {
+            continue;
+        }
+
+        uint16_t* combo = comboList.data;
+
+        while (combo != comboEnd && *combo != batch->textureComboIndex) {
+            combo++;
+        }
+
+        if (combo == comboEnd) {
+            comboList.count++;
+            *comboEnd = batch->textureComboIndex;
+            comboEnd++;
+        }
+
+        uint16_t transform = batch->textureTransformComboIndex
+                                 ? batch->textureTransformComboIndex - 1
+                                 : 0xFFFF;
+
+        uint16_t* entry = transformList.data;
+
+        while (entry != transformEnd && *entry != transform) {
+            entry++;
+        }
+
+        if (entry == transformEnd) {
+            transformList.count++;
+            *transformEnd = transform;
+            transformEnd++;
+        }
+    }
+
+    uint32_t comboBytes = comboList.count > this->m_data->textureCombos.Count()
+                              ? 2 * comboList.count
+                              : 0;
+    uint32_t transformBytes = transformList.count > this->m_data->textureTransformCombos.Count()
+                                  ? 2 * transformList.count
+                                  : 0;
+
+    if (comboBytes || transformBytes) {
+        uint32_t grownSize = this->m_fileSize + comboBytes + transformBytes;
+        M2Data* grown = static_cast<M2Data*>(SMemAlignedAlloc(grownSize, __FILE__, __LINE__));
+
+        if (!grown) {
+            return;
+        }
+
+        memcpy(grown, this->m_data, this->m_fileSize);
+        SMemAlignedFree(this->m_data);
+        this->m_data = grown;
+
+        uint8_t* tail = reinterpret_cast<uint8_t*>(this->m_data) + this->m_fileSize;
+
+        if (comboBytes) {
+            this->m_data->textureCombos.offset = tail - reinterpret_cast<uint8_t*>(&this->m_data->textureCombos);
+            this->m_data->flags |= 0x20;
+            tail += comboBytes;
+        }
+
+        if (transformBytes) {
+            this->m_data->textureTransformCombos.offset = tail - reinterpret_cast<uint8_t*>(&this->m_data->textureTransformCombos);
+            this->m_data->flags |= 0x40;
+        }
+
+        this->m_fileSize = grownSize;
+    }
+
+    memcpy(this->m_data->textureCombos.Data(), comboList.data, 2 * comboList.count);
+    this->m_data->textureCombos.count = comboList.count;
+
+    memcpy(this->m_data->textureTransformCombos.Data(), transformList.data, 2 * transformList.count);
+    this->m_data->textureTransformCombos.count = transformList.count;
 }
 
 // OFFSET: 0x8374A0
 void CM2Shared::AssignBatchTextureComboIndices() {
-    // TODO
+    int32_t prevMaterialIndex = -1;
+
+    for (uint32_t batchIndex = 0; batchIndex < this->m_skinData->batches.Count(); batchIndex++) {
+        M2Batch* batch = &this->m_skinData->batches[batchIndex];
+
+        if (batch->materialIndex == prevMaterialIndex) {
+            continue;
+        }
+
+        prevMaterialIndex = batch->materialIndex;
+
+        if (batch->textureCount == 2) {
+            uint16_t lo = static_cast<uint8_t>(batch->textureComboIndex);
+            uint16_t hi = static_cast<uint8_t>(batch->textureComboIndex >> 8);
+
+            uint16_t comboIndex = 0;
+            uint32_t limit = this->m_data->textureCombos.Count() - 1;
+
+            if (limit != 0) {
+                uint16_t* data = this->m_data->textureCombos.Data();
+                uint32_t i = 0;
+
+                for (;;) {
+                    if (data[i] == lo && data[i + 1] == hi) {
+                        comboIndex = i;
+                        break;
+                    }
+
+                    i++;
+
+                    if (i >= limit) {
+                        break;
+                    }
+                }
+            }
+
+            uint16_t transformLo = static_cast<uint8_t>(batch->textureTransformComboIndex);
+            uint16_t transformHi = static_cast<uint8_t>(batch->textureTransformComboIndex >> 8);
+
+            batch->textureComboIndex = comboIndex;
+
+            transformLo = transformLo ? transformLo - 1 : 0xFFFF;
+            transformHi = transformHi ? transformHi - 1 : 0xFFFF;
+
+            uint16_t transformIndex = 0;
+            uint32_t transformLimit = this->m_data->textureTransformCombos.Count() - 1;
+
+            if (transformLimit != 0) {
+                uint16_t* data = this->m_data->textureTransformCombos.Data();
+                uint32_t i = 0;
+
+                for (;;) {
+                    if (data[i] == transformLo && data[i + 1] == transformHi) {
+                        transformIndex = i;
+                        break;
+                    }
+
+                    i++;
+
+                    if (i >= transformLimit) {
+                        break;
+                    }
+                }
+            }
+
+            batch->textureTransformComboIndex = transformIndex;
+        } else {
+            uint16_t* data = this->m_data->textureCombos.Data();
+            uint16_t* end = data + this->m_data->textureCombos.Count();
+            uint16_t* entry = data;
+
+            while (entry != end && *entry != batch->textureComboIndex) {
+                entry++;
+            }
+
+            batch->textureComboIndex = entry - data;
+
+            uint16_t transform = batch->textureTransformComboIndex
+                                     ? batch->textureTransformComboIndex - 1
+                                     : 0xFFFF;
+
+            uint16_t* transformData = this->m_data->textureTransformCombos.Data();
+            uint16_t* transformEnd = transformData + this->m_data->textureTransformCombos.Count();
+            uint16_t* transformEntry = transformData;
+
+            while (transformEntry != transformEnd && *transformEntry != transform) {
+                transformEntry++;
+            }
+
+            batch->textureTransformComboIndex = transformEntry - transformData;
+        }
+    }
 }
 
 // OFFSET: 0x835F90
-void CM2Shared::ConvertTextureComboEntry(bool a2) {
-    // TODO
+void CM2Shared::ConvertTextureComboEntry(M2ComboList* list, uint16_t packed, int32_t transform) {
+    uint16_t lo = static_cast<uint8_t>(packed);
+    uint16_t hi = static_cast<uint8_t>(packed >> 8);
+
+    if (transform) {
+        lo = lo ? lo - 1 : 0xFFFF;
+        hi = hi ? hi - 1 : 0xFFFF;
+    }
+
+    uint32_t count = list->count;
+    int32_t limit = static_cast<int32_t>(count) - 1;
+
+    if (limit > 0) {
+        for (int32_t i = 0; i < limit; i++) {
+            if (list->data[i] == lo && list->data[i + 1] == hi) {
+                return;
+            }
+        }
+    }
+
+    uint32_t insert = count;
+
+    if (limit > 0) {
+        for (int32_t i = 0; i < limit; i += 2) {
+            if (list->data[i] > lo || (list->data[i] == lo && list->data[i + 1] > hi)) {
+                insert = i;
+                break;
+            }
+        }
+    }
+
+    list->count = count + 2;
+
+    memmove(&list->data[insert + 2], &list->data[insert], 2 * (count - insert));
+
+    list->data[insert] = lo;
+    list->data[insert + 1] = hi;
 }

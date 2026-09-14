@@ -83,11 +83,12 @@ class CM2Shared {
         void Release();
         int32_t SetIndices();
         int32_t SetVertices(uint32_t a2);
+        void PackBatchTextureCombos();
         void SubstituteSimpleShaders();
         void SubstituteSpecializedShaders();
         void ConvertTextureValuesToCombos();
         void AssignBatchTextureComboIndices();
-        void ConvertTextureComboEntry(bool a2);
+        void ConvertTextureComboEntry(M2ComboList* list, uint16_t packed, int32_t transform);
 };
 
 #endif
