@@ -709,7 +709,7 @@ void CMapRenderChunk::UnpackAlphaShadowBits(uint16_t* outputTexture, int32_t dst
                 this->UnpackAlphaShadowBitsFixed4444Mip0(outputTexture, dstOffset, dstPitch, size, layerInfo, shadowMap);
             return;
         } else if (v1) {
-            this->UnpackAlphaShadowBitsFixed8888Mip0(outputTexture, size, shadowMap);
+            this->UnpackAlphaShadowBitsFixed8888Mip1(outputTexture, size, shadowMap);
         } else {
             this->UnpackAlphaShadowBitsFixed8888Mip0(outputTexture, size, shadowMap);
         }
