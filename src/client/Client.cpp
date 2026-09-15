@@ -47,6 +47,7 @@
 #include "gameui/camera/CGCamera.hpp"
 #include <clientobject/PlayerName.hpp>
 #include <db/DBCacheInstances.hpp>
+#include <clientobject/PlayerPackets.hpp>
 
 CVar* Client::g_accountNameVar;
 CVar* Client::g_accountListVar;
@@ -900,8 +901,8 @@ void ClientInitializeGame(int32_t zoneId, C3Vector* position) {
     //SpellTableInitialize();
     CGUnit_C::Initialize();
     //CGGameObject_C::Initialize();
-    //ClientInitializeGame_0();
-    //CGPlayer_C::Initialize();
+    PlayerClientInitialize();
+    CGPlayer_C::Initialize();
     //CGItem_C::Initialize();
     //NOP();
     //AreaListInitialize();

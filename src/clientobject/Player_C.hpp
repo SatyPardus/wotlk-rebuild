@@ -292,7 +292,9 @@ class CGPlayer_C : public CGUnit_C, public CGPlayer {
     void PostInitActivePlayer();
     bool IsCommentatorUberOrInArena();
 
+    static void Initialize();
     static void SetStorage(CGPlayer_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr);
+    static void PlayerInitializeMessageHandlers();
 };
 
 

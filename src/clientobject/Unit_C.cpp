@@ -620,10 +620,10 @@ void CGUnit_C::RefreshDataPointers() {
         this->unk_0A30 |= 0x100u;
     else
         this->unk_0A30 &= ~0x100u;
-    //if ((this->m_modelData->m_flags & 8) != 0)
-    //    this->dataA34[1] |= 0x20000u;
-    //else
-    //    this->dataA34[1] &= ~0x20000u;
+    if ((this->m_modelData->m_flags & 8) != 0)
+        this->m_animationState |= 0x20000u;
+    else
+        this->m_animationState &= ~0x20000u;
     if ((this->m_modelData->m_flags & 0x40) != 0)
         this->unk_0A30 |= 0x2000000u;
     else

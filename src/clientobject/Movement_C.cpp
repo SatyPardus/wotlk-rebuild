@@ -10,6 +10,7 @@
 #include <util/Unimplemented.hpp>
 #include "clientobject/ObjectMgrClient.hpp"
 #include <util/Math.hpp>
+#include <client/ClientServices.hpp>
 
 STORM_EXPLICIT_LIST(CPlayerMoveEvent, m_link) CMovement_C::s_playerMoveEventFreeList;
 World::FacetData CMovement_C::s_moveFacets;
@@ -533,17 +534,17 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         //    v35 = v27;
         //    CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_MOVE_SET_CAN_FLY_ACK, v4->m_needAck, v35, v4->m_ackCounter, 0, 0, 255);
         //    break;
-        //case 49u:
-        //    v30 = this->m_flags;
-        //    if ((v30 & 0x200) != 0) {
-        //        this->m_flags = v30 & 0xFFFFFDFF;
-        //        if (CMovementShared::TryStartFalling(this))
-        //            CGUnit_C::OnCollideFalling(this->unit);
-        //        updated = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_FORCE_MOVE_UNROOT_ACK, 0, 0.0, 0, 0, 0, 255);
-        //        CMovement::sub_6E9B70(this, a2);
-        //    }
-        //    SendTimeSyncResp(v4->m_eventTime, v4->m_ackCounter);
-        //    break;
+        case MOVEEVENT_TIME_SYNC:
+            if ((this->m_flags & 0x200) != 0) {
+                this->m_flags = this->m_flags & 0xFFFFFDFF;
+                if (this->TryStartFalling()) {
+                    //this->m_unit->OnCollideFalling();
+                }
+                updated = this->m_unit->ProcessLocalMoveEvent(time, CMSG_FORCE_MOVE_UNROOT_ACK, 0, 0.0, 0, 0, 255);
+                this->UpdateHeartbeatTimerA(time);
+            }
+            this->SendTimeSyncResponse(moveEvent->m_eventTime, moveEvent->m_ackCounter);
+            break;
         //case 52u:
         //    CMovement_C::Halt(this);
         //    v19 = CGUnit_C::ProcessLocalMoveEvent(this->unit, a2, CMSG_DISMISS_CONTROLLED_VEHICLE, v4->m_needAck, 0.0, 0, 0, 0, 255);
@@ -1076,6 +1077,21 @@ void CMovement_C::OnTurnToAngleLocal(int32_t eventTime, float facing) {
     //}
 
     this->AddPlayerMoveEvent(eventTime, MOVEEVENT_SET_FACING, 1, 0, facing, 0.0f, 0);
+}
+
+// OFFSET: 0x6E9BB0
+void CMovement_C::SendTimeSyncResponse(int32_t a1, int32_t a2) {
+    CDataStore msg;
+    msg.Put((uint32_t)CMSG_TIME_SYNC_RESP);
+    msg.Put(a2);
+    msg.Put(a1);
+    msg.Finalize();
+    ClientServices::Send2(&msg);
+}
+
+// OFFSET: 0x6EF370
+void CMovement_C::OnTimeSyncRequest(int32_t time, int32_t ackCounter) {
+    this->AddPlayerMoveEvent(time, MOVEEVENT_TIME_SYNC, 1, ackCounter, 0.0f, 0.0f, 0);
 }
 
 // OFFSET: 0x6F0CF0

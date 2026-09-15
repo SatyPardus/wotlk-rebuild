@@ -98,6 +98,8 @@ class CMovement_C : public CMovementShared {
     void OnSetRawFacingLocal(int32_t eventTime, float facing);
     void OnTurnToAngleLocal(int32_t eventTime, float facing);
 
+    void SendTimeSyncResponse(int32_t a1, int32_t a2);
+    void OnTimeSyncRequest(int32_t a2, int32_t a3);
     bool OnMoveStart(int32_t time, CMovementStatus* update, bool forward);
     bool OnMoveStop(int32_t time, CMovementStatus* update);
     bool OnStrafeStart(int32_t time, CMovementStatus* update, bool left);

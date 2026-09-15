@@ -326,6 +326,40 @@ uint32_t Player_C_GetDisplayId(uint32_t race, uint32_t sex) {
     return 0;
 }
 
+// OFFSET: 0x6E45D0
+void CGPlayer_C::Initialize() {
+    //bnl_CGPlayer_C__s_lastVendorListReceived = 0;
+    //dword_C9EA94 = 0;
+    //qword_C9EAD0 = 0i64;
+    //dword_C9D53C = 0;
+    //dword_C9EAB0 = 0;
+    //dword_C9EAB4 = 0;
+    //qword_C9EAE8 = 0i64;
+    //dword_C9EAE4 = 0;
+    //dword_C9EAF0 = 0;
+    //qword_C9EAF8 = 0i64;
+    //dword_C9EAF4 = 0;
+    //dword_C9EB00 = 0;
+    //maybe_CGPlayer_C__ScanSpellDBOnInit();
+    //dword_C9EAA8 = 0;
+    //dword_C9D544 = FrameTime::s_curTimeMs;
+    //for (i = 540; i <= 0x2AC; i += 8)
+    //    ClntObjMgrSetTypeMirrorHandler(4, i, 8, bn_OnUpdateInventoryComponent, 0, 1, 0);
+    //ClntObjMgrSetTypeMirrorHandler(3, 0, 16, maybe_CGGameUI__Target, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 12, 4, maybe_CGPlayer_C__HandleGuildIDUpdate, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 16, 4, bn_GuildRankUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 32, 4, bn_DuelTeamUpdateHandler, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 8, 4, bn_OnUpdatePlayerFlags, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 36, 4, bn_OnUpdateGuildTimeStamp, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 30, 1, bn_OnUpdatePVPTitle, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 29, 1, bn_OnUpdateInebriation, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 692, 4, bn_OnUpdatePVPTitle, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 23, 1, bn_OnUpdatePlayerHairStyle, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 22, 1, maybe_CGUnit_C__UpdateBarberShopHair, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 24, 1, bn_OnUpdatePlayerFacialStyle, 0, 0, 0);
+    //ClntObjMgrSetTypeMirrorHandler(4, 20, 1, bn_OnUpdatePlayerSkinID, 0, 0, 0);
+}
+
 // OFFSET: 0x6D1CF0
 void CGPlayer_C::SetStorage(CGPlayer_C* obj, uintptr_t descriptorPtr, uintptr_t mirrorPtr) {
     CGUnit_C::SetStorage(obj, descriptorPtr, mirrorPtr);

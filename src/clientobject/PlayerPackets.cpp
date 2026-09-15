@@ -1,0 +1,216 @@
+#include "clientobject/PlayerPackets.hpp"
+#include "client/ClientServices.hpp"
+#include "clientobject/ObjectMgrClient.hpp"
+#include "clientobject/Player_C.hpp"
+#include <common/time/Time.hpp>
+
+// OFFSET: 0x6DC010
+int32_t HandleTimeSyncReq(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
+    uint32_t v1 = 0;
+    msg->Get(v1);
+
+    auto activePlayer = ClntObjMgrGetActivePlayerObj();
+    if (activePlayer) {
+        auto currentTime = OsGetAsyncTimeMs();
+        activePlayer->movementData.OnTimeSyncRequest(currentTime, v1);
+    }
+    return 1;
+}
+
+// OFFSET: 0x6E8EE0
+void PlayerClientInitialize() {
+    CGPlayer_C::PlayerInitializeMessageHandlers();
+    //dword_C9D4F0[0] = 0;
+    //dword_C9D4F4 = 0;
+    //dword_C9D4F8 = 0;
+    //dword_C9D4FC = 0;
+    //dword_C9D500 = 0;
+    //dword_C9D504 = 0;
+    //dword_C9D508 = 0;
+    //dword_C9D50C = 0;
+    //dword_C9D510 = 0;
+    //dword_C9D514 = 0;
+    //dword_C9D518 = 0;
+    //dword_C9D51C = 0;
+    //dword_C9D520 = 0;
+    //dword_C9D524 = 0;
+    //dword_C9D528 = 0;
+    //dword_C9D52C = 0;
+    //dword_C9D530 = 0;
+    //bnl_CGPlayer_C__s_resurrectOfferer = 0i64;
+    //bnl_CGPlayer_C__s_resurrectOfferSickness = 0;
+    //bnl_CGPlayer_C__s_resurrectOfferUseTimer = 0;
+    //dword_C9D540 = 1;
+    //NOP(v1);
+    //MapID = ClntObjMgrGetMapID();
+    //AreaTriggersInitialize(MapID);
+}
+
+// OFFSET: 0x6E83B0
+void CGPlayer_C::PlayerInitializeMessageHandlers() {
+    //ClientServices::SetMessageHandler(SMSG_MOUNTRESULT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_DISMOUNTRESULT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_INVENTORY_CHANGE_FAILURE, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_OPEN_CONTAINER, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_ITEM_PUSH_RESULT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_LIST_INVENTORY, Packet_Group_10, 0);
+    //ClientServices::SetMessageHandler(SMSG_BUY_FAILED, Packet_Group_10, 0);
+    //ClientServices::SetMessageHandler(SMSG_BUY_ITEM, Packet_Group_10, 0);
+    //ClientServices::SetMessageHandler(SMSG_SELL_ITEM, Packet_Group_10, 0);
+    //ClientServices::SetMessageHandler(SMSG_SET_ITEM_PURCHASE_DATA, Packet_Group_10, 0);
+    //ClientServices::SetMessageHandler(SMSG_ITEM_PURCHASE_REFUND_RESULT, Packet_Group_10, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_RESPONSE, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_RELEASE_RESPONSE, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_REMOVED, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_UPDATE, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_MONEY_NOTIFY, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_ITEM_NOTIFY, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_CLEAR_MONEY, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LEARNED_SPELL, Packet_SMSG_LEARNED_SPELL, 0);
+    //ClientServices::SetMessageHandler(SMSG_REMOVED_SPELL, Packet_SMSG_REMOVED_SPELL, 0);
+    //ClientServices::SetMessageHandler(SMSG_SUPERCEDED_SPELL, Packet_SMSG_SUPERCEDED_SPELL, 0);
+    //ClientServices::SetMessageHandler(SMSG_INITIAL_SPELLS, Packet_SMSG_INITIAL_SPELLS, 0);
+    //ClientServices::SetMessageHandler(SMSG_ACTION_BUTTONS, Packet_SMSG_ACTION_BUTTONS, 0);
+    //ClientServices::SetMessageHandler(SMSG_GROUP_INVITE, Packet_SMSG_GROUP_INVITE, 0);
+    //ClientServices::SetMessageHandler(SMSG_GROUP_CANCEL, Packet_SMSG_GROUP_CANCEL, 0);
+    //ClientServices::SetMessageHandler(SMSG_GROUP_DECLINE, Packet_SMSG_GROUP_DECLINE, 0);
+    //ClientServices::SetMessageHandler(SMSG_GROUP_UNINVITE, Packet_SMSG_GROUP_UNINVITE, 0);
+    //ClientServices::SetMessageHandler(SMSG_GROUP_SET_LEADER, Packet_SMSG_GROUP_SET_LEADER, 0);
+    //ClientServices::SetMessageHandler(SMSG_GROUP_DESTROYED, Packet_SMSG_GROUP_DESTROYED, 0);
+    //ClientServices::SetMessageHandler(SMSG_PARTY_COMMAND_RESULT, Packet_SMSG_PARTY_COMMAND_RESULT, 0);
+    //ClientServices::SetMessageHandler(SMSG_GROUP_LIST, Packet_SMSG_GROUP_LIST, 0);
+    //ClientServices::SetMessageHandler(SMSG_REAL_GROUP_UPDATE, Packet_SMSG_REAL_GROUP_UPDATE, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_QUEST_LIST, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_QUEST_INVALID, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_QUEST_DETAILS, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_REQUEST_ITEMS, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_OFFER_REWARD, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_QUEST_COMPLETE, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_QUEST_FAILED, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_STATUS, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTGIVER_STATUS_MULTIPLE, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTLOG_FULL, Packet_Group_12, 0);
+    //ClientServices::SetMessageHandler(SMSG_TRAINER_LIST, Packet_Group_13, 0);
+    //ClientServices::SetMessageHandler(SMSG_TRAINER_BUY_FAILED, Packet_Group_13, 0);
+    //ClientServices::SetMessageHandler(SMSG_SET_PROFICIENCY, Packet_SMSG_SET_PROFICIENCY, 0);
+    //ClientServices::SetMessageHandler(SMSG_RESURRECT_REQUEST, Packet_SMSG_RESURRECT_REQUEST, 0);
+    //ClientServices::SetMessageHandler(SMSG_PLAYER_SKINNED, Packet_SMSG_PLAYER_SKINNED, 0);
+    //ClientServices::SetMessageHandler(SMSG_INSPECT_RESULTS_UPDATE, Packet_SMSG_INSPECT, 0);
+    //ClientServices::SetMessageHandler(SMSG_INSPECT_RESULTS, Packet_SMSG_INSPECT_TALENT, 0);
+    //ClientServices::SetMessageHandler(SMSG_READ_ITEM_OK, Packet_Group_14, 0);
+    //ClientServices::SetMessageHandler(SMSG_READ_ITEM_FAILED, Packet_Group_14, 0);
+    //ClientServices::SetMessageHandler(SMSG_CANCEL_COMBAT, Packet_SMSG_CANCEL_COMBAT, 0);
+    //ClientServices::SetMessageHandler(SMSG_TAXINODE_STATUS, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_SHOWTAXINODES, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_ACTIVATETAXIREPLY, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_GUILD_INVITE, Packet_SMSG_GUILD_INVITE, 0);
+    //ClientServices::SetMessageHandler(SMSG_GUILD_DECLINE, Packet_SMSG_GUILD_DECLINE, 0);
+    //ClientServices::SetMessageHandler(SMSG_GUILD_INFO, Packet_SMSG_GUILD_INFO, 0);
+    //ClientServices::SetMessageHandler(SMSG_GUILD_EVENT, Packet_SMSG_GUILD_EVENT, 0);
+    //ClientServices::SetMessageHandler(SMSG_GUILD_COMMAND_RESULT, Packet_SMSG_GUILD_COMMAND_RESULT, 0);
+    //ClientServices::SetMessageHandler(MSG_SAVE_GUILD_EMBLEM, Packet_MSG_SAVE_GUILD_EMBLEM, 0);
+    //ClientServices::SetMessageHandler(MSG_TABARDVENDOR_ACTIVATE, Packet_MSG_TABARDVENDOR_ACTIVATE, 0);
+    //ClientServices::SetMessageHandler(SMSG_PETITION_SHOWLIST, Packet_Group_15, 0);
+    //ClientServices::SetMessageHandler(SMSG_PETITION_SHOW_SIGNATURES, Packet_Group_15, 0);
+    //ClientServices::SetMessageHandler(SMSG_PETITION_SIGN_RESULTS, Packet_Group_15, 0);
+    //ClientServices::SetMessageHandler(MSG_PETITION_DECLINE, Packet_Group_15, 0);
+    //ClientServices::SetMessageHandler(SMSG_TURN_IN_PETITION_RESULTS, Packet_Group_15, 0);
+    //ClientServices::SetMessageHandler(MSG_PETITION_RENAME, Packet_Group_15, 0);
+    //ClientServices::SetMessageHandler(SMSG_BINDPOINTUPDATE, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_BINDZONEREPLY, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_EMOTE, Packet_SMSG_EMOTE, 0);
+    //ClientServices::SetMessageHandler(SMSG_PLAYERBOUND, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_PLAYERBINDERROR, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_NEW_TAXI_PATH, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_PET_NAME_INVALID, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_EXPLORATION_EXPERIENCE, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_PARTY_MEMBER_STATS, Packet_HandlePartyMemberStats, 0);
+    //ClientServices::SetMessageHandler(SMSG_PARTY_MEMBER_STATS_FULL, Packet_HandlePartyMemberStats, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTUPDATE_FAILED, Packet_Group_17, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTUPDATE_FAILEDTIMER, Packet_Group_17, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTUPDATE_COMPLETE, Packet_Group_17, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTUPDATE_ADD_KILL, Packet_Group_17, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUESTUPDATE_ADD_PVP_KILL, Packet_Group_17, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUEST_CONFIRM_ACCEPT, Packet_SMSG_QUEST_CONFIRM_ACCEPT, 0);
+    //ClientServices::SetMessageHandler(SMSG_SHOW_BANK, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_BUY_BANK_SLOT_RESULT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_LEVELUP_INFO, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(MSG_MINIMAP_PING, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_TRIGGER_CINEMATIC, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_ITEM_TIME_UPDATE, Packet_Group_18, 0);
+    //ClientServices::SetMessageHandler(SMSG_ITEM_ENCHANT_TIME_UPDATE, Packet_Group_18, 0);
+    //ClientServices::SetMessageHandler(MSG_RANDOM_ROLL, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_FISH_NOT_HOOKED, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_FISH_ESCAPED, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_FORCEACTIONSHOW, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_GODMODE, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_PETGODMODE, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_IGNORE_REQUIREMENTS_CHEAT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_IGNORE_DIMINISHING_RETURNS_CHEAT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_CLEAR_FAR_SIGHT_IMMEDIATE, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_CHAT_WRONG_FACTION, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_CHAT_PLAYER_NOT_FOUND, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_CHAT_RESTRICTED, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_CHAT_NOT_IN_PARTY, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_GMTICKET_SYSTEMSTATUS, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPIRIT_HEALER_CONFIRM, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(MSG_TALENT_WIPE_CONFIRM, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_BINDER_CONFIRM, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLLOGEXECUTE, Packet_SMSG_SPELLLOGEXECUTE, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLLOGMISS, Packet_SMSG_SPELLLOGMISS, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLDAMAGESHIELD, Packet_SMSG_SPELLDAMAGESHIELD, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLINSTAKILLLOG, Packet_SMSG_SPELLINSTAKILLLOG, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLNONMELEEDAMAGELOG, Packet_SMSG_SPELLNONMELEEDAMAGELOG, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLHEALLOG, Packet_SMSG_SPELLHEALLOG, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLENERGIZELOG, Packet_SMSG_SPELLENERGIZELOG, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLDISPELLOG, Packet_Group_19, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLSTEALLOG, Packet_Group_19, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLBREAKLOG, Packet_Group_19, 0);
+    //ClientServices::SetMessageHandler(SMSG_RESURRECT_FAILED, Packet_SMSG_RESURRECT_FAILED, 0);
+    //ClientServices::SetMessageHandler(SMSG_SPELLORDAMAGE_IMMUNE, Packet_SMSG_SPELLORDAMAGE_IMMUNE, 0);
+    //ClientServices::SetMessageHandler(MSG_QUEST_PUSH_RESULT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_DAMAGE_CALC_LOG, Packet_SMSG_DAMAGE_CALC_LOG, 0);
+    //ClientServices::SetMessageHandler(SMSG_RAID_GROUP_ONLY, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_PENDING_RAID_LOCK, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_START_ROLL, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_ALL_PASSED, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_ROLL_WON, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_ROLL, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_LOOT_MASTER_LIST, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_TEST_DROP_RATE_RESULT, PH_LOOT_OPCODES, 0);
+    //ClientServices::SetMessageHandler(SMSG_SUMMON_REQUEST, Packet_SMSG_SUMMON_REQUEST, 0);
+    //ClientServices::SetMessageHandler(SMSG_SUMMON_CANCEL, bn_OnSummonCancel, 0);
+    //ClientServices::SetMessageHandler(SMSG_PLAY_TIME_WARNING, Packet_SMSG_PLAY_TIME_WARNING, 0);
+    //ClientServices::SetMessageHandler(SMSG_ARENA_TEAM_INVITE, Packet_SMSG_ARENA_TEAM_INVITE, 0);
+    //ClientServices::SetMessageHandler(SMSG_ARENA_TEAM_EVENT, Packet_SMSG_ARENA_TEAM_EVENT, 0);
+    //ClientServices::SetMessageHandler(SMSG_ARENA_TEAM_COMMAND_RESULT, Packet_SMSG_ARENA_TEAM_COMMAND_RESULT, 0);
+    //ClientServices::SetMessageHandler(SMSG_ARENA_ERROR, Packet_SMSG_ARENA_ERROR, 0);
+    //ClientServices::SetMessageHandler(SMSG_DEATH_RELEASE_LOC, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_FORCED_DEATH_UPDATE, Packet_Group_9, 0);
+    ClientServices::SetMessageHandler(SMSG_TIME_SYNC_REQ, &HandleTimeSyncReq, 0);
+    //ClientServices::SetMessageHandler(SMSG_VOICE_SESSION_ROSTER_UPDATE, Packet_SMSG_VOICE_SESSION_ROSTER_UPDATE, 0);
+    //ClientServices::SetMessageHandler(SMSG_VOICE_SESSION_LEAVE, Packet_SMSG_VOICE_SESSION_LEAVE, 0);
+    //ClientServices::SetMessageHandler(SMSG_VOICE_SET_TALKER_MUTED, Packet_SMSG_VOICE_SET_TALKER_MUTED, 0);
+    //ClientServices::SetMessageHandler(SMSG_VOICE_PARENTAL_CONTROLS, Packet_SMSG_VOICE_PARENTAL_CONTROLS, 0);
+    //ClientServices::SetMessageHandler(SMSG_CROSSED_INEBRIATION_THRESHOLD, Packet_SMSG_CROSSED_INEBRIATION_THRESHOLD, 0);
+    //ClientServices::SetMessageHandler(SMSG_COMPLAIN_RESULT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_FEATURE_SYSTEM_STATUS, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_AVAILABLE_VOICE_CHANNEL, Packet_SMSG_AVAILABLE_VOICE_CHANNEL, 0);
+    //ClientServices::SetMessageHandler(SMSG_CALENDAR_COMMAND_RESULT, Packet_SMSG_CALENDAR_COMMAND_RESULT, 0);
+    //ClientServices::SetMessageHandler(SMSG_REPORT_PVP_AFK_RESULT, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_GROUPACTION_THROTTLED, Packet_SMSG_GROUPACTION_THROTTLED, 0);
+    //ClientServices::SetMessageHandler(SMSG_SEND_UNLEARN_SPELLS, Packet_SMSG_SEND_UNLEARN_SPELLS, 0);
+    //ClientServices::SetMessageHandler(SMSG_CONVERT_RUNE, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_RESYNC_RUNES, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_ADD_RUNE_POWER, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_BATTLEGROUND_INFO_THROTTLED, Packet_SMSG_BATTLEGROUND_INFO_THROTTLED, 0);
+    //ClientServices::SetMessageHandler(SMSG_TALENT_UPDATE, Packet_SMSG_TALENTS_INFO, 0);
+    //ClientServices::SetMessageHandler(SMSG_ARENA_TEAM_CHANGE_FAILED, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUEST_POI_QUERY_RESPONSE, Packet_SMSG_QUEST_POI_QUERY_RESPONSE, 0);
+    //ClientServices::SetMessageHandler(SMSG_XPGAIN, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_DEBUG_SERVER_GEO, Ruturn_True, 0);
+    //ClientServices::SetMessageHandler(SMSG_QUEST_FORCE_REMOVED, Packet_SMSG_QUEST_FORCE_REMOVE, 0);
+    //ClientServices::SetMessageHandler(SMSG_CAMERA_SHAKE, Packet_Group_9, 0);
+    //ClientServices::SetMessageHandler(SMSG_SOCKET_GEMS, Packet_Group_18, 0);
+    //ClientServices::SetMessageHandler(SMSG_SEND_ALL_COMBAT_LOG, Packet_SMSG_COMBAT_LOG_MULTIPLE, 0);
+}
