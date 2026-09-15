@@ -836,6 +836,35 @@ bool CGUnit_C::IsActivePlayer() {
     return this->m_obj->m_guid == ClntObjMgrGetActivePlayer();
 }
 
+// OFFSET: 0x718FC0
+bool CGUnit_C::IsDisarmed(uint8_t a2) {
+    if (a2 == 2) {
+        return false;
+    }
+
+    if ((this->m_unit->UNIT_FIELD_FLAGS & 0x200000) == 0) {
+        return a2 == 1 && (this->m_unit->UNIT_FIELD_FLAGS_2 & 0x80) != 0;
+    }
+
+    CGUnitVirtualItem* mainHand = this->GetVirtualItem(0, 1);
+
+    if (a2) {
+        if (!this->IsDisarmed(0)) {
+            CGUnitVirtualItem* offHand = this->GetVirtualItem(1, 1);
+
+            if (offHand) {
+                if (offHand->classID == 2) {
+                    return true;
+                }
+            }
+        }
+
+        return a2 == 1 && (this->m_unit->UNIT_FIELD_FLAGS_2 & 0x80) != 0;
+    }
+
+    return mainHand && mainHand->classID == 2;
+}
+
 // OFFSET: 0x7413F0
 bool CGUnit_C::ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat) {
     // this->UpdateObjectEffectMovementStates();
@@ -2664,11 +2693,76 @@ void CGUnit_C::GetDevText(char* text, uint32_t textLength) {
 
 }
 
-
 // OFFSET: 0x6E6FC0
 float CGUnit_C::GetPitch() {
     return this->movementData.m_pitch;
 }
+
+// OFFSET: 0x71F440
+CGUnitVirtualItem* CGUnit_C::GetVirtualItem(uint8_t a2, uint32_t a3) {
+    if (!this->GetVirtualItemDisplayID(a2)) {
+        return nullptr;
+    }
+
+    if (a3) {
+        return &this->m_virtualItem[a2];
+    }
+
+    if (a2) {
+        bool visible;
+
+        if (a2 == 1) {
+            if ((this->m_unit->UNIT_FIELD_FLAGS & 0x200000) != 0) {
+                //this->GetVirtualItem(0, 1); // Dead call?
+
+                if (!this->IsDisarmed(0)) {
+                    CGUnitVirtualItem* offHand = this->GetVirtualItem(1, 1);
+
+                    if (offHand) {
+                        if (offHand->classID == 2) {
+                            return nullptr;
+                        }
+                    }
+                }
+            }
+
+            visible = (this->m_unit->UNIT_FIELD_FLAGS_2 & 0x80) == 0;
+        } else {
+            if (a2 != 2) {
+                return &this->m_virtualItem[a2];
+            }
+
+            visible = (this->m_unit->UNIT_FIELD_FLAGS_2 & 0x400) == 0;
+        }
+
+        if (!visible) {
+            return nullptr;
+        }
+    } else if ((this->m_unit->UNIT_FIELD_FLAGS & 0x200000) != 0) {
+        CGUnitVirtualItem* mainHand = this->GetVirtualItem(0, 1);
+
+        if (mainHand) {
+            if (mainHand->classID != 2) {
+                return &this->m_virtualItem[0];
+            }
+
+            return nullptr;
+        }
+    }
+
+    return &this->m_virtualItem[a2];
+}
+
+// OFFSET: 0x71F540
+uint32_t CGUnit_C::GetVirtualItemDisplayRec(uint8_t a2, ItemDisplayInfoRec* rec) {
+    return g_itemDisplayInfoDB.GetRecord(this->m_virtualItemDisplayId[a2], rec);
+}
+
+// OFFSET: 0x718B10
+uint32_t CGUnit_C::GetVirtualItemDisplayID(uint8_t a2) {
+    return this->m_virtualItemDisplayId[a2];
+}
+
 
 // OFFSET: 0x71A380
 uint8_t CGUnit_C::GetClientStandState() {

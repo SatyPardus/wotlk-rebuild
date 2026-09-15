@@ -8,8 +8,6 @@
 #include "clientobject/Movement_C.hpp"
 #include "clientobject/AnimationTypes.hpp"
 
-class ChrRacesRec;
-class ChrClassesRec;
 class CGPlayer_C;
 class CreatureStats_C;
 
@@ -131,6 +129,16 @@ class CGUnit {
     static uint32_t DescriptorToMirrorOffset(uint32_t fieldByteOffset, uint32_t fieldByteSize, int32_t localPlayer, uint32_t baseByteOffset);
 };
 
+struct CGUnitVirtualItem {
+    uint8_t classID;
+    uint8_t subclassID;
+    uint8_t soundOverrideSubclassID;
+    uint8_t material;
+    uint8_t inventoryType;
+    uint8_t sheatheType;
+    uint8_t pad[2];
+};
+
 class CGUnit_C : public CGObject_C, public CGUnit {
     public:
     // Static variables
@@ -155,6 +163,9 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 097C */ UnitBloodLevelsRec* m_bloodlevels = nullptr;
 
     /* 098C */ CM2Model* data98C = nullptr;
+
+    /* 0998 */ uint32_t m_virtualItemDisplayId[3] = { 0, 0, 0 };
+    /* 09A4 */ CGUnitVirtualItem m_virtualItem[3];
 
     /* 09D4 */ uint32_t m_displayId = 0;
 
@@ -207,6 +218,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     void UpdateUnitNameText();
     bool IsLowPrioritySelection(uint32_t time);
     bool IsActivePlayer();
+    bool IsDisarmed(uint8_t a2);
 
     bool ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
     bool SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
@@ -280,6 +292,9 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 67 */ virtual void GetDNDText(char* text, uint32_t textLength);
     /* 68 */ virtual void GetGMText(char* text, uint32_t textLength);
     /* 69 */ virtual void GetDevText(char* text, uint32_t textLength);
+    /* 75 */ virtual CGUnitVirtualItem* GetVirtualItem(uint8_t a2, uint32_t a3);
+    /* 76 */ virtual uint32_t GetVirtualItemDisplayRec(uint8_t a2, ItemDisplayInfoRec* rec);
+    /* 77 */ virtual uint32_t GetVirtualItemDisplayID(uint8_t a2);
     /* 78 */ virtual uint8_t GetClientStandState();
     /* 83 */ virtual float GetPitch();
 
