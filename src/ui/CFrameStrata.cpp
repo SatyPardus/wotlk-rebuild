@@ -49,8 +49,10 @@ void CFrameStrataNode::OnLayerUpdate(float elapsedSec) {
         frame = this->pendingFrame;
     }
 
-    // TODO
-    // this->frames.Combine(this->pendingFrames, 2, nullptr);
+    while (auto pending = this->pendingFrames.Head()) {
+        this->pendingFrames.UnlinkNode(pending);
+        this->frames.LinkToTail(pending);
+    }
 }
 
 bool CFrameStrataNode::RemoveFrame(CSimpleFrame* frame) {

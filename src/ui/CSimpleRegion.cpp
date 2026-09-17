@@ -1,5 +1,6 @@
 #include "ui/CSimpleRegion.hpp"
 #include "ui/CSimpleFrame.hpp"
+#include "ui/CSimpleTop.hpp"
 #include <cstring>
 
 CSimpleRegion::~CSimpleRegion() {
@@ -47,6 +48,19 @@ void CSimpleRegion::HideThis() {
 
 bool CSimpleRegion::IsShown() {
     return this->m_shown == 1;
+}
+
+// OFFSET: 0x487CC0
+void CSimpleRegion::NotifyDelayedLoad() {
+    if (!this->m_visible || !this->m_parent) {
+        return;
+    }
+
+    if (this->m_parent->m_flags & 0x2000) {
+        this->m_parent->m_batchDirty |= 0x20;
+    } else if (this->m_parent->m_top && this->m_parent->m_visible) {
+        this->m_parent->m_top->NotifyFrameDelayedLoad(this->m_parent);
+    }
 }
 
 void CSimpleRegion::OnColorChanged(bool a2) {

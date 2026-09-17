@@ -346,7 +346,10 @@ void CSimpleFrame::PostLoadXML(XMLNode* node, CStatus* status) {
         CSimpleRegion* region = this->m_regions.Head();
 
         while (region) {
-            region->SetDeferredResize(0);
+            if (region->m_visible) {
+                region->SetDeferredResize(0);
+            }
+
             region = region->m_regionLink.Next();
         }
     }

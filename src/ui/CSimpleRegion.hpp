@@ -32,6 +32,7 @@ class CSimpleRegion : public CScriptRegion {
         void Hide();
         void HideThis();
         bool IsShown();
+        void NotifyDelayedLoad();
         void OnRegionChanged();
         void SetVertexColor(const CImVector& color);
         void SetFrame(CSimpleFrame* frame, uint32_t drawlayer, int32_t show);

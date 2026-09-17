@@ -140,8 +140,7 @@ void CRenderBatch::QueueTexture(CSimpleTexture* texture) {
     CGxTex* gxTex = TextureGetGxTex(texture->m_texture, texture->m_nonBlocking ? 0 : 2, 0);
 
     if (!gxTex) {
-        // TODO
-        // this->OnDelayedLoad();
+        texture->NotifyDelayedLoad();
 
         return;
     }

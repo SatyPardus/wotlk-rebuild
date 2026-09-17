@@ -642,6 +642,14 @@ void CSimpleTop::MoveOrResizeFrame(const CMouseEvent& evt) {
     // TODO
 }
 
+// OFFSET: 0x493C50
+void CSimpleTop::NotifyFrameDelayedLoad(CSimpleFrame* frame) {
+    auto strata = this->m_strata[frame->m_strata];
+    auto level = strata->levels[frame->m_level];
+    level->batchDirty |= 0x20;
+    strata->batchDirty = 1;
+}
+
 // OFFSET: 0x493C10
 void CSimpleTop::NotifyFrameLayerChanged(CSimpleFrame* frame, uint32_t layer) {
     auto strata = this->m_strata[frame->m_strata];

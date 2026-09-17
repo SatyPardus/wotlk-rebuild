@@ -388,6 +388,16 @@ int32_t CSimpleFrame_GetAttribute(lua_State* L) {
         }
 
         offset = 0;
+        fullName[offset++] = '*';
+        offset += SStrNCopy(&fullName[offset], name, nameLength, sizeof(fullName) - offset - 1);
+        offset += SStrNCopy(&fullName[offset], suffix, suffixLength, sizeof(fullName) - offset - 1);
+
+        if (frame->GetAttribute(fullName, luaRef)) {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, luaRef);
+            return 1;
+        }
+
+        offset = 0;
         offset += SStrNCopy(&fullName[offset], prefix, prefixLength, sizeof(fullName) - offset - 1);
         offset += SStrNCopy(&fullName[offset], name, nameLength, sizeof(fullName) - offset - 1);
         fullName[offset++] = '*';

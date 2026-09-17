@@ -74,6 +74,7 @@ class CSimpleTop : public CLayoutFrame {
         void DisableEvents();
         void HideFrame(CSimpleFrame* frame, int32_t a4);
         void MoveOrResizeFrame(const CMouseEvent& evt);
+        void NotifyFrameDelayedLoad(CSimpleFrame* frame);
         void NotifyFrameLayerChanged(CSimpleFrame* frame, uint32_t layer);
         void NotifyFrameMovedOrResized(CSimpleFrame* frame);
         void OnLayerUpdate(float elapsedSec);
