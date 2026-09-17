@@ -20,6 +20,7 @@
 #include "db/DBCacheInstances.hpp"
 #include "ui/FrameScript.hpp"
 #include <gameui/CGGameUI.hpp>
+#include <util/Animation.hpp>
 
 WGUID CGUnit_C::s_activeMover = 0;
 CVar* CGUnit_C::s_cvShowFootPrintParticles = nullptr;
@@ -230,10 +231,10 @@ void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdat
     //}
     this->m_targetFacing = CMath::normalizeangle0to2pi(this->GetRawFacing());
     //*&this->data9E0[49] = 0.0;
-    //this->data9E0[50] = 0;
-    //this->data9E0[51] = 0;
-    //this->data9E0[52] = 0;
-    //this->data9E0[53] = 0;
+    this->m_turnDelta[0] = 0.0;
+    this->m_turnDelta[1] = 0.0;
+    this->m_turnDelta[2] = 0.0;
+    this->m_turnDelta[3] = 0.0;
     this->Animate(0.0f);
     //m_unit = this->m_unit;
     //if (m_unit->UNIT_FIELD_HEALTH > 0) {
@@ -267,9 +268,9 @@ void CGUnit_C::PostInit(uint32_t time, CClientObjCreate* objCreate, bool isUpdat
     //maybe_CGUnit_C__CreateOrDestroyObjectEffectManager(this);
     //if (a4 && (this->ObjectBase.m_obj->OBJECT_FIELD_TYPE & 0x10) == 0)
     //    this->data9E0[6] = 10;
-    //CGUnit_C::sub_73AC30(this, 0, -1);
+    this->UpdateBaseAnimation(0, -1);
     //v17 = this->ObjectBase.m_worldModel;
-    //if (v17 && CM2Model::IsLoaded(v17, 0, 0)) {
+    //if (this->m_worldModel && this->m_worldModel->IsLoaded(0, 0)) {
     //    if (this->dataB50[13] == -1 || (BoneSequenceId = bn_CM2Model_GetBoneSequenceId(this->dataB50[13]), BoneSequenceId == -1))
     //        BoneSequenceId = bn_CM2Model_GetBoneSequenceId(-1);
     //} else {
@@ -348,8 +349,8 @@ void CGUnit_C::SetClientInitData(CClientObjCreate& objCreate, bool a3) {
     //    CGUnit_C::CreateVehicleData(this, a2, a2->m_vehicleId);
     if (!a3) {
         this->movementData.SetUpdateInfo(OsGetAsyncTimeMs(), &objCreate.m_moveUpdate, objCreate.flags & 1);
-        //if ((this->movementData.m_flags & 0x2000) != 0)
-        //    CGUnit_C::OnCollideFalling(this);
+        if ((this->movementData.m_flags & 0x2000) != 0)
+            this->OnCollideFalling();
         //if ((a2->flags & 1) != 0) {
         //    v6 = this->ObjectBase.__vftable;
         //    this->data9E0[20] |= 0x80u;
@@ -865,6 +866,51 @@ bool CGUnit_C::IsDisarmed(uint8_t a2) {
     return mainHand && mainHand->classID == 2;
 }
 
+// OFFSET: 0x71B6B0
+bool CGUnit_C::IsLooting() {
+    if (this->m_obj->m_guid == ClntObjMgrGetActivePlayer())
+        return this->AsPlayer()->m_lootTarget != 0;
+
+    return (this->m_unit->UNIT_FIELD_FLAGS >> 10) & 1;
+}
+
+// OFFSET: 0x7222A0
+bool CGUnit_C::ShouldKneelForLoot() {
+    if (this->m_obj->m_guid != ClntObjMgrGetActivePlayer())
+        return (this->m_unit->UNIT_FIELD_FLAGS & 0x10000000) == 0;
+    auto v6 = ClntObjMgrObjectPtr<CGObject_C*>(this->AsPlayer()->m_lootTarget, TYPEMASK_OBJECT);
+    if (!v6)
+        return false;
+
+    if ((v6->m_obj->m_type & TYPEMASK_GAMEOBJECT) != 0) {
+        //return BYTE1(v6->m_unit->UNIT_FIELD_CREATEDBY.guid_high) != 17;
+    } else if ((v6->m_obj->m_type & TYPEMASK_UNIT) != 0) {
+        return v6->AsUnit()->m_unit->UNIT_FIELD_HEALTH <= 0;
+    }
+    return (v6->m_obj->m_type & TYPEMASK_ITEM) == 0;
+}
+
+// OFFSET: 0x71DE90
+bool CGUnit_C::CanShuffle() {
+    if ((this->movementData.m_flags & (MOVEMENTFLAG_RIGHT | MOVEMENTFLAG_LEFT)) == 0 && (this->m_animationState & 0x1800) == 0)
+        return 0;
+    if (this->movementData.IsSplineFlyer_NotHoveringFlyingSwimming())
+        return 0;
+    //m_vehicle = this->m_vehicle;
+    //if (m_vehicle) {
+    //    if (m_vehicle[3] && CVehicle::sub_7571C0(m_vehicle))
+    //        return 0;
+    //}
+    auto torsoAnim = this->GetCurrentTorsoAnimId();
+    return !IsEmoteAnim(torsoAnim) && !IsSpellCastAnim(torsoAnim) && !IsThrownWeaponAnim(torsoAnim) && !IsBowAnim(torsoAnim) && !IsRifleAnim(torsoAnim) && (this->m_animationState & 0x40000C) == 0;
+}
+
+// OFFSET: 0x4F6250
+bool CGUnit_C::IsVehicleDriver() {
+    WHOA_UNIMPLEMENTED(false);
+    //return this->m_vehiclePassenger && this->m_vehiclePassenger->m_seatState == 3;
+}
+
 // OFFSET: 0x7413F0
 bool CGUnit_C::ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat) {
     // this->UpdateObjectEffectMovementStates();
@@ -1028,6 +1074,13 @@ bool CGUnit_C::BuildMovementUpdate(int32_t time, NETMESSAGE msgId, CDataStore* m
          }
          return 1;
      }
+}
+
+// OFFSET: 0x73C220
+void CGUnit_C::SetUpdateInfo(CClientMoveUpdate* moveUpdate, bool localPlayer) {
+    this->movementData.SetUpdateInfo(OsGetAsyncTimeMs(), moveUpdate, localPlayer);
+    if ((this->movementData.m_flags & MOVEMENTFLAG_FALLING_FAR) != 0)
+        this->OnCollideFalling();
 }
 
  // OFFSET: 0x740D30
@@ -1421,6 +1474,16 @@ bool CGUnit_C::OnCollideFallLandNotify(uint32_t time, uint32_t prevFlags, uint32
     //}
     //return v6;
     return false;
+}
+
+// OFFSET: 0x73AD00
+void CGUnit_C::OnCollideFalling() {
+    if ((this->movementData.m_flags & MOVEMENTFLAG_FALLING_FAR) != 0 && this->m_unit->UNIT_FIELD_HEALTH > 0) {
+        //if (!this->m_vehicle || !this->m_vehicle[3] || !this->m_vehicle->sub_7571C0()) {
+        //    if (!this->m_vehiclePassenger || !*(this->m_vehiclePassenger + 20))
+                this->PlayBaseAnimation(ANIM_FALL, 0);
+        //}
+    }
 }
 
 // OFFSET: none (inlined)
@@ -2549,7 +2612,7 @@ void CGUnit_C::PreAnimate(CGWorldFrame* worldFrame) {
     }
 
     if ((this->movementData.m_flags & 0x2E0100F) == 0) {
-        if ((this->m_obj->m_guid != ClntObjMgrGetActivePlayer() || !this->AsPlayer()->m_playerMirrorFlag) && !this->GetClientStandState()) {
+        if ((this->m_obj->m_guid != ClntObjMgrGetActivePlayer() || this->AsPlayer()->m_lootTarget == 0) && !this->GetClientStandState()) {
             if (headTwist > 0.0000099999997f) {
                 this->m_animationState |= 0x800;
             } else if (headTwist < -0.0000099999997f) {
@@ -2666,6 +2729,11 @@ bool CGUnit_C::CanHighlight() {
         //    return 0;
     }
     return true;
+}
+
+// OFFSET: 0x6E6EC0
+bool CGUnit_C::CanBeTargetted() {
+    return this->CanHighlight();
 }
 
 // OFFSET: 0x6E6EE0

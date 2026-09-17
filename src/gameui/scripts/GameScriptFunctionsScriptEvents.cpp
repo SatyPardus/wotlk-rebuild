@@ -8,10 +8,23 @@
 #include <util/StringTo.hpp>
 #include <db/StaticDb.hpp>
 #include <util/Lang.hpp>
+#include <clientobject/ObjectMgrClient.hpp>
+#include <clientobject/CGObject_C.hpp>
+#include <gameui/CGGameUI.hpp>
 
 // OFFSET: 0x60C2A0
 static int32_t Script_UnitExists(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto unitString = lua_tolstring(L, 1, nullptr);
+    WGUID guid;
+    Script_GetGUIDFromToken(unitString, &guid, false);
+
+    auto obj = ClntObjMgrObjectPtr<CGObject_C*>(guid, TYPEMASK_OBJECT);
+    if (obj && obj->CanBeTargetted() || CGGameUI::IsRaidMemberOrPet(guid)) {
+        lua_pushnumber(L, 1.0);
+    } else {
+        lua_pushnil(L);
+    }
+    return 1;
 }
 
 // OFFSET: 0x60C350

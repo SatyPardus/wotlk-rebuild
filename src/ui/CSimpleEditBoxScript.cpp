@@ -254,27 +254,59 @@ int32_t CSimpleEditBox_ClearFocus(lua_State* L) {
 
 // OFFSET: 0x976490
 int32_t CSimpleEditBox_HasFocus(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleEditBox::GetObjectType();
+    auto object = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
+
+    lua_pushboolean(L, object->IsCurrentFocus());
+    return 1;
 }
 
 // OFFSET: 0x9764E0
 int32_t CSimpleEditBox_SetMaxBytes(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleEditBox::GetObjectType();
+    auto object = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
+
+    if (lua_gettop(L) != 2) {
+        return luaL_error(L, "Usage: %s:SetMaxBytes(max)", object->GetDisplayName());
+    }
+
+    int32_t n = lua_tonumber(L, 2);
+    if (n <= 0)
+        object->m_textLengthMax = -1;
+    else
+        object->m_textLengthMax = n - 1;
+    return 0;
 }
 
 // OFFSET: 0x976580
 int32_t CSimpleEditBox_GetMaxBytes(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleEditBox::GetObjectType();
+    auto object = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
+
+    lua_pushnumber(L, object->m_textLengthMax + 1);
+    return 1;
 }
 
 // OFFSET: 0x9765D0
 int32_t CSimpleEditBox_SetMaxLetters(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleEditBox::GetObjectType();
+    auto object = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
+
+    if (lua_gettop(L) != 2) {
+        return luaL_error(L, "Usage: %s:SetMaxLetters(max)", object->GetDisplayName());
+    }
+
+    object->m_textLettersMax = lua_tonumber(L, 2);
+    return 0;
 }
 
 // OFFSET: 0x976650
 int32_t CSimpleEditBox_GetMaxLetters(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    int32_t type = CSimpleEditBox::GetObjectType();
+    auto object = static_cast<CSimpleEditBox*>(FrameScript_GetObjectThis(L, type));
+
+    lua_pushnumber(L, object->m_textLettersMax);
+    return 1;
 }
 
 // OFFSET: 0x9766A0

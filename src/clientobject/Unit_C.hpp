@@ -186,6 +186,8 @@ class CGUnit_C : public CGObject_C, public CGUnit {
 
     /* 0B4C */ CCharacterComponent* m_characterComponent = nullptr;
 
+    /* 0B5C */ uint32_t m_sheatheState = 0;
+
     /* 0B70 */ float float0B70 = 0.0f;
     /* 0B74 */ float float0B74 = 0.0f;
     /* 0B78 */ float float0B78 = 0.0f;
@@ -219,10 +221,15 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool IsLowPrioritySelection(uint32_t time);
     bool IsActivePlayer();
     bool IsDisarmed(uint8_t a2);
+    bool IsLooting();
+    bool ShouldKneelForLoot();
+    bool CanShuffle();
+    bool IsVehicleDriver();
 
     bool ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
     bool SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
     bool BuildMovementUpdate(int32_t time, NETMESSAGE msgId, CDataStore* msg, float value, uint32_t index);
+    void SetUpdateInfo(CClientMoveUpdate* moveUpdate, bool localPlayer);
 
     bool OnMoveEvent(NETMESSAGE msgId, int32_t time, CDataStore* msg); 
     void OnMoveUpdate(int32_t time, bool a3, bool a4);
@@ -244,6 +251,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     void OnTurnToAngleLocal(int32_t eventTime, float facing);
     void OnCollideFallLand(uint32_t prevFlags, int32_t fellWithSpeed);
     bool OnCollideFallLandNotify(uint32_t time, uint32_t prevFlags, uint32_t prevFlags2, int32_t wasFalling);
+    void OnCollideFalling();
 
     void OnMovementInitiated();
     void OnMonsterMove(CDataStore* msg, NETMESSAGE msgId, WGUID transportGuid, uint8_t transportFlags, bool a6);
@@ -287,6 +295,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     /* 36 */ void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out) override;
     /* 37 */ float GetRenderFacing() override;
     /* 41 */ bool CanHighlight() override;
+    /* 42 */ bool CanBeTargetted() override;
     /* 54 */ char* GetObjectName() override;
     /* 66 */ virtual void GetAFKText(char* text, uint32_t textLength);
     /* 67 */ virtual void GetDNDText(char* text, uint32_t textLength);

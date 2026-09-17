@@ -36,6 +36,7 @@
 #include <util/Unimplemented.hpp>
 #include <clientobject/PlayerName.hpp>
 #include "console/DebugScreen.hpp"
+#include "gameui/Types.hpp"
 
 CDataAllocator CGWorldFrame::s_allocator(sizeof(CGWorldFrame), 1);
 
@@ -250,7 +251,75 @@ void CGWorldFrame::OnMouseModeNormal() {
 
 // OFFSET: 0x4F7880
 void CGWorldFrame::PerformDefaultAction(MOUSEBUTTON button) {
-    WHOA_UNIMPLEMENTED();
+    CGUnit_C* player = ClntObjMgrObjectPtr<CGUnit_C*>(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER);
+
+    if (!player || player->m_unit->UNIT_FIELD_CHARMEDBY) {
+        CWorldClickEvent evt;
+
+        evt.segStart.x = 0.0f;
+        evt.segStart.y = 0.0f;
+        evt.segStart.z = 0.0f;
+        evt.segEnd.x = 0.0f;
+        evt.segEnd.y = 0.0f;
+        evt.segEnd.z = 0.0f;
+        evt.button = button;
+
+        CGGameUI::HandleWorldClick(&evt);
+        return;
+    }
+
+    // CGNamePlateFrame* focus = CGNamePlateFrame::GetNamePlateFocus();
+    //
+    // if (focus) {
+    //     if (button == MOUSE_BUTTON_LEFT) {
+    //         return CGGameUI::OnSpriteLeftClick(focus->m_trackedGuid.guid_low, focus->m_trackedGuid.guid_high);
+    //     }
+    //
+    //     return CGGameUI::OnSpriteRightClick(focus->m_trackedGuid.guid_low, focus->m_trackedGuid.guid_high);
+    // }
+
+    switch (this->m_defaultActionHitKind) {
+    case 0: {
+        CWorldClickEvent evt;
+
+        evt.segStart = this->m_defaultActionHit.segStart;
+        evt.segEnd = this->m_defaultActionHit.segEnd;
+        evt.button = button;
+
+        CGGameUI::HandleWorldClick(&evt);
+        break;
+    }
+
+    case 1:
+    case 3: {
+        CTerrainClickEvent evt;
+
+        uint32_t guidHigh = this->m_defaultActionHit.guid.guid_high;
+
+        if ((guidHigh & 0xF0000000) == 0x10000000 && (guidHigh & 0x0FF00000) == 0x0FC00000) {
+            evt.guid = this->m_defaultActionHit.guid;
+        } else {
+            evt.guid.guid_low = 0;
+            evt.guid.guid_high = 0;
+        }
+
+        evt.point = this->m_defaultActionHit.point;
+        evt.button = button;
+
+        CGGameUI::HandleTerrainClick(&evt);
+        break;
+    }
+
+    case 2: {
+        CSpriteClickEvent evt;
+
+        evt.guid = this->m_defaultActionHit.guid;
+        evt.button = button;
+
+        CGGameUI::HandleSpriteClick(&evt);
+        break;
+    }
+    }
 }
 
 CSimpleFrame* CGWorldFrame::Create(CSimpleFrame* parent) {

@@ -3,8 +3,12 @@
 
 #include "ui/Types.hpp"
 #include <cstdint>
+#include "clientobject/WGUID.hpp"
 
 struct lua_State;
+
+static const WGUID GUID_NONE = WGUID(0xFFFFFFFFFFFFFFFFull);
+static const WGUID GUID_UNRESOLVED = WGUID(0xFFFFFFFFFFFFFFFEull);
 
 #define NUM_SCRIPT_FUNCTIONS_GAME 310
 #define NUM_SCRIPT_FUNCTIONS_UIBINDINGS 26
@@ -139,6 +143,8 @@ namespace GameScript {
 // Utility
 
 void LoadScriptFunctions();
+bool Script_GetGUIDFromToken(const char* token, WGUID* guid, bool emptyMeansTarget);
+
 void UIBindingsRegisterScriptFunctions();
 void UIMacrosRegisterScriptFunctions();
 void InputControlRegisterScriptFunctions();

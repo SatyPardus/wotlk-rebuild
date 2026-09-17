@@ -237,7 +237,7 @@ void CGPlayer_C::PostInitActivePlayer() {
     //    v16 = this->ObjectBase.m_obj;
     //    if (v24 != v16->OBJECT_FIELD_GUID.guid_low || v25 != v16->OBJECT_FIELD_GUID.guid_high)
     //        maybe_CGPlayer_C__ToggleFarSight(this, v26);
-    //    CGGameUI::EnterWorld();
+        CGGameUI::EnterWorld();
     //    CGGameUI::UpdateActivePlayer();
     //}
     //Current = ClientServices::GetCurrent();

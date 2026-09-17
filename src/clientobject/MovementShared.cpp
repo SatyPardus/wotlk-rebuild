@@ -113,6 +113,29 @@ bool CMovementShared::IsSplineFlyer_NotHovering() {
     return (this->m_flags & MOVEMENTFLAG_HOVER) != 0;
 }
 
+// OFFSET: 0x71C720
+bool CMovementShared::IsSplineFlyer_NotHoveringFlyingSwimming() {
+    bool fallingSpline = false;
+
+    if (this->m_spline) {
+        uint32_t flags = this->m_spline->flags;
+
+        if ((flags & SPLINE_FLAG_NO_SPLINE) == 0 && (flags & SPLINE_FLAG_FALLING) != 0)
+            fallingSpline = true;
+        else if ((flags & SPLINE_FLAG_NO_SPLINE) == 0 && (flags & SPLINE_FLAG_FLYING) != 0)
+            return true;
+    }
+
+    if (!fallingSpline) {
+        if ((this->m_flags2 & MOVEMENTFLAG2_UNK3) != 0)
+            return true;
+        if ((this->m_flags & MOVEMENTFLAG_DISABLE_GRAVITY) != 0)
+            return true;
+    }
+
+    return (this->m_flags & (MOVEMENTFLAG_HOVER | MOVEMENTFLAG_FLYING | MOVEMENTFLAG_SWIMMING)) != 0;
+}
+
 // OFFSET: 0x6EABA0
 bool CMovementShared::IsFallingSwimmingFlying() {
     bool fallingSpline = false;

@@ -2,6 +2,8 @@
 #include "ui/FrameScript.hpp"
 #include "util/Lua.hpp"
 #include "util/Unimplemented.hpp"
+#include <db/StaticDb.hpp>
+#include "gameui/CGGameUI.hpp"
 
 
 // OFFSET: 0x54BAA0
@@ -203,7 +205,12 @@ static int32_t Script_HearthAndResurrectFromArea(lua_State* L) {
 
 // OFFSET: 0x54C810
 static int32_t Script_CanHearthAndResurrectFromArea(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    auto rec = g_areaTableDB.GetRecord(CGGameUI::m_areaID);
+    if (rec && (rec->m_flags & 0x8000000) != 0)
+        lua_pushnumber(L, 1.0f);
+    else
+        lua_pushnil(L);
+    return 1;
 }
 
 // OFFSET: 0x54C870

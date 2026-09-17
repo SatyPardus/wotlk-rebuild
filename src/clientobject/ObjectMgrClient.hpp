@@ -53,6 +53,7 @@ CMovementGlobals* ClntObjMgrGetMovementGlobals();
 bool ClntObjMgrEnumVisibleObjects(bool (*func)(WGUID guid, void* param), void* param);
 void ClntObjMgrSetObjMirrorHandler(WGUID guid, OBJECT_TYPE_ID typeId, uint32_t dataOffset, uint32_t fieldByteSize, MIRRORHANDLERFUNC func, void* functionParam, uint32_t linkPositionSelector, int32_t alwaysFire);
 void ClntObjMgrSetTypeMirrorHandler(OBJECT_TYPE_ID typeId, uint32_t dataOffset, uint32_t fieldByteSize, MIRRORHANDLERFUNC func, void* functionParam, uint32_t linkPositionSelector, int32_t alwaysFire);
+ObjectMgr* ClntObjMgrGetCurrent();
 
 template <typename T>
 T GetObjectPtr(TSHashTable<CGObject_C, WGUID>* table, WGUID guid);

@@ -26,6 +26,8 @@ class CM2Shared {
         static void LoadSucceededCallback(void* param);
         static void SkinProfileLoadedCallback(void* param);
         static void MakeSkinFileName(char* fileName, uint32_t profile, char* out);
+        static void LowPrioritySequenceFailedCallback(void* arg);
+        static void LowPrioritySequenceLoadedCallback(void* arg);
 
         // Member variables
         /* 0000 */ uint32_t m_refCount;
@@ -46,11 +48,14 @@ class CM2Shared {
         /* 0010 */ CM2Model* m_callbackList = nullptr;
         /* 0014 */ CM2Model** m_callbackListTail = &this->m_callbackList;
         /* 0018 */ STORM_EXPLICIT_LIST(CM2SequenceLoad, m_link) m_sequenceLoads;
-        /* 0000 */ CM2Shared* m_previous;
-        /* 0000 */ CM2Shared* m_next;
+        /* 0000 */ CM2Shared* m_previous = nullptr;
+        /* 0000 */ CM2Shared* m_next = nullptr;
+        /* 0024 */ uint32_t m_lowPrioritySequenceCapacity = 0;
+        /* 0028 */ void** m_lowPrioritySequenceBuffers = nullptr;
+        /* 002C */ uint32_t m_lowPrioritySequenceCount = 0;
         /* 003C */ char m_filePath[STORM_MAX_PATH];
-        /* 0140 */ char* m_fileNameWithoutPath;
-        /* 0144 */ uint32_t m_fileNameHash;
+        /* 0140 */ char* m_fileNameWithoutPath = nullptr;
+        /* 0144 */ uint32_t m_fileNameHash = 0;
         /* 0000 */ char* ext = nullptr;
         /* 0150 */ M2Data* m_data = nullptr;
         /* 0154 */ CAaBox m_boundingBox;
@@ -80,6 +85,10 @@ class CM2Shared {
         int32_t InitializeSkinProfile();
         int32_t Load(SFile* file, int32_t a3, CAaBox* a4);
         int32_t LoadSkinProfile(uint32_t profile);
+        CM2SequenceLoad* LoadLowPrioritySequence(uint16_t sequenceIndex);
+        int32_t FinishLoadingLowPrioritySequence(uint16_t sequenceIndex, uint8_t* sequenceBase, uint32_t sequenceBaseSize);
+        int32_t FinishLoadingLowPrioritySequence(uint16_t sequenceIndex, CAsyncObject* asyncObject);
+        int32_t MakeAnimFileName(const char* modelPath, int32_t id, int32_t variationIndex, char* out);
         void Release();
         int32_t SetIndices();
         int32_t SetVertices(uint32_t a2);

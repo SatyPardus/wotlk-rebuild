@@ -300,7 +300,7 @@ int32_t InitializeEngineCallback(const void* a1, void* a2) {
 
     ScrnInitialize(0);
     ConsoleScreenInitialize(nullptr); // TODO argument
-    DebugScreenInitialize();
+    //DebugScreenInitialize();
 
     Client::g_cvTextureFilteringMode = CVar::Register("textureFilteringMode", "Texture filtering mode", 1, "1", &TextureFilteringCallback, 1, 0, 0, 0);
     Client::g_cvUIFaster = CVar::Register("UIFaster", "UI acceleration option", 0, "3", &UIFasterCalllback, 1, 0, 0, 0);

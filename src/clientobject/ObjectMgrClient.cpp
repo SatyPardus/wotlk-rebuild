@@ -466,8 +466,6 @@ bool CreateObject(CDataStore* msg, uint32_t time) {
     
     g_tlsBlock.pObjMgr->m_visibleObjects.LinkToTail(newObject);
 
-    OsOutputDebugString("Received CreateObject %d -> %d %d\n", typeID, guid.guid_low, guid.guid_high);
-
     return true;
 }
 
@@ -702,6 +700,31 @@ bool PostInitObject(CDataStore* msg, uint32_t time, bool isUpdate3) {
     }
 }
 
+// OFFSET: 0x4D6DA0
+void PostMovementUpdate(CDataStore* msg) {
+    WGUID guid;
+    *msg >> guid;
+
+    CClientMoveUpdate moveUpdate;
+    //CMovementStatus::CMovementStatus(&v4.status);
+    //CMoveSpline::ctor(&v4.m_moveSpline);
+    *msg >> moveUpdate;
+
+    if (guid != CGUnit_C::s_activeMover) {
+        bool reenable;
+        auto obj = GetUpdateObject(guid, &reenable);
+        if (!obj) {
+            //NOP("Failed to update object movement.  Object (0x%016I64X) unknown to client!");
+            //CMoveSpline::dtor(&v4.m_moveSpline);
+            return;
+        }
+        obj->AsUnit()->SetUpdateInfo(&moveUpdate, obj->m_obj->m_guid == CGUnit_C::s_activeMover);
+        if (reenable)
+            obj->Reenable();
+    }
+    //CMoveSpline::dtor(&v4.m_moveSpline);
+}
+
 // OFFSET: 0x4D7100
 int32_t ObjectUpdateSecondPass(CDataStore* msg, uint32_t time, uint32_t updateCount) {
     WGUID guid;
@@ -715,9 +738,7 @@ int32_t ObjectUpdateSecondPass(CDataStore* msg, uint32_t time, uint32_t updateCo
                 return 0;
             break;
         case UPDATE_MOVEMENT:
-            // TODO
-            *msg >> guid;
-            CClientMoveUpdate::Skip(msg);
+            PostMovementUpdate(msg);
             break;
         case UPDATE_FULL:
         case UPDATE_3:
@@ -778,7 +799,6 @@ int32_t Packet_SMSG_UPDATE_OBJECT(void* param, NETMESSAGE msgId, uint32_t time, 
         }
     }
 
-    OsOutputDebugString("Received Packet_SMSG_UPDATE_OBJECT with %d updates\n", updateCount);
     return result;
 }
 
@@ -1002,6 +1022,11 @@ void ClntObjMgrSetTypeMirrorHandler(OBJECT_TYPE_ID typeId, uint32_t dataOffset, 
     auto list = &g_globalMirrorList[typeId][dataOffset >> 2];
 
     AssignMirrorHandler(fieldByteOffset, mirrorByteOffset, fieldByteSize, func, functionParam, linkPositionSelector, alwaysFire, list);
+}
+
+// OFFSET: 0x4D3730
+ObjectMgr* ClntObjMgrGetCurrent() {
+    return g_tlsBlock.pObjMgr;
 }
 
 // OFFSET: 0x4D4BB0

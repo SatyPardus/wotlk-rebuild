@@ -18,6 +18,9 @@
 #include "util/StringTo.hpp"
 #include "gameui/CGUIBindings.hpp"
 #include <client/Client.hpp>
+#include "clientobject/ObjectMgrClient.hpp"
+#include "clientobject/Unit_C.hpp"
+#include "clientobject/Player_C.hpp"
 
 // External from "ui/ScriptFunctions.hpp"
 void RegisterSimpleFrameScriptMethods();
@@ -2215,4 +2218,167 @@ void LoadScriptFunctions() {
     EquipmentManagerRegisterScriptFunctions();
     GMTicketInfoRegisterScriptFunctions();
     BattlenetUIRegisterScriptFunctions();
+}
+
+// OFFSET: 0x60AAA0
+bool ParseTrailingTokens(const char* rest, WGUID* guid, CGUnit_C* player) {
+    const char* cur = rest;
+
+    if (!*cur) {
+        return true;
+    }
+
+    while (*cur) {
+        if (*cur == '-') {
+            cur++;
+        }
+
+        if (!SStrCmpI(cur, "target", 6)) {
+            cur += 6;
+
+            if (*guid == ClntObjMgrGetActivePlayer()) {
+                *guid = CGGameUI::m_lockedTarget;
+            } else {
+                CGUnit_C* unit = ClntObjMgrObjectPtr<CGUnit_C*>(*guid, TYPEMASK_UNIT);
+
+                if (unit) {
+                    *guid = unit->m_unit->UNIT_FIELD_TARGET;
+                } else {
+                    *guid = WGUID();
+                }
+            }
+
+            continue;
+        }
+
+        bool mayInspectPet = (*guid == ClntObjMgrGetActivePlayer()) || CGGameUI::IsPartyMember(*guid) || (player && (player->AsPlayer()->m_player->PLAYER_FLAGS & 0x80000));
+
+        if (!SStrCmpI(cur, "pet", 3) && mayInspectPet) {
+            cur += 3;
+
+            CGUnit_C* unit = ClntObjMgrObjectPtr<CGUnit_C*>(*guid, TYPEMASK_UNIT);
+
+            if (unit) {
+                *guid = unit->m_unit->UNIT_FIELD_CHARM ? unit->m_unit->UNIT_FIELD_CHARM
+                                                       : unit->m_unit->UNIT_FIELD_SUMMON;
+            } else {
+                *guid = WGUID();
+            }
+
+            continue;
+        }
+
+        *guid = WGUID();
+        return false;
+    }
+
+    return true;
+}
+
+// OFFSET: 0x60ABF0
+bool Script_GetGUIDFromToken(const char* token, WGUID* guid, bool emptyMeansTarget) {
+    CGUnit_C* player = ClntObjMgrObjectPtr<CGUnit_C*>(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER);
+
+    if (!token || !*token) {
+        if (!emptyMeansTarget) {
+            return false;
+        }
+
+        *guid = CGGameUI::m_lockedTarget;
+        return true;
+    }
+
+    const char* start = token;
+    const char* cur = token;
+    bool validated = false;
+
+    *guid = WGUID();
+
+    if (!SStrCmpI(cur, "player", 6)) {
+        cur += 6;
+        *guid = player ? player->m_obj->m_guid : WGUID();
+    } else if (!SStrCmpI(cur, "vehicle", 7)) {
+        cur += 7;
+        *guid = (player && player->IsVehicleDriver()) ? player->GetTransportGUID() : WGUID();
+    } else if (!SStrCmpI(cur, "pet", 3)) {
+        cur += 3;
+        if (player) {
+            *guid = player->m_unit->UNIT_FIELD_CHARM ? player->m_unit->UNIT_FIELD_CHARM : player->m_unit->UNIT_FIELD_SUMMON;
+        }
+    } else if (!SStrCmpI(cur, "target", 6)) {
+        cur += 6;
+        *guid = CGGameUI::m_lockedTarget;
+    //} else if (!SStrCmpI(cur, "partypet", 8)) {
+    //    cur += 8;
+    //    *guid = CGGameUI::GetPartyMemberPet(SStrToUnsigned(cur) - 1);
+    //} else if (!SStrCmpI(cur, "party", 5)) {
+    //    cur += 5;
+    //    *guid = CGGameUI::GetPartyMember(SStrToUnsigned(cur) - 1);
+    //} else if (!SStrCmpI(cur, "raidpet", 7)) {
+    //    cur += 7;
+    //    *guid = CGGameUI::GetRaidMemberPet(SStrToUnsigned(cur) - 1);
+    //} else if (!SStrCmpI(cur, "raid", 4)) {
+    //    cur += 4;
+    //    *guid = CGGameUI::GetRaidMember(SStrToUnsigned(cur) - 1);
+    //} else if (!SStrCmpI(cur, "boss", 4)) {
+    //    cur += 4;
+    //    *guid = CGInstanceEncounter_C::GetBoss(SStrToUnsigned(cur) - 1);
+    //} else if (!SStrCmpI(cur, "arenapet", 8)) {
+    //    cur += 8;
+    //    *guid = CGBattlefieldInfo::GetArenaOpponentPet(SStrToUnsigned(cur) - 1);
+    //} else if (!SStrCmpI(cur, "arena", 5)) {
+    //    cur += 5;
+    //    *guid = CGBattlefieldInfo::GetArenaOpponent(SStrToUnsigned(cur) - 1);
+    //} else if (!SStrCmpI(cur, "commentator", 11)) {
+    //    cur += 11;
+    //    *guid = CGCommentator::GetArenaMember(&CGCommentator::s_Commentator, SStrToUnsigned(cur) - 1);
+    } else if (!SStrCmpI(cur, "mouseover", 9)) {
+        cur += 9;
+        *guid = CGGameUI::m_currentObjectTrack;
+
+        if (!ClntObjMgrObjectPtr<CGUnit_C*>(*guid, TYPEMASK_UNIT) && !CGGameUI::IsRaidMemberOrPet(*guid)) {
+            *guid = WGUID();
+        }
+    } else if (!SStrCmpI(cur, "focus", 5)) {
+        cur += 5;
+        *guid = CGGameUI::m_focusTarget;
+    } else if (!SStrCmpI(cur, "npc", 0x7FFFFFFF)) {
+        cur += 3;
+        *guid = CGGameUI::m_interactTarget;
+    //} else if (!SStrCmpI(cur, "questnpc", 0x7FFFFFFF)) {
+    //    cur += 8;
+    //    *guid = *GetCurrentQuestGiverGUID();
+    } else if (!SStrCmpI(cur, "none", 0x7FFFFFFF)) {
+        cur += 4;
+        *guid = GUID_NONE;
+        validated = true;
+    }
+
+    if (validated || *guid || !*cur) {
+        if (ParseTrailingTokens(cur, guid, player)) {
+            if (!*guid) {
+                *guid = GUID_UNRESOLVED;
+            }
+
+            return true;
+        }
+    }
+
+    if (*guid) {
+        return false;
+    }
+
+    //if (!Script_GetGUIDFromString(&start, guid)) {
+    //    return false;
+    //}
+
+    if (!ParseTrailingTokens(start, guid, player)) {
+        return false;
+    }
+
+    if (!*guid) {
+        *guid = GUID_UNRESOLVED;
+    }
+
+    return true;
 }

@@ -12,6 +12,7 @@
 #include "util/SFile.hpp"
 #include <cstring>
 #include <cstdio>
+#include "model/M2Model.hpp"
 
 // OFFSET: 0x835A00
 void CM2Shared::LoadFailedCallback(void* arg) {
@@ -21,6 +22,7 @@ void CM2Shared::LoadFailedCallback(void* arg) {
     shared->asyncObject = nullptr;
 }
 
+// OFFSET: 0x83D340
 void CM2Shared::LoadSucceededCallback(void* arg) {
     CM2Shared* shared = static_cast<CM2Shared*>(arg);
 
@@ -32,17 +34,27 @@ void CM2Shared::LoadSucceededCallback(void* arg) {
     M2Data& data = *shared->m_data;
 
     if (!M2Init(base, size, data)) {
+        SErrDisplayAppFatal("Corrupt model data: %s", shared->m_filePath);
         return;
     }
 
     if (!shared->Initialize()) {
+        SErrDisplayAppFatal("Failed to initialize model: %s", shared->m_filePath);
         return;
     }
 
-    // TODO
-    // - allocate space for low priority sequence pointers
+    uint32_t externalSequences = 0;
 
+    for (uint32_t i = 0; i < data.sequences.Count(); i++) {
+        if ((data.sequences[i].flags & 0x20) == 0) {
+            externalSequences++;
+        }
+    }
+
+    shared->m_lowPrioritySequenceBuffers = static_cast<void**>(STORM_ALLOC_ZERO(sizeof(void*) * externalSequences));
+    shared->m_lowPrioritySequenceCapacity = externalSequences;
     shared->m_m2DataLoaded = 1;
+    shared->m_lowPrioritySequenceCount = 0;
 }
 
 // OFFSET: 0x83CB10
@@ -666,7 +678,7 @@ int32_t CM2Shared::LoadSkinProfile(uint32_t profile) {
     SFile* fileptr;
 
     if (!SFile::OpenEx(nullptr, skinFilePath, this->m_flag4, &fileptr)) {
-        // NOP("Model2: File not found: %s\n");
+        SErrDisplayAppFatal("Model2: File not found: %s\n", skinFilePath);
         return 0;
     }
 
@@ -702,6 +714,205 @@ int32_t CM2Shared::LoadSkinProfile(uint32_t profile) {
     AsyncFileReadObject(this->asyncObject, 1);
 
     return 1;
+}
+
+// OFFSET: 0x83DA10
+CM2SequenceLoad* CM2Shared::LoadLowPrioritySequence(uint16_t sequenceIndex) {
+    M2Sequence* sequence = &this->m_data->sequences[sequenceIndex];
+
+    CM2SequenceLoad* load = this->m_sequenceLoads.NewNode(STORM_LIST_TAIL, 0, 0);
+
+    if (!load) {
+        return nullptr;
+    }
+
+    load->m_sequenceIndex = sequenceIndex;
+    load->m_shared = this;
+
+    M2Sequence* alias = sequence;
+
+    while (alias->flags & 0x40) {
+        alias = &this->m_data->sequences[alias->aliasNext];
+    }
+
+    char path[STORM_MAX_PATH];
+    CM2Shared::MakeAnimFileName(this->m_filePath, alias->id, alias->variationIndex, path);
+
+    SFile* file;
+
+    if (!SFile::OpenEx(nullptr, path, (this->m_flags & 0x4) >> 2, &file)) {
+        this->m_sequenceLoads.DeleteNode(load);
+        return nullptr;
+    }
+
+    uint32_t size = SFile::GetFileSize(file, nullptr);
+    void* buffer = SMemAlignedAlloc(size, __FILE__, __LINE__);
+
+    if (!buffer) {
+        this->m_sequenceLoads.DeleteNode(load);
+        SFile::Close(file);
+        return nullptr;
+    }
+
+    load->m_asyncObject = AsyncFileReadAllocObject();
+
+    if (!load->m_asyncObject) {
+        SFile::Close(file);
+        SMemAlignedFree(buffer);
+        this->m_sequenceLoads.DeleteNode(load);
+        return nullptr;
+    }
+
+    load->m_sequenceBufferIndex = this->m_lowPrioritySequenceCount;
+    this->m_lowPrioritySequenceBuffers[this->m_lowPrioritySequenceCount] = buffer;
+    this->m_lowPrioritySequenceCount++;
+
+    sequence->flags |= 0x10;
+
+    for (uint16_t i = sequence->aliasNext; i != sequenceIndex;) {
+        M2Sequence* chained = &this->m_data->sequences[i];
+        chained->flags |= 0x10;
+        i = chained->aliasNext;
+    }
+
+    load->m_asyncObject->file = file;
+    load->m_asyncObject->buffer = buffer;
+    load->m_asyncObject->size = size;
+    load->m_asyncObject->userArg = load;
+    load->m_asyncObject->userPostloadCallback = &CM2Shared::LowPrioritySequenceLoadedCallback;
+    load->m_asyncObject->userFailedCallback = &CM2Shared::LowPrioritySequenceFailedCallback;
+    load->m_asyncObject->isRead = 0;
+    load->m_asyncObject->isProcessed = 0;
+    load->m_asyncObject->priority = 125;
+
+    AsyncFileReadObject(load->m_asyncObject, 0);
+
+    return load;
+}
+
+// OFFSET: 0x83D9F0
+void CM2Shared::LowPrioritySequenceFailedCallback(void* arg) {
+    CM2SequenceLoad* load = static_cast<CM2SequenceLoad*>(arg);
+
+    delete load;
+}
+
+// OFFSET: 0x83D840
+void CM2Shared::LowPrioritySequenceLoadedCallback(void* arg) {
+    CM2SequenceLoad* load = static_cast<CM2SequenceLoad*>(arg);
+    CM2Shared* shared = load->m_shared;
+
+    shared->m_flags |= 0x10;
+
+    shared->FinishLoadingLowPrioritySequence(load->m_sequenceIndex, load->m_asyncObject);
+
+    CM2SequencePlayback* playback = load->m_playbacks.Head();
+
+    while (playback) {
+        CM2SequencePlayback* next = load->m_playbacks.Next(playback);
+
+        if (playback->m_flags & 0x8) {
+            load->m_playbacks.DeleteNode(playback);
+        } else {
+            CM2Model* model = playback->m_model;
+            uint16_t boneIndex = playback->m_boneIndex;
+
+            if (model->OnSequenceInterrupted(shared->m_data->bones[boneIndex].boneId, boneIndex)) {
+                M2ModelBone* bone = &model->m_bones[boneIndex];
+
+                if (playback->m_flags & 0x2) {
+                    M2Sequence* sequence = &shared->m_data->sequences[load->m_sequenceIndex];
+
+                    bone->m_sequenceId = sequence->id;
+                    bone->m_variationIndex = sequence->variationIndex;
+
+                    model->SetPrimaryBoneSequence(load->m_sequenceIndex, boneIndex, playback->m_fallback, playback->m_time, playback->m_speed, playback->m_flags & 0x1);
+
+                    bone->sequence.m_pickRandomVariation = playback->m_flags & 0x4;
+                } else {
+                    model->SetSecondaryBoneSequence(load->m_sequenceIndex, boneIndex, playback->m_fallback, playback->m_time, playback->m_speed);
+
+                    bone->secondarySequence.m_pickRandomVariation = playback->m_flags & 0x4;
+                }
+
+                playback->m_model = nullptr;
+            }
+        }
+
+        playback = next;
+    }
+
+    if (shared->m_flags & 0x20) {
+        shared->m_sequenceLoads.Clear();
+        shared->m_flags &= ~0x30;
+    } else {
+        shared->m_sequenceLoads.DeleteNode(load);
+        shared->m_flags &= ~0x10;
+    }
+}
+
+// OFFSET: 0x83C6E0
+int32_t CM2Shared::FinishLoadingLowPrioritySequence(uint16_t sequenceIndex, uint8_t* sequenceBase, uint32_t sequenceBaseSize) {
+    uint8_t* base = reinterpret_cast<uint8_t*>(this->m_data);
+    uint32_t size = this->m_fileSize;
+
+    CM2Model::s_loadingSequence = sequenceIndex;
+    CM2Model::s_sequenceBase = sequenceBase;
+    CM2Model::s_sequenceBaseSize = sequenceBaseSize;
+
+    int32_t result = 0;
+
+    if (size >= sizeof(M2Data) && this->m_data->MD20 == 0x3032444D && this->m_data->version == 0x108) {
+        result = M2Init(base, size, *this->m_data);
+    }
+
+    CM2Model::s_loadingSequence = 0xFFFFFFFF;
+    CM2Model::s_sequenceBase = nullptr;
+    CM2Model::s_sequenceBaseSize = 0;
+
+    if (!result) {
+        return 0;
+    }
+
+    M2Sequence& sequence = this->m_data->sequences[sequenceIndex];
+    sequence.flags = (sequence.flags & ~0x30) | 0x20;
+
+    return 1;
+}
+
+// OFFSET: 0x83CA90
+int32_t CM2Shared::FinishLoadingLowPrioritySequence(uint16_t sequenceIndex, CAsyncObject* asyncObject) {
+    uint8_t* sequenceBase = static_cast<uint8_t*>(asyncObject->buffer);
+    uint32_t sequenceBaseSize = asyncObject->size;
+
+    if (!this->FinishLoadingLowPrioritySequence(sequenceIndex, sequenceBase, sequenceBaseSize)) {
+        return 0;
+    }
+
+    uint16_t alias = this->m_data->sequences[sequenceIndex].aliasNext;
+
+    while (alias != sequenceIndex) {
+        if (!this->FinishLoadingLowPrioritySequence(alias, sequenceBase, sequenceBaseSize)) {
+            return 0;
+        }
+
+        alias = this->m_data->sequences[alias].aliasNext;
+    }
+
+    return 1;
+}
+
+// OFFSET: 0x835A20
+int32_t CM2Shared::MakeAnimFileName(const char* modelPath, int32_t id, int32_t variationIndex, char* out) {
+    strcpy(out, modelPath);
+
+    char* ext = strrchr(out, '.');
+
+    if (ext) {
+        *ext = '\0';
+    }
+
+    return sprintf(&out[strlen(out)], "%04d-%02d.anim", id, variationIndex);
 }
 
 void CM2Shared::Release() {

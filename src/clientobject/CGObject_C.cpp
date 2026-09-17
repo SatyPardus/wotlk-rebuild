@@ -508,6 +508,11 @@ bool CGObject_C::CanHighlight() {
     return false;
 }
 
+// OFFSET: 0x8E5250
+bool CGObject_C::CanBeTargetted() {
+    return false;
+}
+
 // OFFSET: 0x4D5FA0
 void CGObject_C::GetMatrix(C44Matrix& mat) {
     mat.a0 = 1.0;

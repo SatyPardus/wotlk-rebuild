@@ -204,10 +204,10 @@ class CM2Model {
         /* 0000 */ CM2Model* m_drawNext = nullptr;
         /* 0070 */ uint32_t* m_loops = nullptr;
         /* 0074 */ uint32_t m_loopOrigin = 0;
-        /* 0078 */
+        /* 0078 */ void (*m_sequenceCallback)(CM2Model*, int32_t, uint32_t, int32_t, int32_t, void*, void*) = nullptr;
         /* 007C */
-        /* 0080 */
-        /* 0084 */
+        /* 0080 */ void* m_sequenceCallbackParam1 = nullptr;
+        /* 0084 */ void* m_sequenceCallbackParam2 = nullptr;
         /* 0088 */ float float88 = 0.0f;
         /* 008C */ uint32_t m_lastEmitterTime = 0;
         /* 0090 */ uint32_t uint90 = 0;
@@ -308,7 +308,7 @@ class CM2Model {
         void LinkToCallbackListTail();
         int32_t ProcessCallbacks();
         void ProcessCallbacksRecursive();
-        void Release();
+        bool Release();
         void SetAnimating(int32_t animating);
         void SetBoneSequence(uint32_t boneId, uint32_t sequenceId, uint32_t a4, uint32_t time, float a6, int32_t a7, int32_t a8);
         void SetBoneSequenceDeferred(uint16_t a2, M2Data* data, uint16_t boneIndex, uint32_t time, float a6, M2SequenceFallback fallback, int32_t a8, int32_t a9, int32_t a10);
@@ -325,6 +325,7 @@ class CM2Model {
         void SetPrimaryBoneSequence(uint16_t sequenceIndex, uint16_t boneIndex, M2SequenceFallback fallback, uint32_t time, float a6, int32_t a7);
         void SetSecondaryBoneSequence(uint16_t a2, uint16_t boneIndex, M2SequenceFallback fallback, uint32_t time, float a6);
         void SetupBoneSequence(uint16_t sequenceIndex, M2SequenceFallback fallback, uint32_t a4, float a5, M2ModelBoneSeq* boneSequence);
+        int32_t OnSequenceInterrupted(int32_t boneId, uint16_t boneIndex);
         void SetupLighting();
         void SetVisible(int32_t visible);
         void SetWorldTransform(const C3Vector& position, float orientation, float scale);

@@ -116,6 +116,7 @@ class CGObject_C : public CGObject, public TSHashObject<CGObject_C, CHashKeyGUID
     /* 36 */ virtual void ShouldRender(uint32_t flags, uint32_t* culled, uint32_t* out);
     /* 37 */ virtual float GetRenderFacing();
     /* 41 */ virtual bool CanHighlight();
+    /* 42 */ virtual bool CanBeTargetted();
     /* 49 */ virtual void GetMatrix(C44Matrix& pos);
     /* 51 */ virtual uint32_t UpdateObjectNameString(uint32_t mask, char* text, uint32_t textSize);
     /* 52 */ virtual bool ShouldRenderObjectName(uint32_t mask);

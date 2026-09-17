@@ -284,7 +284,7 @@ class CGPlayer_C : public CGUnit_C, public CGPlayer {
     public:
     /* 1010 */ STORM_EXPLICIT_LIST(CMirrorHandler, m_link) m_playerMirrorLists[CGPlayer::GetRemoteFieldCount()];
     /* 1850 */ STORM_EXPLICIT_LIST(CMirrorHandler, m_link)* m_playerLocalMirrorLists;
-    /* 18E0 */ uint32_t m_playerMirrorFlag = 0;
+    /* 18E0 */ WGUID m_lootTarget = 0;
 
     CGPlayer_C();
     CGPlayer_C(CClientObjCreate& objCreate, uint32_t time);

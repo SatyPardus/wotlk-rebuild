@@ -2362,13 +2362,15 @@ void CM2Model::ProcessCallbacksRecursive() {
 }
 
 // OFFSET: 0x824ED0
-void CM2Model::Release() {
+bool CM2Model::Release() {
     this->m_refCount--;
     if (this->m_refCount == 0) {
         uint32_t handle = this->m_handle;
         this->~CM2Model();
         ObjectFree(*g_modelPool, handle);
+        return false;
     }
+    return true;
 }
 
 // OFFSET: 0x823F10
@@ -2599,14 +2601,14 @@ void CM2Model::SetBoneSequenceDeferred(uint16_t sequenceIndex, M2Data* data, uin
             }
         }
     } else {
-        //CM2SequenceLoad* load = this->m_shared->LoadLowPrioritySequence(sequenceIndex);
-        //
-        //if (!load) {
-        //    return;
-        //}
-        //
-        //playback = load->m_playbacks.NewNode(STORM_LIST_TAIL, 0, 0);
-        //playback->m_model = this;
+        CM2SequenceLoad* load = this->m_shared->LoadLowPrioritySequence(sequenceIndex);
+        
+        if (!load) {
+            return;
+        }
+        
+        playback = load->m_playbacks.NewNode(STORM_LIST_TAIL, 0, 0);
+        playback->m_model = this;
     }
 
     playback->m_speed = speed;
@@ -2869,6 +2871,41 @@ void CM2Model::SetPrimaryBoneSequence(uint16_t sequenceIndex, uint16_t boneIndex
 
 void CM2Model::SetSecondaryBoneSequence(uint16_t a2, uint16_t boneIndex, M2SequenceFallback fallback, uint32_t time, float a6) {
     // TODO
+}
+
+// OFFSET: 0x8269C0
+int32_t CM2Model::OnSequenceInterrupted(int32_t boneId, uint16_t boneIndex) {
+    M2ModelBone* bone = &this->m_bones[boneIndex];
+
+    if (!this->m_sequenceCallback) {
+        return 1;
+    }
+
+    if (bone->sequence.m_sequenceIndex == 0xFFFF) {
+        return 1;
+    }
+
+    if (bone->sequence.m_finished) {
+        return 1;
+    }
+
+    M2CompBone* compBone = &this->m_shared->m_data->bones[boneIndex];
+
+    if (compBone->boneId == 0xFFFFFFFF && boneIndex) {
+        return 1;
+    }
+
+    int32_t callbackBoneId = compBone->parentIndex == 0xFFFF ? -1 : boneId;
+
+    this->m_refCount++;
+
+    this->m_sequenceCallback(this, callbackBoneId, bone->m_sequenceId, 1, 0, this->m_sequenceCallbackParam1, this->m_sequenceCallbackParam2);
+
+    if (this->Release()) {
+        return 1;
+    }
+
+    return 0;
 }
 
 // OFFSET: 0x826B00

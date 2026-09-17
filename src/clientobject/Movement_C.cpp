@@ -324,7 +324,7 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
         case MOVEEVENT_START_FALLING:
             if (!this->TryStartFalling())
                 break;
-            //CGUnit_C::OnCollideFalling(this->unit);
+            this->m_unit->OnCollideFalling();
             if (!moveEvent->m_needAck)
                 break;
             this->m_unit->SendMovementUpdate(time, MSG_MOVE_HEARTBEAT, 0.0f, 0, 0, 255);
@@ -538,7 +538,7 @@ int32_t CMovement_C::UpdatePlayerMovement(int32_t time) {
             if ((this->m_flags & 0x200) != 0) {
                 this->m_flags = this->m_flags & 0xFFFFFDFF;
                 if (this->TryStartFalling()) {
-                    //this->m_unit->OnCollideFalling();
+                    this->m_unit->OnCollideFalling();
                 }
                 updated = this->m_unit->ProcessLocalMoveEvent(time, CMSG_FORCE_MOVE_UNROOT_ACK, 0, 0.0, 0, 0, 255);
                 this->UpdateHeartbeatTimerA(time);
@@ -1424,7 +1424,7 @@ void CMovement_C::CallMoveEventHandlers(uint32_t time, int32_t timeRemaining, ui
     int32_t result = this->m_flags;
 
     if (((this->m_flags & MOVEMENTFLAG_FALLING) != 0 && (prevFlags & MOVEMENTFLAG_FALLING) == 0) || ((this->m_flags & MOVEMENTFLAG_FALLING_FAR) != 0 && (prevFlags & MOVEMENTFLAG_FALLING_FAR) == 0)) {
-        //this->m_unit->OnCollideFalling();
+        this->m_unit->OnCollideFalling();
     }
 
     if ((this->m_flags & 0x200000) == 0 && (prevFlags & 0x200000) != 0 && this->m_unit->m_obj->m_guid == CGUnit_C::s_activeMover && (!this->m_spline || (this->m_spline->flags & 0x400) != 0)) {

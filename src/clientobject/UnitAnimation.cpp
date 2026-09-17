@@ -3,6 +3,8 @@
 #include <util/Unimplemented.hpp>
 #include <gameui/CGWorldFrame.hpp>
 #include "gameui/camera/CGCamera.hpp"
+#include "gameui/CGGameUI.hpp"
+#include <util/Animation.hpp>
 
 // OFFSET: 0x73AC30
 void CGUnit_C::UpdateBaseAnimation(uint8_t a2, uint32_t a3) {
@@ -104,25 +106,61 @@ ANIMATION_ID CGUnit_C::GetCurrentTorsoAnimId() {
     return result;
 }
 
+// OFFSET: 0x716FD0
 bool CGUnit_C::Uses_A30_Flag_0x40000000(uint32_t a2, ANIMATION_ID* animId) {
-    WHOA_UNIMPLEMENTED(false);
+    if ((this->m_animationState & 0x40) == 0 || this->data98C || this->unk_09F8 != 10) {
+        return (a2 & 0xFFFFF800) == 0;
+    }
+
+    if (this->unk_0A30 & 0x40000000) {
+        return false;
+    }
+
+    if (!this->m_worldModel->HasSequence(ANIM_BIRTH)) {
+        return (a2 & 0xFFFFFFFC) == 0;
+    }
+
+    *animId = ANIM_BIRTH;
+
+    return true;
 }
 
+// OFFSET: 0x724060
 bool CGUnit_C::ChooseDeathAnim(uint32_t a2, ANIMATION_ID* animId, uint8_t flags) {
     WHOA_UNIMPLEMENTED(false);
 }
 
+// OFFSET: 0x71DFF0
 bool CGUnit_C::ChooseSubmergeAnim(uint32_t a2, ANIMATION_ID* animId) {
-    WHOA_UNIMPLEMENTED(false);
-}
+    if (this->m_animationState & 0x400008) {
+        return true;
+    }
 
-// OFFSET: 0x71DC20
-bool IsAirboneAnim(uint32_t sequenceId) {
-    auto animationDataRec = g_animationDataDB.GetRecord(sequenceId);
-    if (!animationDataRec)
-        return false;
+    if ((this->m_animationState & 0x40) == 0 || this->data98C) {
+        return (a2 & 0xFFFFFFFC) == 0;
+    }
 
-    return animationDataRec->m_behaviorID >= 37 && (animationDataRec->m_behaviorID <= 40 || animationDataRec->m_behaviorID == 467);
+    ANIMATION_ID chosen;
+
+    if (this->GetClientStandState() == 9) {
+        chosen = this->unk_09F8 == 9 ? ANIM_SUBMERGED : ANIM_SUBMERGE;
+    } else {
+        if (this->unk_09F8 != 9) {
+            return (a2 & 0xFFFFFFFC) == 0;
+        }
+
+        chosen = this->m_worldModel->HasSequence(ANIM_EMERGE) ? ANIM_EMERGE : ANIM_BIRTH;
+    }
+
+    if (!this->m_worldModel->HasSequence(chosen)) {
+        return (a2 & 0xFFFFFFFC) == 0;
+    }
+
+    if (this->GetCurrentTorsoAnimId() != chosen && (a2 & 2)) {
+        *animId = chosen;
+    }
+
+    return true;
 }
 
 // OFFSET: 0x724200
@@ -183,8 +221,22 @@ bool CGUnit_C::ChooseMovementAnim(uint32_t a2, ANIMATION_ID* animId) {
     return false;
 }
 
+// OFFSET: 0x724280
 bool CGUnit_C::ChooseLootAnim(uint32_t a2, ANIMATION_ID* animId) {
-    WHOA_UNIMPLEMENTED(false);
+    if (this->data98C || (this->m_animationState & 0x40) == 0 || !this->ShouldKneelForLoot())
+        return (a2 & 0xFFFFFFF0) == 0;
+    auto torsoAnim = this->GetCurrentTorsoAnimId();
+    if (!this->IsLooting()) {
+        if (torsoAnim != ANIM_LOOT_HOLD)
+            return (a2 & 0xFFFFFFF0) == 0;
+        if ((a2 & 8) != 0)
+            *animId = ANIM_LOOT_UP;
+        return 1;
+    }
+    if ((a2 & 8) == 0 || torsoAnim == ANIM_LOOT_HOLD || torsoAnim == ANIM_LOOT)
+        return 1;
+    *animId = ANIM_LOOT;
+    return 1;
 }
 
 bool CGUnit_C::ChooseSpellVisualKitAnim(uint32_t a2, ANIMATION_ID* animId, uint8_t flags) {
@@ -195,28 +247,172 @@ bool CGUnit_C::ChooseCombatAnim(uint32_t a2, ANIMATION_ID* animId, uint8_t flags
     WHOA_UNIMPLEMENTED(false);
 }
 
+// OFFSET: 0x71E180
 bool CGUnit_C::ChooseShuffleAnim(uint32_t a2, ANIMATION_ID* animId) {
-    WHOA_UNIMPLEMENTED(false);
+    if (!this->CanShuffle())
+        return (a2 & 0xFFFFFF80) == 0;
+    if ((this->m_animationState & 0x70) != 0 && (a2 & 0x40) != 0) {
+        if ((this->movementData.m_flags & MOVEMENTFLAG_LEFT) == 0 && (this->m_animationState & 0x800) == 0) {
+            *animId = ANIM_SHUFFLE_RIGHT;
+            return 1;
+        }
+        *animId = ANIM_SHUFFLE_LEFT;
+    }
+    return 1;
 }
 
+// OFFSET: 0x714F90
 bool CGUnit_C::ChooseRangedLoadAnim(uint32_t a2, ANIMATION_ID* animId) {
-    WHOA_UNIMPLEMENTED(false);
+    if (this->m_sheatheState != 2) {
+        return (a2 & 0xFFFFFF00) == 0;
+    }
+
+    if ((this->m_animationState & 0x200) == 0) {
+        return (a2 & 0xFFFFFF00) == 0;
+    }
+
+    if ((a2 & 0x80) == 0 || (this->m_animationState & 0x4000)) {
+        return true;
+    }
+
+    *animId = ANIM_READY_UNARMED;
+
+    CGUnitVirtualItem* item = this->GetVirtualItem(2, 0);
+
+    if (!item || item->classID != 2) {
+        return true;
+    }
+
+    switch (item->subclassID) {
+    case 2:
+        *animId = ANIM_LOAD_BOW;
+        break;
+    case 3:
+    case 18:
+        *animId = ANIM_LOAD_RIFLE;
+        break;
+    case 16:
+        *animId = ANIM_LOAD_THROWN;
+        break;
+    case 19:
+        *animId = ANIM_HOLD_THROWN;
+        break;
+    }
+
+    return true;
 }
 
+// OFFSET: 0x71E1F0
 bool CGUnit_C::ChooseStandStateAnim(uint32_t a2, ANIMATION_ID* animId) {
-    WHOA_UNIMPLEMENTED(false);
+    if ((this->m_animationState & 0x40) == 0 || this->data98C) {
+        return (a2 & 0xFFFFFE00) == 0;
+    }
+
+    ANIMATION_ID anim;
+
+    switch (this->GetClientStandState()) {
+    case 0:
+        switch (this->unk_09F8) {
+        case 1:
+            anim = ANIM_SIT_GROUND_UP;
+            break;
+        case 3:
+            anim = ANIM_SLEEP_UP;
+            break;
+        case 8:
+            anim = ANIM_KNEEL_END;
+            break;
+        default:
+            return (a2 & 0xFFFFFE00) == 0;
+        }
+        break;
+
+    case 1:
+        if (!this->unk_09F8 || this->GetCurrentTorsoAnimId() == ANIM_SIT_GROUND_DOWN) {
+            anim = ANIM_SIT_GROUND_DOWN;
+        } else {
+            anim = ANIM_SIT_GROUND;
+        }
+        break;
+
+    case 3:
+        anim = (ANIMATION_ID)(ANIM_SLEEP_DOWN + (this->unk_09F8 != 0));
+        if (anim == ANIM_COUNT) {
+            return true;
+        }
+        break;
+
+    case 4:
+        anim = ANIM_SIT_CHAIR_LOW;
+        break;
+
+    case 5:
+        anim = ANIM_SIT_CHAIR_MED;
+        break;
+
+    case 6:
+        anim = ANIM_SIT_CHAIR_HIGH;
+        break;
+
+    case 7:
+        if (this->unk_09F8 == 7) {
+            return true;
+        }
+
+        if (this->m_passenger->m_flags & MOVEMENTFLAG_SWIMMING) {
+            anim = ANIM_DROWNED;
+        } else {
+            anim = /*this->HasAnim466() ? ANIM_DEATH_END_HOLD :*/ ANIM_DEAD;
+        }
+        break;
+
+    case 8:
+        anim = (ANIMATION_ID)(ANIM_KNEEL_START + (this->unk_09F8 != 0));
+        if (anim == ANIM_COUNT) {
+            return true;
+        }
+        break;
+
+    default:
+        return (a2 & 0xFFFFFE00) == 0;
+    }
+
+    if (a2 & 0x100) {
+        *animId = anim;
+    }
+
+    return true;
 }
 
+// OFFSET: 0x7171C0
 bool CGUnit_C::ChooseEmoteAnim(uint32_t a2, ANIMATION_ID* animId) {
-    WHOA_UNIMPLEMENTED(false);
-}
+    uint32_t state = this->m_animationState;
 
-// OFFSET: 0x7176B0
-uint32_t GetAnimBehaviorId(ANIMATION_ID animId) {
-    auto animationDataRec = g_animationDataDB.GetRecord(animId);
-    if (animationDataRec)
-        return animationDataRec->m_behaviorID;
-    return ANIM_COUNT;
+    if (((state & 0x40) == 0 || this->data98C) && (state & 0x20) == 0) {
+        return (a2 & 0x200) == 0;
+    }
+
+    uint32_t emoteState = this->m_unit->UNIT_NPC_EMOTESTATE;
+
+    if (!emoteState) {
+        return (a2 & 0x200) == 0;
+    }
+
+    EmotesRec* emote = g_emotesDB.GetRecord(emoteState);
+
+    if (!emote) {
+        return (a2 & 0x200) == 0;
+    }
+
+    if (CGGameUI::m_interactTarget == this->m_obj->m_guid && (emote->m_emoteFlags & 0x2000)) {
+        return (a2 & 0x200) == 0;
+    }
+
+    if (a2 & 0x200) {
+        *animId = (ANIMATION_ID)emote->m_animID;
+    }
+
+    return true;
 }
 
 // OFFSET: 0x71E340
