@@ -4,6 +4,7 @@
 #include "net/login/LoginResponse.hpp"
 #include "net/connection/NetClient.hpp"
 #include <tempest/Vector.hpp>
+#include <net/Types.hpp>
 
 class ClientConnection;
 class CVar;
@@ -22,6 +23,7 @@ class ClientServices : public LoginResponse {
         static bool s_newLogin;
         static REALM_INFO s_selectRealmInfo;
         static bool s_selectRealmInfoValid;
+        static CHARACTER_INFO s_characterInfo;
 
         // Static console variables
         static CVar* s_realmNameVar;
@@ -62,6 +64,8 @@ class ClientServices : public LoginResponse {
         static int32_t GetExpansionLevel();
         static uint32_t CharacterValidateName(const char* name);
         static void Send2(CDataStore* msg);
+        static void SetCharacterInfo(CHARACTER_INFO* info);
+        static char* GetCharacterName();
 
         // Virtual member functions
         virtual int32_t GetLoginServerType();

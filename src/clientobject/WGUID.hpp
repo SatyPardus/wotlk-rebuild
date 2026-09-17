@@ -93,4 +93,6 @@ inline CDataStore& operator<<(CDataStore& msg, const WGUID& guid) {
     return msg;
 }
 
+char* GUIDToHexString(uint32_t low, uint32_t high, char* out);
+
 #endif // CLIENTOBJECT_WGUID_HPP

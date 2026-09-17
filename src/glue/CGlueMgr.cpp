@@ -531,6 +531,9 @@ void CGlueMgr::EnterWorld() {
         return;
     }
 
+    ClientServices::SetAccountName(CGlueMgr::m_accountName);
+    ClientServices::SetCharacterInfo(CGlueMgr::m_characterInfo);
+
     if (!CGlueMgr::s_curGameTip)
         CGlueMgr::s_curGameTip = CVar::Register("gameTip", nullptr, 0, "0", nullptr, 5, false, nullptr, false);
     if (!CGlueMgr::s_showGameTips) {

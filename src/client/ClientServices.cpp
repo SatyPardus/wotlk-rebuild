@@ -126,6 +126,7 @@ Login* ClientServices::s_loginObj;
 bool ClientServices::s_newLogin;
 REALM_INFO ClientServices::s_selectRealmInfo;
 bool ClientServices::s_selectRealmInfoValid;
+CHARACTER_INFO ClientServices::s_characterInfo;
 
 CVar* ClientServices::s_realmNameVar = nullptr;
 CVar* ClientServices::s_decorateAccountName = nullptr;
@@ -452,6 +453,18 @@ void ClientServices::Send2(CDataStore* msg) {
         SErrDisplayAppFatal("");
     }
     ClientServices::s_currentConnection->Send(msg);
+}
+
+// OFFSET: 0x6B1020
+void ClientServices::SetCharacterInfo(CHARACTER_INFO* info) {
+    if (!info)
+        SErrDisplayAppFatal("");
+    memcpy(&ClientServices::s_characterInfo, info, sizeof(ClientServices::s_characterInfo));
+}
+
+// OFFSET: 0x6B1060
+char* ClientServices::GetCharacterName() {
+    return ClientServices::s_characterInfo.name[0] != 0 ? ClientServices::s_characterInfo.name : nullptr;
 }
 
 void ClientServices::InitLoginServerCVars(int32_t overwrite, const char* locale) {

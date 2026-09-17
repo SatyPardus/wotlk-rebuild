@@ -11,6 +11,7 @@
 #include <clientobject/ObjectMgrClient.hpp>
 #include <clientobject/CGObject_C.hpp>
 #include <gameui/CGGameUI.hpp>
+#include <db/DBCacheInstances.hpp>
 
 // OFFSET: 0x60C2A0
 static int32_t Script_UnitExists(lua_State* L) {
@@ -181,12 +182,126 @@ static int32_t Script_UnitSelectionColor(lua_State* L) {
 
 // OFFSET: 0x60E630
 static int32_t Script_UnitGUID(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1)) {
+        luaL_error(L, "Usage: UnitGUID(\"unit\")");
+    }
+
+    auto token = lua_tolstring(L, 1, nullptr);
+
+    WGUID guid;
+    Script_GetGUIDFromToken(token, &guid, false);
+
+    if (!guid || guid == 0xFFFFFFFFFFFFFFFEull) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    uint32_t highType = guid.guid_high & 0xF0F00000;
+
+    if (highType == 0xF0300000 || highType == 0xF0500000) {
+        auto entry = static_cast<int32_t>((static_cast<uint64_t>(guid) >> 24) & 0xFFFFFFF);
+        auto requester = static_cast<uint64_t>(guid);
+        auto stats = g_creatureCache.GetRecord(entry, &requester, nullptr, nullptr, false);
+
+        if (stats && (stats->m_typeFlags & 0x4000)) {
+            guid.guid_low &= 0xFF000000;
+        }
+    }
+
+    char text[68];
+    lua_pushstring(L, GUIDToHexString(guid.guid_low, guid.guid_high, text));
+
+    return 1;
 }
 
 // OFFSET: 0x60E740
 static int32_t Script_UnitName(lua_State* L) {
-    WHOA_UNIMPLEMENTED(0);
+    if (!lua_isstring(L, 1)) {
+        luaL_error(L, "Usage: UnitName(\"unit\")");
+    }
+
+    auto token = lua_tolstring(L, 1, nullptr);
+
+    if (!SStrCmpI(token, "player", 0x7FFFFFFF)) {
+        lua_pushstring(L, ClientServices::GetCharacterName());
+        lua_pushnil(L);
+
+        return 2;
+    }
+
+    char* realmName = nullptr;
+
+    WGUID guid;
+    Script_GetGUIDFromToken(token, &guid, false);
+
+    if (!guid || guid == 0xFFFFFFFFFFFFFFFEull) {
+        lua_pushnil(L);
+        lua_pushnil(L);
+
+        return 2;
+    }
+
+    const char* name = nullptr;
+    auto object = ClntObjMgrObjectPtr<CGObject_C*>(guid, TYPEMASK_OBJECT);
+
+    if (object) {
+        uint32_t type = object->m_obj->m_type;
+
+        if (type & TYPEMASK_UNIT) {
+            name = object->AsUnit()->GetUnitName(&realmName, true);
+        } /*else if (type & TYPEMASK_GAMEOBJECT) {
+            name = object->AsGameObject()->GetObjectName();
+        } else if (type & TYPEMASK_ITEM) {
+            uint64_t requester = 0;
+            auto stats = g_itemCache.GetRecord(object->m_obj->m_entryID, &requester, nullptr, nullptr, false);
+
+            if (stats) {
+                name = DBItemCache::GetItemNameByIndex(stats, 0);
+            }
+        } else if (type & TYPEMASK_CORPSE) {
+            auto requester = static_cast<uint64_t>(object->AsCorpse()->m_corpse->CORPSE_FIELD_OWNER);
+            auto record = g_nameCache.GetRecord(requester, &requester, NameQueryCallback, nullptr, true);
+
+            if (record) {
+                name = record->m_name;
+
+                if (record->m_realmName[0]) {
+                    realmName = record->m_realmName;
+                }
+            }
+        }*/
+    } else {
+        //auto petState = CGPartyMemberStateRepository::FindPetState(&guid);
+        //
+        //if (petState) {
+        //    name = petState->m_name;
+        //} else if ((guid.guid_high & 0xF0F00000) == 0xF0400000) {
+        //    auto petNumber = static_cast<int32_t>((static_cast<uint64_t>(guid) >> 24) & 0xFFFFFFF);
+        //    auto requester = static_cast<uint64_t>(guid);
+        //    auto record = g_petNameCache.GetRecord(petNumber, &requester, NameQueryCallback, nullptr, true);
+        //
+        //    if (record) {
+        //        name = record->m_name;
+        //    }
+        //} else {
+        //    auto requester = static_cast<uint64_t>(guid);
+        //    auto record = g_nameCache.GetRecord(requester, &requester, NameQueryCallback, nullptr, true);
+        //
+        //    if (record) {
+        //        name = record->m_name;
+        //        realmName = record->m_realmName;
+        //    }
+        //}
+    }
+
+    if (!name) {
+        name = FrameScript_GetText("UNKNOWNOBJECT", -1, GENDER_NOT_APPLICABLE);
+    }
+
+    lua_pushstring(L, name);
+    lua_pushstring(L, realmName);
+
+    return 2;
 }
 
 // OFFSET: 0x60E9A0
