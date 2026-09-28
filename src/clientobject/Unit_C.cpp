@@ -911,6 +911,13 @@ bool CGUnit_C::IsVehicleDriver() {
     //return this->m_vehiclePassenger && this->m_vehiclePassenger->m_seatState == 3;
 }
 
+// OFFSET: 0x715D70
+bool CGUnit_C::IsBoss() {
+    if (this->m_creatureCacheEntry)
+        return (this->m_creatureCacheEntry->m_typeFlags >> 2) & 1;
+    return false;
+}
+
 // OFFSET: 0x7413F0
 bool CGUnit_C::ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat) {
     // this->UpdateObjectEffectMovementStates();

@@ -225,6 +225,7 @@ class CGUnit_C : public CGObject_C, public CGUnit {
     bool ShouldKneelForLoot();
     bool CanShuffle();
     bool IsVehicleDriver();
+    bool IsBoss();
 
     bool ProcessLocalMoveEvent(int32_t time, NETMESSAGE msgId, bool needAck, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
     bool SendMovementUpdate(int32_t time, NETMESSAGE msgId, float value, uint32_t index, WGUID transportGuid, uint8_t transportSeat);
